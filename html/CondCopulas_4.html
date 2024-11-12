@@ -1,0 +1,189 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>bCond.simpA.param</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Test of the assumption that a conditional copulas does not vary
+through a list of discrete conditioning events</h2>
+
+<h3>Description</h3>
+
+<p>Test of the assumption that a conditional copulas does not vary
+through a list of discrete conditioning events
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">bCond.simpA.param(
+  X1,
+  X2,
+  partition,
+  family,
+  testStat = "T2c_tau",
+  typeBoot = "boot.NP",
+  nBootstrap = 100
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X1</code></td>
+<td>
+<p>vector of <code>n</code> observations of the first conditioned variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X2</code></td>
+<td>
+<p>vector of <code>n</code> observations of the second conditioned variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>partition</code></td>
+<td>
+<p>matrix of size <code>n * p</code>,
+where <code>p</code> is the number of conditioning events that are considered.
+partition[i,j] should be the indicator of whether the <code>i</code>-th observation
+belongs or not to the <code>j</code>-th conditioning event.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>family of parametric copulas used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>testStat</code></td>
+<td>
+<p>test statistic used. Possible choices are
+</p>
+
+<ul>
+<li> <p><code>T2c_par</code> <code class="reqn">\sum_{box} (\theta_0 - \theta(box))^2</code>
+</p>
+</li>
+<li> <p><code>T2c_tau</code> Same as above, except that the copula family is now parametrized
+by its Kendall's tau instead of its natural parameter.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>typeBoot</code></td>
+<td>
+<p>type of bootstrap used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nBootstrap</code></td>
+<td>
+<p>number of bootstrap replications</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a list containing
+</p>
+
+<ul>
+<li> <p><code>true_stat</code>:
+the value of the test statistic computed on the whole sample
+</p>
+</li>
+<li> <p><code>vect_statB</code>:
+a vector of length <code>nBootstrap</code> containing the bootstrapped
+test statistics.
+</p>
+</li>
+<li> <p><code>p_val</code>: the p-value of the test.
+</p>
+</li>
+</ul>
+<h3>References</h3>
+
+<p>Derumigny, A., &amp; Fermanian, J. D. (2017).
+About tests of the “simplifying” assumption for conditional copulas.
+Dependence Modeling, 5(1), 154-197.
+<a href="https://doi.org/10.1515/demo-2017-0011">doi:10.1515/demo-2017-0011</a>
+</p>
+<p>Derumigny, A., &amp; Fermanian, J. D. (2022)
+Conditional empirical copula processes and generalized dependence measures
+Electronic Journal of Statistics, 16(2), 5692-5719.
+<a href="https://doi.org/10.1214/22-EJS2075">doi:10.1214/22-EJS2075</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>bCond.estParamCopula</code> for the estimation
+of a (conditional) parametric copula model in this framework.
+</p>
+<p><code>bCond.simpA.CKT</code> for a test of the simplifying assumption
+that all these conditional copulas are equal,
+based on the equality of conditional Kendall's tau
+(i.e. without any parametric assumption).
+</p>
+<p>Tests of the simplifying assumption for conditional copulas with a continuous
+conditioning variable:
+</p>
+
+<ul>
+<li> <p><code>simpA.NP</code> in a nonparametric setting
+</p>
+</li>
+<li> <p><code>simpA.param</code> in a (semi)parametric setting,
+where the conditional copula belongs to a parametric family,
+but the conditional margins are estimated arbitrarily through
+kernel smoothing
+</p>
+</li>
+<li> <p><code>simpA.kendallReg</code>: test based on the constancy of
+conditional Kendall's tau
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">n = 800
+Z = stats::runif(n = n)
+CKT = 0.2 * as.numeric(Z &lt;= 0.3) +
+  0.5 * as.numeric(Z &gt; 0.3 &amp; Z &lt;= 0.5) +
+  + 0.3 * as.numeric(Z &gt; 0.5)
+family = 3
+simCopula = VineCopula::BiCopSim(N = n,
+  par = VineCopula::BiCopTau2Par(CKT, family = family), family = family)
+X1 = simCopula[,1]
+X2 = simCopula[,2]
+partition = cbind(Z &lt;= 0.3, Z &gt; 0.3 &amp; Z &lt;= 0.5, Z &gt; 0.5)
+
+result = bCond.simpA.param(X1 = X1, X2 = X2, testStat = "T2c_tau",
+  partition = partition, family = family, typeBoot = "boot.paramInd")
+print(result$p_val)
+
+n = 800
+Z = stats::runif(n = n)
+CKT = 0.1
+family = 3
+simCopula = VineCopula::BiCopSim(N = n,
+  par = VineCopula::BiCopTau2Par(CKT, family = family), family = family)
+X1 = simCopula[,1]
+X2 = simCopula[,2]
+partition = cbind(Z &lt;= 0.3, Z &gt; 0.3 &amp; Z &lt;= 0.5, Z &gt; 0.5)
+
+result = bCond.simpA.param(X1 = X1, X2 = X2,
+  partition = partition, family = family, typeBoot = "boot.NP")
+print(result$p_val)
+
+
+</code></pre>
+
+
+</div>

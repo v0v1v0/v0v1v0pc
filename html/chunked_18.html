@@ -1,0 +1,137 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>write_csv_chunkwise</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Write chunks to a csv file</h2>
+
+<h3>Description</h3>
+
+<p>Writes data to a csv file chunk by chunk. This function must be just in
+conjunction with <code>read_csv_chunkwise</code>. Chunks of data will
+be read, processed and written when this function is called.
+For writing to a database use <code>insert_chunkwise_into</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">write_csv_chunkwise(
+  x,
+  file = "",
+  sep = ",",
+  dec = ".",
+  col.names = TRUE,
+  row.names = FALSE,
+  ...
+)
+
+write_csv2_chunkwise(
+  x,
+  file = "",
+  sep = ";",
+  dec = ",",
+  col.names = TRUE,
+  row.names = FALSE,
+  ...
+)
+
+write_table_chunkwise(
+  x,
+  file = "",
+  sep = "\t",
+  dec = ".",
+  col.names = TRUE,
+  row.names = TRUE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>chunkwise object pointing to a text file</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>file</code></td>
+<td>
+<p>file <code>character</code> or connection where the csv file should be written</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sep</code></td>
+<td>
+<p>field separator</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dec</code></td>
+<td>
+<p>decimal separator</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>col.names</code></td>
+<td>
+<p>should column names be written?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>row.names</code></td>
+<td>
+<p>should row names be written?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>passed through to <code>read.table</code></p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>chunkwise object (chunkwise), when writing to a file it refers to the
+newly created file, otherwise to <code>x</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># create csv file for demo purpose
+in_file &lt;- file.path(tempdir(), "in.csv")
+write.csv(women, in_file, row.names = FALSE, quote = FALSE)
+
+#
+women_chunked &lt;-
+  read_chunkwise(in_file) %&gt;%  #open chunkwise connection
+  mutate(ratio = weight/height) %&gt;%
+  filter(ratio &gt; 2) %&gt;%
+  select(height, ratio) %&gt;%
+  inner_join(data.frame(height=63:66)) # you can join with data.frames!
+
+# no processing done until
+out_file &lt;- file.path(tempdir(), "processed.csv")
+women_chunked %&gt;%
+  write_chunkwise(file=out_file)
+
+head(women_chunked) # works (without processing all data...)
+
+iris_file &lt;- file.path(tempdir(), "iris.csv")
+write.csv(iris, iris_file, row.names = FALSE, quote= FALSE)
+
+iris_chunked &lt;-
+  read_chunkwise(iris_file, chunk_size = 49) %&gt;% # 49 for demo purpose
+  group_by(Species) %&gt;%
+  summarise(sepal_length = mean(Sepal.Length), n=n()) # note that mean is per chunk
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,260 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>gfmc</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Grass Fuel Moisture Code</h2>
+
+<h3>Description</h3>
+
+<p><code>gfmc</code> calculates both the moisture content of the surface
+of a fully cured matted grass layer and also an equivalent Grass Fuel
+Moisture Code (gfmc) (Wotton, 2009) to create a parallel with the hourly ffmc
+(see the <code>fwi</code> and <code>hffmc</code>functions). The calculation
+is based on hourly (or sub-hourly) weather observations of temperature,
+relative humidity, wind speed, rainfall, and solar radiation. The user must
+also estimate an initial value of the gfmc for the layer. This function
+could be used for either one weather station or multiple weather stations.
+</p>
+<p>The Canadian Forest Fire Danger Rating System (CFFDRS) is used throughout
+Canada, and in a number of countries throughout the world, for estimating
+fire potential in wildland fuels. This new Grass Fuel Moisture Code (GFMC)
+is an addition (Wotton 2009) to the CFFDRS and retains the structure of that
+System's hourly Fine Fuel Moisture Code (HFFMC) (Van Wagner 1977). It tracks
+moisture content in the top 5 cm of a fully-cured and fully-matted layer of
+grass and thus is representative of typical after winter conditions in areas
+that receive snowfall.  This new moisture calculation method outputs both
+the actual moisture content of the layer and also the transformed moisture
+Code value using the FFMC's FF-scale.  In the CFFDRS the moisture codes are
+in fact relatively simple transformations of actual moisture content such
+that decreasing moisture content (increasing dryness) is indicated by an
+increasing Code value. This moisture calculation uses the same input weather
+observations as the hourly FFMC, but also requires an estimate of solar
+radiation incident on the fuel.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">gfmc(
+  input,
+  GFMCold = 85,
+  batch = TRUE,
+  time.step = 1,
+  roFL = 0.3,
+  out = "GFMCandMC"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>input</code></td>
+<td>
+<p>A dataframe containing input variables of daily noon weather
+observations. Variable names have to be the same as in the following list,
+but they are case insensitive. The order in which the input variables are
+entered is not important.
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<var>id</var> </td>
+<td style="text-align: left;"> (optional) </td>
+<td style="text-align: left;"> Batch Identification</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>temp</var> </td>
+<td style="text-align: left;"> (required) </td>
+<td style="text-align: left;"> Temperature (centigrade)</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>rh</var> </td>
+<td style="text-align: left;"> (required) </td>
+<td style="text-align: left;"> Relative humidity (%)</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>ws</var> </td>
+<td style="text-align: left;"> (required) </td>
+<td style="text-align: left;"> 10-m height wind speed (km/h)</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>prec</var> </td>
+<td style="text-align: left;"> (required) </td>
+<td style="text-align: left;"> 1-hour rainfall (mm)</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>isol</var> </td>
+<td style="text-align: left;"> (required) </td>
+<td style="text-align: left;"> Solar radiation (kW/m^2)</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>mon</var> </td>
+<td style="text-align: left;"> (recommended) </td>
+<td style="text-align: left;"> Month of the year (integer' 1-12)</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>day</var> </td>
+<td style="text-align: left;"> (optional) </td>
+<td style="text-align: left;"> Day of the month (integer)</td>
+</tr>
+<tr>
+<td style="text-align: left;"> </td>
+</tr>
+</table>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>GFMCold</code></td>
+<td>
+<p>Previous value of GFMC (i.e. value calculated at the previous
+time step)[default is 85 (which corresponds to a moisture content of about
+16%)]. On the first calculation this is the estimate of the GFMC value at
+the start of the time step. The <code>GFMCold</code> argument can accept a single
+initial value for multiple weather stations, and also accept a vector of
+initial values for multiple weather stations.  NOTE: this input represents
+the CODE value, not a direct moisture content value. The CODE values in the
+Canadian FWI System increase within decreasing moisture content. To roughly
+convert a moisture content value to a CODE value on the FF-scale (used in
+the FWI Systems FFMC) use <code>GFMCold</code> =101-gmc (where gmc is moisture
+content in %)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>batch</code></td>
+<td>
+<p>Whether the computation is iterative or single step, default is
+TRUE. When <code>batch=TRUE</code>, the function will calculate hourly or
+sub-hourly GFMC for one weather station over a period of time iteratively.
+If multiple weather stations are processed, an additional "id" column is
+required in the input to label different stations, and the data needs to be
+sorted by time sequence and "id".  If <code>batch=FALSE</code>, the function
+calculates only one time step (1 hour) base on either the previous hourly
+GFMC or the initial start value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time.step</code></td>
+<td>
+<p>Time step (hour) [default 1 hour]</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>roFL</code></td>
+<td>
+<p>The nominal fuel load of the fine fuel layer, default is 0.3
+kg/m^2</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>out</code></td>
+<td>
+<p>Output format, default is "GFMCandMC", which contains both GFMC
+and moisture content (MC) in a data.frame format. Other choices include:
+"GFMC", "MC", and "ALL", which include both the input and GFMC and MC.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>gfmc</code> returns GFMC and moisture content (MC) values
+collectively (default) or separately.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Xianli Wang, Mike Wotton, Alan Cantin, and Mike Flannigan
+</p>
+
+
+<h3>References</h3>
+
+<p>Wotton, B.M. 2009. A grass moisture model for the Canadian
+Forest Fire Danger Rating System. In: Proceedings 8th Fire and Forest
+Meteorology Symposium, Kalispell, MT Oct 13-15, 2009. Paper 3-2.
+<a href="https://ams.confex.com/ams/pdfpapers/155930.pdf">https://ams.confex.com/ams/pdfpapers/155930.pdf</a>
+</p>
+<p>Van Wagner, C.E. 1977. A method of computing fine fuel moisture content
+throughout the diurnal cycle. Environment Canada, Canadian Forestry Service,
+Petawawa Forest Experiment Station, Chalk River, Ontario. Information Report
+PS-X-69. <a href="https://cfs.nrcan.gc.ca/pubwarehouse/pdfs/25591.pdf">https://cfs.nrcan.gc.ca/pubwarehouse/pdfs/25591.pdf</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fwi</code>, <code>hffmc</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+library(cffdrs)
+# load the test data
+data("test_gfmc")
+# show the data format:
+head(test_gfmc)
+#     yr mon day hr temp   rh   ws prec  isol
+# 1 2006   5  17 10 15.8 54.6  5.0    0 0.340
+# 2 2006   5  17 11 16.3 52.9  5.0    0 0.380
+# 3 2006   5  17 12 18.8 45.1  5.0    0 0.626
+# 4 2006   5  17 13 20.4 40.8  9.5    0 0.656
+# 5 2006   5  17 14 20.1 41.7  8.7    0 0.657
+# 6 2006   5  17 15 18.6 45.8 13.5    0 0.629
+# (1) gfmc default:
+# Re-order the data by year, month, day, and hour:
+dat &lt;- test_gfmc[with(test_gfmc, order(yr, mon, day, hr)), ]
+# Because the test data has 24 hours input variables
+# it is possible to calculate the hourly GFMC continuously
+# through multiple days(with the default initial GFMCold=85):
+dat$gfmc_default &lt;- gfmc(dat,out="GFMC")
+# two variables will be added to the input, GFMC and MC
+head(dat)
+# (2) For multiple weather stations:
+# One time step (1 hour) with default initial value:
+foo &lt;- gfmc(dat, batch = FALSE)
+# Chronological hourly GFMC with only one initial
+# value (GFMCold=85), but multiple weather stations.
+# Note: data is ordered by date/time and the station id. Subset
+# the data by keeping only the first 10 hours of observations
+# each day:
+dat1 &lt;- subset(dat, hr %in% c(0:9))
+# assuming observations were from the same day but with
+# 9 different weather stations:
+dat1$day &lt;- NULL
+dat1 &lt;- dat1[with(dat1, order(yr, mon, hr)), ]
+dat1$id &lt;- rep(1:8, nrow(dat1) / 8)
+# check the data:
+head(dat1)
+# Calculate GFMC for multiple stations:
+dat1$gfmc01 &lt;- gfmc(dat1, batch = TRUE)
+# We can provide multiple initial GFMC (GFMCold) as a vector:
+dat1$gfmc02 &lt;- gfmc(
+  dat1,
+  GFMCold = sample(70:100, 8, replace = TRUE),
+  batch = TRUE
+)
+# (3)output argument
+## include all inputs and outputs:
+dat0 &lt;- dat[with(dat, order(yr, mon, day, hr)), ]
+foo &lt;- gfmc(dat, out = "ALL")
+## subhourly time step:
+gfmc(dat0, time.step = 1.5)
+
+</code></pre>
+
+
+</div>

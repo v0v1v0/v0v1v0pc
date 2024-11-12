@@ -1,0 +1,103 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>edges_to_sf</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Convert edge list to spatial object</h2>
+
+<h3>Description</h3>
+
+<p>Converts an edge list to an <code>sf</code> spatial object of type <code>LINESTRING</code> with
+one row per edge.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">edges_to_sf(edges, sites)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>edges</code></td>
+<td>
+<p>a <code>data.frame</code> with the following two columns: <code>from</code> (the
+first node of the edge) and <code>to</code> (the second node of the edge). The output
+of the functions <code>create_edge_list()</code> or <code>append_edge_lists()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sites</code></td>
+<td>
+<p>an <code>sf</code> object of type <code>POINT</code>. A spatial object with
+coordinates of sites (nodes). Note that the <strong>first column</strong> must be the
+node labels.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An <code>sf</code> spatial object of type <code>LINESTRING</code> where the number of rows
+correspond to the number of edges.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Import Adour sites ----
+path_to_file &lt;- system.file("extdata", "adour_survey_sampling.csv", 
+                            package = "chessboard")
+adour_sites  &lt;- read.csv(path_to_file)
+
+# Select first location ----
+adour_sites &lt;- adour_sites[adour_sites$"location" == 1, ]
+
+# Create node labels ----
+adour_nodes &lt;- create_node_labels(data     = adour_sites, 
+                                  location = "location", 
+                                  transect = "transect", 
+                                  quadrat = "quadrat")
+
+# Find edges with 1 degree of neighborhood (pawn method) ----
+adour_edges &lt;- create_edge_list(adour_nodes, method = "pawn", 
+                                directed = TRUE)
+
+# Convert sites to spatial POINT ----
+adour_sites_sf &lt;- sf::st_as_sf(adour_nodes, coords = 5:6, crs = "epsg:2154")
+
+# Convert edges to spatial LINESTRING ----
+edges_sf &lt;- edges_to_sf(adour_edges, adour_sites_sf)
+head(edges_sf)
+
+# Visualization ----
+plot(sf::st_geometry(adour_sites_sf), pch = 19)
+plot(sf::st_geometry(edges_sf), add = TRUE)
+
+
+# Find edges with 1 degree of neighborhood (pawn and bishop methods) ----
+adour_edges_1 &lt;- create_edge_list(adour_nodes, method = "pawn", 
+                                  directed = TRUE)
+adour_edges_2 &lt;- create_edge_list(adour_nodes, method = "bishop", 
+                                  directed = TRUE)
+
+# Append edges ----
+adour_edges &lt;- append_edge_lists(adour_edges_1, adour_edges_2)
+
+# Convert sites to spatial POINT ----
+adour_sites_sf &lt;- sf::st_as_sf(adour_nodes, coords = 5:6, crs = "epsg:2154")
+
+# Convert edges to spatial LINESTRING ----
+edges_sf &lt;- edges_to_sf(adour_edges, adour_sites_sf)
+head(edges_sf)
+
+# Visualization ----
+plot(sf::st_geometry(adour_sites_sf), pch = 19)
+plot(sf::st_geometry(edges_sf), add = TRUE)
+</code></pre>
+
+
+</div>

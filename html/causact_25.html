@@ -1,0 +1,95 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>dag_numpyro</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate a representative sample of the posterior distribution</h2>
+
+<h3>Description</h3>
+
+<p>Generate a representative sample of the posterior distribution.  The input graph object should be of class <code>causact_graph</code> and created using <code>dag_create()</code>.  The specification of a completely consistent joint distribution is left to the user.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">dag_numpyro(
+  graph,
+  mcmc = TRUE,
+  num_warmup = 1000,
+  num_samples = 4000,
+  seed = 1234567
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>graph</code></td>
+<td>
+<p>a graph object of class <code>causact_graph</code> representing a complete and conistent specification of a joint distribution.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcmc</code></td>
+<td>
+<p>a logical value indicating whether to sample from the posterior distribution.  When <code>mcmc=FALSE</code>, the numpyro code is printed to the console, but not executed.  The user can cut and paste the code to another script for running line-by-line.  This option is most useful for debugging purposes. When <code>mcmc=TRUE</code>, the code is executed and outputs a dataframe of posterior draws.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>num_warmup</code></td>
+<td>
+<p>an integer value for the number of initial steps that will be discarded while the markov chain finds its way into the typical set.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>num_samples</code></td>
+<td>
+<p>an integer value for the number of samples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>an integer-valued random seed that serves as a starting point for a random number generator. By setting the seed to a specific value, you can ensure the reproducibility and consistency of your results.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>If <code>mcmc=TRUE</code>, returns a dataframe of posterior distribution samples corresponding to the input <code>causact_graph</code>.  Each column is a parameter and each row a draw from the posterior sample output.  If <code>mcmc=FALSE</code>, running <code>dag_numpyro</code> returns a character string of code that would help the user generate the posterior distribution; useful for debugging.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">graph = dag_create() %&gt;%
+  dag_node("Get Card","y",
+           rhs = bernoulli(theta),
+           data = carModelDF$getCard) %&gt;%
+  dag_node(descr = "Card Probability by Car",label = "theta",
+           rhs = beta(2,2),
+           child = "y") %&gt;%
+  dag_node("Car Model","x",
+           data = carModelDF$carModel,
+           child = "y") %&gt;%
+  dag_plate("Car Model","x",
+            data = carModelDF$carModel,
+            nodeLabels = "theta")
+
+graph %&gt;% dag_render()
+numpyroCode = graph %&gt;% dag_numpyro(mcmc=FALSE)
+## Not run: 
+## default functionality returns a data frame
+# below requires numpyro installation
+drawsDF = graph %&gt;% dag_numpyro()
+drawsDF %&gt;% dagp_plot()
+
+## End(Not run)
+</code></pre>
+
+
+</div>

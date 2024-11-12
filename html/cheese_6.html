@@ -1,0 +1,139 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>dish</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Evaluate a two-argument function with combinations of columns</h2>
+
+<h3>Description</h3>
+
+<p>Split up columns into groups and apply a function to combinations of those columns with control over whether each group is entered as a single <code>data.frame</code> or individual <code>vector</code>'s.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">dish(
+    data,
+    f,
+    left,
+    right,
+    each_left = TRUE,
+    each_right = TRUE,
+    ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A <code>data.frame</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+<p>A <code>function</code> that takes a <code>vector</code> and/or <code>data.frame</code> in the first two arguments.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>left</code></td>
+<td>
+<p>A vector of quoted/unquoted columns, positions, and/or <code>tidyselect::select_helpers</code> to be evaluated in the first argument of <code>f</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>right</code></td>
+<td>
+<p>A vector of quoted/unquoted columns, positions, and/or <code>tidyselect::select_helpers</code> to be evaluated in the second argument of <code>f</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>each_left</code></td>
+<td>
+<p>Should each <code>left</code> variable be indivdually evaluated in <code>f</code>? Defaults to <code>TRUE</code>. If <code>FALSE</code>, <code>left</code> columns are entered into <code>f</code> as a single <code>data.frame</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>each_right</code></td>
+<td>
+<p>Should each <code>right</code> variable be individually evaluated in <code>f</code>? Defaults to <code>TRUE</code>. If <code>FALSE</code>, <code>right</code> columns are entered into <code>f</code> as a single <code>data.frame</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to be passed to <code>f</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A <code>list</code> 
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Alex Zajichek</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#All variables on both sides
+heart_disease %&gt;%
+    dplyr::select(
+        where(is.numeric)
+    ) %&gt;%
+    dish(
+        f = cor
+    )
+
+#Simple regression of each numeric variable on each other variable
+heart_disease %&gt;%
+    dish(
+        f =
+            function(y, x) {
+                mod &lt;- lm(y ~ x)
+                tibble::tibble(
+                    Parameter = names(mod$coef),
+                    Estimate = mod$coef
+                )
+            },
+        left = where(is.numeric)
+    ) %&gt;%
+    
+    #Bind rows together
+    fasten(
+        into = c("Outcome", "Predictor")
+    )
+
+#Multiple regression of each numeric variable on all others simultaneously
+heart_disease %&gt;%
+    dish(
+        f =
+            function(y, x) {
+                mod &lt;- lm(y ~ ., data = x)
+                tibble::tibble(
+                    Parameter = names(mod$coef),
+                    Estimate = mod$coef
+                )
+            },
+        left = where(is.numeric),
+        each_right = FALSE
+    ) %&gt;%
+    
+    #Bind rows together
+    fasten(
+        into = "Outcome"
+    )
+
+</code></pre>
+
+
+</div>

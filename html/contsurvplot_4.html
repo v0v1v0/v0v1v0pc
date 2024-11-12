@@ -1,0 +1,420 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>plot_surv_animated</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Create an Animated Plot of Survival Curves of CIFs as a Function of a Continuous Variable
+</h2>
+
+<h3>Description</h3>
+
+<p>Using a previously fit time-to-event model, this function plots a single covariate-specific survival curve or CIF. Using either the <span class="pkg">plotly</span> or the <span class="pkg">gganimate</span> package, an animated plot is created that is either simply showing how the curve evolves over values of the continuous covariate, or includes a slide to let the user interact with it.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">plot_surv_animated(time, status, variable, group=NULL,
+                   data, model, cif=FALSE, conf_int=FALSE,
+                   conf_level=0.95, n_boot=300,
+                   na.action=options()$na.action,
+                   horizon=NULL, fixed_t=NULL, max_t=Inf,
+                   slider=TRUE, size=1, color="black",
+                   linetype="solid", alpha=1,
+                   xlab="Time", ylab="Survival Probability",
+                   title=NULL, subtitle=NULL,
+                   gg_theme=ggplot2::theme_bw(),
+                   facet_args=list(), ci_alpha=0.4,
+                   kaplan_meier=FALSE, km_size=0.5,
+                   km_linetype="solid", km_alpha=1,
+                   km_color="black", km_ci=FALSE,
+                   km_ci_type="plain", km_ci_level=0.95,
+                   km_ci_alpha=0.4, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+
+<p>A single character string specifying the time-to-event variable. Needs to be a valid column name of a numeric variable in <code>data</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>status</code></td>
+<td>
+
+<p>A single character string specifying the status variable, indicating if a person has experienced an event or not. Needs to be a valid column name of a numeric or logical variable in <code>data</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>variable</code></td>
+<td>
+
+<p>A single character string specifying the continuous variable of interest, for which the survival curves should be estimated. This variable has to be contained in the <code>data.frame</code> that is supplied to the <code>data</code> argument.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>group</code></td>
+<td>
+
+<p>An optional single character string specifying a factor variable in <code>data</code>. When used, the plot is created conditional on this factor variable, meaning that a facetted plot is produced with one facet for each level of the factor variable. See <code>curve_cont</code> for a detailed description of the estimation strategy. Set to <code>NULL</code> (default) to use no grouping variable.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+
+<p>A <code>data.frame</code> containing all required variables.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+
+<p>A model describing the time-to-event process (such as an <code>coxph</code> model). Needs to include <code>variable</code> as an independent variable. It also has to have an associated <code>predictRisk</code> method. See <code>?predictRisk</code> for more details.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cif</code></td>
+<td>
+
+<p>Whether to plot the cumulative incidence (CIF) instead of the survival probability. If multiple failure types are present, the survival probability cannot be estimated in an unbiased way. This function will always return CIF estimates in that case.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conf_int</code></td>
+<td>
+
+<p>Whether to plot point-wise bootstrap confidence intervals or not. Currently only supported when using <code>slider=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conf_level</code></td>
+<td>
+
+<p>A number specifying the confidence level of the bootstrap confidence intervals. Ignored if <code>conf_int=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_boot</code></td>
+<td>
+
+<p>A single integer specifying how many bootstrap repetitions should be performed. Ignored if  <code>conf_int=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.action</code></td>
+<td>
+
+<p>How missing values should be handled. Can be one of: <code>na.fail</code>, <code>na.omit</code>, <code>na.pass</code>, <code>na.exclude</code> or a user-defined custom function. Also accepts strings of the function names. See <code>?na.action</code> for more details. By default it uses the na.action which is set in the global options by the respective user.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>horizon</code></td>
+<td>
+
+<p>A numeric vector containing a range of values of <code>variable</code> for which the survival curves should be calculated or <code>NULL</code> (default). If <code>NULL</code>, the horizon is constructed as a sequence from the lowest to the highest value observed in <code>variable</code> with 40 equally spaced steps.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixed_t</code></td>
+<td>
+
+<p>A numeric vector containing points in time at which the survival probabilities should be calculated or <code>NULL</code> (default). If <code>NULL</code>, the survival probability is estimated at every point in time at which an event occurred.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_t</code></td>
+<td>
+
+<p>A number indicating the latest survival time which is to be plotted.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>slider</code></td>
+<td>
+
+<p>Whether to include a slider that controls the value of the continuous covariate or not. If not, the plot simply cycles through the values in <code>horizon</code> at a constant speed.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>size</code></td>
+<td>
+
+<p>A single number specifying the size of the drawn curve.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>color</code></td>
+<td>
+
+<p>A single character string specifying the color of the curve.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>linetype</code></td>
+<td>
+
+<p>A single character string specifying the linetype of the curve.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+
+<p>The transparency level of the plot.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xlab</code></td>
+<td>
+
+<p>A character string used as the x-axis label of the plot.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ylab</code></td>
+<td>
+
+<p>A character string used as the y-axis label of the plot.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>title</code></td>
+<td>
+
+<p>A character string used as the title of the plot. When <code>slider=FALSE</code> is used, the title is also used in a dynamic way to show which value the continuous variable currently has. The user-defined title is still shown, but the covariate level is also appended to it in that case.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subtitle</code></td>
+<td>
+
+<p>A character string used as the subtitle of the plot.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gg_theme</code></td>
+<td>
+
+<p>A <span class="pkg">ggplot2</span> theme which is applied to the plot.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>facet_args</code></td>
+<td>
+
+<p>A named list of arguments that are passed to the <code>facet_wrap</code> function call when creating a plot separated by groups. Ignored if <code>group=NULL</code>. Any argument except the <code>facets</code> argument of the <code>facet_wrap</code> function can be used. For example, if the user wants to allow free y-scales, this argument could be set to <code>list(scales="free_y")</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ci_alpha</code></td>
+<td>
+
+<p>A single number defining the transparency level of the confidence interval bands.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kaplan_meier</code></td>
+<td>
+
+<p>Whether to add a standard Kaplan-Meier estimator to the plot or not. If <code>group</code> is defined, the Kaplan-Meier estimator will be stratified by the grouping variable. If <code>cif=TRUE</code> was used, the cumulative incidence will be displayed instead of the survival curve.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>km_size</code></td>
+<td>
+
+<p>The size of the Kaplan-Meier line. Ignored if <code>kaplan_meier=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>km_linetype</code></td>
+<td>
+
+<p>The linetype of the Kaplan-Meier line. Ignored if <code>kaplan_meier=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>km_alpha</code></td>
+<td>
+
+<p>The transparency level of the Kaplan-Meier line. Ignored if <code>kaplan_meier=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>km_color</code></td>
+<td>
+
+<p>The color of the Kaplan-Meier line. Ignored if <code>kaplan_meier=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>km_ci</code></td>
+<td>
+
+<p>Whether to draw a confidence interval around the Kaplan-Meier estimates. Ignored if <code>kaplan_meier=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>km_ci_type</code></td>
+<td>
+
+<p>Which type of confidence interval to calculate for the Kaplan-Meier estimates. Corresponds to the <code>conf.type</code> argument in the <code>survfit</code> function. Ignored if <code>kaplan_meier=FALSE</code> or <code>km_ci=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>km_ci_level</code></td>
+<td>
+
+<p>Which confidence level to use for the confidence interval of the Kaplan-Meier estimates. Ignored if <code>kaplan_meier=FALSE</code> or <code>km_ci=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>km_ci_alpha</code></td>
+<td>
+
+<p>The transparency level of the confidence interval of the Kaplan-Meier estimates. Ignored if <code>kaplan_meier=FALSE</code> or <code>km_ci=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+
+<p>Further arguments passed to <code>curve_cont</code>.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>When the plot doesn't have to be on paper, it is also possible to use animation to represent how the survival curve or CIF changes when different values of a continuous covariate are used. There are two options included in this function. The first one is creating a plot with a slider that can be interactively manipulated by the user (argument <code>slider=TRUE</code>). The second option creates a .gif file in which the continuous variable changes constantly over time (argument <code>slider=FALSE</code>).
+</p>
+<p>This type of plot is only useful when visualizing the effect on a computer. It is also important to keep in mind that these plots might look slightly different to users with different hardware and or software.
+</p>
+<p>An additional interactive plot can be created using the <code>plot_surv_3Dsurface</code> function with <code>interactive=TRUE</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a <code>plotly</code> object if <code>slider=TRUE</code> and a <code>gganim</code> object if <code>slider=FALSE</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Robin Denz
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(contsurvplot)
+library(riskRegression)
+library(survival)
+library(splines)
+library(ggplot2)
+library(gganimate)
+library(transformr)
+library(plotly)
+
+# using data from the survival package
+data(nafld, package="survival")
+
+# take a random sample to keep example fast
+set.seed(42)
+nafld1 &lt;- nafld1[sample(nrow(nafld1), 150), ]
+
+# fit cox-model with age
+model &lt;- coxph(Surv(futime, status) ~ age, data=nafld1, x=TRUE)
+
+if (interactive()) {
+# plot effect of age on survival for ages 50 to 80
+plot_surv_animated(time="futime",
+                   status="status",
+                   variable="age",
+                   data=nafld1,
+                   model=model,
+                   horizon=seq(50, 80, 1),
+                   slider=TRUE)
+
+# plot effect of age on survival using an interactive plot for ages 50 to 80
+plot_surv_animated(time="futime",
+                   status="status",
+                   variable="age",
+                   data=nafld1,
+                   model=model,
+                   horizon=seq(50, 80, 1),
+                   slider=FALSE)
+}
+
+## showing non-linear effects
+
+# fit cox-model with bmi modeled using B-Splines,
+# adjusting for age and sex
+model2 &lt;- coxph(Surv(futime, status) ~ age + male + bs(bmi, df=3),
+                data=nafld1, x=TRUE)
+
+if (interactive()) {
+# plot effect of bmi on survival using slider
+plot_surv_animated(time="futime",
+                   status="status",
+                   variable="bmi",
+                   data=nafld1,
+                   model=model2,
+                   slider=TRUE)
+
+# plot effect of bmi on survival using a .gif
+plot_surv_animated(time="futime",
+                   status="status",
+                   variable="bmi",
+                   data=nafld1,
+                   model=model2,
+                   slider=FALSE)
+}
+</code></pre>
+
+
+</div>

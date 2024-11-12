@@ -1,0 +1,165 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>latentAttrition</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Formula Interface for Latent Attrition Models</h2>
+
+<h3>Description</h3>
+
+<p>Fit latent attrition models for transaction behavior, using a formula to specify the covariates.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">latentAttrition(
+  formula,
+  family,
+  data,
+  optimx.args = list(),
+  verbose = TRUE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>Formula to select and transform covariates in <code>data</code>. Has to be left empty if <code>data</code> contains no covariates. See Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>A latentAttrition model. One of <code>pnbd</code>,  <code>bgnbd</code>, or <code>ggomnbd</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A <code>clv.data</code> object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimx.args</code></td>
+<td>
+<p>Additional arguments to control the optimization which are forwarded to <code>optimx::optimx</code>.
+If multiple optimization methods are specified, only the result of the last method is further processed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Show details about the running of the function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Forwarded to model specified in <code>family</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>A two-part formula is used to select and transform the covariates stored in <code>data</code> before the model is estimated on it.
+May not be given if <code>data</code> contains no covariates.
+</p>
+<p>The formula left hand side (LHS) has to remain empty and may never be specified.
+</p>
+<p>The formula right hand side (RHS) follows a two-part notation using <code>|</code> as separator.
+</p>
+
+<ul>
+<li>
+<p> 1st part: Which covariates to include for the lifetime process, potentially transforming them and adding interactions. The dot ('.') refers to all lifetime covariates.
+</p>
+</li>
+<li>
+<p> 2nd part: Which covariates to include for the transaction process, potentially transforming them and adding interactions. The dot ('.') refers to all transaction covariates
+</p>
+</li>
+</ul>
+<p>e.g: <code> ~ covlife | covtrans</code>
+</p>
+<p>See the example section for illustrations on how to specify the formula parameter.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Models for inputs to family: pnbd, ggomnbd, bgnbd.
+</p>
+<p>spending to fit spending models with a formula interface
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+data("apparelTrans")
+data("apparelStaticCov")
+
+clv.nocov &lt;-
+    clvdata(apparelTrans, time.unit="w", date.format="ymd")
+
+# Create static covariate data with 2 covariates
+clv.staticcov  &lt;-
+  SetStaticCovariates(clv.nocov,
+                      data.cov.life  = apparelStaticCov,
+                      names.cov.life = c("Gender", "Channel"),
+                      data.cov.trans = apparelStaticCov,
+                      names.cov.trans = c("Gender", "Channel"))
+
+# Fit models without covariates.
+# Note that NO formula may be specified in this case
+latentAttrition(formula =, family=pnbd, data=clv.nocov)
+latentAttrition(formula =, family=bgnbd, data=clv.nocov)
+latentAttrition(formula =, family=ggomnbd, data=clv.nocov)
+
+# Fit pnbd with start parameters and correlation
+# required args are passed as part of '...'
+latentAttrition(formula =, family=pnbd, data=clv.nocov,
+                use.cor=TRUE,
+                start.params.model=c(r=1, alpha=10, s=2, beta=8))
+
+
+# Fit pnbd with all present covariates
+latentAttrition(formula=~.|., family=pnbd, data=clv.staticcov)
+
+# Fit pnbd with selected covariates
+latentAttrition(formula=~Gender|Channel+Gender, family=pnbd,
+                data=clv.staticcov)
+
+# Fit pnbd with start parameters for covariates
+latentAttrition(formula=~Gender|., family=pnbd,
+                data=clv.staticcov,
+                start.params.life = c(Gender = 0.6),
+                start.params.trans = c(Gender = 0.6, Channel = 0.4))
+
+# Fit pnbd with transformed covariate data
+latentAttrition(formula=~Gender|I(log(Channel+2)), family=pnbd,
+                data=clv.staticcov)
+
+# Fit pnbd with all covs and regularization
+latentAttrition(formula=~.|., family=pnbd, data=clv.staticcov,
+                reg.lambdas = c(life=3, trans=8))
+
+# Fit pnbd with all covs and constraint parameters for Channel
+latentAttrition(formula=~.|., family=pnbd, data=clv.staticcov,
+                names.cov.constr='Channel')
+
+
+
+
+</code></pre>
+
+
+</div>

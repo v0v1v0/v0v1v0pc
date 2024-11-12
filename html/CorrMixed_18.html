@@ -1,0 +1,279 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>WS.Corr.Mixed</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Estimate within-subject correlations (reliabilities) based on a mixed-effects model.
+</h2>
+
+<h3>Description</h3>
+
+<p>This function allows for the estimation of the within-subject correlations using a general and flexible modeling approach that allows at the same time to capture hierarchies in the data, the presence of covariates, and the derivation of correlation estimates. Non-parametric bootstrap-based confidence intervals can be requested. </p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">WS.Corr.Mixed(Dataset, Fixed.Part=" ", Random.Part=" ", 
+Correlation=" ", Id, Time=Time, Model=1, 
+Number.Bootstrap=100, Alpha=.05, Seed=1)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Dataset</code></td>
+<td>
+<p>A <code>data.frame</code> that should consist of multiple lines per subject ('long' format).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Fixed.Part</code></td>
+<td>
+<p>The outcome and fixed-effect part of the mixed-effects model to be fitted. The model should be specified in agreement with the <code>lme</code> function requirements of the <code>nlme</code> package. See <b>examples</b> below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Random.Part</code></td>
+<td>
+<p>The random-effect part of the mixed-effects model to be fitted (specified in line with the <code>lme</code> function requirements). See <b>examples</b> below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Correlation</code></td>
+<td>
+<p>An optional object describing the within-group correlation structure (specified in line with the <code>lme</code> function requirements). See <b>examples</b> below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Id</code></td>
+<td>
+<p>The subject indicator.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Time</code></td>
+<td>
+<p>The time indicator. Default <code>Time=Time</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Model</code></td>
+<td>
+<p>The type of model that should be fitted. <code>Model=1</code>: random intercept model, <code>Model=2</code>: random intercept and Gaussian serial correlation, <code>Model=3</code>: random intercept,  slope, and Gaussian serial correlation, and  <code>Model=4</code>: random intercept + slope. Default <code>Model=1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Number.Bootstrap</code></td>
+<td>
+<p>The number of bootstrap samples to be used to estimate the Confidence Intervals around <code class="reqn">R</code>.  Default <code>Number.Bootstrap=100</code>. As an alternative to obtain confidence intervals, the Delta method can be used (see WS.Corr.Mixed.SAS). </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Alpha</code></td>
+<td>
+<p>The <code class="reqn">\alpha</code>-level to be used in the bootstrap-based Confidence Interval for <code class="reqn">R</code>. Default <code class="reqn">Alpha=0.05</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Seed</code></td>
+<td>
+<p>The seed to be used in the bootstrap. Default <code class="reqn">Seed=1</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><b>Warning 1</b>
+</p>
+<p>To avoid problems with the <code>lme</code> function, do not specify powers directly in the function call. For example, rather than specifying <code>Fixed.Part=ZSV ~ Time + Time**2</code> in the function call, first add <code>Time**2</code> to the dataset 
+(<code>Dataset$TimeSq &lt;- Dataset$Time ** 2</code>) and then use the new variable name in the call:
+<code>Fixed.Part=ZSV ~ Time + TimeSq</code>
+</p>
+<p><b>Warning 2</b>
+To avoid problems with the <code>lme</code> function, specify the Random.Part and Correlation arguments like e.g.,
+<code>Random.Part = ~ 1| Subject</code> and 
+<code>Correlation=corGaus(form= ~ Time, nugget = TRUE)</code>
+</p>
+<p>not like e.g., 
+<code>Random.Part = ~ 1| Subject</code> and
+<code>Correlation=corGaus(form= ~ Time| Subject, nugget = TRUE)</code> 
+</p>
+<p>(i.e., do not use <code>Time| Subject</code>)
+</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Model</code></td>
+<td>
+<p>The type of model that was fitted (model <code class="reqn">1</code>, <code class="reqn">2</code>, or <code class="reqn">3</code>.)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>D</code></td>
+<td>
+<p>The <code class="reqn">D</code> matrix of the fitted model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Tau2</code></td>
+<td>
+<p>The <code class="reqn">\tau^2</code> component of the fitted model. This component is only obtained when serial correlation is requested (Model <code class="reqn">2</code> or <code class="reqn">3</code>), <code class="reqn">\varepsilon_{2}  \sim N(0, \tau^2 H_{i}))</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Rho</code></td>
+<td>
+<p>The <code class="reqn">\rho</code> component of the fitted model which determines the matrix <code class="reqn">H_{i}</code>, <code class="reqn">\rho(|t_{ij}-t_{ik}|)</code>. This component is only obtained when serial correlation is considered (Model <code class="reqn">2</code> or <code class="reqn">3</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Sigma2</code></td>
+<td>
+<p>The residual variance.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>AIC</code></td>
+<td>
+<p>The AIC value of the fitted model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>LogLik</code></td>
+<td>
+<p>The log likelihood value of the fitted model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>R</code></td>
+<td>
+<p>The estimated reliabilities.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CI.Upper</code></td>
+<td>
+<p>The upper bounds of the bootstrapped confidence intervals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CI.Lower</code></td>
+<td>
+<p>The lower bounds of the bootstrapped confidence intervals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Alpha</code></td>
+<td>
+<p>The <code class="reqn">\alpha</code> level used in the estimation of the confidence interval.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Coef.Fixed</code></td>
+<td>
+<p>The estimated fixed-effect parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Std.Error.Fixed</code></td>
+<td>
+<p>The standard errors of the fixed-effect parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Time</code></td>
+<td>
+<p>The time values in the dataset.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Fitted.Model</code></td>
+<td>
+<p>A fitted model of class <code>lme</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Wim Van der Elst, Geert Molenberghs, Ralf-Dieter Hilgers, &amp; Nicole Heussen
+</p>
+
+
+<h3>References</h3>
+
+<p>Van der Elst, W., Molenberghs, G., Hilgers, R., &amp; Heussen, N. (2015). Estimating the reliability of repeatedly measured endpoints based on linear mixed-effects models. A tutorial. <em>Submitted.</em>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>Explore.WS.Corr, WS.Corr.Mixed.SAS</code> 
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># open data
+data(Example.Data)
+
+# Make covariates used in mixed model
+Example.Data$Time2 &lt;- Example.Data$Time**2
+Example.Data$Time3 &lt;- Example.Data$Time**3
+Example.Data$Time3_log &lt;- (Example.Data$Time**3) * (log(Example.Data$Time))
+
+# model 1: random intercept model
+Model1 &lt;- WS.Corr.Mixed(
+Fixed.Part=Outcome ~ Time2 + Time3 + Time3_log + as.factor(Cycle) 
++ as.factor(Condition), Random.Part = ~ 1|Id, 
+Dataset=Example.Data, Model=1, Id="Id", Number.Bootstrap = 50, 
+Seed = 12345)
+
+  # summary of the results
+summary(Model1)
+  # plot the results
+plot(Model1)
+
+## Not run: time-consuming code parts
+# model 2: random intercept + Gaussian serial corr
+Model2 &lt;- WS.Corr.Mixed(
+Fixed.Part=Outcome ~ Time2 + Time3 + Time3_log + as.factor(Cycle) 
++ as.factor(Condition), Random.Part = ~ 1|Id, 
+Correlation=corGaus(form= ~ Time, nugget = TRUE),
+Dataset=Example.Data, Model=2, Id="Id", Seed = 12345)
+
+  # summary of the results
+summary(Model2)
+
+  # plot the results
+    # estimated corrs as a function of time lag (default plot)
+plot(Model2)
+    # estimated corrs for all pairs of time points
+plot(Model2, All.Individual = T)
+
+# model 3
+Model3 &lt;- WS.Corr.Mixed(
+  Fixed.Part=Outcome ~ Time2 + Time3 + Time3_log + as.factor(Cycle) 
+  + as.factor(Condition), Random.Part = ~ 1 + Time|Id, 
+  Correlation=corGaus(form= ~ Time, nugget = TRUE),
+  Dataset=Example.Data, Model=3, Id="Id", Seed = 12345)
+
+  # summary of the results
+summary(Model3)
+
+  # plot the results
+    # estimated corrs for all pairs of time points
+plot(Model3)
+    # estimated corrs as a function of time lag
+
+## End(Not run)
+</code></pre>
+
+
+</div>

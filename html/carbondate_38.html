@@ -1,0 +1,342 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>WalkerBivarDirichlet</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calibrate and Summarise Multiple Radiocarbon Samples via
+a Bayesian Non-Parametric DPMM (with Walker Updating)</h2>
+
+<h3>Description</h3>
+
+<p>This function calibrates sets of multiple radiocarbon (<code class="reqn">{}^{14}</code>C)
+determinations, and simultaneously summarises the resultant calendar age information.
+This is achieved using Bayesian non-parametric density estimation,
+providing a statistically-rigorous alternative to summed probability
+distributions (SPDs).
+</p>
+<p>It takes as an input a set of <code class="reqn">{}^{14}</code>C determinations and associated <code class="reqn">1\sigma</code>
+uncertainties, as well as the radiocarbon age calibration curve to be used. The samples
+are assumed to arise from an (unknown) shared calendar age distribution <code class="reqn">f(\theta)</code> that
+we would like to estimate, alongside performing calibration of each sample.
+</p>
+<p>The function models the underlying distribution <code class="reqn">f(\theta)</code> as a Dirichlet process
+mixture model (DPMM), whereby the samples are considered to arise from an unknown number of
+distinct clusters. Fitting is achieved via MCMC.
+</p>
+<p>It returns estimates for the calendar age of each individual radiocarbon sample; and broader
+output (the weights, means and variances of the underpinning calendar age clusters)
+that can be used by other library functions to provide a predictive estimate of the
+shared calendar age density <code class="reqn">f(\theta)</code>.
+</p>
+<p>For more information read the vignette: <br><code>vignette("Non-parametric-summed-density", package = "carbondate")</code>
+</p>
+<p><strong>Note:</strong> The library provides two slightly-different update schemes for the MCMC. In this particular function, updating of the DPMM is achieved by slice sampling
+(Walker 2007). We recommend use of the alternative to this, implemented at PolyaUrnBivarDirichlet
+</p>
+<p><strong>Reference:</strong> <br>
+Heaton, TJ. 2022. “Non-parametric Calibration of Multiple Related Radiocarbon
+Determinations and their Calendar Age Summarisation.” <em>Journal of the Royal Statistical
+Society Series C: Applied Statistics</em> <strong>71</strong> (5):1918-56. https://doi.org/10.1111/rssc.12599. <br>
+Walker, SG. 2007. “Sampling the Dirichlet Mixture Model with Slices.” <em>Communications in
+Statistics - Simulation and Computation</em> <strong>36</strong> (1):45-54. https://doi.org/10.1080/03610910601096262.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">WalkerBivarDirichlet(
+  rc_determinations,
+  rc_sigmas,
+  calibration_curve,
+  F14C_inputs = FALSE,
+  n_iter = 1e+05,
+  n_thin = 10,
+  use_F14C_space = TRUE,
+  slice_width = NA,
+  slice_multiplier = 10,
+  show_progress = TRUE,
+  sensible_initialisation = TRUE,
+  lambda = NA,
+  nu1 = NA,
+  nu2 = NA,
+  A = NA,
+  B = NA,
+  alpha_shape = NA,
+  alpha_rate = NA,
+  mu_phi = NA,
+  calendar_ages = NA,
+  n_clust = min(10, length(rc_determinations))
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>rc_determinations</code></td>
+<td>
+<p>A vector of observed radiocarbon determinations. Can be provided either as
+<code class="reqn">{}^{14}</code>C ages (in <code class="reqn">{}^{14}</code>C yr BP) or as F<code class="reqn">{}^{14}</code>C concentrations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rc_sigmas</code></td>
+<td>
+<p>A vector of the (1-sigma) measurement uncertainties for the
+radiocarbon determinations. Must be the same length as <code>rc_determinations</code> and
+given in the same units.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>calibration_curve</code></td>
+<td>
+<p>A dataframe which must contain one column <code>calendar_age_BP</code>, and also
+columns <code>c14_age</code> and <code>c14_sig</code> or <code>f14c</code> and <code>f14c_sig</code> (or both sets).
+This format matches the curves supplied with this package, e.g., intcal20,
+intcal13, which contain all 5 columns.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>F14C_inputs</code></td>
+<td>
+<p><code>TRUE</code> if the provided <code>rc_determinations</code> are F<code class="reqn">{}^{14}</code>C
+concentrations and <code>FALSE</code> if they are radiocarbon ages. Defaults to <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_iter</code></td>
+<td>
+<p>The number of MCMC iterations (optional). Default is 100,000.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_thin</code></td>
+<td>
+<p>How much to thin the MCMC output (optional). Will store every
+<code>n_thin</code><code class="reqn">{}^\textrm{th}</code> iteration. 1 is no thinning, while a larger number will result
+in more thinning. Default is 10. Must choose an integer greater than 1. Overall
+number of MCMC realisations stored will be <code class="reqn">n_{\textrm{out}} =
+\textrm{floor}( n_{\textrm{iter}}/n_{\textrm{thin}}) + 1</code> so do not choose
+<code>n_thin</code> too large to ensure there are enough samples from the posterior to
+use for later inference.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use_F14C_space</code></td>
+<td>
+<p>If <code>TRUE</code> (default) the calculations within the function are carried
+out in F<code class="reqn">{}^{14}</code>C space. If <code>FALSE</code> they are carried out in <code class="reqn">{}^{14}</code>C
+age space. We recommend selecting <code>TRUE</code> as, for very old samples, calibrating in
+F<code class="reqn">{}^{14}</code>C space removes the potential affect of asymmetry in the radiocarbon age
+uncertainty.
+<em>Note:</em> This flag can be set independently of the format/scale on which
+<code>rc_determinations</code> were originally provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>slice_width</code></td>
+<td>
+<p>Parameter for slice sampling (optional). If not given a value
+is chosen intelligently based on the spread of the initial calendar ages.
+Must be given if <code>sensible_initialisation</code> is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>slice_multiplier</code></td>
+<td>
+<p>Integer parameter for slice sampling (optional).
+Default is 10. Limits the slice size to <code>slice_multiplier * slice_width</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>show_progress</code></td>
+<td>
+<p>Whether to show a progress bar in the console during
+execution. Default is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sensible_initialisation</code></td>
+<td>
+<p>Whether to use sensible values to initialise the sampler
+and an automated (adaptive) prior on <code class="reqn">\mu_{\phi}</code> and (A, B) that is informed
+by the observed <code>rc_determinations</code>. If this is <code>TRUE</code> (the recommended default), then
+all the remaining arguments below are ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda, nu1, nu2</code></td>
+<td>
+<p>Hyperparameters for the prior on the mean
+<code class="reqn">\phi_j</code> and precision <code class="reqn">\tau_j</code> of each individual calendar age
+cluster <code class="reqn">j</code>:
+</p>
+<p style="text-align: center;"><code class="reqn">(\phi_j, \tau_j)|\mu_{\phi} \sim
+\textrm{NormalGamma}(\mu_{\phi}, \lambda, \nu_1, \nu_2)</code>
+</p>
+<p> where
+<code class="reqn">\mu_{\phi}</code> is the overall cluster centering. Required if
+<code>sensible_initialisation</code> is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>A, B</code></td>
+<td>
+<p>Prior on <code class="reqn">\mu_{\phi}</code> giving the mean and precision of the
+overall centering <code class="reqn">\mu_{\phi} \sim N(A, B^{-1})</code>. Required if <code>sensible_initialisation</code> is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha_shape, alpha_rate</code></td>
+<td>
+<p>Shape and rate hyperparameters that specify
+the prior for the Dirichlet Process (DP) concentration, <code class="reqn">\alpha</code>. This
+concentration <code class="reqn">\alpha</code> determines the number of clusters we
+expect to observe among our <code class="reqn">n</code> sampled objects. The model
+places a prior on
+<code class="reqn">\alpha \sim \Gamma(\eta_1, \eta_2)</code>, where <code class="reqn">\eta_1, \eta_2</code> are
+the <code>alpha_shape</code> and <code>alpha_rate</code>. A small <code class="reqn">\alpha</code> means the DPMM is
+more concentrated (i.e. we expect fewer calendar age clusters) while a large alpha means it is less
+less concentrated (i.e. many clusters). Required if <code>sensible_initialisation</code> is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mu_phi</code></td>
+<td>
+<p>Initial value of the overall cluster centering <code class="reqn">\mu_{\phi}</code>.
+Required if <code>sensible_initialisation</code> is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>calendar_ages</code></td>
+<td>
+<p>The initial estimate for the underlying calendar ages
+(optional). If supplied, it must be a vector with the same length as
+<code>rc_determinations</code>.  Required if <code>sensible_initialisation</code> is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_clust</code></td>
+<td>
+<p>The number of clusters with which to initialise the sampler (optional). Must
+be less than the length of <code>rc_determinations</code>. Default is 10 or the length
+of <code>rc_determinations</code> if that is less than 10.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list with 11 items. The first 8 items contain output of the model, each of
+which has one dimension of size <code class="reqn">n_{\textrm{out}} =
+\textrm{floor}( n_{\textrm{iter}}/n_{\textrm{thin}}) + 1</code>. The rows in these items store
+the state of the MCMC from every <code class="reqn">n_{\textrm{thin}}</code><code class="reqn">{}^\textrm{th}</code> iteration:
+</p>
+
+<dl>
+<dt><code>cluster_identifiers</code></dt>
+<dd>
+<p>An <code class="reqn">n_{\textrm{out}}</code> by
+<code class="reqn">n_{\textrm{obs}}</code> integer matrix. Provides the cluster allocation
+(an integer between 1 and <code>n_clust</code>) for each observation on the relevant MCMC iteration.
+Information on the state of these calendar age clusters (means, precisions, and weights)
+can be found in the other output items.</p>
+</dd>
+<dt><code>alpha</code></dt>
+<dd>
+<p>A double vector of length <code class="reqn">n_{\textrm{out}}</code> giving the Dirichlet Process
+concentration parameter <code class="reqn">\alpha</code>.</p>
+</dd>
+<dt><code>n_clust</code></dt>
+<dd>
+<p>An integer vector of length <code class="reqn">n_{\textrm{out}}</code> giving
+the current number of clusters in the model.</p>
+</dd>
+<dt><code>phi</code></dt>
+<dd>
+<p>A list of length <code class="reqn">n_{\textrm{out}}</code> each entry giving
+a vector of the means of the current calendar age clusters <code class="reqn">\phi_j</code>.</p>
+</dd>
+<dt><code>tau</code></dt>
+<dd>
+<p>A list of length <code class="reqn">n_{\textrm{out}}</code> each entry giving
+a vector of the precisions of the current calendar age clusters <code class="reqn">\tau_j</code>.</p>
+</dd>
+<dt><code>weight</code></dt>
+<dd>
+<p>A list of length <code class="reqn">n_{\textrm{out}}</code> each entry giving
+the mixing weights of each calendar age cluster.</p>
+</dd>
+<dt><code>calendar_ages</code></dt>
+<dd>
+<p>An <code class="reqn">n_{\textrm{out}}</code> by <code class="reqn">n_{\textrm{obs}}</code>
+integer matrix. Gives the current estimate for the calendar age of each individual
+observation.</p>
+</dd>
+<dt><code>mu_phi</code></dt>
+<dd>
+<p>A vector of length <code class="reqn">n_{\textrm{out}}</code> giving the overall
+centering <code class="reqn">\mu_{\phi}</code> of the calendar age clusters.</p>
+</dd>
+</dl>
+<p>where <code class="reqn">n_{\textrm{obs}}</code> is the number of radiocarbon observations, i.e.,
+the length of <code>rc_determinations</code>.
+</p>
+<p>The remaining items give information about the input data, input parameters (or
+those calculated using <code>sensible_initialisation</code>) and the update_type
+</p>
+
+<dl>
+<dt><code>update_type</code></dt>
+<dd>
+<p>A string that always has the value "Walker".</p>
+</dd>
+<dt><code>input_data</code></dt>
+<dd>
+<p>A list containing the <code class="reqn">{}^{14}</code>C data used, and the name of
+the calibration curve used.</p>
+</dd>
+<dt><code>input_parameters</code></dt>
+<dd>
+<p>A list containing the values of the fixed
+hyperparameters <code>lambda</code>, <code>nu1</code>, <code>nu2</code>, <code>A</code>, <code>B</code>, <code>alpha_shape</code>, and
+<code>alpha_rate</code>, and the slice parameters <code>slice_width</code> and
+<code>slice_multiplier</code>.</p>
+</dd>
+</dl>
+<h3>See Also</h3>
+
+<p>PolyaUrnBivarDirichlet for our preferred MCMC method to update the Bayesian DPMM
+(otherwise an identical model); and PlotCalendarAgeDensityIndividualSample,
+PlotPredictiveCalendarAgeDensity and PlotNumberOfClusters
+to access the model output and estimate the calendar age information. <br><br>
+See also PPcalibrate for an an alternative (similarly rigorous) approach to
+calibration and summarisation of related radiocarbon determinations using a variable-rate Poisson process
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># NOTE: These examples are shown with a small n_iter to speed up execution.
+# When you run ensure n_iter gives convergence (try function default).
+
+walker_output &lt;- WalkerBivarDirichlet(
+    two_normals$c14_age,
+    two_normals$c14_sig,
+    intcal20,
+    n_iter = 100,
+    show_progress = FALSE)
+
+# The radiocarbon determinations can be given as F14C concentrations
+walker_output &lt;- WalkerBivarDirichlet(
+    two_normals$f14c,
+    two_normals$f14c_sig,
+    intcal20,
+    F14C_inputs = TRUE,
+    n_iter = 100,
+    show_progress = FALSE)
+</code></pre>
+
+
+</div>

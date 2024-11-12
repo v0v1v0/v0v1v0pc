@@ -1,0 +1,188 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>thornthwaite</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Thornthwaite and Mather's water balance</h2>
+
+<h3>Description</h3>
+
+<p>Calculates Thornthwaite and Mather's water balance from monthly series of precipitation and temperature. Aimed at a classification of a site's climate according to its water balance features.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">thornthwaite(series, latitude, clim_norm = NULL, first.yr = NULL,
+  last.yr = NULL, quant = c(0, 0.1, 0.25, 0.5, 0.75, 0.9, 1),
+  snow.init = 20, Tsnow = -1, TAW = 100, fr.sn.acc = 0.95,
+  snow_melt_coeff = 1)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>series</code></td>
+<td>
+<p>the monthly series of temperature and precipitation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>latitude</code></td>
+<td>
+<p>latitude of the station in degrees.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clim_norm</code></td>
+<td>
+<p>climatic normals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>first.yr</code></td>
+<td>
+<p>first year of the period over which water balance is calculated. Default is <code>NULL</code> (calculations start with the first year of the series).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>last.yr</code></td>
+<td>
+<p>last year of the period over which water balance is calculated. Default is <code>NULL</code> (calculations stop with the last year of the series).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quant</code></td>
+<td>
+<p>vector of quantiles for which water balance has to be assessed. Default is: min, 10th, 25th 50th, 75th, 90th, max.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>snow.init</code></td>
+<td>
+<p>initial water equivalent for snowpack (mm). Default is 20.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Tsnow</code></td>
+<td>
+<p>maximum temperature (monthly mean) for precipitation to be treated as snowfall. Default is -1 degree C.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>TAW</code></td>
+<td>
+<p>maximum (field capacity) for soil water retention, and initial soil water content (mm). Default is 100.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fr.sn.acc</code></td>
+<td>
+<p>fraction of snow that contributes to snowpack (0-1). 1 - fr.sn.acc is treated as liquid monthly precipitation Default is 0.95.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>snow_melt_coeff</code></td>
+<td>
+<p>monthly coefficient(s) for snowmelt. Default is 1.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The algorithm for the calculation of water balance is adapted from Thornthwaite, 1948; Thornthwaite and Mather, 1955; Thornthwaite and Mather, 1957.
+</p>
+<p><code>series</code> is a data frame with years, months, temperature and precipitation values. Names in series columns must include: year, month, Tn and Tx (minimum and maximum temperatures, respectively) or, as an alternative, Tm (mean temperatures), and P (mandatory).
+</p>
+<p><code>clim_norm</code> is a monthly data frame of climate normals, with column names: "P", "Tn", "Tx", "Tm" (precipitation, minimum, maximum and mean temperature, respectively). It can be the output of function <code>climate</code>. If <code>clim_norm</code> is not NULL, any missing value in the monthly series is substituted by the corresponding climatic value in <code>clim_norm</code>.
+</p>
+<p>At any winter season, the maximum monthly snowpack height is attained in the last month before "spring" conditions (<code>Tm</code> &gt;= <code>Tsnow</code>), even if a month with Tm &lt; Tsnow may occur later.
+</p>
+<p><code>snow_melt_coeff</code> is (are) the coefficient(s) for snow melt fraction(s) at any month where the condition for melting exists. If <code>snow_melt_coeff</code> = 1 (default), all the melting occurs in the first month when <code>Tm &gt;= Tsnow</code>; if it is a vector, melting is spread over more than one month. If the sum of coefficients is less than 1, the residual melting occurs in one further month.
+</p>
+<p>The output function is a list of two lists of data frames (balance and quantile). In both lists, data frame (and names) are the following (all variables in mm):
+</p>
+<p><code>Precipitation</code> (repeats input values);
+</p>
+<p><code>Et0</code> (potential evapotranspiration);
+</p>
+<p><code>Storage</code> (water stored in soil);
+</p>
+<p><code>Prec. - Evap.</code> (difference between precipitation and potential evapotranspiration);
+</p>
+<p><code>Deficit</code> (difference between potential and real evapotranspiration, due to water unavailability in soil);
+</p>
+<p><code>Surplus</code> (water surplus in soil, routed to runoff).
+</p>
+<p>Please, refer to the quoted references for details.
+</p>
+<p>This function requires the function <code>daylength</code> (libr. <code>geosphere</code>).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>thornthwaite</code> S3 object, consisting on a list of two lists. The first (name: W_balance) is a list of data frames containing the monthly series of all indices, the second (name: quantiles) the relevant quantiles. See details for meanings of single variables.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Giambattista Toller and Emanuele Eccel
+</p>
+
+
+<h3>References</h3>
+
+<p>Thornthwaite, C. W., 1948: An Approach toward a Rational Classification of Climate. Geographical Review, Vol. 38, No. 1(Jan.):55-94.
+</p>
+<p>Thornthwaite, C. W., and Mather, J.R., 1955: The water balance.  Publications in Climatology, Volume 8(1), Laboratory of Climatology
+</p>
+<p>Thornthwaite, C. W., and Mather, J.R., 1957: Instructions and tables for computing potential evapotranspiration and the water balance.  Publications in climatology, Volume 10(3), Laboratory of Climatology
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>climate</code>, <code>ExAtRa</code>, <code>plot.thornthwaite</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data(Trent_climate)
+
+
+# lista_cli is a list of data frames of the type "series", 
+# each one referring to one station - see function "climate".
+# clima_81_10 is a list of data frames having climatic means 
+# of temperature and precipitation, each one referring to one station. 
+# It can be the output of function "climate".
+library(geosphere) # required for function daylength
+thornt_lst&lt;-NULL
+lista_cli &lt;- lista_cli[1:3] ## lista_cli is reduced to diminish elapsed time of execution!
+for(k in 1 : length(lista_cli[1:3])) {
+  thornt_lst[[k]]&lt;-thornthwaite(series=lista_cli[[k]], 
+  clim_norm=clima_81_10[[k]],
+  latitude = 46, first.yr=1981, 
+  last.yr=2010, snow_melt_coeff=c(0.5,0.5 )  )
+}
+names(thornt_lst)&lt;-names(lista_cli)
+  
+# splits list into two lists
+W_balance&lt;-NULL; quantiles&lt;-NULL
+for(k in 1 : length(lista_cli))
+{
+  W_balance[[k]]&lt;-thornt_lst[[k]]$W_balance
+  quantiles[[k]]&lt;-thornt_lst[[k]]$quantiles
+ }
+ names(W_balance)&lt;-names(thornt_lst); names(quantiles)&lt;-names(thornt_lst)
+ 
+</code></pre>
+
+
+</div>

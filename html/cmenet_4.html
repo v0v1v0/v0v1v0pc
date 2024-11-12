@@ -1,0 +1,167 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>maize</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Maize dataset
+</h2>
+
+<h3>Description</h3>
+
+<p>A subset of the maize dataset from Buckler et al. (2009), with <code>n</code> = 150 observations (days to male flowering time) and <code>p</code> = 40 main effects (binary SNP markers).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">data(maize)
+</code></pre>
+
+
+<h3>References</h3>
+
+<p>Buckler et al. (2009). The genetic architecture of maize flowering time. <em>Science</em> 325, 714-718.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">  ## Not run: 
+
+library(cmenet)
+library(hierNet)
+
+## Load data
+data(maize) #load in main effects (MEs) and response
+xme &lt;- as.matrix(maize[,1:(ncol(maize)-1)])
+yy &lt;- as.vector(maize[,ncol(maize)])
+nn &lt;- nrow(xme)
+pp &lt;- ncol(xme)
+model.mtx &lt;- full.model.mtx(xme)$model.mtx #full model matrix
+xcme &lt;- model.mtx[,(pp+1):ncol(model.mtx)] #model matrix for conditional main effects (CMEs)
+
+#---------------------------------------------------------------
+## Selection:
+#---------------------------------------------------------------
+
+## cmenet (new analysis: MEs and CMEs)
+set.seed(1000)
+cv.cme &lt;- cv.cmenet(xme,xcme,yy,var.names=colnames(model.mtx)) #CV fit
+cme.dat &lt;- data.frame(y=yy,x=model.mtx[,cv.cme$select.idx])
+cme.glm &lt;- lm(y~.,data=cme.dat) #linear model on selected effects
+cv.cme$select.names #selected effects
+summary(cme.glm)$coefficients[,4] #p-values
+
+## hierNet (traditional analysis: MEs and two-factor interactions)
+set.seed(1000)
+hnp &lt;- hierNet.path(xme,yy) #hierNet path
+cv.hn &lt;- hierNet.cv(hnp,xme,yy) #CV fit
+l.opt &lt;- which(hnp$lamlist==cv.hn$lamhat)
+me.sel &lt;- (hnp$bp-hnp$bn)[,l.opt]
+me.idx &lt;- which(me.sel!=0) #selected main effects
+int.sel &lt;- hnp$th[,,l.opt]
+int.idx &lt;- which(int.sel!=0,arr.ind=T)
+int.idx &lt;- t(apply(int.idx,1,function(xx){sort(xx)}))
+int.idx &lt;- unique(int.idx) #selected interactions
+model.mtx.hier &lt;- xme[,me.idx] #model matrix on selected effects
+for (ll in 1:nrow(int.idx)){
+  model.mtx.hier &lt;- cbind(model.mtx.hier, xme[,int.idx[ll,1]]*xme[,int.idx[ll,2]] )
+}
+int.nm &lt;- sapply(1:nrow(int.idx),function(xx){
+  paste0(colnames(xme)[int.idx[xx,1]],colnames(xme)[int.idx[xx,2]])
+})
+colnames(model.mtx.hier) &lt;- c(colnames(xme)[me.idx],int.nm)
+hn.dat &lt;- data.frame(y=yy,x=model.mtx.hier)
+hn.glm &lt;- lm(y~.,data=hn.dat) #linear model on selected effects
+colnames(model.mtx.hier) #selected effects
+summary(hn.glm)$coefficients[,4] #p-values
+
+#---------------------------------------------------------------
+## Analysis of selected effects:
+# (a) cmenet: more parsimonious gene-gene interaction model
+#     - hierNet: 66 variables
+#     - cmenet:  17 variables
+# (b) cmenet: greater insight on the conditional structure of
+#     selected MEs from traditional analysis (w/ lower p-values)
+#     - hierNet: g38
+#     - cmenet:  g11|g38+, g12|g38-, g14|g38+
+#     Interpretation:
+#     - hierNet: gene 38 is active
+#     - cmenet: gene 38 activates genes 11 and 14, and inhibits gene 12
+# (c) cmenet: selected CMEs are more interpretable than selected
+#     interactions from traditional analysis (w/ lower p-values)
+#     - hierNet: g1*g39, g27*g39
+#     - cmenet:  g1|g39-, g27|g39-
+#     Interpretation:
+#     - hierNet: interactions exist b/w g1 &amp; g39, and g27 &amp; g39
+#     - cmenet:  gene 39 inhibits gene 1 and gene 27
+#---------------------------------------------------------------
+
+#---------------------------------------------------------------
+## Prediction:
+#---------------------------------------------------------------
+
+## cmenet (new analysis)
+set.seed(1111)
+test.prop &lt;- 0.5 # 
+ntrials &lt;- 10 # no. of replications
+mspe1 &lt;- rep(NA,ntrials)
+for (i in 1:ntrials){
+
+  # sample testing and training data
+  foldid = sample(rep(seq(1/test.prop), length=length(yy)))
+  yy.tr &lt;- yy[which(foldid!=1)] #training
+  xme.tr &lt;- xme[which(foldid!=1),]
+  xcme.tr &lt;- xcme[which(foldid!=1),]
+  yy.ts &lt;- yy[which(foldid==1)] #testing
+  xme.ts &lt;- xme[which(foldid==1),]
+  xcme.ts &lt;- xcme[which(foldid==1),]
+
+  # fit cmenet
+  cv.cme &lt;- cv.cmenet(xme.tr,xcme.tr,yy.tr,var.names=colnames(model.mtx))
+  obj &lt;- cv.cme$cme.fit
+  pred &lt;- predictcme(obj,newx=cbind(xme.ts,xcme.ts))
+  mspe1[i] &lt;- mean( (yy.ts-pred[,which(cv.cme$lambda.sib==cv.cme$params[1]),
+                                which(cv.cme$lambda.cou==cv.cme$params[2])])^2 )
+}
+mean(mspe1) #avg. mspe = 10.80
+
+## hierNet (traditional analysis)
+set.seed(1111)
+test.prop &lt;- 0.5 # 
+ntrials &lt;- 10 # no. of replications
+mspe2 &lt;- rep(NA,ntrials)
+for (i in 1:ntrials){
+
+  # sample testing and training data
+  foldid = sample(rep(seq(1/test.prop), length=length(yy)))
+  yy.tr &lt;- yy[which(foldid!=1)]
+  xme.tr &lt;- xme[which(foldid!=1),]
+  xcme.tr &lt;- xcme[which(foldid!=1),]
+  yy.ts &lt;- yy[which(foldid==1)]
+  xme.ts &lt;- xme[which(foldid==1),]
+  xcme.ts &lt;- xcme[which(foldid==1),]
+
+  # fit hierNet
+  hnfit &lt;- hierNet.path(xme.tr,yy.tr)
+  cv.hn &lt;- hierNet.cv(hnfit,xme.tr,yy.tr)
+  l.opt &lt;- which(hnfit$lamlist==cv.hn$lamhat)
+  mspe2[i] &lt;- mean( (yy.ts-predict(hnfit,newx=xme.ts)[,l.opt])^2 )
+}
+
+mean(mspe2) #avg. mspe = 11.31
+
+#---------------------------------------------------------------
+## Analysis of MSPE:
+# - cmenet gives lower prediction error, which suggests
+#   underlying gene-gene interactions may indeed be conditional
+#---------------------------------------------------------------
+
+  
+## End(Not run)
+</code></pre>
+
+
+</div>

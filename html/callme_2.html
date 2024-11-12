@@ -1,0 +1,176 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>compile</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compile C code and create wrapper functions to call from R</h2>
+
+<h3>Description</h3>
+
+<p>This function uses the <code>R CMD SHLIB</code> process to compile
+C code into a linked library.  This library is then loaded, and 
+appropriate functions created in R to call into this library.  See also: <code>?SHLIB</code>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">compile(
+  code,
+  CFLAGS = NULL,
+  PKG_CPPFLAGS = NULL,
+  PKG_LIBS = NULL,
+  env = parent.frame(),
+  overwrite = "callme",
+  verbosity = 0,
+  invisible = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>code</code></td>
+<td>
+<p>C code following the <code>.Call()</code> conventions, or a filename
+containing this code. This code must also include 
+any <code>#include</code> statements - include <code>&lt;R.h&gt;</code> and
+<code>&lt;Rinternals.h&gt;</code> at the very least.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CFLAGS</code></td>
+<td>
+<p>character string of flags for the C compiler. e.g. "-O3"
+Default: NULL.  If specified this value will <em>replace</em> the
+default <code>CFLAGS</code> R would normally use.  To see these default
+flags use <code>cflags_default()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PKG_CPPFLAGS</code></td>
+<td>
+<p>character string of flags for the C pre-processor.
+Flags such as "-I", "-D" and "-U" go here.
+Default: NULL
+e.g. <code>PKG_CPPFLAGS = "-I/opt/homebrew/include"</code> to add the include path 
+for homebrew to the compilation step.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PKG_LIBS</code></td>
+<td>
+<p>character string of flags for linking. "-L" and "-l" flags
+go here. Default: NULL.
+e.g. <code>PKG_LIBS = "-L/opt/homebrew/lib -lzstd"</code> to include the homebrew 
+libraries in the linker search path and to link to the <code>zstd</code>
+library installed there.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>env</code></td>
+<td>
+<p>environment into which to assign the R wrapper functions.
+Default: <code>parent.frame()</code>.  If <code>NULL</code> then no 
+assignment takes place and the (invisible) return value should
+be assigned to a variable to access the compiled code.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>overwrite</code></td>
+<td>
+<p>Which existing variables can be overwritten when wrapper 
+functions are created in the given environment? An error will be
+raised if the name of the wrapper function already exists in 
+the environment and permission has not been given to overwrite.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbosity</code></td>
+<td>
+<p>Level of output: Default: 0. Max level: 4</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>invisible</code></td>
+<td>
+<p>Should the R wrapper function return the result invisibly?
+Default: FALSE.  Set this to <code>TRUE</code> if the code is only 
+run for its side-effect e.g. just printing data and not returning anything.
+</p>
+
+<dl>
+<dt>"callme"</dt>
+<dd>
+<p>(Default) Only functions created by this package can be overwritten</p>
+</dd>
+<dt>"all"</dt>
+<dd>
+<p>All objects can be overwritten</p>
+</dd>
+<dt>"functions"</dt>
+<dd>
+<p>Only functions can be overwritten</p>
+</dd>
+<dt>"none"</dt>
+<dd>
+<p>No existing objects can be overwritten</p>
+</dd>
+</dl>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Invisibly returns a named list of R functions. Each R function 
+calls to the equivalent C function.  If <code>env</code> is specified, 
+then these wrapper functions are assigned in the given 
+environment.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">code &lt;- "
+#include &lt;R.h&gt;
+#include &lt;Rinternals.h&gt;
+
+// Add 2 numbers
+SEXP add(SEXP val1, SEXP val2) {
+  return ScalarReal(asReal(val1) + asReal(val2));
+}
+
+// Multiply 2 numbers
+SEXP mul(SEXP val1, SEXP val2) {
+  return ScalarReal(asReal(val1) * asReal(val2));
+}
+
+// sqrt elements in a vector
+SEXP new_sqrt(SEXP vec) {
+  SEXP res = PROTECT(allocVector(REALSXP, length(vec)));
+  double *res_ptr = REAL(res);
+  double *vec_ptr = REAL(vec);
+  for (int i = 0; i &lt; length(vec); i++) {
+    res_ptr[i] = sqrt(vec_ptr[i]);
+  }
+  
+  UNPROTECT(1);
+  return res;
+}
+"
+
+# compile the code and load into R
+compile(code)
+
+# Call the functions
+add(99.5, 0.5)
+mul(99.5, 0.5)
+new_sqrt(c(1, 10, 100, 1000))
+       
+</code></pre>
+
+
+</div>

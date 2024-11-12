@@ -1,0 +1,226 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>PlotPredictiveCalendarAgeDensity</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Plot Predictive Estimate of Shared Calendar Age Density from Bayesian Non-Parametric
+DPMM Output</h2>
+
+<h3>Description</h3>
+
+<p>Given output from one of the Bayesian non-parametric summarisation functions (either
+PolyaUrnBivarDirichlet or WalkerBivarDirichlet) calculate
+and plot the predictive (summarised/shared) calendar age density and probability intervals
+on a given calendar age grid (provided in cal yr BP).
+</p>
+<p>Will show the original set of radiocarbon determinations (those you are summarising),
+the chosen calibration curve, and the summarised predictive calendar age density on the
+same plot. Can also optionally show the SPD estimate.
+</p>
+<p><strong>Note:</strong> If all you are interested in is the estimated value of the predictive density
+on a grid, without an accompanying plot, you can use
+FindPredictiveCalendarAgeDensity instead.
+</p>
+<p>For more information read the vignette: <br><code>vignette("Non-parametric-summed-density", package = "carbondate")</code>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">PlotPredictiveCalendarAgeDensity(
+  output_data,
+  n_posterior_samples = 5000,
+  calibration_curve = NULL,
+  plot_14C_age = TRUE,
+  plot_cal_age_scale = "BP",
+  show_SPD = FALSE,
+  show_confidence_intervals = TRUE,
+  interval_width = "2sigma",
+  bespoke_probability = NA,
+  denscale = 3,
+  resolution = 1,
+  n_burn = NA,
+  n_end = NA,
+  plot_pretty = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>output_data</code></td>
+<td>
+<p>The return value from one of the Bayesian non-parametric DPMM functions, e.g.
+PolyaUrnBivarDirichlet or
+WalkerBivarDirichlet, or a list, each item containing
+one of these return values. Optionally, the output data can have an extra list item
+named <code>label</code> which is used to set the label on the plot legend.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_posterior_samples</code></td>
+<td>
+<p>Number of samples it will draw, after having removed <code>n_burn</code>,
+from the (thinned) realisations stored in the DPMM outputs to estimate the
+predictive calendar age density. These samples may be repeats if the number of, post burn-in,
+realisations is less than <code>n_posterior_samples</code>. If not given, 5000 is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>calibration_curve</code></td>
+<td>
+<p>This is usually not required since the name of the
+calibration curve variable is saved in the output data. However, if the
+variable with this name is no longer in your environment then you should pass
+the calibration curve here. If provided, this should be a dataframe which
+should contain at least 3 columns entitled <code>calendar_age</code>, <code>c14_age</code> and <code>c14_sig</code>.
+This format matches intcal20.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot_14C_age</code></td>
+<td>
+<p>Whether to use the radiocarbon age (<code class="reqn">{}^{14}</code>C yr BP) as
+the units of the y-axis in the plot. Defaults to <code>TRUE</code>. If <code>FALSE</code> uses
+F<code class="reqn">{}^{14}</code>C concentration instead.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot_cal_age_scale</code></td>
+<td>
+<p>The calendar scale to use for the x-axis. Allowed values are
+"BP", "AD" and "BC". The default is "BP" corresponding to plotting in cal yr BP.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>show_SPD</code></td>
+<td>
+<p>Whether to calculate and show the summed probability
+distribution on the plot (optional). Default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>show_confidence_intervals</code></td>
+<td>
+<p>Whether to show the pointwise confidence intervals
+(at the chosen probability level) on the plot. Default is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interval_width</code></td>
+<td>
+<p>The confidence intervals to show for both the
+calibration curve and the predictive density. Choose from one of <code>"1sigma"</code> (68.3%),
+<code>"2sigma"</code> (95.4%) and <code>"bespoke"</code>. Default is <code>"2sigma"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bespoke_probability</code></td>
+<td>
+<p>The probability to use for the confidence interval
+if <code>"bespoke"</code> is chosen above. E.g., if 0.95 is chosen, then the 95% confidence
+interval is calculated. Ignored if <code>"bespoke"</code> is not chosen.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>denscale</code></td>
+<td>
+<p>Whether to scale the vertical range of the summarised calendar age density plot
+relative to the calibration curve plot (optional). Default is 3 which means
+that the maximum predictive density will be at 1/3 of the height of the plot.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resolution</code></td>
+<td>
+<p>The distance between calendar ages at which to calculate the predictive shared
+density. These ages will be created on a regular grid that automatically covers the
+calendar period of the given set of <code class="reqn">{}^{14}</code>C samples. Default is 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_burn</code></td>
+<td>
+<p>The number of MCMC iterations that should be discarded as burn-in (i.e.,
+considered to be occurring before the MCMC has converged). This relates to the number
+of iterations (<code>n_iter</code>) when running the original update functions (not the thinned <code>output_data</code>).
+Any MCMC iterations before this are not used in the calculations. If not given, the first half of
+the MCMC chain is discarded. Note: The maximum value that the function will allow is
+<code>n_iter - 100 * n_thin</code> (where <code>n_iter</code> and <code>n_thin</code> are the arguments given to
+PolyaUrnBivarDirichlet or WalkerBivarDirichlet)
+which would leave only 100 of the (thinned) values in <code>output_data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_end</code></td>
+<td>
+<p>The last iteration in the original MCMC chain to use in the calculations. Assumed to be the
+total number of iterations performed, i.e. <code>n_iter</code>, if not given.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot_pretty</code></td>
+<td>
+<p>logical, defaulting to <code>TRUE</code>. If set <code>TRUE</code> then will select pretty plotting
+margins (that create sufficient space for axis titles and rotates y-axis labels). If <code>FALSE</code> will
+implement current user values.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list, each item containing a data frame of the <code>calendar_age_BP</code>, the
+<code>density_mean</code> and the confidence intervals for the density
+<code>density_ci_lower</code> and <code>density_ci_upper</code> for each set of output data.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>FindPredictiveCalendarAgeDensity if only interested in the estimated value of
+the predictive density on a grid; PlotNumberOfClusters and
+PlotCalendarAgeDensityIndividualSample for more plotting functions using DPMM output.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># NOTE: All these examples are shown with a small n_iter and n_posterior_samples
+# to speed up execution.
+# Try n_iter and n_posterior_samples as the function defaults.
+
+polya_urn_output &lt;- PolyaUrnBivarDirichlet(
+    two_normals$c14_age,
+    two_normals$c14_sig,
+    intcal20,
+    n_iter = 500,
+    show_progress = FALSE)
+walker_output &lt;- WalkerBivarDirichlet(
+    two_normals$c14_age,
+    two_normals$c14_sig,
+    intcal20,
+    n_iter = 500,
+    show_progress = FALSE)
+
+# Plot results for a single calibration
+PlotPredictiveCalendarAgeDensity(polya_urn_output, n_posterior_samples = 50)
+
+# Plot results from two calibrations on the same plot
+PlotPredictiveCalendarAgeDensity(
+    list(walker_output, polya_urn_output), n_posterior_samples = 50)
+
+# Plot and show the 80% confidence interval, show the SPD, add a custom label
+polya_urn_output$label = "My plot"
+PlotPredictiveCalendarAgeDensity(
+    polya_urn_output,
+    n_posterior_samples = 50,
+    interval_width = "bespoke",
+    bespoke_probability = 0.8,
+    show_SPD = TRUE)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,365 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>product</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute the product of colorSpec objects</h2>
+
+<h3>Description</h3>
+
+<p>Take a sequence of <b>colorSpec</b> objects and compute their product.
+Only certain types of sequences are allowed.
+The return value can be a new <b>colorSpec</b> object or a matrix;
+see <b>Details</b>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'colorSpec'
+product( ... )
+
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table><tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>unnamed arguments are <b>colorSpec</b> objects,
+and possibly a single character string, see <b>Details</b>.
+Possible named arguments are:
+</p>
+
+<dl>
+<dt><code>wavelength</code></dt>
+<dd>
+<p>The default <code>wavelength='identical'</code> means that all the <b>colorSpec</b> objects must have the same wavelength sequence; if they do not it is an ERROR. <code>wavelength</code> can be a new wavelength sequence, and all the objects are then
+<code>resample</code>d at these new wavelengths. <code>wavelength</code> can also be <code>'auto'</code> or <code>NULL</code> which means to compute a suitable wavelength sequence from those of the objects, see <b>Details</b>. It is OK to abbreviate the string <code>wavelength</code>
+(e.g. to <code>wave</code>); see <b>Examples</b>.
+It is OK for the wavelength sequence to be irregular;
+when the return value is a matrix
+the integration weights the spectrum values appropriately.<br></p>
+</dd>
+<dt> <code>method</code>, <code>span</code>, <code>extrapolation</code>, <code>clamp</code> </dt>
+<dd>
+<p>passed to <code>resample()</code> with no checking or changes<br></p>
+</dd>
+<dt> <code>integration</code>
+</dt>
+<dd>
+<p>only applies when the return type is matrix.
+The default option is <code>'rectangular'</code>, which means to weight the spectrum
+value equally at all wavelengths; this is the ASTM E308-01 recommendation.
+The other option is <code>'trapezoidal'</code>, which means to give the 2 endpoint
+wavelength values 1/2 the weight of the others.
+Trapezoidal integration is provided mostly for compatibility with other software.</p>
+</dd>
+</dl>
+</td>
+</tr></table>
+<h3>Details</h3>
+
+<p>To explain the allowable product sequences
+it is helpful to introduce some simple notation for the objects:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+ <b>notation</b> </td>
+<td style="text-align: left;"> <b>colorSpec</b> <code>type</code> </td>
+<td style="text-align: left;"> <b>description of the object</b> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+ <code class="reqn">L</code> </td>
+<td style="text-align: left;"> <code>light</code> </td>
+<td style="text-align: left;"> a light source </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+ <code class="reqn">M</code> </td>
+<td style="text-align: left;"> <code>material</code> </td>
+<td style="text-align: left;"> a material </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+ <code class="reqn">R_L</code> </td>
+<td style="text-align: left;"> <code>responsivity.light</code> </td>
+<td style="text-align: left;"> a light responder (aka detector)</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+ <code class="reqn">R_M</code> </td>
+<td style="text-align: left;"> <code>responsivity.material</code> </td>
+<td style="text-align: left;"> a material responder (e.g. a scanner)</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+ </td>
+</tr>
+</table>
+<p>It is also helpful to define a sequence of positive integers
+to be <em>conformable</em> iff it has at most one value greater than 1.
+For example,
+a sequence of all 1s is conformable.  A sequence of all <code class="reqn">q</code>'s is conformable.
+The sequences <code>c(1,3)</code> and <code>c(1,1,4,1,1,4,1)</code> are conformable,
+but <code>c(1,1,4,1,3,4,1)</code> is not.
+</p>
+<p>There are 6 types of sequences for which the product is defined:
+<br></p>
+<p>1.    <code class="reqn"> M_1 * M_2 * ... * M_m </code>  ↦ <code class="reqn">M'</code> <br>
+The product of <code class="reqn">m</code> materials is another material.
+Think of a stack of <code class="reqn">m</code> transmitting filters effectively forming a new filter.
+If we think of each object as a matrix (with the spectra in the columns),
+then the product is element-by-element using <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>'s <code>*</code> - the Hadamard product.
+The numbers of spectra in the terms must be conformable.
+If some objects have 1 spectrum and all the others have <code class="reqn">q</code>,
+then the column-vector spectrums are repeated <code class="reqn">q</code> times to form a
+matrix with <code class="reqn">q</code> columns.
+If the numbers of spectra are not conformable,
+it is an ERROR and the function returns <code>NULL</code>.
+<br>
+As an example, suppose <code class="reqn">M_1</code> has 1 spectrum and <code class="reqn">M_2</code> has <code class="reqn">q</code> spectra,
+and <code class="reqn">m=2</code>.
+Then the product is a material with <code class="reqn">q</code> spectra.
+Think of an IR-blocking filter followed by the RGB filters in a 3-CCD camera.
+<br><br></p>
+<p>2.     <code class="reqn"> L * M_1 * M_2 * ... * M_m </code>  ↦ <code class="reqn">L'</code> <br>
+The product of a light source followed by <code class="reqn">m</code> materials is a light source.
+Think of a light source
+followed by a stack of <code class="reqn">m</code> transmitting filters, effectively forming a new light source.
+The numbers of spectra in the terms must be conformable as in sequence 1,
+and the matrices are multiplied element by element.<br>
+As an example, suppose <code class="reqn">L</code> has 1 spectrum and <code class="reqn">M_1</code> has <code class="reqn">q</code> spectra,
+and <code class="reqn">m=1</code>.
+Then the product is a light source with <code class="reqn">q</code> spectra.
+Think of a light source followed by a filter wheel with <code class="reqn">q</code> filters.
+<br><br></p>
+<p>3.     <code class="reqn"> M_1 * M_2 * ... * M_m * R_L </code>  ↦ <code class="reqn">R_L'</code> <br>
+The product of <code class="reqn">m</code> materials followed by a light responder, is a light responder.
+Think of a stack of <code class="reqn">m</code> transmitting filters in front of a camera, effectively forming a new camera.
+The numbers of spectra in the terms must be conformable as in sequence 1,
+and the matrices are multiplied element by element.<br>
+As an example, suppose <code class="reqn">R_L</code> has 1 spectrum and <code class="reqn">M_1</code> has <code class="reqn">q</code> spectra,
+and <code class="reqn">m=1</code>.
+Then the product is a light responder with <code class="reqn">q</code> spectra.
+Think of a 3-CCD camera in which all 3 CCDs have exactly the same responsivity
+and so can be modeled with a single object <code class="reqn">R_L</code>.
+<br><br></p>
+<p>4.    <code class="reqn">L * M_1 * ... *</code> • <code class="reqn">* ... * M_m * R_L </code>  ↦ <code class="reqn">R_M'</code> <br>
+This is the strangest product.
+The bullet symbol • means that a variable material is inserted at that slot
+in the sequence (or light path).
+For each material spectrum inserted there is a response from <code class="reqn">R_L</code>.
+Therefore the product of this sequence is a material responder <code class="reqn">R_M</code>.
+Think of a light source <code class="reqn">L</code> going through
+a transparent object  •  on a flatbed scanner and into a camera <code class="reqn">R_L</code>.
+For more about the mathematics of this product,
+see the <b>colorSpec-guide.pdf</b> in the doc directory.
+These material responder spectra are the same as the
+<em>effective spectral responsivities</em> in <cite>Digital Color Management</cite>.
+The numbers of spectra in the terms must be conformable as in sequence 1,
+and the product is a material responder with <code class="reqn">q</code> spectra.
+<br>
+In the function <code>product()</code> the location of the • is marked
+by any character string whatsoever - it's up to the user who might choose
+something that describes the typical material (between the light source and camera).
+For example one might choose:<br><code>scanner = product( A.1nm, 'photo', Flea2.RGB, wave='auto') </code><br>
+to model a scanner that is most commonly used to scan photographs.
+Other possible strings could be <code>'artwork'</code>, <code>'crystal'</code>, <code>'varmaterial'</code>,
+or even <code>'slot'</code>.
+See the vignette <a href="../doc/gallery.pdf"><b>Viewing Object Colors in a Gallery</b></a> for a worked-out example.
+<br><br></p>
+<p>5.     <code class="reqn"> L * M_1 * M_2 * ... * M_m * R_L </code>  ↦ <code class="reqn">matrix</code> <br>
+The product of a light source, followed by <code class="reqn">m</code> materials,
+followed by a light responder, is a matrix!
+The numbers of spectra in the terms must splittable into
+a conformable left part (<code class="reqn">L'</code> from sequence 2.)
+and a conformable right part (<code class="reqn">R_L'</code> from sequence 3.).
+There is a row for each spectrum in <code class="reqn">L'</code>,
+and a column for each spectrum in <code class="reqn">R_L'</code>.
+Suppose the element-by-element product of the left part is
+<code class="reqn">n</code>×<code class="reqn">p</code>
+and the element-by-element product of the right part is
+and <code class="reqn">n</code>×<code class="reqn">q</code>,
+where <code class="reqn">n</code> is the number of wavelengths.
+Then the output matrix is the usual matrix product <code>%*%</code>
+of the transpose of the left part times and right part,
+which is <code class="reqn">p</code>×<code class="reqn">q</code>.
+<br>
+As an example, think of a light source followed by a
+reflective color target with 24 patches
+followed by an RGB camera.
+The sequence of spectra counts is <code>c(1,24,3)</code>
+which is splittable into <code>c(1,24)</code> and <code>c(3)</code>.
+The product matrix is 24×3.
+See the vignette <a href="../doc/gallery.pdf"><b>Viewing Object Colors in a Gallery</b></a> for a worked-out example.<br>
+Note that is OK for there to be no materials in this product;
+it is OK if <code class="reqn">m=0</code>.
+See the vignette <a href="../doc/blueflame.pdf"><b>Blue Flame and Green Comet</b></a>
+for a worked-out example.
+<br><br></p>
+<p>6.     <code class="reqn"> M_1 * M_2 * ... * M_m * R_M </code> ↦ <code class="reqn">matrix</code> <br>
+The product of <code class="reqn">m</code> materials followed by a material responder, is a matrix !
+The sequence of numbers of spectra must be splittable into left and right
+parts as in sequence 4, and the product matrix is formed the same way.
+One reason for computing this matrix in 2 steps is that one can
+<code>calibrate</code> the material responder separately in a customizable way.
+See the vignette <a href="../doc/gallery.pdf"><b>Viewing Object Colors in a Gallery</b></a>
+for a worked-out example with a flatbed scanner.
+<br><br></p>
+<p>Note that sequences 5. and 6. are the only ones that
+use the usual matrix product <code>%*%</code>.
+They may also use the Hadamard matrix product <code>*</code>, as in sequences 1 to 4.
+</p>
+<p>The argument <code>wavelength</code> can also be <code>'auto'</code> or <code>NULL</code>.
+In this case the intersection of all the wavelength ranges of the objects is computed.
+If the intersection is empty, it is an ERROR and the function returns <code>NULL</code>.
+The wavelength step <code>step.wl</code>
+is taken to be the smallest over all the object wavelength sequences.
+If the minimum <code>step.wl</code> is less than 1 nanometer,
+it is rounded off to the nearest power of 2 (e.g 1, 0.5, 0.25, ...).
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>product()</code> returns either a <b>colorSpec</b> object or a matrix, see <b>Details</b>.
+</p>
+<p>If <code>product()</code> returns a <b>colorSpec</b> object, the <code>organization</code>
+of the object is <code>'matrix'</code> or <code>'vector'</code>;
+any <code>extradata</code> is lost.
+However, all terms in the product are saved in <code>attr(*,'sequence')</code>.
+One can use <code>str()</code> to inspect this attribute.
+</p>
+<p>If <code>product()</code> returns a matrix,
+this matrix can sometimes be ambiguous, see <b>Note</b>.
+</p>
+<p>All actinometric terms are converted to radiometric on-the-fly and the returned
+<b>colorSpec</b> object is also radiometric.
+</p>
+<p>In case of ERROR it returns <code>NULL</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The product for sequences 1, 2, and 3 is associative.
+After all matrices are filled out to have  <code class="reqn">q</code> columns,
+the result is essentially a Hadamard product of matrices,
+which is associative.
+Also note that a subsequence of sequences 2 and 3 might be sequence 1.
+</p>
+<p>The product for sequence 4 is never associative,
+since subproducts that contain the variable • are undefined.
+However the  result is essentially a Hadamard product of matrices, and is unambiguous.
+</p>
+<p>The product for sequence 5 is associative in special cases, but not in general.
+The problem is that the left and right splitting point is not unique.
+If all objects have only a single spectrum, then it *is* associative,
+and therefore unambiguous.
+If the left part has a different number of multiple spectra than the right part,
+then it is not associative in general since some ways of grouping the
+product may be undefined.<br>
+Moreover, in some cases the product can be ambiguous.
+Suppose that the vector of spectrum counts is <code>c(1,3,1)</code>;
+this could come from a single light source, followed by 3 filters (e.g. RGB),
+followed by a graylevel camera.
+There are 2 ways to split this: <code>"1|3,1"</code> and <code>"1,3|1"</code>.
+The first split is interpreted as the light source into a camera with 3 channels.
+The second split is interpreted as 3 colored light sources into a graylevel camera.
+In the first split the returned matrix is a <code>1x3</code> row vector.
+In the second split the returned matrix is a <code>3x1</code> column vector.
+For the vector <code>"1,3,1"</code>, one can show that
+the computed components in the 2 vectors are equal,
+so the ambiguity is benign.
+But consider the longer sequence  <code>"1,3,3,1"</code>.
+There are 3 ways to split this, and the returned matrices are
+<code>1x3</code>, <code>3x3</code>, and <code>3x1</code>.
+So this ambiguity is obviously a problem.
+Whenever there is an ambiguity, the function chooses a splitting
+in which the left part is as long as possible, and issues a warning message.
+The user should inspect the result carefully.
+To avoid the ambiguity, the user should break the product into smaller pieces
+and call <code>product()</code> multiple times.
+</p>
+<p>The product for sequence 6 is essentially the same as sequence 5,
+and the function issues a warning message when appropriate.
+Note that a subproduct is defined only if it avoids the final multiplication with <code class="reqn">R_M</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Edward J. Giorgianni and Thomas E. Madden.
+<b>Digital Color Management: Encoding Solutions.</b> 2nd Edition
+John Wiley. 2009.
+Figure 10.11a. page 141.
+</p>
+<p>Wikipedia.
+<b>Hadamard product (matrices)</b>.
+<a href="https://en.wikipedia.org/wiki/Hadamard_product_(matrices)">https://en.wikipedia.org/wiki/Hadamard_product_(matrices)</a>
+</p>
+<p>ASTM E308-01.
+Standard Practice for Computing the Colors of Objects by Using the CIE System.
+(2001).
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>wavelength</code>,
+<code>type</code>,
+<code>resample</code>,
+<code>calibrate</code>,
+<code>radiometric</code>,
+<code>step.wl</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#  sequence 1.
+path = system.file( "extdata/objects/Midwest-SP700-2014.txt", package='colorSpec' )
+blocker.IR = readSpectra( path )
+product( blocker.IR, Hoya, wave='auto' )
+
+
+#  sequence 2.
+product( subset(solar.irradiance,1), atmosphere2003, blocker.IR, Hoya, wave='auto' )
+
+
+#  sequence 3.
+plumbicon = readSpectra( system.file( "extdata/cameras/plumbicon30mm.txt", package='colorSpec' ) )
+product( blocker.IR, subset(Hoya,1:3), plumbicon, wave='auto' )
+
+
+#   sequence 4.
+#   make an RGB scanner
+bluebalancer = subset(Hoya,'LB')
+# combine tungsten light source A.1nm with blue light-balance filter
+# use the string 'artwork' to mark the variable material slot
+scanner = product( A.1nm, bluebalancer, 'artwork', Flea2.RGB, wave='auto' )
+
+
+#  sequence 5.
+product( D65.1nm, Flea2.RGB, wave='auto' )  # a 1x3 matrix, no materials
+product( D65.1nm, neutralMaterial(0.01), Flea2.RGB, wave='auto' ) # a 1x3 matrix, 1 material
+path = system.file( "extdata/sources/Lumencor-SpectraX.txt", package='colorSpec' )
+lumencor = readSpectra( path, wave=340:660 )
+product( lumencor, Flea2.RGB, wave='auto' )   # a 7x3 matrix, no materials
+
+
+#  sequence 6.
+scanner = calibrate( scanner )
+target = readSpectra( system.file( "extdata/targets/N130501.txt", package='colorSpec') )
+product( target, scanner, wave='auto' )  #  a 288x3 matrix
+
+</code></pre>
+
+
+</div>

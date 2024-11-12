@@ -1,0 +1,190 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>simCOP</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simulate a Copula by Numerical Derivative Method</h2>
+
+<h3>Description</h3>
+
+<p>Perform a simulation and visualization of a copula using numerical partial derivatives of the copula (Nelsen, 2006, p. 32). The method is more broadly known as <em>conditional simulation method</em>. Because a focus of <span class="pkg">copBasic</span> is on copula theory for pedagogic purposes, the coupling between simulation and subsequent visualization is emphasized by this function by it providing for both simulation and plotting operations by default.
+</p>
+<p>The <code>simCOP</code> function is based on a uniformly simulating nonexceedance probability <code class="reqn">u</code> and then conditioning the <code class="reqn">v</code> from the inverse of the sectional derivative for <code class="reqn">V</code> with respect to <code class="reqn">U</code> (see <code>derCOPinv</code>). The function for speed will only report a warning if at least one of the requested simulations in <code>n</code> could not be made because of <code>uniroot</code>'ing problems in <code>derCOPinv</code>. The returned <code>data.frame</code> will be shortened automatically, but this can be controlled by <code>na.rm</code>. Failure of a simulation is purely dependent failure of the derivative inversion. In general, inversion should be quite robust for continuous or near continuous copulas and even copulas with singularities should be more or less okay. Lastly, the logical combination <code>na.rm=FALSE</code> and <code>keept=TRUE</code> could be used to isolate those combinations giving <code>derCOPinv</code> problems. The implemented simulation method in the <span class="pkg">copBasic</span> package is known as the <em>conditional distribution method</em> (Nelsen, 2006; pp. 40–41), <em>conditional method</em>, or <em>Rosenblatt transform</em> (Joe, 2014, p. 270).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">simCOP(n=100, cop=NULL, para=NULL, na.rm=TRUE, seed=NULL, keept=FALSE,
+              graphics=TRUE, ploton=TRUE, points=TRUE, snv=FALSE,
+              infsnv.rm=TRUE, trapinfsnv=.Machine$double.eps,
+              resamv01=FALSE, showresamv01=FALSE, ...)
+rCOP(n, cop=NULL, para=NULL, na.rm=TRUE, seed=NULL,
+              resamv01=FALSE, showresamv01=FALSE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>A sample size, default is <code class="reqn">n = 100</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cop</code></td>
+<td>
+<p>A copula function;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>Vector of parameters, if needed, to pass to the copula;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.rm</code></td>
+<td>
+<p>A logical to toggle the removal of <code>NA</code> entries should they form on the returned <code>data.frame</code>. A well implemented copula should accommodate and not return <code>NA</code> but because this package relies on numerical derivation, it was decided to have a mechanism to handle this;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>The integer seed to pass immediately to <code>set.seed()</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keept</code></td>
+<td>
+<p>Keep the <code class="reqn">t</code> uniform random variable for the simulation as the last column in the returned <code>data.frame</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>graphics</code></td>
+<td>
+<p>A logical that will disable graphics by setting <code>ploton</code> and <code>points</code> to <code>FALSE</code> and overriding whatever their settings were;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ploton</code></td>
+<td>
+<p>A logical to toggle on the plot (see <b>Examples</b> in <code>vuongCOP</code>);</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>points</code></td>
+<td>
+<p>A logical to actually draw the simulations by the <code>points()</code> function in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>snv</code></td>
+<td>
+<p>A logical to convert the <code class="reqn">\{u,v\}</code> to standard normal scores (variates) both for the optional graphics and the returned <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> <code>data.frame</code>. Curiously, Joe (2014) advocates extensively for use of normal scores, which is in contrast to Nelsen (2006) who does not;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>infsnv.rm</code></td>
+<td>
+<p>A logical that will quietly strip out any occurrences of <code class="reqn">u = \{0,1\}</code> or <code class="reqn">v = \{0,1\}</code> from the simulations because these are infinity in magnitude when converted to standard normal variates has been selected. Thus, this logical only impacts logic flow when <code>snv</code> is <code>TRUE</code>. The <code>infsnv.rm</code> is mutually exclusive from <code>trapinfsnv</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trapinfsnv</code></td>
+<td>
+<p>If <code>TRUE</code> and presumably small, the numerical value of this argument (<code class="reqn">\eta</code>) is used to replace <code class="reqn">u = \{0,1\}</code> and <code class="reqn">v = \{0,1\}</code> with <code class="reqn">u(0) =  v(0) = \eta</code> or <code class="reqn">u(1) = v(1) = 1 - \eta</code> as appropriate when conversion to standard normal variates has been selected. The setting of <code>trapinfsnv</code> only is used if <code>snv</code> is <code>TRUE</code> and <code>infsnv.rm</code> is <code>FALSE</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resamv01</code></td>
+<td>
+<p>A logical triggering resampling for the elements of <code class="reqn">v=0</code> and <code class="reqn">v=1</code> (see <b>Examples</b>). This is a relatively late addition to <span class="pkg">copBasic</span> logic and hence is disabled by default. If this is set to true, then the operations related to <code>infsnv.rm</code> and <code>trapinfsnv</code> are never to be involved later down in the functions' logic;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>showresamv01</code></td>
+<td>
+<p>A logical providing a trigger to display a <code>message()</code> within the resampling loops for <code class="reqn">v &lt;= 0, v &gt;= 1</code>; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass to the <code>points()</code> function in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> <code>data.frame</code> of the simulated values is returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Function <code>rCOP</code> is a light-weight implementation for bivariate copula random variates that dispatches to <code>simCOPmicro</code> and bypasses the graphical and other features of <code>simCOP</code>. Finally, an experimental parallel for the empirical copula is <code>EMPIRsim</code>. Note, the equivalent of a <code>resamv01</code> is not implemented at the level of <code>simCOPmicro</code> because it is better to do such at the abstraction level of <code>rCOP</code> and <code>simCOP</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Joe, H., 2014, Dependence modeling with copulas: Boca Raton, CRC Press, 462 p.
+</p>
+<p>Nelsen, R.B., 2006, An introduction to copulas: New York, Springer, 269 p.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>derCOPinv</code>, <code>simCOPmicro</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">simCOP(n=5, cop=PARETOcop, para=2.4)
+
+# We can find some unusual simulation combinations for which V == 0 or 1 and might have
+# downstream operations simply not able to handle infinite quantiles (say) at the edges.
+# We can readily offload the issue back to the rCOP() or simCOP() with resamv01 argument.
+nsim &lt;- 800; para &lt;- list(cop=PLcop, para=150, alpha=0.8, beta=0.3)
+JK &lt;- rCOP(nsim, cop=composite1COP, para=para, seed=1, resamv01=FALSE)
+print(JK[JK[,2] == 1,]) # 189 0.9437248 1.   So, row 189 in this example has V=1, and
+UV &lt;- rCOP(nsim, cop=composite1COP, para=para, seed=1, resamv01=TRUE ) # changing the
+# resamv01 argument to TRUE, we get this message and no V=1 in the returned data frame.
+# rCOP() has some v &gt;= 1, resampling those     &lt;---- This is the message output.
+
+## Not run: 
+# The simCOP function is oft used in other Examples sections through this package.
+simCOP(n=10, cop=W)            # Frechet lower-bound copula
+simCOP(n=10, cop=P)            # Independence copula
+simCOP(n=10, cop=M, col=2)     # Frechet upper-bound copula
+simCOP(n=10, cop=PSP)          # The PSP copula
+## End(Not run)
+
+## Not run: 
+# Now simulate the PSP copula, add the level curves of the copula, and demonstrate
+# the uniform distribution of marginals on the correct axes (U [top] and V [left]).
+D &lt;- simCOP(n=400, cop=PSP) # store simulated values in D
+level.curvesCOP(cop=PSP, ploton=FALSE)
+rug(D$U, side=3, col=2); rug(D$V, side=4, col=2)
+
+# Now let us get more complicated and mix two Plackett copulas together using the
+# composite2COP as a "compositor." The parameter argument becomes more complex, but
+# is passed as shown into composite2COP.
+para &lt;- list(cop1=PLACKETTcop,cop2=PLACKETTcop, alpha=0.3,beta=0.5, para1=0.1,para2=50)
+D &lt;- simCOP(n=950, cop=composite2COP, para=para, col=grey(0, 0.2), pch=16, snv=TRUE) #
+## End(Not run)
+</code></pre>
+
+
+</div>

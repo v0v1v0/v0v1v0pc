@@ -1,0 +1,332 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>coxed</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Expected durations and marginal changes in expected duration from the
+Cox proportional hazards model</h2>
+
+<h3>Description</h3>
+
+<p><code>coxed()</code> returns expected durations for every observation in the data
+used to fit the model, or in new data, or returns the mean or median of these
+durations, or differences in duration for two pre-defined covariate profiles.
+Standard errors and confidence intervals for all quantities produced by
+<code>coxed()</code> are calculated via bootstrapping.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">coxed(cox.model, newdata = NULL, newdata2 = NULL, bootstrap = FALSE,
+  method = "npsf", k = -1, B = 200, confidence = "studentized",
+  level = 0.95, id = NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cox.model</code></td>
+<td>
+<p>The output from a Cox proportional hazards model estimated
+with the <code>coxph</code> function in the <code>survival</code> package
+or with the <code>cph</code> function in the <code>rms</code>
+package</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdata</code></td>
+<td>
+<p>An optional data frame in which to look for variables with
+which to predict. If omitted, the fitted values are used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdata2</code></td>
+<td>
+<p>An optional data frame that can only be specified if
+<code>newdata</code> is not omitted, and must have the same dimensions as <code>newdata</code>.
+If specified, marginal changes are calculated by subtracting the expected
+durations for <code>newdata2</code> from the expected durations for <code>newdata</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bootstrap</code></td>
+<td>
+<p>Should bootstrapped standard errors and confidence intervals
+be calculated?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>If "npsf" (the default), expected durations are calculated using
+the non-parametric step function approach described in Kropko and Harden
+(2018). If "gam", expected durations are calculated using the GAM method</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p>The number of knots in the GAM smoother. The default is -1, which
+employs the <code>choose.k</code> function from the <code>mgcv</code> package
+to choose the number of knots</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p>Number of bootstrap simulation iterations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>confidence</code></td>
+<td>
+<p>If "studentized" (the default), bootstrapped CIs
+are calculated from the tails of a normal distribution where the mean and
+standard deviation are the point estimate and boostrapped SE of each duration
+estimate. If "empirical", bootstrapped confidence intervals are calculated empirically.
+If "bca", bootstrapped confidence intervals are calculated using the bias-correction
+and acceleration method described by DiCiccio and Efron (1996).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>level</code></td>
+<td>
+<p>The level of the confidence interval to calculate (default is
+.95 for a 95 percent confidence interval)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id</code></td>
+<td>
+<p>Cluster variable if bootstrapping is to be done by clusters of
+observations rather than individual observations. If the data are coded
+with time-varying covariates (using the <code>time2</code> argument in the
+<code>Surv</code> function), this variable must be the ID variable
+in the <em>data that are used to estimate the Cox PH model</em>, and not the ID
+variable in new data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to be passed to the <code>bootcov2</code>
+function, an adaptation of the <code>bootcov</code> function in the
+<code>rms</code> package</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>coxed</code> function generates expected durations for individual
+observations and/or marginal changes in expected duration given a change in a covariate
+from the Cox proportional hazards model. Specifically, the methods can compute (1) the
+expected duration for each observation used to fit the Cox model, given the covariates,
+(2) the expected duration for a "new" observation with a covariate profile set by the
+analyst, or (3) the first difference, or change, in expected duration given two new data frames.
+</p>
+<p>There are two different methods, described in Kropko and Harden (2018), of generating duration-based quantities in the package.
+The first method calculates expected durations by using a nonparametric estimate of the
+baseline hazard and survivor functions (see <code>coxed.npsf</code> for details).
+The second method employs a generalized additive model
+(GAM) to map the model's estimated linear predictor values to duration times (see <code>coxed.gam</code> for details). Both
+methods are also implemented for data structures with time-varying covariates
+(see <code>coxed.npsf.tvc</code> and <code>coxed.gam.tvc</code>).
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>coxed</code> returns an object of <code>class</code> "coxedExpdur" or
+"coxedMargin", which is a list containing some of the following components, depending
+on the implementation of <code>coxed</code>:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<code>exp.dur</code> </td>
+<td style="text-align: left;"> A vector of predicted mean durations for the estimation sample
+if <code>newdata</code> is omitted, or else for the specified new data.  If <code>bootstrap</code>
+is <code>TRUE</code> bootstrapped standard errors are also provided, as well as the confidence
+interval requested by <code>level</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>mean</code> </td>
+<td style="text-align: left;"> The mean of the predicted durations. If <code>bootstrap</code>
+is <code>TRUE</code> bootstrapped standard errors are also provided, as well as the confidence
+interval requested by <code>level</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>median</code> </td>
+<td style="text-align: left;"> The median of the predicted durations. If <code>bootstrap</code>
+is <code>TRUE</code> bootstrapped standard errors are also provided, as well as the confidence
+interval requested by <code>level</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>baseline.functions</code> </td>
+<td style="text-align: left;"> The estimated cumulative baseline hazard function and survivor function. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>gam.model</code> </td>
+<td style="text-align: left;"> Output from the <code>gam</code> function in which the durations
+are fit against the exponentiated linear predictors from the Cox model.</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>gam.data</code> </td>
+<td style="text-align: left;"> Fitted values and confidence intervals from the GAM model.</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>exp.dur1</code> </td>
+<td style="text-align: left;">  A vector of predicted mean durations for the observations in <code>newdata1</code>
+when calculating marginal effects. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>exp.dur2</code> </td>
+<td style="text-align: left;"> A vector of predicted mean durations for the observations in <code>newdata2</code>
+when calculating marginal effects. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>mean1</code> </td>
+<td style="text-align: left;"> The mean of the predicted mean durations for the observations in <code>newdata1</code>
+when calculating marginal effects. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>mean2</code> </td>
+<td style="text-align: left;"> The mean of the predicted mean durations for the observations in <code>newdata2</code>
+when calculating marginal effects. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>median1</code> </td>
+<td style="text-align: left;"> The median of the predicted mean durations for the observations in <code>newdata1</code>
+when calculating marginal effects. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>median2</code> </td>
+<td style="text-align: left;"> The median of the predicted mean durations for the observations in <code>newdata2</code>
+when calculating marginal effects. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>diff</code> </td>
+<td style="text-align: left;"> A vector of the difference between the predicted mean durations for each
+observation under the covariate profile in <code>newdata2</code> and the covariate profile in <code>newdata1</code>.</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>mean.diff</code> </td>
+<td style="text-align: left;"> The mean of the differences in duration across observations. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>median.diff</code> </td>
+<td style="text-align: left;"> The median of the differences in duration across observations. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Jonathan Kropko &lt;jkropko@virginia.edu&gt; and Jeffrey J. Harden &lt;jharden2@nd.edu&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Kropko, J. and Harden, J. J. (2018). Beyond the Hazard Ratio: Generating Expected Durations from the
+Cox Proportional Hazards Model. <em>British Journal of Political Science</em> <a href="https://doi.org/10.1017/S000712341700045X">https://doi.org/10.1017/S000712341700045X</a>
+</p>
+<p>DiCiccio, T. J. and B. Efron. (1996). Bootstrap Confidence Intervals. <em>Statistical Science</em>.
+11(3): 189–212. <a href="https://doi.org/10.1214/ss/1032280214">https://doi.org/10.1214/ss/1032280214</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>coxph</code>, <code>cph</code>, <code>bootcov2</code>,
+<code>coxed.gam</code>, <code>coxed.gam.tvc</code>, <code>coxed.npsf</code>,
+<code>coxed.npsf.tvc</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">mv.surv &lt;- Surv(martinvanberg$formdur, event = rep(1, nrow(martinvanberg)))
+mv.cox &lt;- coxph(mv.surv ~ postel + prevdef + cont + ident + rgovm + pgovno +
+     tpgovno + minority, method = "breslow", data = martinvanberg)
+summary(mv.cox)
+
+# NPSF method
+ed1 &lt;- coxed(mv.cox, method="npsf")
+ed1$baseline.functions
+ed1$exp.dur
+summary(ed1, stat="mean")
+summary(ed1, stat="median")
+
+## Not run: ed1 &lt;- coxed(mv.cox, method="npsf", bootstrap = TRUE)
+ed1$exp.dur
+summary(ed1, stat="mean")
+summary(ed1, stat="median")
+
+## End(Not run)
+
+me &lt;- coxed(mv.cox, method="npsf", bootstrap = FALSE,
+            newdata = dplyr::mutate(martinvanberg, pgovno=1),
+            newdata2 = dplyr::mutate(martinvanberg, pgovno=6))
+summary(me, stat="mean")
+
+# GAM method
+ed2 &lt;- coxed(mv.cox, method="gam")
+summary(ed2$gam.data)
+summary(ed2$gam.model)
+ed2$exp.dur
+summary(ed2, stat="mean")
+
+## Not run: me &lt;- coxed(mv.cox, method="gam", bootstrap = TRUE,
+            newdata = dplyr::mutate(martinvanberg, pgovno=1),
+            newdata2 = dplyr::mutate(martinvanberg, pgovno=6))
+summary(me, stat="mean")
+summary(me, stat="median")
+
+## End(Not run)
+
+#Plotting the GAM fit
+## Not run: ggplot(ed2$gam.data, aes(x=rank.xb, y=y)) +
+    geom_point() +
+    geom_line(aes(x=rank.xb, y=gam_fit)) +
+    geom_ribbon(aes(ymin=gam_fit_95lb, ymax=gam_fit_95ub), alpha=.5) +
+    xlab("Cox model LP rank (smallest to largest)") +
+    ylab("Duration")
+
+## End(Not run)
+
+#Time-varying covariates
+bs.surv &lt;- Surv(time = boxsteffensmeier$start, time2 = boxsteffensmeier$te,
+     event = boxsteffensmeier$cut_hi)
+bs.cox &lt;- coxph(bs.surv ~ ec + dem + south + iv, data = boxsteffensmeier, method = "breslow")
+summary(bs.cox)
+
+ed1 &lt;- coxed(bs.cox, method="npsf", id=boxsteffensmeier$caseid)
+ed1$exp.dur
+summary(ed1, stat="mean")
+</code></pre>
+
+
+</div>

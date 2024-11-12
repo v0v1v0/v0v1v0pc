@@ -1,0 +1,235 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>credsubs.level</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute the maximum credible levels at which conclusions may be drawn</h2>
+
+<h3>Description</h3>
+
+<p>For each covariate point, <code>credsubs.level</code> computes the maximum
+credible level at which a conclusion may be drawn at each point, and
+what that conclusion is.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">credsubs.level(
+  params,
+  design = NULL,
+  FUN = function(x, params) {     params %*% t(x) },
+  threshold = 0,
+  method = c("asymptotic", "quantile"),
+  step.down = TRUE,
+  sides = c("both", "exclusive", "inclusive"),
+  est.FUN = mean,
+  var.FUN = sd,
+  point.estimate = NULL,
+  track = numeric(0),
+  verbose = FALSE,
+  z.store = c("ram", "recompute", "disk")
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>params</code></td>
+<td>
+<p>A numeric matrix whose rows are draws from the posterior
+distribution of either the regression surface or the
+parameter vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>design</code></td>
+<td>
+<p>(Optional) A numeric matrix whose rows are covariate points
+over which the band is to be constructed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FUN</code></td>
+<td>
+<p>(Optional) a function of the form <code>function(x, params)</code>
+that takes a row of <code>design</code> and the entire <code>params</code>
+matrix and returns a vector of the same length of <code>x</code>
+representing the regression surface.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold</code></td>
+<td>
+<p>Numeric; the value of <code>FUN</code> above which
+a covariate is included in the target subset.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Either "asymptotic" (default) or "quantile"; see details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>step.down</code></td>
+<td>
+<p>Logical (default <code>TRUE</code>); should the step-down
+procedure be used?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sides</code></td>
+<td>
+<p>One of "both" (default), "exclusive", or "inclusive".
+Which bounds should be constructed?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>est.FUN</code></td>
+<td>
+<p>The function used to produce estimates of the regression
+surface. Default is <code>mean</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var.FUN</code></td>
+<td>
+<p>The function used to quantify the variability of the
+regression surface posterior. Default is <code>sd</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>point.estimate</code></td>
+<td>
+<p>If not null, replaces the mean and sets the reference 
+around which the standard error is computed.
+Useful for bootstrapping methods.
+Treated as a row of the <code>params</code> matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>track</code></td>
+<td>
+<p>A numeric vector of indices indicating which rows (default none)
+of the design matrix should have the sample of the corresponding
+<code>FUN(x, params)</code> returned.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Logical (default <code>FALSE</code>); print progress?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z.store</code></td>
+<td>
+<p>How should certain intermediate computations be handled?
+See details.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If design is NULL (default), it is taken to be the identity
+matrix of dimension ncol(params), so that the rows of params
+are treated as draws from the posterior FUN(x, params).
+</p>
+<p>The 'asymptotic' method assumes that the marginal posteriors of 
+the FUN(x, params) are asymptotically normal and is usually
+significantly faster and less memory-intensive than the 'quantile'
+method, which makes no such assumption.
+</p>
+<p>By default (<code>z.store = "ram"</code>), the maximum credible level computation
+stores a potentially very large amount of intermediate computation results
+in memory. If not enough memory is available, <code>z.store = "disk"</code>
+uses the <code>ff</code> package to store the intermediate results on disk,
+which can still be fairly quick if the storage is fast (e.g. a local SSD).
+Alternatively, <code>z.store = "recompute"</code> discards the intermediate
+results and recomputes whenever needed. This uses minimal memory, but
+is usually the slowest option.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>credsubs.level</code>, which contains:
+</p>
+
+<dl>
+<dt><code>level</code></dt>
+<dd>
+<p>A numeric vector indicating the maximum credible
+level at which a conclusion may be drawn at each
+covariate point.</p>
+</dd>
+<dt><code>sign</code></dt>
+<dd>
+<p>A numeric vector indicating the which credible subsets
+of which each covariate point is a member at the
+credible level indicated by <code>level</code>. Exclusive
+and inclusive: 1, inclusive only: 0, neither: -1.</p>
+</dd>
+<dt><code>threshold</code></dt>
+<dd>
+<p>As provided.</p>
+</dd>
+<dt><code>method</code></dt>
+<dd>
+<p>As provided.</p>
+</dd>
+<dt><code>step.down</code></dt>
+<dd>
+<p>As provided.</p>
+</dd>
+<dt><code>sides</code></dt>
+<dd>
+<p>As provided.</p>
+</dd>
+<dt><code>est</code></dt>
+<dd>
+<p>Posterior estimate of the regression surface.</p>
+</dd>
+<dt><code>est.FUN</code></dt>
+<dd>
+<p>As provided.</p>
+</dd>
+<dt><code>var</code></dt>
+<dd>
+<p>Summary of posterior variability of the regression
+surface.</p>
+</dd>
+<dt><code>var.FUN</code></dt>
+<dd>
+<p>As provided.</p>
+</dd>
+<dt><code>trace</code></dt>
+<dd>
+<p>The posterior samples of the regression surface
+indicated by the <code>track</code> argument.</p>
+</dd>
+</dl>
+<h3>Examples</h3>
+
+<pre><code class="language-R">### Sample from regression surface posterior
+reg.surf.sample &lt;- matrix(rnorm(1000, mean=1:10), ncol=2, byrow=TRUE)
+credsubs.level(reg.surf.sample)
+
+### Parametric case
+design &lt;- cbind(1, 1:10)
+params &lt;- matrix(rnorm(200, mean=1:2), ncol=2, byrow=TRUE)
+credsubs(params, design)
+
+### With custom function
+params.sd &lt;- cbind(1 / rgamma(100, 1), params)
+FUN.sd &lt;- function(x, params) { params[, -1] %*% t(x) / params[, 1] }
+credsubs(params.sd, design, FUN.sd, threshold=1)
+
+</code></pre>
+
+
+</div>

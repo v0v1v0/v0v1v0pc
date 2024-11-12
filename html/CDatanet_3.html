@@ -1,0 +1,307 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cdnet</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimating count data models with social interactions under rational expectations using the NPL method</h2>
+
+<h3>Description</h3>
+
+<p><code>cdnet</code> estimates count data models with social interactions under rational expectations using the NPL algorithm (see Houndetoungan, 2024).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cdnet(
+  formula,
+  Glist,
+  group,
+  Rmax,
+  Rbar,
+  starting = list(lambda = NULL, Gamma = NULL, delta = NULL),
+  Ey0 = NULL,
+  ubslambda = 1L,
+  optimizer = "fastlbfgs",
+  npl.ctr = list(),
+  opt.ctr = list(),
+  cov = TRUE,
+  data
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>a class object formula: a symbolic description of the model. <code>formula</code> must be as, for example, <code>y ~ x1 + x2 + gx1 + gx2</code>
+where <code>y</code> is the endogenous vector and <code>x1</code>, <code>x2</code>, <code>gx1</code> and <code>gx2</code> are control variables, which can include contextual variables, i.e. averages among the peers.
+Peer averages can be computed using the function <code>peer.avg</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Glist</code></td>
+<td>
+<p>adjacency matrix. For networks consisting of multiple subnets, <code>Glist</code> can be a list of subnets with the <code>m</code>-th element being an <code class="reqn">n_s\times n_s</code>-adjacency matrix, where <code class="reqn">n_s</code> is the number of nodes in the <code>m</code>-th subnet.
+For heterogeneous peer effects (<code>length(unique(group)) = h &gt; 1</code>), the <code>m</code>-th element must be a list of <code class="reqn">h^2</code> <code class="reqn">n_s\times n_s</code>-adjacency matrices corresponding to the different network specifications (see Houndetoungan, 2024).
+For heterogeneous peer effects in the case of a single large network, <code>Glist</code> must be a one-item list. This item must be a list of <code class="reqn">h^2</code> network specifications.
+The order in which the networks in are specified are important and must match <code>sort(unique(group))</code> (see examples).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>group</code></td>
+<td>
+<p>the vector indicating the individual groups. The default assumes a common group. For 2 groups; that is, <code>length(unique(group)) = 2</code>, (e.g., <code>A</code> and <code>B</code>),
+four types of peer effects are defined: peer effects of <code>A</code> on <code>A</code>, of <code>A</code> on <code>B</code>, of <code>B</code> on <code>A</code>, and of <code>B</code> on <code>B</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Rmax</code></td>
+<td>
+<p>an integer indicating the theoretical upper bound of <code>y</code>. (see the model specification in details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Rbar</code></td>
+<td>
+<p>an <code class="reqn">L</code>-vector, where  <code class="reqn">L</code> is the number of groups. For large <code>Rmax</code> the cost function is assumed to be semi-parametric (i.e., nonparametric from 0 to <code class="reqn">\bar{R}</code> and quadratic beyond <code class="reqn">\bar{R}</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>starting</code></td>
+<td>
+<p>(optional) a starting value for <code class="reqn">\theta = (\lambda, \Gamma', \delta')'</code>, where <code class="reqn">\lambda</code>, <code class="reqn">\Gamma</code>, and <code class="reqn">\delta</code> are the parameters to be estimated (see details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Ey0</code></td>
+<td>
+<p>(optional) a starting value for <code class="reqn">E(y)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ubslambda</code></td>
+<td>
+<p>a positive value indicating the upper bound of <code class="reqn">\sum_{s = 1}^S \lambda_s &gt; 0</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimizer</code></td>
+<td>
+<p>is either <code>fastlbfgs</code> (L-BFGS optimization method of the package <span class="pkg">RcppNumerical</span>), <code>nlm</code> (referring to the function nlm), or <code>optim</code> (referring to the function optim).
+Arguments for these functions such as, <code>control</code> and <code>method</code> can be set via the argument <code>opt.ctr</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>npl.ctr</code></td>
+<td>
+<p>a list of controls for the NPL method (see details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>opt.ctr</code></td>
+<td>
+<p>a list of arguments to be passed in <code>optim_lbfgs</code> of the package <span class="pkg">RcppNumerical</span>, nlm or optim (the solver set in <code>optimizer</code>), such as <code>maxit</code>, <code>eps_f</code>, <code>eps_g</code>, <code>control</code>, <code>method</code>, etc.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cov</code></td>
+<td>
+<p>a Boolean indicating if the covariance should be computed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>an optional data frame, list or environment (or object coercible by as.data.frame to a data frame) containing the variables
+in the model. If not found in data, the variables are taken from <code>environment(formula)</code>, typically the environment from which <code>cdnet</code> is called.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+
+
+<h4>Model</h4>
+
+<p>The count variable <code class="reqn">y_i</code> take the value <code class="reqn">r</code> with probability.
+</p>
+<p style="text-align: center;"><code class="reqn">P_{ir} = F(\sum_{s = 1}^S \lambda_s \bar{y}_i^{e,s}  + \mathbf{z}_i'\Gamma - a_{h(i),r}) - F(\sum_{s = 1}^S \lambda_s \bar{y}_i^{e,s}  + \mathbf{z}_i'\Gamma - a_{h(i),r + 1}).</code>
+</p>
+
+<p>In this equation, <code class="reqn">\mathbf{z}_i</code> is a vector of control variables; <code class="reqn">F</code> is the distribution function of the standard normal distribution;
+<code class="reqn">\bar{y}_i^{e,s}</code> is the average of <code class="reqn">E(y)</code> among peers using the <code>s</code>-th network definition;
+<code class="reqn">a_{h(i),r}</code> is the <code>r</code>-th cut-point in the cost group <code class="reqn">h(i)</code>. <br><br>
+The following identification conditions have been introduced: <code class="reqn">\sum_{s = 1}^S \lambda_s &gt; 0</code>, <code class="reqn">a_{h(i),0} = -\infty</code>, <code class="reqn">a_{h(i),1} = 0</code>, and
+<code class="reqn">a_{h(i),r} = \infty</code> for any <code class="reqn">r \geq R_{\text{max}} + 1</code>. The last condition implies that <code class="reqn">P_{ir} = 0</code> for any <code class="reqn">r \geq R_{\text{max}} + 1</code>.
+For any <code class="reqn">r \geq 1</code>, the distance between two cut-points is <code class="reqn">a_{h(i),r+1} - a_{h(i),r} =  \delta_{h(i),r} + \sum_{s = 1}^S \lambda_s</code>
+As the number of cut-point can be large, a quadratic cost function is considered for <code class="reqn">r \geq \bar{R}_{h(i)}</code>, where <code class="reqn">\bar{R} = (\bar{R}_{1}, ..., \bar{R}_{L})</code>.
+With the semi-parametric cost-function,
+<code class="reqn">a_{h(i),r + 1} - a_{h(i),r}= \bar{\delta}_{h(i)} + \sum_{s = 1}^S \lambda_s</code>.  <br><br>
+The model parameters are: <code class="reqn">\lambda = (\lambda_1, ..., \lambda_S)'</code>, <code class="reqn">\Gamma</code>, and <code class="reqn">\delta = (\delta_1', ..., \delta_L')'</code>,
+where <code class="reqn">\delta_l = (\delta_{l,2}, ..., \delta_{l,\bar{R}_l}, \bar{\delta}_l)'</code> for <code class="reqn">l = 1, ..., L</code>.
+The number of single parameters in <code class="reqn">\delta_l</code> depends on  <code class="reqn">R_{\text{max}}</code> and <code class="reqn">\bar{R}_{l}</code>. The components <code class="reqn">\delta_{l,2}, ..., \delta_{l,\bar{R}_l}</code> or/and
+<code class="reqn">\bar{\delta}_l</code> must be removed in certain cases.<br>
+If <code class="reqn">R_{\text{max}} = \bar{R}_{l} \geq 2</code>, then <code class="reqn">\delta_l = (\delta_{l,2}, ..., \delta_{l,\bar{R}_l})'</code>.<br>
+If <code class="reqn">R_{\text{max}} = \bar{R}_{l} = 1</code> (binary models), then <code class="reqn">\delta_l</code> must be empty.<br>
+If <code class="reqn">R_{\text{max}} &gt; \bar{R}_{l} = 1</code>, then <code class="reqn">\delta_l = \bar{\delta}_l</code>.
+</p>
+
+
+
+<h4><code>npl.ctr</code></h4>
+
+<p>The model parameters are estimated using the Nested Partial Likelihood (NPL) method. This approach
+starts with a guess of <code class="reqn">\theta</code> and <code class="reqn">E(y)</code> and constructs iteratively a sequence
+of <code class="reqn">\theta</code> and <code class="reqn">E(y)</code>. The solution converges when the <code class="reqn">\ell_1</code>-distance
+between two consecutive <code class="reqn">\theta</code> and <code class="reqn">E(y)</code> is less than a tolerance. <br>
+The argument <code>npl.ctr</code> must include
+</p>
+
+<dl>
+<dt>tol</dt>
+<dd>
+<p>the tolerance of the NPL algorithm (default 1e-4),</p>
+</dd>
+<dt>maxit</dt>
+<dd>
+<p>the maximal number of iterations allowed (default 500),</p>
+</dd>
+<dt>print</dt>
+<dd>
+<p>a boolean indicating if the estimate should be printed at each step.</p>
+</dd>
+<dt>S</dt>
+<dd>
+<p>the number of simulations performed use to compute integral in the covariance by important sampling.</p>
+</dd>
+</dl>
+<h3>Value</h3>
+
+<p>A list consisting of:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>info</code></td>
+<td>
+<p>a list of general information about the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estimate</code></td>
+<td>
+<p>the NPL estimator.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Ey</code></td>
+<td>
+<p><code class="reqn">E(y)</code>, the expectation of y.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>GEy</code></td>
+<td>
+<p>the average of <code class="reqn">E(y)</code> friends.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cov</code></td>
+<td>
+<p>a list including (if <code>cov == TRUE</code>) <code>parms</code> the covariance matrix and another list <code>var.comp</code>, which includes <code>Sigma</code>, as <code class="reqn">\Sigma</code>, and <code>Omega</code>, as <code class="reqn">\Omega</code>, matrices used for
+compute the covariance matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>details</code></td>
+<td>
+<p>step-by-step output as returned by the optimizer.</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Houndetoungan, E. A. (2024). Count Data Models with Social Interactions under Rational Expectations. Available at SSRN 3721250, <a href="https://doi.org/10.2139/ssrn.3721250">doi:10.2139/ssrn.3721250</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>sart</code>, <code>sar</code>, <code>simcdnet</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+set.seed(123)
+M      &lt;- 5 # Number of sub-groups
+nvec   &lt;- round(runif(M, 100, 200))
+n      &lt;- sum(nvec)
+
+# Adjacency matrix
+A      &lt;- list()
+for (m in 1:M) {
+  nm           &lt;- nvec[m]
+  Am           &lt;- matrix(0, nm, nm)
+  max_d        &lt;- 30 #maximum number of friends
+  for (i in 1:nm) {
+    tmp        &lt;- sample((1:nm)[-i], sample(0:max_d, 1))
+    Am[i, tmp] &lt;- 1
+  }
+  A[[m]]       &lt;- Am
+}
+Anorm  &lt;- norm.network(A) #Row-normalization
+
+# X
+X      &lt;- cbind(rnorm(n, 1, 3), rexp(n, 0.4))
+
+# Two group:
+group  &lt;- 1*(X[,1] &gt; 0.95)
+
+# Networks
+# length(group) = 2 and unique(sort(group)) = c(0, 1)
+# The networks must be defined as to capture:
+# peer effects of `0` on `0`, peer effects of `1` on `0`
+# peer effects of `0` on `1`, and peer effects of `1` on `1`
+G        &lt;- list()
+cums     &lt;- c(0, cumsum(nvec))
+for (m in 1:M) {
+  tp     &lt;- group[(cums[m] + 1):(cums[m + 1])]
+  Am     &lt;- A[[m]]
+  G[[m]] &lt;- norm.network(list(Am * ((1 - tp) %*% t(1 - tp)),
+                              Am * ((1 - tp) %*% t(tp)),
+                              Am * (tp %*% t(1 - tp)),
+                              Am * (tp %*% t(tp))))
+}
+
+# Parameters
+lambda &lt;- c(0.2, 0.3, -0.15, 0.25) 
+Gamma  &lt;- c(4.5, 2.2, -0.9, 1.5, -1.2)
+delta  &lt;- rep(c(2.6, 1.47, 0.85, 0.7, 0.5), 2) 
+
+# Data
+data   &lt;- data.frame(X, peer.avg(Anorm, cbind(x1 = X[,1], x2 =  X[,2])))
+colnames(data) = c("x1", "x2", "gx1", "gx2")
+
+ytmp   &lt;- simcdnet(formula = ~ x1 + x2 + gx1 + gx2, Glist = G, Rbar = rep(5, 2),
+                   lambda = lambda, Gamma = Gamma, delta = delta, group = group,
+                   data = data)
+y      &lt;- ytmp$y
+hist(y, breaks = max(y) + 1)
+table(y)
+
+# Estimation
+est    &lt;- cdnet(formula = y ~ x1 + x2 + gx1 + gx2, Glist = G, Rbar = rep(5, 2), group = group,
+                optimizer = "fastlbfgs", data = data,
+                opt.ctr = list(maxit = 5e3, eps_f = 1e-11, eps_g = 1e-11))
+summary(est)
+
+</code></pre>
+
+
+</div>

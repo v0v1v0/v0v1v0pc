@@ -1,0 +1,243 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>LGTransforms</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Transformation for Species Abundance Data</h2>
+
+<h3>Description</h3>
+
+<p>Calculates the transformed species abundances following Legendre and
+Gallagher.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">LGTransforms(
+  x,
+  method = c("chord", "chisq", "profile", "Hellinger"),
+  offset = 0,
+  power = 1
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A species abundance matrix (rows: sites, columns: species).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>The transformation method, one of "chord" (the default),
+"chisq", "profile", or "Hellinger" (see details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>offset</code></td>
+<td>
+<p>Offset value applied to all the columns of <code>x</code> prior to
+the other transformations (default: <code>0</code>, see Details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>power</code></td>
+<td>
+<p>Exponent for the power transformation (Box-Cox) applied
+to all columns of <code>x</code> after the offset and before the transformation
+specified by argument <code>method</code> (default: <code>1</code>, see Details).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>These transformations of species abundances values are useful for
+multivariate least squares methods for ordination methods, such as the
+principal component analysis, or modelling methods, such as the multiscale
+codependence analysis (<code>MCA</code>), the canonical redundancy analysis
+(RDA). They allow one to use least squares methods, which operate on the
+basis of the Euclidean metric, on species abundance data, for which the
+Euclidean metric have generally inadequate properties (see Legendre &amp;
+Gallagher 2001 and Legendre &amp; Borcard 2018, in references below, for a
+thorough discussion on the topic).
+</p>
+<p>The power (Box Cox) transformation involves the following equation:
+</p>
+<p>y' = (y + offset)^power    if power != 0
+</p>
+<p>y' = log(y + offset)       if power == 0
+</p>
+<p>The default values for <code>offset</code> (<code>0</code>) and <code>power</code> (<code>1</code>)
+correspond to applying no transformation besides that specified by argument
+<code>methods</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A matrix of the transformed species abundances.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Guillaume Guénard [aut, cre] (ORCID:
+    &lt;https://orcid.org/0000-0003-0761-3072&gt;),
+  Pierre Legendre [ctb] (ORCID: &lt;https://orcid.org/0000-0002-3838-3305&gt;),
+  Bertrand Pages [ctb]
+Maintainer: Guillaume Guénard &lt;guillaume.guenard@umontreal.ca&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Legendre P. &amp; Gallagher E. D. 2001. Ecologically meaningful transformations
+for ordination of species data. Oecologia 129: 271-280
+doi: 10.1007/s004420100716
+</p>
+<p>Box G. E. P. &amp; Cox D. R. 1964. An analysis of transformations. Journal of
+the Royal Statistical Society Series B 26: 211-243
+</p>
+<p>Legendre P. &amp; Borcard D. 2018. Box-Cox-chord transformations for community
+composition data prior to beta diversity analysis. Ecography 41: 1820-1824.
+doi: 0.1111/ecog.03498
+</p>
+<p>Legendre, P. &amp; Legendre, L. 2012. Numerical Ecology, Third English Edition.
+Elsevier B. V. Amsterdam, The Netherlands.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data(Doubs)
+
+## Removing any species that have not been not observed:
+Doubs.fish -&gt; x
+x[rowSums(x)!=0,] -&gt; x
+
+## Transforming the abundances
+LGTransforms(x,"chord") -&gt; chord
+LGTransforms(x,"chord",offset=1,power=0) -&gt; log.chord
+LGTransforms(x,"chord",power=0.25) -&gt; pow.chord
+LGTransforms(x,"chisq") -&gt; chisq
+LGTransforms(x,"profile") -&gt; sp_pr
+LGTransforms(x,"Hellinger") -&gt; Helli
+
+dist(chord)
+dist(log.chord)
+dist(pow.chord)
+dist(chisq)
+dist(sp_pr)
+dist(Helli)
+
+## Legendre &amp; Gallagher synthetic examples:
+
+data(LGDat)
+
+## Diastemograms:
+
+as.matrix(dist(LGDat[,1L])) -&gt; geo
+geo[upper.tri(geo)] -&gt; geo
+
+## Raw Euclidean distances
+par(mfrow=c(1,1), mar=c(5,5,4,2))
+
+as.matrix(dist(LGDat[,-1L])) -&gt; eco
+eco[upper.tri(eco)] -&gt; eco
+
+plot(eco~geo, data=data.frame(geo=geo, eco=eco),
+     xaxp=c(1,18,17), las=1, ylim=c(0,max(eco)),
+     xlab="True geographic distance",
+     ylab="Euclidean distance")
+
+## Euclidean distances on the transformed abundances:
+par(mfrow=c(3,2), mar=c(3,5,4,2))
+
+LGTransforms(LGDat[,-1L],"chord") -&gt; chord
+as.matrix(dist(chord)) -&gt; eco
+eco[upper.tri(eco)] -&gt; eco
+plot(eco~geo,data=data.frame(geo=geo,eco=eco),
+     xaxp=c(1,18,17),las=1,xlab="",ylab="",
+     main="Chord distance",ylim=c(0,max(eco)))
+
+LGTransforms(LGDat[,-1L],"chord",offset=1,power=0) -&gt; log.chord
+as.matrix(dist(log.chord)) -&gt; eco
+eco[upper.tri(eco)] -&gt; eco
+plot(eco~geo,data=data.frame(geo=geo,eco=eco),
+     xaxp=c(1,18,17),las=1,xlab="",ylab="",
+     main="Chord distance (log(x+1))",ylim=c(0,max(eco)))
+
+par(mar=c(4,5,3,2))
+
+LGTransforms(LGDat[,-1L],"chord",power=0.25) -&gt; pow.chord
+as.matrix(dist(pow.chord)) -&gt; eco
+eco[upper.tri(eco)] -&gt; eco
+plot(eco~geo,data=data.frame(geo=geo,eco=eco),
+     xaxp=c(1,18,17),las=1,xlab="",ylab="",
+     main="Chord distance (power=0.25)",ylim=c(0,max(eco)))
+
+LGTransforms(LGDat[,-1L],"chisq") -&gt; chisq
+as.matrix(dist(chisq)) -&gt; eco
+eco[upper.tri(eco)] -&gt; eco
+plot(eco~geo,data=data.frame(geo=geo,eco=eco),
+     xaxp=c(1,18,17),las=1,xlab="",ylab="",
+     main="Chi-square distance",ylim=c(0,max(eco)))
+
+par(mar=c(5,5,2,2))
+
+LGTransforms(LGDat[,-1L],"profile") -&gt; sp_pr
+as.matrix(dist(sp_pr)) -&gt; eco
+eco[upper.tri(eco)] -&gt; eco
+plot(eco~geo,data=data.frame(geo=geo,eco=eco),
+     xaxp=c(1,18,17),las=1,xlab="",ylab="",
+     main="Dist. between profiles",ylim=c(0,max(eco)))
+
+LGTransforms(LGDat[,-1L],"Hellinger") -&gt; Helli
+as.matrix(dist(Helli)) -&gt; eco
+eco[upper.tri(eco)] -&gt; eco
+plot(eco~geo,data=data.frame(geo=geo,eco=eco),
+     xaxp=c(1,18,17),las=1,xlab="",ylab="",
+     main="Hellinger distance",ylim=c(0,max(eco)))
+
+mtext(text="True geographic distance", side=1, line=-1.5, outer=TRUE)
+mtext(text="Ecological distance", side=2, line=-1.5, outer=TRUE)
+
+## Examples from Legendre &amp; Legendre 2012, page 329 (Figure 7.8):
+
+matrix(c(0,0,1,4,1,0,8,1,0),3L,3L) -&gt; LL329
+
+## D1:  Euclidean distance
+dist(LL329)
+
+## Chord transformation (D3: chord distance)
+LGTransforms(LL329,"chord") -&gt; tr       
+tr
+dist(tr)
+
+## "Species profile" transformation (D18)
+LGTransforms(LL329,"profile") -&gt; tr       
+tr
+dist(tr)
+
+## Hellinger transformation (D17: Hellinger distance)
+LGTransforms(LL329,"Hellinger") -&gt; tr       
+tr
+dist(tr)
+
+## Chi-square transformation (D16: Chi-square distance)
+LGTransforms(LL329,"chisq") -&gt; tr       
+tr
+dist(tr)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,478 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>construct</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Build code to recreate an object</h2>
+
+<h3>Description</h3>
+
+
+<ul>
+<li> <p><code>construct()</code> builds the code to reproduce one object,
+</p>
+</li>
+<li> <p><code>construct_multi()</code> builds the code to reproduce objects stored in a named
+list or environment.
+</p>
+</li>
+</ul>
+<h3>Usage</h3>
+
+<pre><code class="language-R">construct(
+  x,
+  ...,
+  data = NULL,
+  pipe = NULL,
+  check = NULL,
+  unicode_representation = c("ascii", "latin", "character", "unicode"),
+  escape = FALSE,
+  pedantic_encoding = FALSE,
+  compare = compare_options(),
+  one_liner = FALSE,
+  template = getOption("constructive_opts_template"),
+  classes = NULL
+)
+
+construct_multi(
+  x,
+  ...,
+  data = NULL,
+  pipe = NULL,
+  check = NULL,
+  unicode_representation = c("ascii", "latin", "character", "unicode"),
+  escape = FALSE,
+  pedantic_encoding = FALSE,
+  compare = compare_options(),
+  one_liner = FALSE,
+  template = getOption("constructive_opts_template"),
+  classes = NULL,
+  include_dotted = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>An object, for <code>construct_multi()</code> a named list or an environment.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Constructive options built with the <code style="white-space: pre;">⁠opts_*()⁠</code> family of functions. See the "Constructive options"
+section below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>Named list or environment of objects we want to detect and mention by name (as opposed to
+deparsing them further). Can also contain unnamed nested lists, environments, or
+package names, in the latter case package exports and datasets will be considered.
+In case of conflict, the last provided name is considered.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pipe</code></td>
+<td>
+<p>Which pipe to use, either <code>"base"</code> or <code>"magrittr"</code>.
+Defaults to <code>"base"</code> for R &gt;= 4.2, otherwise to <code>"magrittr"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>check</code></td>
+<td>
+<p>Boolean. Whether to check if the created code reproduces the object
+using <code>waldo::compare()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>unicode_representation</code></td>
+<td>
+<p>By default "ascii", which means only ASCII characters
+(code point &lt; 128) will be used to construct strings and variable names. This makes sure that
+homoglyphs (different spaces and other identically displayed unicode characters)
+are printed differently, and avoid possible unfortunate copy and paste
+auto conversion issues. "latin" is more lax and uses all latin characters
+(code point &lt; 256). "character" shows all characters, but not emojis. Finally
+"unicode" displays all characters and emojis, which is what <code>dput()</code> does.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>escape</code></td>
+<td>
+<p>Boolean. Whether to escape double quotes and backslashes. If <code>FALSE</code> we use
+single quotes to surround strings (including variable and element names)
+containing double quotes, and raw strings for strings that contain backslashes
+and/or a combination of single and double quotes. Depending on
+<code>unicode_representation</code> <code>escape = FALSE</code> cannot be applied on all strings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pedantic_encoding</code></td>
+<td>
+<p>Boolean. Whether to mark strings with the "unknown" encoding
+rather than an explicit native encoding ("UTF-8" or "latin1") when it's
+necessary to reproduce the binary representation exactly. This detail is
+normally of very little significance. The reason why we're not pedantic by default is that
+the constructed code might be different in the console and in snapshot
+tests and reprexes due to the latter rounding some angles, and it would
+be confusing for users.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>compare</code></td>
+<td>
+<p>Parameters passed to <code>waldo::compare()</code>, built with <code>compare_options()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>one_liner</code></td>
+<td>
+<p>Boolean. Whether to collapse the output to a single line of code.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>template</code></td>
+<td>
+<p>A list of constructive options built with <code style="white-space: pre;">⁠opts_*()⁠</code> functions,
+they will be overriden by <code>...</code>. Use it to set a default
+behavior for <code>{constructive}</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>classes</code></td>
+<td>
+<p>A character vector of classes for which to use idiomatic
+constructors when available, we can provide a package instead of all its
+classes, in the "{pkg}" form, and we can use a minus sign (inside the quotes)
+to exclude rather than include. By default we use idiomatic constructors
+whenever possible. The special values <code>"*none*"</code> and <code>"*base*"</code> can be used
+to restrict the idiomatic construction to the objects. See <code>construct_dput()</code>
+and <code>construct_base()</code> for wrappers around this feature.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include_dotted</code></td>
+<td>
+<p>Whether to include names starting with dots, this includes
+<code>.Random.seed</code> in the global environment and objects like <code>.Class</code> and
+<code>.Generic</code> in the execution environments of S3 methods.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>construct_multi()</code> recognizes promises (also called lazy bindings),
+this means that for instance <code>construct_multi(environment())</code> can be called
+when debugging a function and will construct unevaluated arguments using
+<code>delayedAssign()</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class 'constructive'.
+</p>
+
+
+<h3>Constructive options</h3>
+
+<p>Constructive options provide a way to customize the output of 'construct()'.
+We can provide calls to 'opts_*()' functions to the '...' argument. Each of these functions targets a specific type or class and is documented on its own page.
+</p>
+
+<ul>
+<li> <p><code>opts_array(constructor = c("array", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_AsIs(constructor = c("I", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_atomic(..., trim = NULL, fill = c("default", "rlang", "+", "...", "none"), compress = TRUE)</code>
+</p>
+</li>
+<li> <p><code>opts_bibentry(constructor = c("bibentry", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_blob(constructor = c("blob", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_character(constructor = c("default"), ..., trim = NULL, fill = c("default", "rlang", "+", "...", "none"), compress = TRUE, unicode_representation = c("ascii", "latin", "character", "unicode"), escape = FALSE)</code>
+</p>
+</li>
+<li> <p><code>opts_citationFooter(constructor = c("citFooter", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_citationHeader(constructor = c("citHeader", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_classGeneratorFunction(constructor = c("setClass"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_classPrototypeDef(constructor = c("prototype"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_classRepresentation(constructor = c("getClassDef"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_complex(constructor = c("default"), ..., trim = NULL, fill = c("default", "rlang", "+", "...", "none"), compress = TRUE)</code>
+</p>
+</li>
+<li> <p><code>opts_constructive_options(constructor = c("opts", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_CoordCartesian(constructor = c("coord_cartesian", "next", "environment"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_CoordFixed(constructor = c("coord_fixed", "next", "environment"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_CoordFlip(constructor = c("coord_flip", "next", "environment"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_CoordMap(constructor = c("coord_map", "next", "environment"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_CoordMunch(constructor = c("coord_munch", "next", "environment"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_CoordPolar(constructor = c("coord_polar", "next", "environment"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_CoordQuickmap(constructor = c("coord_quickmap", "next", "environment"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_CoordSf(constructor = c("coord_sf", "next", "environment"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_CoordTrans(constructor = c("coord_trans", "next", "environment"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_data.frame(constructor = c("data.frame", "read.table", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_data.table(constructor = c("data.table", "next", "list"), ..., selfref = FALSE)</code>
+</p>
+</li>
+<li> <p><code>opts_Date(constructor = c("as.Date", "as_date", "date", "new_date", "as.Date.numeric", "as_date.numeric", "next", "double"), ..., origin = "1970-01-01")</code>
+</p>
+</li>
+<li> <p><code>opts_difftime(constructor = c("as.difftime", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_dm(constructor = c("dm", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_dots(constructor = c("default"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_double(constructor = c("default"), ..., trim = NULL, fill = c("default", "rlang", "+", "...", "none"), compress = TRUE)</code>
+</p>
+</li>
+<li> <p><code>opts_element_blank(constructor = c("element_blank", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_element_grob(constructor = c("element_grob", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_element_line(constructor = c("element_line", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_element_rect(constructor = c("element_rect", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_element_render(constructor = c("element_render", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_element_text(constructor = c("element_text", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_environment(constructor = c(".env", "list2env", "as.environment", "new.env", "topenv", "new_environment", "predefine"), ..., recurse = FALSE)</code>
+</p>
+</li>
+<li> <p><code>opts_error(constructor = c("errorCondition", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_expression(constructor = c("default"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_externalptr(constructor = c("default"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_FacetWrap(constructor = c("facet_wrap", "ggproto", "next", "environment"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_factor(constructor = c("factor", "as_factor", "new_factor", "next", "integer"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_formula(constructor = c("default", "formula", "as.formula", "new_formula", "next"), ..., environment = TRUE)</code>
+</p>
+</li>
+<li> <p><code>opts_function(constructor = c("function", "as.function", "new_function"), ..., environment = TRUE, srcref = FALSE, trim = NULL)</code>
+</p>
+</li>
+<li> <p><code>opts_ggplot(constructor = c("ggplot", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_ggproto(constructor = c("default", "next", "environment"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_grouped_df(constructor = c("default", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_hexmode(constructor = c("as.hexmode", "next"), ..., integer = FALSE)</code>
+</p>
+</li>
+<li> <p><code>opts_integer(constructor = c("default"), ..., trim = NULL, fill = c("default", "rlang", "+", "...", "none"), compress = TRUE)</code>
+</p>
+</li>
+<li> <p><code>opts_integer64(constructor = c("as.integer64", "next", "double"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_labels(constructor = c("labs", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_language(constructor = c("default"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_Layer(constructor = c("default", "layer", "next", "environment"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_list(constructor = c("list", "list2"), ..., trim = NULL, fill = c("vector", "new_list", "+", "...", "none"))</code>
+</p>
+</li>
+<li> <p><code>opts_logical(constructor = c("default"), ..., trim = NULL, fill = c("default", "rlang", "+", "...", "none"), compress = TRUE)</code>
+</p>
+</li>
+<li> <p><code>opts_margin(constructor = c("margin", "next", "double"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_matrix(constructor = c("matrix", "array", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_mts(constructor = c("ts", "next", "atomic"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_noquote(constructor = c("noquote", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_NULL(constructor = "NULL", ...)</code>
+</p>
+</li>
+<li> <p><code>opts_numeric_version(constructor = c("numeric_version", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_octmode(constructor = c("as.octmode", "next"), ..., integer = FALSE)</code>
+</p>
+</li>
+<li> <p><code>opts_ordered(constructor = c("ordered", "factor", "new_ordered", "next", "integer"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_package_version(constructor = c("package_version", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_pairlist(constructor = c("pairlist", "pairlist2"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_person(constructor = c("person", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_POSIXct(constructor = c("as.POSIXct", ".POSIXct", "as_datetime", "as.POSIXct.numeric", "as_datetime.numeric", "next", "atomic"), ..., origin = "1970-01-01")</code>
+</p>
+</li>
+<li> <p><code>opts_POSIXlt(constructor = c("as.POSIXlt", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_quosure(constructor = c("new_quosure", "next", "language"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_quosures(constructor = c("new_quosures", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_R_system_version(constructor = c("R_system_version", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_raw(constructor = c("as.raw", "charToRaw"), ..., trim = NULL, fill = c("default", "rlang", "+", "...", "none"), compress = TRUE, representation = c("hexadecimal", "decimal"))</code>
+</p>
+</li>
+<li> <p><code>opts_rel(constructor = c("rel", "next", "double"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_rowwise_df(constructor = c("default", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_S4(constructor = c("new"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_Scale(constructor = c("default", "next", "environment"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_ScalesList(constructor = c("ScalesList", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_simpleCondition(constructor = c("simpleCondition", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_simpleError(constructor = c("simpleError", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_simpleMessage(constructor = c("simpleMessage", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_simpleUnit(constructor = c("unit", "next", "double"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_simpleWarning(constructor = c("simpleWarning", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_tbl_df(constructor = c("tibble", "tribble", "next", "list"), ..., trailing_comma = TRUE, justify = c("left", "right", "centre", "none"))</code>
+</p>
+</li>
+<li> <p><code>opts_theme(constructor = c("theme", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_ts(constructor = c("ts", "next", "atomic"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_uneval(constructor = c("aes", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_vctrs_list_of(constructor = c("list_of", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_waiver(constructor = c("waiver", "next", "list"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_warning(constructor = c("warningCondition", "next"), ...)</code>
+</p>
+</li>
+<li> <p><code>opts_weakref(constructor = c("new_weakref"), ...)</code>
+</p>
+</li>
+</ul>
+<h3>See Also</h3>
+
+<p><code>construct_dput()</code> <code>construct_base()</code> <code>construct_clip()</code>
+<code>construct_dump()</code> <code>construct_reprex()</code> <code>construct_diff()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">construct(head(cars))
+construct(head(cars), opts_data.frame("read.table"))
+construct(head(cars), opts_data.frame("next"))
+construct(iris$Species)
+construct(iris$Species, opts_atomic(compress = FALSE), opts_factor("new_factor"))
+construct_multi(list(a = head(cars), b = iris$Species))
+</code></pre>
+
+
+</div>

@@ -1,0 +1,146 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CASCORE</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Covariate Assisted Spectral Clustering on Ratios of Eigenvectors.</h2>
+
+<h3>Description</h3>
+
+<p>Using ratios-of-eigenvectors to detect underlying communities in networks with node covariates.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CASCORE(
+  Adj,
+  Covariate,
+  K,
+  alpha = NULL,
+  alphan = 5,
+  itermax = 100,
+  startn = 10
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Adj</code></td>
+<td>
+<p>A 0/1 adjacency matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Covariate</code></td>
+<td>
+<p>A covariate matrix. The rows correspond to nodes and the columns correspond to covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K</code></td>
+<td>
+<p>A positive integer, indicating the number of underlying communities in graph <code>Adj</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>A numeric vector, each element of which is a tuning parameter to weigh the covariate matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alphan</code></td>
+<td>
+<p>The number of candidates <code class="reqn">\alpha</code>. The default number is 5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>itermax</code></td>
+<td>
+<p><code>k-means</code> parameter, indicating the maximum number of
+iterations allowed. The default value is 100.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>startn</code></td>
+<td>
+<p><code>k-means</code> parameter. If centers is a number, how many
+random sets should be chosen? The default value is 10.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><em>CASCORE</em> is fully established in <em>Network-Adjusted Covariates for Community Detection</em>
+of Hu &amp; Wang (2023). <em>CASCORE</em> detects the latent community structure under the covariate
+assisted degree corrected stochastic block model (CADCSBM), and it allows the disagreement
+between the community structures indicated in the graph and the covariates, respectively.
+<code>K-means</code> is applied on the entry-wise ratios between first leading eigenvector and
+each of the other <code class="reqn">K</code> leading eigenvectors of the combined matrix of the adjacency matrix
+and the covariate matrix, to reveal the underlying memberships.
+</p>
+
+
+<h3>Value</h3>
+
+<table><tr style="vertical-align: top;">
+<td><code>estall</code></td>
+<td>
+<p>A lavel vector</p>
+</td>
+</tr></table>
+<p>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Hu, Y., &amp; Wang, W. (2023) <em>Network-AdjustedCovariatesforCommunity Detection</em>,
+<br><a href="https://arxiv.org/abs/2306.15616">https://arxiv.org/abs/2306.15616</a><br></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Simulate the Network
+n = 10; K = 2;
+theta = 0.4 + (0.45-0.05)*(seq(1:n)/n)^2; Theta = diag(theta);
+P  = matrix(c(0.8, 0.2, 0.2, 0.8), byrow = TRUE, nrow = K)
+set.seed(2022)
+l = sample(1:K, n, replace=TRUE); # node labels
+Pi = matrix(0, n, K) # label matrix
+for (k in 1:K){
+  Pi[l == k, k] = 1
+}
+Omega = Theta %*% Pi %*% P %*% t(Pi) %*% Theta;
+Adj = matrix(runif(n*n, 0, 1), nrow = n);
+Adj = Omega - Adj;
+Adj = 1*(Adj &gt;= 0)
+diag(Adj) = 0
+Adj[lower.tri(Adj)] = t(Adj)[lower.tri(Adj)]
+caseno = 4; Nrange = 10; Nmin = 10; prob1 = 0.9; p = n*4;
+Q = matrix(runif(p*K, 0, 1), nrow = p, ncol = K)
+Q = sweep(Q,2,colSums(Q),`/`)
+W = matrix(0, nrow = n, ncol = K);
+for(jj in 1:n) {
+  if(runif(1) &lt;= prob1) {W[jj, 1:K] = Pi[jj, ];}
+  else W[jj, sample(K, 1)] = 1;
+}
+W = t(W)
+D0 = Q %*% W
+X = matrix(0, n, p)
+N = switch(caseno, rep(100, n), rep(100, n), round(runif(n)*Nrange+ Nmin),
+  round(runif(n)* Nrange+Nmin))
+for (i in 1: ncol(D0)){
+  X[i, ] = rmultinom(1, N[i], D0[, i])
+}
+CASCORE(Adj, X, 2)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,424 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>TFA</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Transfer function analysis of dynamic cerebral autoregulation (TFA)</h2>
+
+<h3>Description</h3>
+
+<p><code>TFA()</code> calculates dynamic cerebral autoregulation trough a transfer function analysis from a <em>continuous</em> recording. This function follows the recommendations from Claassen et al. [1] and mimicks the matlab script created by David Simpsons in 2015 (<a href="http://www.car-net.org/content/resources#tabTools">Matlab TFA function</a>). <code>TFA()</code> also includes the possibility to analyse raw recordings with application of cyclic (beat-to-beat) average with the possiblity of utilizing interpolation. (see <strong>details</strong>).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">TFA(df, variables,
+trigger = NULL, deleter = NULL,
+freq = 1000, fast = 50, raw_data = FALSE,
+interpolation = 3, output = "table",
+vlf = c(0.02,0.07),lf = c(0.07,0.2),
+hf = c(0.2,0.5), detrend = FALSE,
+spectral_smoothing = 3,
+coherence2_thresholds = cbind(c(3:15),
+c(0.51,0.40,0.34,0.29,0.25,0.22,0.20,0.18,
+0.17,0.15,0.14,0.13,0.12)),
+apply_coherence2_threshold = TRUE,
+remove_negative_phase = TRUE,
+remove_negative_phase_f_cutoff = 0.1,
+normalize_ABP = FALSE,
+normalize_CBFV = FALSE,
+window_type = 'hanning',
+window_length = 102.4,
+overlap = 59.99,
+overlap_adjust = TRUE,
+na_as_mean = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>Raw <em>continuous</em> recording with numeric data and first column has to be time in seconds. (<code>dataframe</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>variables</code></td>
+<td>
+<p>Definition of the type and order of recorded variables as a list. Middle cerebral artery blood velocity (<code>'mcav'</code>) and arterial blood pressure (<code>'abp'</code>) is currently supported. (<code>list</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trigger</code></td>
+<td>
+<p>Trigger with two columns:  first is start, and second is end of period to be analyzed. Every row is a period for analysis. Default is <code>NULL</code>, which results in analysis of the full dataframe.  (<code>dataframe</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deleter</code></td>
+<td>
+<p>Deleter with two columns: first is start and second is end of period with artefacts, which need to be deleted. Every row is a period with artefacts. Default is <code>NULL</code>. (<code>dataframe</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>freq</code></td>
+<td>
+<p>Frequency of recorded data, in Hz. Default is <code>1000</code>. (<code>numeric</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fast</code></td>
+<td>
+<p>Select if you want the data to aggregated resulting in a faster, but perhaps more imprecise run, in Hz. Default is <code>50</code> (<code>numeric</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>raw_data</code></td>
+<td>
+<p>Select <code>TRUE</code> if the data is raw and cyclic mean should be calculated. <strong>NB:</strong> this function have not been validated, why validated methods for calculating cyclic mean are preferred. Default is <code>FALSE</code> (<code>boolian</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interpolation</code></td>
+<td>
+<p>Select the number of beats which should be interpolated. Default is up to <code>3</code> beats and <code>0</code> results in no interpolation. (<code>numeric</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output</code></td>
+<td>
+<p>Select what the output should be. <code>'table'</code> results in a dataframe with values for the three frequencies defined by Claassen et al. [1]; <code>'long'</code> results in a dataframe with the results in a long format; <code>'plot'</code> results in a daframe which can help plot gain, phase and coherence; <code>'plot-peak'</code> results in a dataframe, which can be used to validate the cyclic average, and <code>'raw'</code> results in a nested list with results primarily for debugging. Default is <code>'table'</code>. (<code>string</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vlf, lf, hf, detrend, spectral_smoothing, coherence2_thresholds, apply_coherence2_threshold, remove_negative_phase, remove_negative_phase_f_cutoff, normalize_ABP, normalize_CBFV, window_type, window_length, overlap, overlap_adjust, na_as_mean</code></td>
+<td>
+<p>See <strong>TFA-parameters</strong></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Using a <em>continuous</em> raw recording, <code>TFA()</code> calculates dynamic cerebral autoregulation trough a transfer function analysis. This function utilizes the recommendations from Claassen et al [1] and mimicks the matlab script created by David Simpsons in 2015.</p>
+<pre>View(data)
+</pre>
+<table>
+<tr>
+<td style="text-align: right;">
+   <code>time</code> </td>
+<td style="text-align: right;"> <code>abp</code> </td>
+<td style="text-align: right;"> <code>mcav</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+   <code>7.00</code> </td>
+<td style="text-align: right;"> <code>78</code> </td>
+<td style="text-align: right;"> <code>45</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+   <code>7.01</code> </td>
+<td style="text-align: right;"> <code>78</code> </td>
+<td style="text-align: right;"> <code>46</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+   <code>...</code> </td>
+<td style="text-align: right;"> <code>...</code> </td>
+<td style="text-align: right;"> <code>...</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+   <code>301.82</code> </td>
+<td style="text-align: right;"> <code>82</code> </td>
+<td style="text-align: right;"> <code>70</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+   <code>301.83</code> </td>
+<td style="text-align: right;"> <code>81</code> </td>
+<td style="text-align: right;"> <code>69</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+</td>
+</tr>
+</table>
+<p>To calculate the variables insert the data and select the relevant variables.</p>
+<pre>TFA(df=data, variables=c("abp","mcav"))
+</pre>
+<p>See <strong>Value</strong> for output description.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>TFA()</code> returns a dataframe depending on the output selected. <code>'table'</code> results in a dataframe with values for the three frequencies defined by Claassen et al. [1]; <code>'long'</code> results in a dataframe with the results in a long format; <code>'plot'</code> results in a daframe which can help plot gain, phase and coherence; <code>'plot-peak'</code> results in a dataframe, which can be used to validate the cyclic average, and <code>'raw'</code> results in a nested list with results primarily for debugging.
+</p>
+<p>Some generic variables are listed below:
+</p>
+
+<ul>
+<li> <p><code>abp_power</code> - The blood pressure power measured in mmHg^2.
+</p>
+</li>
+<li> <p><code>cbfv_power</code> - The cerebral blood flow velocity power measured in cm^2\*s^-2
+</p>
+</li>
+<li> <p><code>coherence</code> - Coherence.
+</p>
+</li>
+<li> <p><code>gain_not_normal</code> - Not normalized gain measured in cm\*s^-1\*mmHg^-1.
+</p>
+</li>
+<li> <p><code>gain_normal</code> - Normalized gain measured in %\*mmHg^-1.
+</p>
+</li>
+<li> <p><code>phase</code> - Phase measured in radians.
+</p>
+</li>
+</ul>
+<h4>output = 'table'</h4>
+
+<p>Wide format output table with period, VLF, LF, and HF as columns, and the TFA-variables as rows.</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+   <code>period</code> </td>
+<td style="text-align: right;"> <code>variable</code> </td>
+<td style="text-align: right;"> <code>vlf</code> </td>
+<td style="text-align: right;"> <code>lf</code> </td>
+<td style="text-align: right;"> <code>hf</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <code>1</code> </td>
+<td style="text-align: right;"> <code>abp_power</code> </td>
+<td style="text-align: right;"> <code>6.25</code> </td>
+<td style="text-align: right;"> <code>1.56</code> </td>
+<td style="text-align: right;"> <code>0.21</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <code>1</code> </td>
+<td style="text-align: right;"> <code>cbfv_power</code> </td>
+<td style="text-align: right;"> <code>3.22</code> </td>
+<td style="text-align: right;"> <code>2.25</code> </td>
+<td style="text-align: right;"> <code>0.30</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <code>...</code> </td>
+<td style="text-align: right;"> <code>...</code> </td>
+<td style="text-align: right;"> <code>...</code> </td>
+<td style="text-align: right;"> <code>...</code> </td>
+<td style="text-align: right;"> <code>...</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <code>3</code> </td>
+<td style="text-align: right;"> <code>gain_normal</code> </td>
+<td style="text-align: right;"> <code>1.04</code> </td>
+<td style="text-align: right;"> <code>1.48</code> </td>
+<td style="text-align: right;"> <code>1.85</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <code>3</code> </td>
+<td style="text-align: right;"> <code>phase</code> </td>
+<td style="text-align: right;"> <code>53.0</code> </td>
+<td style="text-align: right;"> <code>25.4</code> </td>
+<td style="text-align: right;"> <code>9.38</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+</td>
+</tr>
+</table>
+<h4>output = 'long'</h4>
+
+<p>Long format output table which can be manipulated depending on the intended use, with period, interval, variables and values as columns.</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+   <code>period</code> </td>
+<td style="text-align: left;"> <code>interval</code> </td>
+<td style="text-align: left;"> <code>variable</code> </td>
+<td style="text-align: right;"> <code>values</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+   <code>1</code> </td>
+<td style="text-align: left;"> <code>hf</code> </td>
+<td style="text-align: left;"> <code>abp_power</code> </td>
+<td style="text-align: right;"> <code>6.25</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+   <code>1</code> </td>
+<td style="text-align: left;"> <code>hf</code> </td>
+<td style="text-align: left;"> <code>cbfv_power</code> </td>
+<td style="text-align: right;"> <code>3.22</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+   <code>...</code> </td>
+<td style="text-align: left;"> <code>...</code> </td>
+<td style="text-align: left;"> <code>...</code> </td>
+<td style="text-align: right;"> <code>...</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+   <code>2</code> </td>
+<td style="text-align: left;"> <code>vlf</code> </td>
+<td style="text-align: left;"> <code>gain_norm</code> </td>
+<td style="text-align: right;"> <code>1.85</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+   <code>2</code> </td>
+<td style="text-align: left;"> <code>vlf</code> </td>
+<td style="text-align: left;"> <code>phase</code> </td>
+<td style="text-align: right;"> <code>9.38</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+</td>
+</tr>
+</table>
+<h4>output = 'plot'</h4>
+
+<p>Plot format output table which can be used to draw figures with gain, phase and coherence depending on frequency.</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+   <code>period</code> </td>
+<td style="text-align: right;"> <code>freq</code> </td>
+<td style="text-align: right;"> <code>gain</code> </td>
+<td style="text-align: right;"> <code>phase</code> </td>
+<td style="text-align: right;"> <code>coherence</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+   <code>1</code> </td>
+<td style="text-align: right;"> <code>0.00</code> </td>
+<td style="text-align: right;"> <code>0.16</code> </td>
+<td style="text-align: right;"> <code>0.00</code> </td>
+<td style="text-align: right;"> <code>0.04</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+   <code>1</code> </td>
+<td style="text-align: right;"> <code>0.01</code> </td>
+<td style="text-align: right;"> <code>0.29</code> </td>
+<td style="text-align: right;"> <code>4.22</code> </td>
+<td style="text-align: right;"> <code>0.29</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+   <code>...</code> </td>
+<td style="text-align: right;"> <code>...</code> </td>
+<td style="text-align: right;"> <code>...</code> </td>
+<td style="text-align: right;"> <code>...</code> </td>
+<td style="text-align: right;"> <code>...</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+   <code>2</code> </td>
+<td style="text-align: right;"> <code>1.55</code> </td>
+<td style="text-align: right;"> <code>1.15</code> </td>
+<td style="text-align: right;"> <code>-43.2</code> </td>
+<td style="text-align: right;"> <code>0.64</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+   <code>2</code> </td>
+<td style="text-align: right;"> <code>1.56</code> </td>
+<td style="text-align: right;"> <code>1.16</code> </td>
+<td style="text-align: right;"> <code>-41.1</code> </td>
+<td style="text-align: right;"> <code>0.42</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+</td>
+</tr>
+</table>
+<h3>TFA-paramters</h3>
+
+<p>A series of parameters that control TFA analysis (window-length, frequency bands …). If this is not provided, default values, corresponding to those recommended in the white paper, will be used. These default values are given below for each parameter.
+</p>
+
+<ul>
+<li> <p><code>vlf</code> Limits of <em>very low frequency</em> band (in Hz). This corresponds to the matematical inclusion of <code style="white-space: pre;">⁠[X:Y[⁠</code>. Default is <code>c(0.02-0.07)</code>.
+</p>
+</li>
+<li> <p><code>lf</code> Limits of <em>low frequency</em> band (in Hz). This corresponds to the matematical inclusion of <code style="white-space: pre;">⁠[X:Y[⁠</code>. Default is <code>c(0.07-0.2)</code>.
+</p>
+</li>
+<li> <p><code>hf</code> Limits of <em>high frequency</em> band (in Hz). This corresponds to the matematical inclusion of <code style="white-space: pre;">⁠[X:Y[⁠</code>. Default is <code>c(0.2-0.5)</code>.
+</p>
+</li>
+<li> <p><code>detrend</code> Linear detrending of data prior to TFA-analysis (detrending is carried out as one continuous trend over the whole length of the recording, not segment-by-segment). Default is <code>FALSE</code>.
+</p>
+</li>
+<li> <p><code>spectral_smoothing</code> The length, in samples, of the triangular spectral smoothing function. Note that this must be an odd number, to ensure that smoothing is symmetrical around the centre frequency. Default is <code>3</code>.
+</p>
+</li>
+<li> <p><code>coherence2_thresholds</code> The critical values (alpha=5%, second column) for coherence for a number of windows (first column, here from 3 to 15). These values were obtained by Monte Carlo simulation, using the default parameter settings for the TFA-analysis (Hanning window, overlap of 50% and 3-point spectral smoothing was assumed). These values should be recalculated for different settings. Note that if <code>overlap_adjust=TRUE</code>, the overlap will vary depending on the length of data. With an overlap of 60% (see below), the critical values increase by between 0.04 (for 3 windows) and 0.02 (for 15 windows). Default is <code style="white-space: pre;">⁠cbind(c(3:15),c(0.51,0.40,⁠</code> <code style="white-space: pre;">⁠0.34,0.29,0.25,0.22,0.20,0.18,0.17,⁠</code> <code style="white-space: pre;">⁠0.15,0.14,0.13,0.12))⁠</code>.
+</p>
+</li>
+<li> <p><code>apply_coherence2_threshold</code> Apply the thresholds given above to the TFA-estimates. All frequencies with magnitude-squared coherence below the threshold value are excluded from averaging when calculating the mean values of gain and phase across the bands. Note that low values of coherence are not excluded in the average of coherence across the bands. Default is <code>TRUE</code>.
+</p>
+</li>
+<li> <p><code>remove_negative_phase</code> Remove (ignore) negative values of phase in averaging across bands. Negative phase values are removed only for frequencies below the frequency given below, when calculating the average phase in bands. Default is <code>TRUE</code>.
+</p>
+</li>
+<li> <p><code>remove_negative_phase_f_cutoff</code> The cut-off frequency below-which negative phase values are neglected (only if <code>remove_negative_phase</code> is <code>TRUE</code>). Default is <code>0.1</code>.
+</p>
+</li>
+<li> <p><code>normalize_ABP</code> Normalize ABP by dividing by the mean and multiplying by 100, to express ABP change in %. Note that mean-values are always removed from ABP prior to analysis. Default is <code>FALSE</code>.
+</p>
+</li>
+<li> <p><code>normalize_CBFV</code> Normalize CBFV by dividing by the mean and multiplying by 100, to express CBFV change in %. Note that the band-average values of gain are always calculated both with and without normalization of CBFV, in accordance with the recommendations. Note also that mean-values are always removed from CBFV prior to analysis. Default is <code>FALSE</code>.
+</p>
+</li>
+<li> <p><code>window_type</code> Chose window <code>'hanning'</code> or <code>'boxcar'</code>. Default is <code>'hanning'</code>.
+</p>
+</li>
+<li> <p><code>window_length</code> Length of the data-window, in seconds. Default is <code>102.4</code>.
+</p>
+</li>
+<li> <p><code>overlap</code> Overlap of the windows, in %. If <code>overlap_adjust</code> is <code>TRUE</code> (see below), then this value may be automatically reduced, to ensure that windows cover the full length of data. Default is <code style="white-space: pre;">⁠59.99%⁠</code> rather than 60%, so that with data corresponding to 5 windows of 100 s at an overlap of 50%, 5 windows are indeed chosen.
+</p>
+</li>
+<li> <p><code>overlap_adjust</code> Ensure that the full length of data is used (i.e. the last window finishes as near as possible to the end of the recording), by adjusting the overlap up to a maximum value given by params.overlap. Default is <code>TRUE</code>.
+</p>
+</li>
+<li> <p><code>na_as_mean</code> Changes all missing non-interpolated values to the mean value of the corresponding variable. This have not been adressed in the paper by Claassen, and to ensure the dataframes are not 'gathered' this should generate the most stable results. Default is <code>TRUE</code>.
+</p>
+</li>
+</ul>
+<h3>References</h3>
+
+
+<ol><li>
+<p> Claassen et al. (2016) J Cereb Blood Flow Metab. 2016 Apr;36(4):665-80. (<a href="https://pubmed.ncbi.nlm.nih.gov/26782760/">PubMed</a>)
+</p>
+</li></ol>
+<h3>Examples</h3>
+
+<pre><code class="language-R">df &lt;- data.frame(seq(1, 901, 0.1),
+         rnorm(9001), rnorm(9001))
+TFA(df, variables=c("abp","mcav"), freq=10)
+
+</code></pre>
+
+
+</div>

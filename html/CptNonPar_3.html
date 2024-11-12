@@ -1,0 +1,341 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>np.mojo</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Nonparametric Single Lag Change Point Detection</h2>
+
+<h3>Description</h3>
+
+<p>For a given lagged value of the time series, performs nonparametric change point detection of a possibly multivariate
+time series. If <code>lag</code> <code class="reqn">\ell = 0</code>, then only marginal changes are detected.
+If <code>lag</code> <code class="reqn">\ell \neq 0</code>, then changes in the pairwise distribution of <code class="reqn">(X_t , X_{t+\ell})</code> are detected.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">np.mojo(
+  x,
+  G,
+  lag = 0,
+  kernel.f = c("quad.exp", "gauss", "euclidean", "laplace", "sine")[1],
+  kern.par = 1,
+  data.driven.kern.par = TRUE,
+  alpha = 0.1,
+  threshold = c("bootstrap", "manual")[1],
+  threshold.val = NULL,
+  reps = 199,
+  boot.dep = 1.5 * (nrow(as.matrix(x))^(1/3)),
+  parallel = FALSE,
+  boot.method = c("mean.subtract", "no.mean.subtract")[1],
+  criterion = c("eta", "epsilon", "eta.and.epsilon")[3],
+  eta = 0.4,
+  epsilon = 0.02,
+  use.mean = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Input data (a <code>numeric</code> vector or an object of classes <code>ts</code> and <code>timeSeries</code>,
+or a <code>numeric</code> matrix with rows representing observations and columns representing variables).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>G</code></td>
+<td>
+<p>An integer value for the moving sum bandwidth;
+<code>G</code> should be less than half the length of the time series.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lag</code></td>
+<td>
+<p>The lagged values of the time series used to detect changes. If <code>lag</code> <code class="reqn">\ell = 0</code>, then only marginal changes are detected.
+If <code>lag</code> <code class="reqn">\ell \neq 0</code>, then changes in the pairwise distribution of <code class="reqn">(X_t , X_{t+\ell})</code> are detected.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kernel.f</code></td>
+<td>
+<p>String indicating which kernel function to use when calculating the NP-MOJO detectors statistics; with <code>kern.par</code> <code class="reqn">= a</code>, possible values are
+</p>
+
+<ul>
+<li> <p><code>"quad.exp"</code>: kernel <code class="reqn">h_2</code> in McGonigle and Cho (2023), kernel 5 in Fan et al. (2017):
+</p>
+<p style="text-align: center;"><code class="reqn">h (x,y) = \prod_{i=1}^{2p} \frac{ (2a - (x_i - y_i)^2) \exp (-\frac{1}{4a} (x_i - y_i)^2 )}{2a} .</code>
+</p>
+
+</li>
+<li> <p><code>"gauss"</code>: kernel <code class="reqn">h_1</code> in McGonigle and Cho (2023), the standard Gaussian kernel:
+</p>
+<p style="text-align: center;"><code class="reqn">h (x,y) = \exp ( - \frac{a^2}{2} \Vert x - y  \Vert^2) .</code>
+</p>
+
+</li>
+<li> <p><code>"euclidean"</code>: kernel <code class="reqn">h_3</code> in McGonigle and Cho (2023), the Euclidean distance-based kernel:
+</p>
+<p style="text-align: center;"><code class="reqn">h (x, y ) = \Vert x - y \Vert^a  .</code>
+</p>
+
+</li>
+<li> <p><code>"laplace"</code>: kernel 2 in Fan et al. (2017), based on a Laplace weight function:
+</p>
+<p style="text-align: center;"><code class="reqn">h (x, y ) = \prod_{i=1}^{2p} \left( 1+ a^2 (x_i - y_i)^2  \right)^{-1}. </code>
+</p>
+
+</li>
+<li> <p><code>"sine"</code>: kernel 4 in Fan et al. (2017), based on a sinusoidal weight function:
+</p>
+<p style="text-align: center;"><code class="reqn">h (x, y ) = \prod_{i=1}^{2p} \frac{-2 | x_i - y_i |  + | x_i - y_i - 2a|  + | x_i - y_i +2a| }{4a} .</code>
+</p>
+
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kern.par</code></td>
+<td>
+<p>The tuning parameter that appears in the expression for the kernel function, which acts as a scaling parameter,
+only to be used if <code>data.driven.kern.par = FALSE</code>. If <code>kernel.f = "euclidean"</code>, then <code>kern.par</code> <code class="reqn">\in (0,2)</code>,
+otherwise <code>kern.par</code> <code class="reqn">&gt; 0</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data.driven.kern.par</code></td>
+<td>
+<p>A <code>logical</code> variable, if set to <code>TRUE</code>, then the kernel tuning parameter is calculated
+using the median heuristic, if <code>FALSE</code> it is given by <code>kern.par</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>A numeric value for the significance level with
+<code>0 &lt;= alpha &lt;= 1</code>; use iff <code>threshold = "bootstrap"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold</code></td>
+<td>
+<p>String indicating how the threshold is computed. Possible values are
+</p>
+
+<ul>
+<li> <p><code>"bootstrap"</code>: the threshold is calculated using the bootstrap method
+with significance level <code>alpha</code>.
+</p>
+</li>
+<li> <p><code>"manual"</code>: the threshold is set by the user and must be
+specified using the <code>threshold.val</code> parameter.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold.val</code></td>
+<td>
+<p>The value of the threshold used to declare change points, only to be used if <code>threshold = "manual"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reps</code></td>
+<td>
+<p>An integer value for the number of bootstrap replications performed, if <code>threshold = "bootstrap"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>boot.dep</code></td>
+<td>
+<p>A positive value for the strength of dependence in the multiplier bootstrap sequence, if <code>threshold = "bootstrap"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+<p>A <code>logical</code> variable, if set to <code>TRUE</code>, then parallel computing is used in the bootstrapping procedure
+if bootstrapping is performed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>boot.method</code></td>
+<td>
+<p>A string indicating the method for creating bootstrap replications. It is not recommended to change this. Possible choices are
+</p>
+
+<ul>
+<li> <p><code>"mean.subtract"</code>: the default choice, as described in McGonigle and Cho (2023).
+Empirical mean subtraction is performed to the bootstrapped replicates, improving power.
+</p>
+</li>
+<li> <p><code>"no.mean.subtract"</code>: empirical mean subtraction is not performed, improving size control.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>criterion</code></td>
+<td>
+<p>String indicating how to determine whether each point <code>k</code> at which NP-MOJO statistic
+exceeds the threshold is a change point; possible values are
+</p>
+
+<ul>
+<li> <p><code>"epsilon"</code>: <code>k</code> is the maximum of its local exceeding environment,
+which has at least size <code>epsilon*G</code>.
+</p>
+</li>
+<li> <p><code>"eta"</code>: there is no larger exceeding in an <code>eta*G</code> environment of <code>k</code>.
+</p>
+</li>
+<li> <p><code>"eta.and.epsilon"</code>: the recommended default option; <code>k</code> satisfies both
+the eta and epsilon criterion.
+Recommended to use with the standard value of eta that would be used if <code>criterion = "eta"</code> (e.g. 0.4),
+but much smaller value of epsilon than would be used if <code>criterion = "epsilon"</code>, e.g. 0.02.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eta</code></td>
+<td>
+<p>A positive numeric value for the minimal mutual distance of
+changes, relative to bandwidth (if <code>criterion = "eta"</code> or <code>criterion = "eta.and.epsilon"</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>epsilon</code></td>
+<td>
+<p>a numeric value in (0,1] for the minimal size of exceeding
+environments, relative to moving sum bandwidth (if <code>criterion = "epsilon"</code> or <code>criterion = "eta.and.epsilon"</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use.mean</code></td>
+<td>
+<p><code>Logical variable</code>, only to be used if <code>data.drive.kern.par=TRUE</code>. If set to <code>TRUE</code>, the mean
+of pairwise distances is used to set the kernel function tuning parameter, instead of the median. May be useful for binary data,
+not recommended to be used otherwise.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The single-lag NP-MOJO algorithm for nonparametric change point detection is described in McGonigle, E. T. and Cho, H. (2023)
+Nonparametric data segmentation in multivariate time series via joint characteristic functions.  <em>arXiv preprint arXiv:2305.07581</em>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>list</code> object that contains the following fields:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Input data</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>G</code></td>
+<td>
+<p>Moving window bandwidth</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lag</code></td>
+<td>
+<p>Lag used to detect changes</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kernel.f, data.driven.kern.par, use.mean</code></td>
+<td>
+<p>Input parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kern.par</code></td>
+<td>
+<p>The value of the kernel tuning parameter</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold, alpha, reps, boot.dep, boot.method, parallel</code></td>
+<td>
+<p>Input parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold.val</code></td>
+<td>
+<p>Threshold value for declaring change points</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>criterion, eta, epsilon</code></td>
+<td>
+<p>Input parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test.stat</code></td>
+<td>
+<p>A vector containing the NP-MOJO detector statistics computed from the input data</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cpts</code></td>
+<td>
+<p>A vector containing the estimated change point locations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p.vals</code></td>
+<td>
+<p>The corresponding p values of the change points, if the bootstrap method was used</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>McGonigle, E.T., Cho, H. (2023). Nonparametric data segmentation in multivariate time series via joint characteristic functions. <em>arXiv preprint arXiv:2305.07581</em>.
+</p>
+<p>Fan, Y., de Micheaux, P.L., Penev, S. and Salopek, D. (2017). Multivariate nonparametric test of independence. <em>Journal of Multivariate Analysis</em>,
+153, pp.189-210.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>np.mojo.multilag
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(1)
+n &lt;- 500
+noise &lt;- c(rep(1, 300), rep(0.4, 200)) * stats::arima.sim(model = list(ar = 0.3), n = n)
+signal &lt;- c(rep(0, 100), rep(2, 400))
+x &lt;- signal + noise
+x.c &lt;- np.mojo(x, G = 83, lag = 0)
+x.c$cpts
+x.c$p.vals
+</code></pre>
+
+
+</div>

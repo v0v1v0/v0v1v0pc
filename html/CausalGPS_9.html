@@ -1,0 +1,167 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>check_covar_balance</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Check covariate balance</h2>
+
+<h3>Description</h3>
+
+<p>Checks the covariate balance of original population or pseudo population.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">check_covar_balance(
+  w,
+  c,
+  ci_appr,
+  counter_weight = NULL,
+  covar_bl_method = "absolute",
+  covar_bl_trs = 0.1,
+  covar_bl_trs_type = "mean"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>A vector of observed continuous exposure variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>c</code></td>
+<td>
+<p>A data.frame of observed covariates variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ci_appr</code></td>
+<td>
+<p>The causal inference approach.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>counter_weight</code></td>
+<td>
+<p>A weight vector in different situations. If the
+matching approach is selected, it is an integer data.table of counters.
+In the case of the weighting approach, it is weight data.table.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covar_bl_method</code></td>
+<td>
+<p>Covariate balance method. Available options:
+- 'absolute'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covar_bl_trs</code></td>
+<td>
+<p>Covariate balance threshold.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covar_bl_trs_type</code></td>
+<td>
+<p>Covariate balance type (mean, median, maximal).</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>output object:
+</p>
+
+<ul>
+<li>
+<p> corr_results
+</p>
+
+<ul>
+<li>
+<p> absolute_corr
+</p>
+</li>
+<li>
+<p> mean_absolute_corr
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p> pass (TRUE,FALSE)
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+set.seed(422)
+n &lt;- 100
+mydata &lt;- generate_syn_data(sample_size=n)
+year &lt;- sample(x=c("2001","2002","2003","2004","2005"),size = n,
+              replace = TRUE)
+region &lt;- sample(x=c("North", "South", "East", "West"),size = n,
+                replace = TRUE)
+mydata$year &lt;- as.factor(year)
+mydata$region &lt;- as.factor(region)
+mydata$cf5 &lt;- as.factor(mydata$cf5)
+
+m_xgboost &lt;- function(nthread = 1,
+                      ntrees = 35,
+                      shrinkage = 0.3,
+                      max_depth = 5,
+                      ...) {SuperLearner::SL.xgboost(
+                        nthread = nthread,
+                        ntrees = ntrees,
+                        shrinkage=shrinkage,
+                        max_depth=max_depth,
+                        ...)}
+
+data_with_gps &lt;- estimate_gps(.data = mydata,
+                              .formula = w ~ cf1 + cf2 + cf3 + cf4 + cf5 +
+                                             cf6 + year + region,
+                              sl_lib = c("m_xgboost"),
+                              gps_density = "kernel")
+
+
+cw_object_matching &lt;- compute_counter_weight(gps_obj = data_with_gps,
+                                             ci_appr = "matching",
+                                             bin_seq = NULL,
+                                             nthread = 1,
+                                             delta_n = 0.1,
+                                             dist_measure = "l1",
+                                             scale = 0.5)
+
+pseudo_pop &lt;- generate_pseudo_pop(.data = mydata,
+                                  cw_obj = cw_object_matching,
+                                  covariate_col_names = c("cf1", "cf2", "cf3",
+                                                          "cf4", "cf5", "cf6",
+                                                          "year", "region"),
+                                  covar_bl_trs = 0.1,
+                                  covar_bl_trs_type = "maximal",
+                                  covar_bl_method = "absolute")
+
+
+adjusted_corr_obj &lt;- check_covar_balance(w = pseudo_pop$.data[, c("w")],
+                                         c = pseudo_pop$.data[ ,
+                                         pseudo_pop$params$covariate_col_names],
+                                         counter = pseudo_pop$.data[,
+                                                     c("counter_weight")],
+                                         ci_appr = "matching",
+                                         covar_bl_method = "absolute",
+                                         covar_bl_trs = 0.1,
+                                         covar_bl_trs_type = "mean")
+
+</code></pre>
+
+
+</div>

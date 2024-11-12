@@ -1,0 +1,157 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CKT.fit.nNets</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimation of conditional Kendall's taus by model averaging of neural networks</h2>
+
+<h3>Description</h3>
+
+<p>Let <code class="reqn">X_1</code> and <code class="reqn">X_2</code> be two random variables.
+The goal of this function is to estimate the conditional Kendall's tau
+(a dependence measure) between <code class="reqn">X_1</code> and <code class="reqn">X_2</code> given <code class="reqn">Z=z</code>
+for a conditioning variable <code class="reqn">Z</code>.
+Conditional Kendall's tau between <code class="reqn">X_1</code> and <code class="reqn">X_2</code> given <code class="reqn">Z=z</code>
+is defined as:
+</p>
+<p style="text-align: center;"><code class="reqn">P( (X_{1,1} - X_{2,1})(X_{1,2} - X_{2,2}) &gt; 0 | Z_1 = Z_2 = z)</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">- P( (X_{1,1} - X_{2,1})(X_{1,2} - X_{2,2}) &lt; 0 | Z_1 = Z_2 = z),</code>
+</p>
+
+<p>where <code class="reqn">(X_{1,1}, X_{1,2}, Z_1)</code> and <code class="reqn">(X_{2,1}, X_{2,2}, Z_2)</code>
+are two independent and identically distributed copies of <code class="reqn">(X_1, X_2, Z)</code>.
+In other words, conditional Kendall's tau is the difference
+between the probabilities of observing concordant and discordant pairs
+from the conditional law of </p>
+<p style="text-align: center;"><code class="reqn">(X_1, X_2) | Z=z.</code>
+</p>
+
+<p>This function estimates conditional Kendall's tau using
+<strong>neural networks</strong>. This is possible by the relationship between
+estimation of conditional Kendall's tau and classification problems
+(see Derumigny and Fermanian (2019)): estimation of conditional Kendall's tau
+is equivalent to the prediction of concordance in the space of pairs
+of observations.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CKT.fit.nNets(
+  datasetPairs,
+  designMatrix = datasetPairs[, 2:(ncol(datasetPairs) - 3), drop = FALSE],
+  vecSize = rep(3, times = 10),
+  nObs_per_NN = 0.9 * nrow(designMatrix),
+  verbose = 1
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>datasetPairs</code></td>
+<td>
+<p>the matrix of pairs and corresponding values of the kernel
+as provided by <code>datasetPairs</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>designMatrix</code></td>
+<td>
+<p>the matrix of predictor to be used for the fitting of the tree</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vecSize</code></td>
+<td>
+<p>vector with the number of neurons for each network</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nObs_per_NN</code></td>
+<td>
+<p>number of observations used for each neural network.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>a number indicated what to print
+</p>
+
+<ul>
+<li> <p><code>0</code>: nothing printed at all.
+</p>
+</li>
+<li> <p><code>1</code>: a message is printed at the convergence of each neural network.
+</p>
+</li>
+<li> <p><code>2</code>: details are printed for each optimization of each network.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>CKT.fit.nNets</code> returns a list of the fitted neural networks
+</p>
+
+
+<h3>References</h3>
+
+<p>Derumigny, A., &amp; Fermanian, J. D. (2019).
+A classification point-of-view about conditional Kendall’s tau.
+Computational Statistics &amp; Data Analysis, 135, 70-94.
+(Algorithm 7)
+<a href="https://doi.org/10.1016/j.csda.2019.01.013">doi:10.1016/j.csda.2019.01.013</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>See also other estimators of conditional Kendall's tau:
+<code>CKT.fit.tree</code>, <code>CKT.fit.randomForest</code>,
+<code>CKT.fit.GLM</code>, <code>CKT.predict.kNN</code>,
+<code>CKT.kernel</code>, <code>CKT.kendallReg.fit</code>,
+and the more general wrapper <code>CKT.estimate</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># We simulate from a conditional copula
+set.seed(1)
+N = 800
+Z = rnorm(n = N, mean = 5, sd = 2)
+conditionalTau = -0.9 + 1.8 * pnorm(Z, mean = 5, sd = 2)
+simCopula = VineCopula::BiCopSim(N=N , family = 1,
+    par = VineCopula::BiCopTau2Par(1 , conditionalTau ))
+X1 = qnorm(simCopula[,1])
+X2 = qnorm(simCopula[,2])
+
+newZ = seq(2,10,by = 0.1)
+datasetP = datasetPairs(X1 = X1, X2 = X2, Z = Z, h = 0.07, cut = 0.9)
+
+fitCKT_nets &lt;- CKT.fit.nNets(datasetPairs = datasetP)
+estimatedCKT_nNets &lt;- CKT.predict.nNets(
+  fit = fitCKT_nets, newZ = matrix(newZ, ncol = 1))
+
+# Comparison between true Kendall's tau (in black)
+# and estimated Kendall's tau (in red)
+trueConditionalTau = -0.9 + 1.8 * pnorm(newZ, mean = 5, sd = 2)
+plot(newZ, trueConditionalTau , col="black",
+   type = "l", ylim = c(-1, 1))
+lines(newZ, estimatedCKT_nNets, col = "red")
+
+
+</code></pre>
+
+
+</div>

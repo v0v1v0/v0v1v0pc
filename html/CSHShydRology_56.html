@@ -1,0 +1,172 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ch_tidyhydat_ECDE_meta</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Creates an ECDE-like dataframe of metadata from <span class="pkg">tidyhydat</span>
+</h2>
+
+<h3>Description</h3>
+
+<p>Extracts tombstone (meta) data for stations from <span class="pkg">tidyhydat</span> in a 
+format similar to that used by the Environment Canada Data Explorer (ECDE). The 
+default does not capture all the fields in ECDE, which includes the most recent status 
+of many fields such as operating schedule. Returning these values slows the function,
+particularly when all WSC stations are selected.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ch_tidyhydat_ECDE_meta(stations, all_ECDE = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>stations</code></td>
+<td>
+<p>A vector of WSC station IDs, i.e. <code>c("05BB001", "05BB003", "05BB004", 
+"05BB005")</code>. If <code>stations = "all"</code> then values are returned for all stations. Note
+that you should ensure that that the <span class="pkg">tidyhydat</span> database is up to date, if you
+select  <code>stations = "all"</code>, so that the most recent set of stations is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>all_ECDE</code></td>
+<td>
+<p>Should all ECDE values be returned? If <code>FALSE</code> the default, then
+values of <code>Flow</code>, <code>Level</code>, <code>Sed</code>, <code>OperSched</code>, <code>Region</code>, <code>Datum</code>, and
+<code>Operator</code> are omitted or will differ from the ECDE values. If <code>all_ECDE = TRUE</code>,
+then the function will return values identical to ECDE. Note that setting 
+<code>all_ECDE = TRUE</code> will result in very long execution times, as it is necessary
+to extract many daily values for each station to determine the values of 
+<code>Flow</code>, <code>Level</code>, <code>Sed</code>, and <code>OperSched</code> to determine the
+final values.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Returns a list with three items:
+</p>
+
+<ul>
+<li> <p><code>meta</code> - a dataframe of metadata from <span class="pkg">tidyhydat</span> in ECDE form (not all ECDE fields are reproduced in this summary)
+</p>
+</li>
+<li> <p><code>H_version</code> - version information, and 
+</p>
+</li>
+<li> <p><code>th_meta</code> - a dataframe with all <span class="pkg">tidyhdat</span> fields including:
+</p>
+
+<ul>
+<li> <p>Station - StationID
+</p>
+</li>
+<li> <p>StationName - Station Name
+</p>
+</li>
+<li> <p>HYDStatus - Active or Discontinued
+</p>
+</li>
+<li> <p>Prov - Province
+</p>
+</li>
+<li> <p>Latitude
+</p>
+</li>
+<li> <p>Longitude
+</p>
+</li>
+<li> <p>DrainageArea - km<code class="reqn">^2</code>
+</p>
+</li>
+<li> <p>Years - number of years with data
+</p>
+</li>
+<li> <p>From - Start Year
+</p>
+</li>
+<li> <p>To - End Year
+</p>
+</li>
+<li> <p>Reg. - Regulated?
+</p>
+</li>
+<li> <p>Flow - not captured (differs from ECDE), unless <code>all_ECDE = TRUE</code>
+</p>
+</li>
+<li> <p>Level - not captured (differs from ECDE), unless <code>all_ECDE = TRUE</code>
+</p>
+</li>
+<li> <p>Sed - not captured (differs from ECDE), unless <code>all_ECDE = TRUE</code>
+</p>
+</li>
+<li> <p>OperSched - not captured (differs from ECDE), unless <code>all_ECDE = TRUE</code>
+</p>
+</li>
+<li> <p>RealTime - if TRUE/Yes
+</p>
+</li>
+<li> <p>RHBN - if TRUE/Yes is in the reference hydrologic basin network
+</p>
+</li>
+<li> <p>Region - number of region instead of name (differs from ECDE), unless <code>all_ECDE = TRUE</code>
+</p>
+</li>
+<li> <p>Datum - reference number (differs from ECDE), unless <code>all_ECDE = TRUE</code>
+</p>
+</li>
+<li> <p>Operator - reference number (differs from ECDE), unless <code>all_ECDE = TRUE</code>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Paul Whitfield, Kevin Shook
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>ch_get_ECDE_metadata</code> <code>ch_tidyhydat_ECDE</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># This example uses the built-in test database, by setting the hydat_path parameter
+# You will want to use it with your actual HYDAT database
+library(tidyhydat)
+# check for existence of test database
+test_db &lt;- hy_test_db()
+if (file.exists(test_db)) {
+  stations &lt;- c("05AA008", "08MF005", "05HD008")
+  hy_set_default_db(test_db)
+  result &lt;- ch_tidyhydat_ECDE_meta(stations)
+  metadata &lt;- result[[1]]
+  version &lt;- result[[2]]
+  hy_set_default_db(NULL)    # Reset HYDAT database
+}
+## Not run: 
+# This example is not run, as it will take several hours to execute and will
+# return many warnings for stations having no data. Note that it is using the actual
+# HYDAT database, which must have been installed previously
+# This use of the function is intended for the package maintainers to 
+# update the HYDAT_list data frame
+result &lt;- ch_tidyhydat_ECDE_meta("all", TRUE)
+HYDAT_list &lt;- result$meta
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

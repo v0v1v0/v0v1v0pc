@@ -1,0 +1,182 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>balance</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute balances for a compositional dataset.</h2>
+
+<h3>Description</h3>
+
+<p>Compute balances in a compositional dataset.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">balance(X,...)
+## S3 method for class 'acomp'
+balance(X,expr,...)
+## S3 method for class 'rcomp'
+balance(X,expr,...)
+## S3 method for class 'aplus'
+balance(X,expr,...)
+## S3 method for class 'rplus'
+balance(X,expr,...)
+balance01(X,...)
+## S3 method for class 'acomp'
+balance01(X,expr,...)
+## S3 method for class 'rcomp'
+balance01(X,expr,...)
+balanceBase(X,...)
+## S3 method for class 'acomp'
+balanceBase(X,expr,...)
+## S3 method for class 'rcomp'
+balanceBase(X,expr,...)
+## S3 method for class 'acomp'
+balanceBase(X,expr,...)
+## S3 method for class 'rcomp'
+balanceBase(X,expr,...)
+
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p> compositional dataset (or optionally just its column names
+for balanceBase)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>expr</code></td>
+<td>
+<p> a <code>~</code> formula using the column names of X as
+variables and
+seperating them by <code>/</code> and organize by paranthesis
+<code>()</code>. <code>:</code> and <code>*</code> can be used instead of <code>/</code>
+when the corresponding balance should not be created. <code>-</code> can
+be used as an synonym to <code>/</code> in the real geometries. <code>1</code>
+can be used in the unclosed geometries to level against a constant. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>for future perposes</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For <code>acomp</code>-compositions balances are defined as orthogonal
+projections representing the log ratio of the geometric means of
+subsets of elements. Based on a recursive subdivision (provided by the
+<code>expr=</code>) this projections provide a (complete or incomplete) basis of
+the clr-plane. The basis is given by the <code>balanceBase</code>
+functions. The transform is given by the <code>balance</code> functions. The
+<code>balance01</code> functions are a backtransform of the balances to the
+amount of the first portion if this was the only balance in a 2
+element composition, providing an "interpretation" for the values of
+the balances.
+</p>
+<p>The package tries to give similar concepts for the other scales.
+For <code>rcomp</code> objects the concept is mainly unchanges but augmented
+by a virtual component 1, which always has portion 1. 
+</p>
+<p>For
+<code>rcomp</code> objects, we choose not a "orthogonal" transformation
+since such a concept anyway does not really exist in the given space,
+but merily use the difference of one subset to the other. The
+balance01 is than not really a transform of the balance but simply the
+portion of the first group of parts in all contrasted parts. 
+</p>
+<p>For <code>rplus</code> objects we just used an analog to generalisation from
+the <code>rcomp</code> defintion as <code>aplus</code> is generalized from
+<code>acomp</code>. However at this time we have no idea wether this has any
+usefull interpretation.
+</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>balance</code></td>
+<td>
+<p>a matrix (or vector) with the corresponding balances
+of the dataset.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>balance01</code></td>
+<td>
+<p>a matrix (or vector) with the corresponding balances
+in the dataset transformed in the given geometry to a value between
+0 and 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>balanceBase</code></td>
+<td>
+<p>a matrix (or vector) with column vectors giving the
+transform in the cdt-transform used to achiev the correponding
+balances. </p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p><a href="https://ima.udg.edu/Activitats/CoDaWork08/">https://ima.udg.edu/Activitats/CoDaWork08/</a> Papers of Boogaart and Tolosana
+<a href="https://ima.udg.edu/Activitats/CoDaWork05/">https://ima.udg.edu/Activitats/CoDaWork05/</a> Paper of Egozcue
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>clr</code>,<code>ilr</code>,<code>ipt</code>, <code>ilrBase</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">X &lt;- rnorm(100)
+Y &lt;- rnorm.acomp(100,acomp(c(A=1,B=1,C=1)),0.1*diag(3))+acomp(t(outer(c(0.2,0.3,0.4),X,"^")))
+colnames(Y) &lt;- c("A","B","C")
+
+subComps &lt;- function(X,...,all=list(...)) {
+  X &lt;- oneOrDataset(X)
+  nams &lt;- sapply(all,function(x) paste(x[[2]],x[[3]],sep=","))
+  val  &lt;- sapply(all,function(x){
+              a = X[,match(as.character(x[[2]]),colnames(X)) ]
+              b = X[,match(as.character(x[[2]]),colnames(X)) ]
+              c = X[,match(as.character(x[[3]]),colnames(X)) ] 
+              return(a/(b+c))
+             }) 
+  colnames(val)&lt;-nams
+  val
+}
+pairs(cbind(ilr(Y),X),panel=function(x,y,...) {points(x,y,...);abline(lm(y~x))})
+pairs(cbind(balance(Y,~A/B/C),X),panel=function(x,y,...) {points(x,y,...);abline(lm(y~x))})
+
+pairwisePlot(balance(Y,~A/B/C),X)
+pairwisePlot(X,balance(Y,~A/B/C),panel=function(x,y,...) {plot(x,y,...);abline(lm(y~x))})
+pairwisePlot(X,balance01(Y,~A/B/C))
+pairwisePlot(X,subComps(Y,A~B,A~C,B~C))
+
+
+
+balance(rcomp(Y),~A/B/C)
+balance(aplus(Y),~A/B/C)
+balance(rplus(Y),~A/B/C)
+
+
+
+</code></pre>
+
+
+</div>

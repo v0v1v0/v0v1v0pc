@@ -1,0 +1,146 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ch_submit</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Method to easily integrate to new LLM API's</h2>
+
+<h3>Description</h3>
+
+<p>Method to easily integrate to new LLM API's
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ch_submit(
+  defaults,
+  prompt = NULL,
+  stream = NULL,
+  prompt_build = TRUE,
+  preview = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>defaults</code></td>
+<td>
+<p>Defaults object, generally puled from <code>chattr_defaults()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prompt</code></td>
+<td>
+<p>The prompt to send to the LLM</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stream</code></td>
+<td>
+<p>To output the response from the LLM as it happens, or wait until
+the response is complete. Defaults to TRUE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prompt_build</code></td>
+<td>
+<p>Include the context and additional prompt as part of the
+request</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>preview</code></td>
+<td>
+<p>Primarily used for debugging. It indicates if it should send
+the prompt to the LLM (FALSE), or if it should print out the resulting
+prompt (TRUE)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Optional arguments; currently unused.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Use this function to integrate your own LLM API. It has a few
+requirements to get it to work properly:
+</p>
+
+<ul>
+<li>
+<p> The output of the function needs to be the parsed response from the LLM
+</p>
+</li>
+<li>
+<p> For those that support streaming, make sure to use the <code>cat()</code> function to
+output the response of the LLM API as it is happening.
+</p>
+</li>
+<li>
+<p> If <code>preview</code> is set to TRUE, do not send to the LLM API. Simply return the
+resulting prompt.
+</p>
+</li>
+</ul>
+<p>The <code>defaults</code> argument controls which method to use. You can use the
+<code>chattr_defaults()</code> function, and set the provider. The <code>provider</code> value
+is what creates the R class name. It will pre-pend <code>cl_</code> to the class name.
+See the examples for more clarity.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The output from the model currently in use.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+library(chattr)
+ch_submit.ch_my_llm &lt;- function(defaults,
+                                prompt = NULL,
+                                stream = NULL,
+                                prompt_build = TRUE,
+                                preview = FALSE,
+                                ...) {
+  # Use `prompt_build` to append the prompts you with to append
+  if (prompt_build) prompt &lt;- paste0("Use the tidyverse\n", prompt)
+  # If `preview` is true, return the resulting prompt back
+  if (preview) {
+    return(prompt)
+  }
+  llm_response &lt;- paste0("You said this: \n", prompt)
+  if (stream) {
+    cat("streaming:\n")
+    for (i in seq_len(nchar(llm_response))) {
+      # If `stream` is true, make sure to `cat()` the current output
+      cat(substr(llm_response, i, i))
+      Sys.sleep(0.1)
+    }
+  }
+  # Make sure to return the entire output from the LLM at the end
+  llm_response
+}
+
+chattr_defaults("console", provider = "my llm")
+chattr("hello")
+chattr("hello", stream = FALSE)
+chattr("hello", prompt_build = FALSE)
+chattr("hello", preview = TRUE)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

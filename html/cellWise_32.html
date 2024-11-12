@@ -1,0 +1,169 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>wrap</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Wrap the data.
+</h2>
+
+<h3>Description</h3>
+
+<p>Transforms multivariate data <code>X</code> using the wrapping function with <code>b = 1.5</code> and <code>c = 4</code>. By default, it starts by calling <code>checkDataSet</code> to clean the data and <code>estLocScale</code> to estimate the location and scale of the variables in the cleaned data, yielding the vectors <code class="reqn">(\hat{\mu}_1,\ldots,\hat{\mu}_d)</code> and <code class="reqn">(\hat{\sigma}_1,\ldots,\hat{\sigma}_d)</code> where <code class="reqn">d</code> is the number of variables. Alternatively, the user can specify such vectors in the arguments <code>locX</code> and <code>scaleX</code>. In either case, the data cell <code class="reqn">x_{ij}</code> containing variable <code class="reqn">j</code> of case <code class="reqn">i</code> is transformed to </p>
+<p style="text-align: center;"><code class="reqn">y_{ij} = \hat{\mu}_j - b_j + \hat{\sigma}_j*\psi((x_{ij} - \hat{\mu}_j)/\hat{\sigma}_j)/a_j</code>
+</p>
+<p> in which <code class="reqn">a_j</code> and <code class="reqn">b_j</code> are such that for any fixed <code class="reqn">j</code> the average of <code class="reqn">y_{ij}</code> equals <code class="reqn">\hat{\mu}_j</code> and the standard deviation of <code class="reqn">y_{ij}</code> equals <code class="reqn">\hat{\sigma}_j</code>.  
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">wrap(X, locX = NULL, scaleX = NULL, precScale = 1e-12,
+     imputeNA = TRUE, checkPars = list())
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>the input data. It must be an <code class="reqn">n</code> by <code class="reqn">d</code> matrix or a data frame.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>locX</code></td>
+<td>
+<p>The location estimates of the columns of the input data <code>X</code>. Must be a vector of length <code class="reqn">d</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scaleX</code></td>
+<td>
+<p>The scale estimates of the columns of the input data <code>X</code>. Must be a vector of length <code class="reqn">d</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>precScale</code></td>
+<td>
+<p>The precision scale used throughout the algorithm. Defaults to <code class="reqn">1e-12</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>imputeNA</code></td>
+<td>
+<p>Whether or not to impute the <code>NA</code>s with the location estimate
+of the corresponding variable. Defaults to <code>TRUE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>checkPars</code></td>
+<td>
+<p>Optional list of parameters used in the call to
+<code>checkDataSet</code>. The options are:
+</p>
+
+<ul>
+<li> <p><code>coreOnly</code> <br>
+If <code>TRUE</code>, skip the execution of checkDataset. Defaults to <code>FALSE</code>
+</p>
+</li>
+<li>
+<p><code>numDiscrete</code><br>
+A column that takes on numDiscrete or fewer values
+will be considered discrete and not retained in the cleaned data.
+Defaults to <code class="reqn">5</code>.
+
+</p>
+</li>
+<li>
+<p><code>precScale</code> <br>
+Only consider columns whose scale is larger than precScale.
+Here scale is measured by the median absolute deviation.
+Defaults to <code class="reqn">1e-12</code>.
+
+</p>
+</li>
+<li>
+<p><code>silent</code><br>
+Whether or not the function progress messages should be printed.
+Defaults to <code>FALSE</code>.
+
+</p>
+</li>
+</ul>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list with components: <br></p>
+
+<ul>
+<li>
+<p><code>Xw</code> <br>
+The wrapped data.
+
+</p>
+</li>
+<li>
+<p><code>colInWrap</code> <br> 
+The column numbers of the variables which were wrapped. Variables which were filtered out by <code>checkDataSet</code> (because of a (near) zero scale for example), will not appear in this output.
+
+</p>
+</li>
+<li>
+<p><code>loc</code> <br> 
+The location estimates for all variables used for wrapping.
+
+</p>
+</li>
+<li>
+<p><code>scale</code> <br> 
+The scale estimates for all variables used for wrapping.
+
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Raymaekers, J. and Rousseeuw P.J.
+</p>
+
+
+<h3>References</h3>
+
+<p>Raymaekers, J., Rousseeuw P.J. (2019). Fast robust correlation for high dimensional data. <em>Technometrics</em>, <b>63</b>(2), 184-198. <a href="https://www.tandfonline.com/doi/full/10.1080/00401706.2019.1677270">(link to open access pdf)</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>estLocScale</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(MASS) 
+set.seed(12345) 
+n &lt;- 100; d &lt;- 10
+X &lt;- mvrnorm(n, rep(0, 10), diag(10))
+locScale &lt;- estLocScale(X)
+Xw &lt;- wrap(X, locScale$loc, locScale$scale)$Xw
+# For more examples, we refer to the vignette:
+## Not run: 
+vignette("wrap_examples")
+
+## End(Not run)
+</code></pre>
+
+
+</div>

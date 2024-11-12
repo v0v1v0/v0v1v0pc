@@ -1,0 +1,257 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>markov</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Markov method</h2>
+
+<h3>Description</h3>
+
+<p>Functions to compute rating and ranking
+using Markov method.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">rate_markov(cr_data, ..., fill = list(), stoch_modify = teleport(0.15),
+  weights = 1, force_nonneg_h2h = TRUE)
+
+rank_markov(cr_data, ..., fill = list(), stoch_modify = teleport(0.15),
+  weights = 1, force_nonneg_h2h = TRUE, keep_rating = FALSE,
+  ties = c("average", "first", "last", "random", "max", "min"),
+  round_digits = 7)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cr_data</code></td>
+<td>
+<p>Competition results in format ready for
+as_longcr().</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Name-value pairs of Head-to-Head functions (see
+h2h_long()).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fill</code></td>
+<td>
+<p>A named list that for each Head-to-Head function supplies a
+single value to use instead of NA for missing pairs (see
+h2h_long()).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stoch_modify</code></td>
+<td>
+<p>A single function to modify column-stochastic matrix or a
+list of them (see Stochastic matrix modifiers).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>Weights for different stochastic matrices.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>force_nonneg_h2h</code></td>
+<td>
+<p>Whether to force nonnegative values in Head-to-Head
+matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep_rating</code></td>
+<td>
+<p>Whether to keep rating column in ranking output.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ties</code></td>
+<td>
+<p>Value for <code>ties</code> in <code>round_rank()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>round_digits</code></td>
+<td>
+<p>Value for <code>round_digits</code> in <code>round_rank()</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Markov ratings are based on players 'voting' for other players being
+better. Algorithm is as follows:
+</p>
+
+<ol>
+<li>
+<p> 'Voting' is done with Head-to-Head values supplied in <code>...</code> (see
+h2h_mat() for technical details and section <strong>Design
+of Head-to-Head values</strong> for design details). Take special care of
+Head-to-Head values for self plays (when player1 equals player2). <strong>Note</strong>
+that Head-to-Head values should be non-negative. Use <code>force_nonneg_h2h = TRUE</code> to force that by subtracting minimum Head-to-Head value (in case some
+Head-to-Head value is strictly negative).
+</p>
+</li>
+<li>
+<p> Head-to-Head values are transformed into matrix which is normalized to be
+column-stochastic (sum of every column should be equal to 1) Markov matrix
+<em>S</em>. <strong>Note</strong> that all missing values are converted into 0. To specify other
+value use <code>fill</code> argument.
+</p>
+</li>
+<li> <p><em>S</em> is modified with <code>stoch_modify</code> to deal with possible problems behind
+<em>S</em>, such as reducibility and rows with all 0.
+</p>
+</li>
+<li>
+<p> Stationary vector is computed based on <em>S</em> as probability transition
+matrix of Markov chain process (transition probabilities from state <strong>i</strong> are
+elements from column <strong>i</strong>). The result is declared as Markov ratings.
+</p>
+</li>
+</ol>
+<p>Considering common values and structure of stochastic matrices one can
+naturally combine different 'votings' in one stochastic matrix:
+</p>
+
+<ol>
+<li> <p>Long format of Head-to-Head values is computed
+using <code>...</code> (which in this case should be several expressions for
+Head-to-Head functions).
+</p>
+</li>
+<li>
+<p> Each set of Head-to-Head values is transformed into matrix which is
+normalized to column-stochastic.
+</p>
+</li>
+<li>
+<p> Each stochastic matrix is modified with respective modifier which is
+stored in <code>stoch_modify</code> (which can be a list of functions).
+</p>
+</li>
+<li>
+<p> The resulting stochastic matrix is computed as weighted average of
+modified stochastic matrices.
+</p>
+</li>
+</ol>
+<p>For Head-to-Head functions in <code>...</code> (considered as list) and argument
+<code>stoch_modify</code> general R recycling rule is applied. If <code>stoch_modify</code> is a
+function it is transformed to list with one function.
+</p>
+<p><code>weights</code> is recycled to the maximum length of two mentioned recycled
+elements and then is normalized to sum to 1.
+</p>
+<p>Ratings are computed based only on games between players of interest (see
+Players).
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>rate_markov()</code> returns a tibble with columns
+<code>player</code> (player identifier) and <code>rating_markov</code> (Markov
+rating). The sum of all ratings should be equal to 1.
+<strong>Bigger value indicates better player performance</strong>.
+</p>
+<p><code>rank_markov</code> returns a <code>tibble</code> with columns <code>player</code>, <code>rating_markov</code> (if
+<code>keep_rating = TRUE</code>) and <code>ranking_markov</code> (Markov ranking
+computed with <code>round_rank()</code>).
+</p>
+
+
+<h3>Design of Head-to-Head values</h3>
+
+<p>Head-to-Head values in these functions are assumed to follow the property
+which can be <em>equivalently</em> described in two ways:
+</p>
+
+<ul>
+<li>
+<p> In terms of matrix format: <strong>the more Head-to-Head
+value in row <em>i</em> and column <em>j</em> the better player from row <em>i</em> performed than
+player from column <em>j</em></strong>.
+</p>
+</li>
+<li>
+<p> In terms of long format: <strong>the more Head-to-Head
+value the better player1 performed than player2</strong>.
+</p>
+</li>
+</ul>
+<p>This design is chosen because in most competitions the goal is to score
+<strong>more points</strong> and not less. Also it allows for more smooth use of
+h2h_funs from <code>comperes</code> package.
+</p>
+
+
+<h3>Players</h3>
+
+<p><code>comperank</code> offers a possibility to handle certain set of players. It is done
+by having <code>player</code> column (in longcr format) as factor
+with levels specifying all players of interest. In case of factor the result
+is returned only for players from its levels. Otherwise - for all present
+players.
+</p>
+
+
+<h3>References</h3>
+
+<p><a href="https://en.wikipedia.org/wiki/Markov_chain">Wikipedia
+page</a> for Markov chain.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">rate_markov(
+  cr_data = ncaa2005,
+  # player2 "votes" for player1 if player1 won
+  comperes::num_wins(score1, score2, half_for_draw = FALSE),
+  stoch_modify = vote_equal
+)
+
+rank_markov(
+  cr_data = ncaa2005,
+  comperes::num_wins(score1, score2, half_for_draw = FALSE),
+  stoch_modify = vote_equal
+)
+
+rank_markov(
+  cr_data = ncaa2005,
+  comperes::num_wins(score1, score2, half_for_draw = FALSE),
+  stoch_modify = vote_equal,
+  keep_rating = TRUE
+)
+
+# Combine multiple stochastic matrices and
+# use inappropriate `fill` which misrepresents reality
+rate_markov(
+  cr_data = ncaa2005[-(1:2), ],
+  win = comperes::num_wins(score1, score2, half_for_draw = FALSE),
+  # player2 "votes" for player1 proportionally to the amount player1 scored
+  # more in direct confrontations
+  score_diff = max(mean(score1 - score2), 0),
+  fill = list(win = 0.5, score_diff = 10),
+  stoch_modify = list(vote_equal, teleport(0.15)),
+  weights = c(0.8, 0.2)
+)
+
+</code></pre>
+
+
+</div>

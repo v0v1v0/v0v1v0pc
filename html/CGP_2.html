@@ -1,0 +1,245 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CGP</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fit composite Gaussian process models
+</h2>
+
+<h3>Description</h3>
+
+<p>Estimate parameters in the composite Gaussian process (CGP) model using maximum likelihood methods. Calculate the root mean squared (leave-one-out) cross validation error for diagnosis, and export intermediate values to facilitate <code>predict.CGP</code> function.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CGP(X, yobs, nugget_l = 0.001, num_starts = 5, 
+         theta_l = NULL, alpha_l = NULL, kappa_u = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>The design matrix
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>yobs</code></td>
+<td>
+
+<p>The vector of response values, corresponding to the rows of <code>X</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nugget_l</code></td>
+<td>
+
+<p>Optional, default is “0.001”. The lower bound for the nugget value (<code class="reqn">\lambda</code> in the paper)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>num_starts</code></td>
+<td>
+
+<p>Optional, default is “5”. Number of random starts for optimizing the likelihood function
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta_l</code></td>
+<td>
+
+<p>Optional, default is “0.0001”. The lower bound for all correlation parameters in the global GP (<code class="reqn">\theta</code> in the paper)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha_l</code></td>
+<td>
+
+<p>Optional. The lower bound for all correlation parameters in the local GP (<code class="reqn">\alpha</code> in the paper). It is also the upper bound for all correlation parameters in the global GP (the <code class="reqn">\theta</code>).
+Default is <code>log(100)*mean(1/dist(Stand_X)^2)</code>, where <code>Stand_X&lt;-apply(X,2,function(x) (x-min(x))/max(x-min(x)))</code>. Please refer to Ba and Joseph (2012) for details
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kappa_u</code></td>
+<td>
+
+<p>Optional. The upper bound for <code class="reqn">\kappa</code>, where we define <code class="reqn">\alpha_j=\theta_j+\kappa</code> for <code class="reqn">j=1,\ldots,p</code>. Default value is <code>log(10^6)*mean(1/dist(Stand_X)^2)</code>, \ where <code>Stand_X&lt;-apply(X,2,function(x) (x-min(x))/max(x-min(x)))</code>
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function fits a composite Gaussian process (CGP) model based on the given design matrix <code>X</code> and the observed responses <code>yobs</code>. The fitted model consists of a smooth GP to caputre the global trend and a local GP which is augmented with a flexible variance model to capture the change of local volatilities. For <code class="reqn">p</code> input variables, such two GPs involve <code class="reqn">2p+2</code> unknown parameters in total. As demonstrated in Ba and Joseph (2012), by assuming <code class="reqn">\alpha_j=\theta_j+\kappa</code> for <code class="reqn">j=1,\ldots,p</code>, fitting the CGP model only requires estimating <code class="reqn">p+3</code> unknown parameters, which is comparable to fitting a stationary GP model (<code class="reqn">p</code> unknown parameters).
+</p>
+
+
+<h3>Value</h3>
+
+<p>This function fits the CGP model and returns an object of class “<code>CGP</code>”. Function <code>predict.CGP</code> can be further used for making new predictions and function <code>summary.CGP</code> can be used to print a summary of the “<code>CGP</code>” object.
+</p>
+<p>An object of class “<code>CGP</code>” is a list containing at least the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>Estimated nugget value <code class="reqn">(\lambda)</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+<p>Vector of estimated correlation parameters <code class="reqn">(\theta)</code> in the global GP</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>Vector of estimated correlation parameters <code class="reqn">(\alpha)</code> in the local GP</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bandwidth</code></td>
+<td>
+<p>Estimated bandwidth parameter <code class="reqn">(b)</code> in the variance model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rmscv</code></td>
+<td>
+<p>Root mean squared (leave-one-out) cross validation error</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Yp_jackknife</code></td>
+<td>
+<p>Vector of Jackknife (leave-one-out) predicted values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mu</code></td>
+<td>
+<p>Estimated mean value <code class="reqn">(\mu)</code> for global trend</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau2</code></td>
+<td>
+<p>Estimated variance <code class="reqn">(\tau^2)</code> for global trend</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beststart</code></td>
+<td>
+<p>Best starting value found for optimizing the log-likelihood</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>objval</code></td>
+<td>
+<p>Optimal objective value for the negative log-likelihood (up to a constant)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var_names</code></td>
+<td>
+<p>Vector of input variable names</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Sig_matrix</code></td>
+<td>
+<p>Diagonal matrix containing standardized local variances at each of the design points</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sf</code></td>
+<td>
+<p>Standardization constant for rescaling the local variance model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>res2</code></td>
+<td>
+<p>Vector of squared residuals from the estimated global trend</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>invQ</code></td>
+<td>
+<p>Matrix of <code class="reqn">(\mathbf{G}+\lambda\mathbf{\Sigma}^{1/2}\mathbf{L}\mathbf{\Sigma}^{1/2})^{-1}</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>temp_matrix</code></td>
+<td>
+<p>Matrix of <code class="reqn">(\mathbf{G}+\lambda\mathbf{\Sigma}^{1/2}\mathbf{L}\mathbf{\Sigma}^{1/2})^{-1} (\mathbf{y}- \hat{\mu}\mathbf{1})</code></p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Shan Ba &lt;shanbatr@gmail.com&gt; and V. Roshan Joseph &lt;roshan@isye.gatech.edu&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Ba, S. and V. Roshan Joseph (2012) “Composite Gaussian Process Models for Emulating Expensive Functions”. <em>Annals of Applied Statistics</em>, 6, 1838-1860.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>predict.CGP</code>, <code>print.CGP</code>, <code>summary.CGP</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+x1&lt;-c(0,.02,.075,.08,.14,.15,.155,.156,.18,.22,.29,.32,.36,
+      .37,.42,.5,.57,.63,.72,.785,.8,.84,.925,1)
+x2&lt;-c(.29,.02,.12,.58,.38,.87,.01,.12,.22,.08,.34,.185,.64,
+      .02,.93,.15,.42,.71,1,0,.21,.5,.785,.21)
+X&lt;-cbind(x1,x2)
+yobs&lt;-sin(1/((x1*0.7+0.3)*(x2*0.7+0.3)))
+
+## Not run: 
+#Fit the CGP model
+#Increase the lower bound for nugget to 0.01 (Optional)
+mod&lt;-CGP(X,yobs,nugget_l=0.01)
+summary(mod)
+
+mod$objval
+#-27.4537
+mod$lambda
+#0.6210284
+mod$theta
+#6.065497 8.093402 
+mod$alpha
+#143.1770 145.2049 
+mod$bandwidth
+#1
+mod$rmscv
+#0.5714969
+
+## End(Not run)
+</code></pre>
+
+
+</div>

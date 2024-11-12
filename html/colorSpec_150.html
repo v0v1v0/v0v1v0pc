@@ -1,0 +1,192 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>sectionOptimalColors</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>compute sections of an optimal color surface by hyperplanes</h2>
+
+<h3>Description</h3>
+
+<p>Consider a <b>colorSpec</b> object <code>x</code> with <code>type</code> 
+equal to <code>'responsivity.material'</code>.
+The set of all possible material reflectance functions (or transmittance functions) 
+is convex, closed, and bounded (in fact they form a cube),
+and this implies that the set of all possible output responses 
+from <code>x</code> is also convex, closed, and bounded.
+The latter set is called the <em>object-color solid</em> or <em>Rösch Farbkörper</em> for <code>x</code>.
+If the dimension of the response of <code>x</code> is 2, 
+this solid is a convex polygon
+that is centrally symmetric - a <em>zonogon</em>.
+If the dimension of the response of <code>x</code> is 3 (e.g. RGB or XYZ), 
+this solid is a special type of centrally symmetric convex polyhedron
+called a <em>zonohedron</em>, see <cite>Centore</cite>.
+This function only supports dimensions 2 and 3.
+Denote this object-color solid by <b>Z</b>.
+</p>
+<p>A color on the boundary of <b>Z</b> is called an <em>optimal color</em>.
+Consider the intersection of a hyperplane with the boundary of <b>Z</b>.
+Let the equation of the hyperplane be given by:
+</p>
+<p style="text-align: center;"><code class="reqn"> &lt;v,normal&gt; = \beta </code>
+</p>
+
+<p>where <code class="reqn">normal</code> is orthogonal to the hyperplane,
+and <code class="reqn">\beta</code> is the plane constant, and <code class="reqn">v</code> is a variable vector.
+The purpose of the function <code>sectionOptimalColors()</code> 
+is to compute the intersection set.
+</p>
+<p>In dimension 2 this hyperplane is a line, and the intersection is
+generically 2 points, and 1 point if the line only intersects the boundary
+(we ignore the special case when the intersection is an edge of the polygon).
+</p>
+<p>In dimension 3 this hyperplane is a 2D plane, and the intersection is
+generically a polygon, and 1 point if the line only intersects the boundary
+(we ignore the special case when the intersection is a face of the zonohedron).
+</p>
+<p>Of course, the intersection can also be empty.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'colorSpec'
+sectionOptimalColors( x, normal, beta )
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a <b>colorSpec</b> object with <code>type</code>
+equal to <code>'responsivity.material'</code> and M spectra, where M=2 or 3.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>normal</code></td>
+<td>
+<p>a nonzero vector of dimension M, that is the normal to a hyperplane</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta</code></td>
+<td>
+<p>a vector of numbers of positive length.
+The number <code>beta[k]</code> defines the plane <code>&lt;v,normal&gt; = beta[k]</code>. </p>
+</td>
+</tr>
+</table>
+<p>.
+</p>
+
+
+<h3>Details</h3>
+
+<p>Consider first the case that the dimension of <code>x</code> is 3,
+so that <b>Z</b> is a zonohedron.
+In the preprocessing phase the zonohedral representation is calculated.
+The faces of <b>Z</b> are either parallelograms,
+or <em>compound faces</em> that are partitioned into parallelograms.
+The centers of all these parallelograms are computed,
+along with their extent in direction <code class="reqn">normal</code>.
+For a given plane <code class="reqn">&lt;v,normal&gt;=\beta</code>,
+the parallelograms that intersect the plane are extracted.
+The boundary of each parallelogram intersects the plane in 2 points (in general)
+and one of those points is computed.
+The set of all these points is then sorted into proper order around the boundary.
+<br>
+In the case that the dimension of <code>x</code> is 2,
+so that <b>Z</b> is a zonogon,
+the parallelograms are replaced by line segments (edges),
+and the processing is much easier.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The function returns a list with an item for each value in vector <code>beta</code>.
+Each item in the output is a list with these items:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>beta</code></td>
+<td>
+<p>the value of the plane constant <code class="reqn">\beta</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>section</code></td>
+<td>
+<p>an NxM matrix, where N is the number of points in the section,
+and M is the dimension of <code>normal</code>.
+If the intersection is empty, then N=0.</p>
+</td>
+</tr>
+</table>
+<p>In case of global error, the function returns <code>NULL</code>.
+</p>
+
+
+<h3>WARNING</h3>
+
+<p>The preprocessing calculation of the zonohedron dominates the total time.
+And this time goes up rapidly with the number of wavelengths.
+We recommend using a wavelength step of 5nm, as in the <b>Examples</b>.
+For best results, batch a lot of <code>beta</code>s into a single function call
+and then process the output.
+<br>
+Moreover, the preprocessing time is dominated by the partitioning
+of the compound faces into parallelograms.
+This is made worse by an <code>x</code> whose spectral responses have little overlap,
+as in <code>scanner.ACES</code>.
+In these cases, try a larger step size, and then reduce.
+Optimizing these compound faces is a possible topic for the future.
+</p>
+
+
+<h3>References</h3>
+
+<p>Centore, Paul.
+<em>A Zonohedral Approach to Optimal Colours</em>.
+<b>Color Research &amp; Application</b>.
+Vol. 38.
+No. 2.
+pp. 110-119.
+April 2013.
+</p>
+<p>Logvinenko, A. D.
+An object-color space. 
+<b>Journal of Vision</b>.
+9(11):5, 1-23, (2009).<br><code>https://jov.arvojournals.org/article.aspx?articleid=2203976</code>.
+doi:10.1167/9.11.5.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>vignette <a href="../doc/optimals.pdf"><b>Plotting Chromaticity Loci of Optimal Colors</b></a>,
+<code>probeOptimalColors()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">wave = seq(420,680,by=5)
+Flea2.scanner = product( A.1nm, "material", Flea2.RGB, wavelength=wave )
+seclist = sectionOptimalColors( Flea2.scanner, normal=c(0,1,0), beta=10 )
+length( seclist[[1]]$section )
+seclist[[1]]$section[ 1:5, ]
+## [1] 207   # the polygon has 207 vertices, and the first 5 are:
+##            Red Green      Blue
+##  [1,] 109.2756    10 3.5391342
+##  [2,] 109.5729    10 2.5403628
+##  [3,] 109.8078    10 1.7020526
+##  [4,] 109.9942    10 1.0111585
+##  [5,] 110.1428    10 0.4513051
+</code></pre>
+
+
+</div>

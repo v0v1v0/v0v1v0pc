@@ -1,0 +1,327 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ConsRegArima</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fit regression model with Arma errors to univariate time series</h2>
+
+<h3>Description</h3>
+
+<p>ConsRegArima is a function that allows to estimate a regression model
+with errors following an ARMA process (p,q). It allows the introduction of restrictions (both lower and upper limits) and restrictions
+between the coefficients (in the form, for example, of a&gt;b). Largely a wrapper for the arima function in the stats package but easier to include regressors.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ConsRegArima(...)
+
+## Default S3 method:
+ConsRegArima(x, y, order, seasonal, optimizer,
+  LOWER = NULL, UPPER = NULL, penalty = 1000, constraints = NULL,
+  ini.pars.coef, model_fit = NULL, ...)
+
+## S3 method for class 'formula'
+ConsRegArima(formula, data = list(),
+  optimizer = c("solnp"), order = c(0, 0), seasonal = list(order =
+  c(0, 0), period = NA), LOWER = NULL, UPPER = NULL, penalty = 1000,
+  constraints = NULL, ini.pars.coef = NULL, na.action = "na.omit",
+  ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional parameters passed in the optimizer (number of iterations, ...)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>matrix of predictive variables</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>vector of outcome variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>order</code></td>
+<td>
+<p>Arma component (p, q)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seasonal</code></td>
+<td>
+<p>A specification of the seasonal part of the ARMA model (P,Q),
+plus the period (which defaults to 1).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimizer</code></td>
+<td>
+<p>Optimizer package used for fit the model (include bayesian
+and genetic algorithm optimization).
+Possible values are: "solnp" (default) (Rsolnp),
+"gosonlp" (Rsolnp),  "optim" (stats::optim), "nloptr" (nloptr), DEoptim ("DEoptim"),
+"dfoptim" (dfoptim), "mcmc" (FME::modMCMC), "MCMCmetrop" (MCMCpack::MCMCmetrop1R),
+'adaptMCMC'(adaptMCMC::MCMC),
+"GA" (GA package), "GenSA" (GenSA package)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>LOWER</code></td>
+<td>
+<p>(default NULL) vector of lower bounds for the coefficients.
+If the lenght of LOWER is not equal with the length of the coeefficients, then, the rest will be equal to -Inf</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>UPPER</code></td>
+<td>
+<p>(default NULL) vector of lower bounds for the coefficients.
+If the lenght of UPPER is not equal with the length of the coeefficients, then, the rest will be equal to +Inf</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>penalty</code></td>
+<td>
+<p>(default 1000) penalty to the objective function if some constraints do not fullfill</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>constraints</code></td>
+<td>
+<p>vector of constraints (see details)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ini.pars.coef</code></td>
+<td>
+<p>vector of initial parameters. In case there is some constraint,
+then the ini.pars.coef should fulfill the constraints. This vector is only for regression component.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model_fit</code></td>
+<td>
+<p>object of class <code>ConsRegArima</code> to update the Arma part
+and fix the coefficient from a previous model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>an object of class "formula" (or one that can be coerced to that class): a symbolic description of
+the model to be fitted</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>an optional data frame, list or environment (or object coercible by as.data.frame to a data frame)
+containing the variables in the model. If not found in data, the variables are taken from environment(formula),
+typically the environment from which lm is called.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.action</code></td>
+<td>
+<p>na.action to the data</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Several optimizers of various R packages are implemented,
+including methods typically used in Bayesian regressions like Markov Chain Monte Carlo simulation.
+</p>
+<p>Constraints will be a string:
+For example, if x1 and x2 are two coefficient names, then a constraint could be:
+"x1 &gt; x2" or "x1+x2 &gt; 2". For some constraints, one can write: "x1+x2&gt;2, x1 &gt; 1".
+Each constraint will be separate by commas.
+</p>
+<p>Important: if there are some constraints that do not fulfill in a model without those constraints,
+it is recommended to use <code>ini.pars.coef</code> parameter to set initial values that fulfill constraints.
+See the example
+</p>
+<p>On the other hand, aic value is computed as auto.arima function computes the AIC when method == 'CSS':
+</p>
+<p style="text-align: center;"><code class="reqn"> AIC = n * log(sigma2) + npar * 2 </code>
+</p>
+
+<p>Where <code>npa</code>r I set the number of coefficients.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class "<code>ConsRegArima</code>".
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>coefficients</code></td>
+<td>
+<p>Coefficients (regression + arma errors)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hessian</code></td>
+<td>
+<p>hessian matrix if the optimizer can return it</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimizer</code></td>
+<td>
+<p>optimizer object return (see details of each optimization package)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimizer.name</code></td>
+<td>
+<p>name of the optimizer</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>nrow(data) - number of coefficients</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rank</code></td>
+<td>
+<p>number of coefficients</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>objective_function</code></td>
+<td>
+<p>objective_function used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>A list representing the Kalman Filter used in the fitting</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sigma2</code></td>
+<td>
+<p>	the MLE of the innovations variance</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>residuals</code></td>
+<td>
+<p>residuals of the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitted</code></td>
+<td>
+<p>fitted values of the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitted_regression</code></td>
+<td>
+<p>fitted values only of the regression part</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitted_arima</code></td>
+<td>
+<p>fitted values only of the arma part</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metrics</code></td>
+<td>
+<p>Accuracy metrics of the model (accuracy function of the forecast package)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the matched call</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>objective series</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>regressors</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>formula term</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aic</code></td>
+<td>
+<p> the AIC value (see details)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bic</code></td>
+<td>
+<p>the BIC value</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aicc</code></td>
+<td>
+<p>the AICc value</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Josep Puig Salles
+</p>
+
+
+<h3>References</h3>
+
+<p>Peiris, M. &amp; Perera, B. (1988), On prediction with fractionally
+Hyndman RJ, Khandakar Y (2008). “Automatic time series forecasting: the forecast package for R.”
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data('series')
+fit1 = ConsRegArima(formula = y ~ x1+x2 +x3+x4,
+                    order = c(2, 1), data = series)
+summary(fit1)
+fit2 = ConsRegArima(formula = y ~ x1+x2 +x3+x4, order = c(2, 1),
+                    data = series, constraints = '(x3 +.1) &gt; x1',
+                    ini.pars.coef = c(.96, .2, -.8, .4), UPPER = 1, LOWER = -1)
+
+fit1$coefficients
+fit2$coefficients
+
+</code></pre>
+
+
+</div>

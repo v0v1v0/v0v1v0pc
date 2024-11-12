@@ -1,0 +1,178 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>simulate</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simulate an effect scenario</h2>
+
+<h3>Description</h3>
+
+<p>The supplied <code>EffectScenario</code> is passed on to the ODE solver for numerical
+integration. Internally, <code>simulate()</code> is split up into several functions
+dedicated to particular models, e.g. one for GUTS and one for Lemna type
+models. The package will take care of using the correct function
+for each model when <code>simulate()</code> is called.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">simulate(x, ...)
+
+## S4 method for signature 'EffectScenario'
+simulate(x, ...)
+
+## S4 method for signature 'Transferable'
+simulate(x, ...)
+
+## S4 method for signature 'ScenarioSequence'
+simulate(x, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>scenario to simulate</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional parameters passed on to ODE solver</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Simulation results are returned as a time-series for each state
+variable. Some models provide additional properties describing the model state,
+e.g. the internal concentration of a toxicant within the organism. Refer
+to the respective scenario for more information.
+</p>
+<p>Additional arguments to <code>simulate()</code> will be passed on to <code>deSolve::ode()</code>
+which enables control of the numerical integration parameters.
+</p>
+
+
+<h4>Output times and windows</h4>
+
+<p>The minimum and maximum of given time points generally define the simulated
+period. Function argument <code>times</code> overrides settings of the scenario, i.e.
+time points set in <code>scenario@times</code>. However, the simulation can be limited to
+a subset of time points by enabling a moving exposure window, see <code>set_window()</code>.
+</p>
+<p>Results will be returned for each time point. Precision of the numeric solver
+may be affected by chosen output times in certain cases. Hence, small deviations
+in results should be expected if different output times are set. This effect
+can be mitigated by either defining are sufficiently small time step for the solver
+using argument <code>hmax</code> or by decreasing the error tolerances <code>atol</code> and <code>rtol</code>.
+These arguments are passed to the solver, see e.g. <code>deSolve::lsoda()</code> for details.
+</p>
+
+
+
+<h4>Optional output variables</h4>
+
+<p>Some models support adding intermediary model variables to the return value
+of <code>simulate()</code>. Analyzing the additional outputs may be helpful to understand
+model behavior and support finding potential issues in model parameterization.
+</p>
+<p>Optional outputs are enabled by setting the parameter <code>nout</code> to a value greater
+than zero. If <code>nout</code> is set to <code>n</code>, then the first <code>n</code> optional output columns
+will be returned along the normal simulation result.
+</p>
+<p>Which optional outputs are available depends on the model/scenario at hand.
+Please refer to the model documentation for details.
+As an example, the GUTS-RED-IT model supports adding the
+external toxicant concentration to the output by setting <code>nout=1</code>:
+</p>
+<p><code>minnow_it %&gt;% simulate(nout=1)</code>
+</p>
+
+
+
+<h4>Numerical precision and stability</h4>
+
+<p>Each model was assigned a default ODE solver which handles most of the
+occurring inputs well. In most cases, this will be an explicit numerical
+scheme of the Runge-Kutta family with variable step width. For certain extreme
+parameters settings, such as very high uptake/permeability of the contaminant
+or exposure series which represent step functions, the numerical approximation
+might deteriorate and yield invalid results. In this case try to decrease the
+allowed max step width by setting the argument <code>hmax</code> with various values.
+Start with <code>hmax=1</code> and decrease the value by orders of 10. It is not
+possible or desirable to reduce <code>hmax</code> to extremely small values, as the
+ODE solver will require more CPU time and simulation will become inefficient.
+</p>
+<p>Oftentimes, it will be computational more efficient to adapt the solver's
+error tolerances <code>atol</code> and <code>rtol</code> than reducing the step width <code>hmax</code> to achieve
+stable numerics. Start by decreasing deSolve's default values by
+orders of ten until the simulation yields acceptable results, see e.g.
+<code>deSolve::lsoda()</code> for more information on error tolerances.
+</p>
+<p>As an alternative to adapting solver parameters, it might be worthwhile to
+try other numerical schemes which can handle stiff ODEs, such as Radau, LSODA,
+or LSODES. To change solvers, set the <code>method</code> argument.
+To select e.g. the Radau scheme, set <code>method="radau"</code>. For LSODA, set <code>method="lsoda"</code>.
+Radau performs better than LSODA in some cases, as the latter method can return
+biologically nonsensical results without raising an error. See <code>deSolve::ode()</code>
+for details on available ODE solvers.
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>A <code>data.frame</code> with the time-series of simulation results
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">minnow_sd %&gt;% simulate() # tidy syntax
+simulate(minnow_sd) # base R syntax
+
+# Set new output times
+minnow_sd %&gt;% simulate(times=c(0,4))
+
+# Modify simulated time frame
+minnow_sd %&gt;% simulate(times=c(0,10))
+
+# Use an alternative exposure profile than defined in the scenario
+minnow_sd %&gt;% set_exposure(data.frame(t=0,c=10), reset_times=FALSE) %&gt;% simulate()
+
+##
+## Precision of results
+
+# A large number of output times forces smaller solver time steps
+minnow_it %&gt;% simulate(times=seq(0,1,0.001)) %&gt;% tail()
+
+# Defining only two output times allows for larger solver time steps
+minnow_it %&gt;% simulate(times=c(0,1))
+
+# The difference between results can be reduced by limiting the solver's
+# maximum step length
+minnow_it %&gt;% simulate(times=c(0,1), hmax=0.001)
+
+# The same numerical precision can be achieved by switching to
+# the Radau scheme
+minnow_it %&gt;% simulate(times=c(0,1), method="radau")
+
+# A very small step length may reduce the difference even further but may
+# also exceed the allowed number of steps per output interval. The following
+# simulation will be aborted with a solver error:
+try(
+  minnow_it %&gt;% simulate(times=c(0,1), hmax=0.0001)
+)
+
+# However, the solver's max number of allowed steps can be increased:
+minnow_it %&gt;% simulate(times=c(0,1), hmax=0.0001, maxsteps=10^5)
+</code></pre>
+
+
+</div>

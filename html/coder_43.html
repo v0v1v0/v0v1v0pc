@@ -1,0 +1,123 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>index_fun</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate index based on classification scheme</h2>
+
+<h3>Description</h3>
+
+<p>This is the third step of <code>codify() %&gt;% classify() %&gt;% index()</code>.
+The function takes classified case data and calculates
+(weighted) index sums as specified by weights from a <code>classcodes</code> object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">index(classified, ...)
+
+## S3 method for class 'data.frame'
+index(classified, ...)
+
+## S3 method for class 'matrix'
+index(classified, index = NULL, cc = NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>classified</code></td>
+<td>
+<p>output from <code>classify()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>used internally</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>index</code></td>
+<td>
+<p>name of column with 'weights' from corresponding
+<code>classcodes</code> object. Can be <code>NULL</code> if the index is just a unweighted
+count of all identified groups.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cc</code></td>
+<td>
+<p><code>classcodes</code> object. Can be <code>NULL</code> if a <code>classcodes</code> object is
+already available as an attribute of <code>classified</code> (which is often the case)
+and/or if <code>index = NULL</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Index weights for subordinate hierarchical classes
+(as identified by <code>attr(cc, "hierarchy")</code>) are excluded in presence of
+superior classes if index specified with argument <code>index</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Named numeric index vector with names corresponding to
+<code>rownames(classified)</code>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other verbs: 
+<code>categorize()</code>,
+<code>classify()</code>,
+<code>codify()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Prepare some codified data with ICD-10 codes during 1 year (365 days)
+# before surgery
+x &lt;-
+  codify(
+    ex_people,
+    ex_icd10,
+    id        = "name",
+    code      = "icd10",
+    date      = "surgery",
+    days      = c(-365, 0),
+    code_date = "admission"
+  )
+
+# Classify those patients by the Charlson comorbidity indices
+cl &lt;- classify(x, "charlson")
+
+# Calculate (weighted) index values
+head(index(cl))                  # Un-weighted sum/no of conditions for each patient
+head(index(cl, "quan_original")) # Weighted index (Quan et al. 2005; see `?charlson`)
+head(index(cl, "quan_updated"))  # Weighted index (Quan et al. 2011; see `?charlson`)
+
+# Tabulate index for all patients.
+# As expected, most patients are healthy and have index = 0/NA,
+# where NA indicates no recorded hospital visits
+# found in `ex_icd10` during codification.
+# In practice, those patients might be assumed to have 0 comorbidity as well.
+table(index(cl, "quan_original"), useNA = "always")
+
+# If `cl` is a matrix without additional attributes (as imposed by `codify()`)
+# an explicit classcodes object must be specified by the `cc` argument
+cl2 &lt;- as.matrix(cl)
+head(index(cl2, cc = "charlson"))
+</code></pre>
+
+
+</div>

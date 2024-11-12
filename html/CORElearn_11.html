@@ -1,0 +1,398 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CoreModel</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Build a classification or regression model </h2>
+
+<h3>Description</h3>
+
+<p>Builds a classification or regression model from the <code>data</code> and <code>formula</code> with given parameters.
+Classification models available are
+</p>
+
+<ul>
+<li>
+<p> random forests, possibly with local weighing of basic models (parallel execution on several cores),
+</p>
+</li>
+<li>
+<p> decision tree with constructive induction in the inner nodes and/or models in the leaves,
+</p>
+</li>
+<li>
+<p> kNN and weighted kNN with Gaussian kernel,
+</p>
+</li>
+<li>
+<p> naive Bayesian classifier.
+</p>
+</li>
+</ul>
+<p>Regression models:
+</p>
+
+<ul>
+<li>
+<p> regression trees with constructive induction in the inner nodes and/or models in the leaves,
+</p>
+</li>
+<li>
+<p> linear models with pruning techniques,
+</p>
+</li>
+<li>
+<p> locally weighted regression,
+</p>
+</li>
+<li>
+<p> kNN and weighted kNN with Gaussian kernel.
+</p>
+</li>
+</ul>
+<p>Function <code>cvCoreModel</code> applies cross-validation to estimate predictive performance of the model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">  CoreModel(formula, data,
+       model=c("rf","rfNear","tree","knn","knnKernel","bayes","regTree"),
+       costMatrix=NULL,...)
+  cvCoreModel(formula, data,
+       model=c("rf","rfNear","tree","knn","knnKernel","bayes","regTree"),
+       costMatrix=NULL, folds=10, stratified=TRUE, returnModel=TRUE, ...)
+
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p> Either a formula specifying the attributes to be evaluated and the target variable, or a name of target variable, or an index of target variable. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p> Data frame with training data. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p> The type of model to be learned. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>costMatrix</code></td>
+<td>
+<p> Optional misclassification cost matrix used with certain models. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>folds</code></td>
+<td>
+<p> An integer, specifying the number of folds to use in cross-validation of model. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stratified</code></td>
+<td>
+<p> A boolean specifying if cross-valiadation is to be stratified fpr classification problems, i.e. shall all folds have the same distribution of class values. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>returnModel</code></td>
+<td>
+<p> If <code>TRUE</code> the function <code>cvCoreModel</code> estimates predictive performance using cross-validation and returns the model build on the whole data set. 
+If <code>returnModel=FALSE</code> the function only evaluates the model using cross-validation.  </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>... </code></td>
+<td>
+<p> Options for building the model. See <code>helpCore</code>. </p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The parameter <code>formula</code> can be interpreted in three ways, where the formula interface is the most elegant one, 
+but inefficient and inappropriate for large data sets. See also examples below. As <code>formula</code> one can specify:
+</p>
+ 
+<dl>
+<dt>an object of class <code>formula</code>
+</dt>
+<dd>
+<p>used as a mechanism to select features (attributes) 
+and prediction variable (class). Only simple terms can be used and 
+interaction expressed in formula syntax are not supported. The simplest way is
+to specify just response variable: <code>class ~ .</code>.
+In this case all other attributes in the data set are evaluated. Note that formula interface is not appropriate for data sets with
+large number of variables.</p>
+</dd>
+<dt>a character vector</dt>
+<dd>
+<p>specifying the name of target variable, all the other columns in data frame <code>data</code> are used as predictors.</p>
+</dd>
+<dt>an integer</dt>
+<dd>
+<p>specifying the index of of target variable in data frame <code>data</code>, all the other columns are used as predictors.</p>
+</dd>
+</dl>
+<p>Parameter <b>model</b> controls the type of the constructed model. There are several possibilities:
+</p>
+
+<dl>
+<dt><code>"rf"</code></dt>
+<dd>
+<p> random forests classifier as defined by (Breiman, 2001) with some extensions, </p>
+</dd>
+<dt><code>"rfNear"</code></dt>
+<dd>
+<p> random forests classifier with basic models weighted locally (Robnik-Sikonja, 2005), </p>
+</dd>
+<dt><code>"tree"</code></dt>
+<dd>
+<p> decision tree with constructive induction in the inner nodes and/or models in the leaves, </p>
+</dd>
+<dt><code>"knn"</code></dt>
+<dd>
+<p> k nearest neighbors classifier, </p>
+</dd>
+<dt><code>"knnKernel"</code></dt>
+<dd>
+<p> weighted k nearest neighbors classifier with distance taken into account through Gaussian kernel, </p>
+</dd>
+<dt><code>"bayes"</code></dt>
+<dd>
+<p> naive Bayesian classifier, </p>
+</dd>
+<dt><code>"regTree"</code></dt>
+<dd>
+<p> regression trees with constructive induction in inner nodes and/or models in leaves
+controlled by modelTypeReg parameter.
+Models used in leaves of the regression tree can also be used as stand-alone regression models 
+using option minNodeWeightTree=Inf (see examples below):
+</p>
+
+<ul>
+<li>
+<p> linear models with pruning techniques
+</p>
+</li>
+<li>
+<p> locally weighted regression
+</p>
+</li>
+<li>
+<p> kNN and kNN with Gaussian kernel.
+</p>
+</li>
+</ul>
+</dd>
+</dl>
+<p>There are many additional parameters <b>... </b> available which are used by different models.
+Their list and description is available by calling <code>helpCore</code>. Evaluation of attributes is covered
+in function <code>attrEval</code>.
+</p>
+<p>The optional parameter <b> costMatrix </b> can provide nonuniform cost matrix for classification problems. For regression
+problem this parameter is ignored. The format of the matrix is costMatrix(true class, predicted class).
+By default uniform costs are assumed, i.e.,  costMatrix(i, i) = 0, and costMatrix(i, j) = 1, for i not equal to j.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The created model is not returned as a R structure. It is stored internally
+in the package memory space and only its pointer (index) is returned.
+The maximum  number of models that can be stored simultaneously
+is a parameter of the initialization function <code>initCore</code> and
+defaults to 16384. Models, which are not needed, may be deleted in order
+to free the memory using function <code>destroyModels</code>.
+By referencing the returned model, any of the stored models may be
+used for prediction with <code>predict.CoreModel</code>.
+What the function actually returns is a list with components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>modelID</code></td>
+<td>
+<p> index of internally stored model, </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>terms</code></td>
+<td>
+<p> description of prediction variables and response, </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>class.lev</code></td>
+<td>
+<p> class values for classification problem, null for regression problem, </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p> the type of model used, see parameter <code>model</code>, </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p> the <code>formula</code> parameter passed. </p>
+</td>
+</tr>
+</table>
+<p>The function <code>cvCoreModel</code> evaluates the model using cross-validation and function <code>modelEval</code> to return
+these additional components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>avgs</code></td>
+<td>
+<p>A vector with average values of each evaluation metric obtained from <code>modelEval</code>. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stds</code></td>
+<td>
+<p>A vector with standard deviations of each evaluation metric from <code>modelEval</code>. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>evalList</code></td>
+<td>
+<p>A list, where each component is an evaluation metric from <code>modelEval</code>. Each component contains results of cross-validated runs.</p>
+</td>
+</tr>
+</table>
+<p>In case <code>returnModel=FALSE</code> the function only returns the above three components are keeps no model.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Marko Robnik-Sikonja, Petr Savicky </p>
+
+
+<h3>References</h3>
+
+<p>Marko Robnik-Sikonja, Igor Kononenko: Theoretical and Empirical Analysis of ReliefF and RReliefF.
+<em>Machine Learning Journal</em>, 53:23-69, 2003
+</p>
+<p>Leo Breiman: Random Forests. <em>Machine Learning Journal</em>, 45:5-32, 2001
+</p>
+<p>Marko Robnik-Sikonja: Improving Random Forests.
+In J.-F. Boulicaut et al.(Eds): <em>ECML 2004, LNAI 3210</em>, Springer, Berlin, 2004, pp. 359-370
+</p>
+<p>Marko Robnik-Sikonja: CORE - a system that predicts continuous variables.
+<em>Proceedings of ERK'97</em> , Portoroz, Slovenia, 1997
+</p>
+<p>Marko Robnik-Sikonja, Igor Kononenko: Discretization of continuous attributes using ReliefF.
+<em>Proceedings of ERK'95</em>, B149-152, Ljubljana, 1995
+</p>
+<p>Majority of these references are available from <a href="http://lkm.fri.uni-lj.si/rmarko/papers/">http://lkm.fri.uni-lj.si/rmarko/papers/</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>CORElearn</code>,
+<code>predict.CoreModel</code>,
+<code>modelEval</code>,
+<code>attrEval</code>,
+<code>helpCore</code>,
+<code>paramCoreIO</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># use iris data set
+trainIdxs &lt;- sample(x=nrow(iris), size=0.7*nrow(iris), replace=FALSE)
+testIdxs &lt;- c(1:nrow(iris))[-trainIdxs]
+
+# build random forests model with certain parameters
+# setting maxThreads to 0 or more than 1 forces 
+# utilization of several processor cores 
+modelRF &lt;- CoreModel(Species ~ ., iris[trainIdxs,], model="rf",
+              selectionEstimator="MDL",minNodeWeightRF=5,
+              rfNoTrees=100, maxThreads=1)
+print(modelRF) # simple visualization, test also others with function plot
+# prediction on testing set
+pred &lt;- predict(modelRF, iris[testIdxs,], type="both") 
+mEval &lt;- modelEval(modelRF, iris[["Species"]][testIdxs], pred$class, pred$prob)
+print(mEval) # evaluation of the model
+# visualization of individual predictions and the model
+## Not run: 
+require(ExplainPrediction)
+explainVis(modelRF, iris[trainIdxs,], iris[testIdxs,], method="EXPLAIN",
+           visLevel="model", problemName="iris", fileType="none", 
+           classValue=1, displayColor="color") 
+# turn on the history in visualization window to see all instances
+explainVis(modelRF, iris[trainIdxs,], iris[testIdxs,], method="EXPLAIN",
+           visLevel="instance", problemName="iris", fileType="none", 
+           classValue=1, displayColor="color") 
+
+## End(Not run)
+destroyModels(modelRF) # clean up
+
+
+# build decision tree with naive Bayes in the leaves
+# more appropriate for large data sets one can specify just the target variable
+modelDT &lt;- CoreModel("Species", iris, model="tree", modelType=4)
+print(modelDT)
+destroyModels(modelDT) # clean up
+
+
+# build regression tree similar to CART
+instReg &lt;- regDataGen(200)
+modelRT &lt;- CoreModel(response~., instReg, model="regTree", modelTypeReg=1)
+print(modelRT)
+destroyModels(modelRT) # clean up
+
+# build kNN kernel regressor by preventing tree splitting
+modelKernel &lt;- CoreModel(response~., instReg, model="regTree",
+                    modelTypeReg=7, minNodeWeightTree=Inf)
+print(modelKernel)
+destroyModels(modelKernel) # clean up
+
+## Not run: 
+# A more complex example 
+# Test accuracy of random forest predictor with 20 trees on iris data
+# using 10-fold cross-validation.
+ncases &lt;- nrow(iris)
+ind &lt;- ceiling(10*(1:ncases)/ncases)
+ind &lt;- sample(ind,length(ind))
+pred &lt;- rep(NA,ncases)
+fit &lt;- NULL
+for (i in unique(ind)) {
+    # Delete the previous model, if there is one.
+    fit &lt;- CoreModel(Species ~ ., iris[ind!=i,], model="rf", 
+                     rfNoTrees=20, maxThreads=1)
+    pred[ind==i] &lt;- predict(fit, iris[ind==i,], type="class")
+    if (!is.null(fit)) destroyModels(fit) # dispose model no longer needed
+ 
+}
+table(pred,iris$Species)
+
+## End(Not run)
+# a simpler way to estimate performance using cross-validation
+model &lt;- cvCoreModel(Species ~ ., iris, model="rf", rfNoTrees=20, 
+                    folds=10, stratified=TRUE, returnModel=TRUE,
+                    maxThreads=1)    
+model$avgs           
+
+</code></pre>
+
+
+</div>

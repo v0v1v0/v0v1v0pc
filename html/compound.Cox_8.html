@@ -1,0 +1,207 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>compound.reg</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Compound shrinkage estimation under the Cox model 
+</h2>
+
+<h3>Description</h3>
+
+<p>This function implements the "compound shrinkage estimator" to calculate the regression coefficients
+of the Cox model, which was proposed by Emura, Chen &amp; Chen (2012).
+The method is a variant of the Cox partial likelihood estimator such that
+the regression coefficients are mixed with the univariate Cox regression estimators.
+The resultant estimator is applicable even when the number of covariates is greater than the number of
+samples (the p&gt;n setting).
+The standard errors (SEs) are calculated based on the asymptotic theory (see Emura et al., 2012).    
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">compound.reg(t.vec, d.vec, X.mat, K = 5, delta_a = 0.025, a_0 = 0, var = FALSE,
+plot=TRUE, randomize = FALSE, var.detail = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>t.vec</code></td>
+<td>
+<p>Vector of survival times (time to either death or censoring)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d.vec</code></td>
+<td>
+<p>Vector of censoring indicators, 1=death, 0=censoring</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X.mat</code></td>
+<td>
+<p>n by p matrix of covariates, where n is the sample size and p is the number of covariates</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K</code></td>
+<td>
+<p>The number of cross validation folds, K=n corresponds to a leave-one-out cross validation (default=5)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta_a</code></td>
+<td>
+<p>The step size for a grid search for the maximum of the cross-validated likelihood (default=0.025)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>a_0</code></td>
+<td>
+<p>The starting value of a grid search for the maximum of the cross-validated likelihood (default=0)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var</code></td>
+<td>
+<p>If TRUE, the standard deviations and confidence intervals are given (default=FALSE, to reduce the computational cost)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot</code></td>
+<td>
+<p>If TRUE, the cross validated likelihood curve and its maximized point are drawn</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>randomize</code></td>
+<td>
+<p>If TRUE, randomize the subject ID's so that the subjects in the cross validation folds
+are randomly chosen. Otherwise, the cross validation folds are constructed in the ascending sequence</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var.detail</code></td>
+<td>
+<p>Detailed information about the covariance matrix, which is mainly used for theoretical purposes. 
+Please consult Takeshi Emura for more details (default=FALSE)</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>K=5 cross validation is recommended for computational efficiency, though the results appear to be robust
+against the choice of the number K. If the number of covariates is greater than 200, the computational time becomes very long.
+In such a case, the univariate pre-selection is recommended to reduce the number of covariates.
+</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>a </code></td>
+<td>
+<p>An optimized value of the shrinkage parameter (0&lt;=a&lt;=1)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta </code></td>
+<td>
+<p>Estimated regression coefficients</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SE </code></td>
+<td>
+<p>Standard errors for estimated regression coefficients</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Lower95CI </code></td>
+<td>
+<p>Lower ends of 95 percent confidence intervals (beta_hat-1.96*SE)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Upper95CI </code></td>
+<td>
+<p>Upper ends of 95 percent confidence intervals (beta_hat+1.96*SE)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Sigma </code></td>
+<td>
+<p>Covariance matrix for estimated regression coefficients</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>V</code></td>
+<td>
+<p>Estimates of the information matrix (-[Hessian of the loglikelihood]/n)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Hessian_CV</code></td>
+<td>
+<p>Second derivative of the cross-validated likelihood. Normally negative
+since the cross-validated curve is concave</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>h_dot</code></td>
+<td>
+<p>Derivative of Equation (8) of Emura et al. (2012) with respect to a shrinkage parameter "a"</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Takeshi Emura &amp; Yi-Hau Chen</p>
+
+
+<h3>References</h3>
+
+<p>Emura T, Chen Y-H, Chen H-Y (2012) Survival Prediction Based on Compound Covariate under Cox Proportional Hazard Models.
+PLoS ONE 7(10): e47627. doi:10.1371/journal.pone.0047627
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">### A simulation study ###
+n=50 ### sample size
+beta_true=c(1,1,0,0,0)
+p=length(beta_true) 
+t.vec=d.vec=numeric(n)
+X.mat=matrix(0,n,p)
+
+set.seed(1)
+for(i in 1:n){
+  X.mat[i,]=rnorm(p,mean=0,sd=1)
+  eta=sum( as.vector(X.mat[i,])*beta_true )
+  T=rexp(1,rate=exp(eta))
+  C=runif(1,min=0,max=5)
+  t.vec[i]=min(T,C)
+  d.vec[i]=(T&lt;=C)
+}
+compound.reg(t.vec,d.vec,X.mat,delta_a=0.1) 
+### compare the estimates (beta) with the true value ###
+beta_true
+
+### Lung cancer data analysis (Emura et al. 2012 PLoS ONE) ###
+data(Lung)
+temp=Lung[,"train"]==TRUE
+t.vec=Lung[temp,"t.vec"]
+d.vec=Lung[temp,"d.vec"]
+X.mat=as.matrix( Lung[temp,-c(1,2,3)] )
+#compound.reg(t.vec=t.vec,d.vec=d.vec,X.mat=X.mat,delta_a=0.025) # time-consuming process
+</code></pre>
+
+
+</div>

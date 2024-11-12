@@ -1,0 +1,167 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fprod</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fast (Grouped, Weighted) Product for Matrix-Like Objects</h2>
+
+<h3>Description</h3>
+
+<p><code>fprod</code> is a generic function that computes the (column-wise) product of all values in <code>x</code>, (optionally) grouped by <code>g</code> and/or weighted by <code>w</code>. The <code>TRA</code> argument can further be used to transform <code>x</code> using its (grouped, weighted) product.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fprod(x, ...)
+
+## Default S3 method:
+fprod(x, g = NULL, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+      use.g.names = TRUE, ...)
+
+## S3 method for class 'matrix'
+fprod(x, g = NULL, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+      use.g.names = TRUE, drop = TRUE, ...)
+
+## S3 method for class 'data.frame'
+fprod(x, g = NULL, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+      use.g.names = TRUE, drop = TRUE, ...)
+
+## S3 method for class 'grouped_df'
+fprod(x, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+      use.g.names = FALSE, keep.group_vars = TRUE,
+      keep.w = TRUE, stub = .op[["stub"]], ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a numeric vector, matrix, data frame or grouped data frame (class 'grouped_df').</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>g</code></td>
+<td>
+<p>a factor, <code>GRP</code> object, atomic vector (internally converted to factor) or a list of vectors / factors (internally converted to a <code>GRP</code> object) used to group <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>a numeric vector of (non-negative) weights, may contain missing values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>TRA</code></td>
+<td>
+<p>an integer or quoted operator indicating the transformation to perform:
+0 - "na"     |     1 - "fill"     |     2 - "replace"     |     3 - "-"     |     4 - "-+"     |     5 - "/"     |     6 - "%"     |     7 - "+"     |     8 - "*"     |     9 - "%%"     |     10 - "-%%". See <code>TRA</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.rm</code></td>
+<td>
+<p>logical. Skip missing values in <code>x</code>. Defaults to <code>TRUE</code> and implemented at very little computational cost. If <code>na.rm = FALSE</code> a <code>NA</code> is returned when encountered.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use.g.names</code></td>
+<td>
+<p>logical. Make group-names and add to the result as names (default method) or row-names (matrix and data frame methods). No row-names are generated for <em>data.table</em>'s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop</code></td>
+<td>
+<p><em>matrix and data.frame method:</em> Logical. <code>TRUE</code> drops dimensions and returns an atomic vector if <code>g = NULL</code> and <code>TRA = NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.group_vars</code></td>
+<td>
+<p><em>grouped_df method:</em> Logical. <code>FALSE</code> removes grouping variables after computation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.w</code></td>
+<td>
+<p><em>grouped_df method:</em> Logical. Retain product of weighting variable after computation (if contained in <code>grouped_df</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stub</code></td>
+<td>
+<p>character. If <code>keep.w = TRUE</code> and <code>stub = TRUE</code> (default), the weights column is prefixed by <code>"prod."</code>. Users can specify a different prefix through this argument, or set it to <code>FALSE</code> to avoid prefixing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments to be passed to or from other methods. If <code>TRA</code> is used, passing <code>set = TRUE</code> will transform data by reference and return the result invisibly.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Non-grouped product computations internally utilize long-doubles in C, for additional numeric precision.
+</p>
+
+
+<p>The weighted product is computed as <code>prod(x * w)</code>, using a single pass in C. If <code>na.rm = TRUE</code>, missing values will be removed from both <code>x</code> and <code>w</code> i.e. utilizing only <code>x[complete.cases(x,w)]</code> and <code>w[complete.cases(x,w)]</code>.
+</p>
+
+<p>For further computational details see <code>fsum</code>, which works equivalently.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The (<code>w</code> weighted) product of <code>x</code>, grouped by <code>g</code>, or (if <code>TRA</code> is used) <code>x</code> transformed by its (grouped, weighted) product.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fsum</code>, Fast Statistical Functions, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## default vector method
+mpg &lt;- mtcars$mpg
+fprod(mpg)                         # Simple product
+fprod(mpg, w = mtcars$hp)          # Weighted product
+fprod(mpg, TRA = "/")              # Simple transformation: Divide by product
+fprod(mpg, mtcars$cyl)             # Grouped product
+fprod(mpg, mtcars$cyl, mtcars$hp)  # Weighted grouped product
+fprod(mpg, mtcars[c(2,8:9)])       # More groups..
+g &lt;- GRP(mtcars, ~ cyl + vs + am)  # Precomputing groups gives more speed !
+fprod(mpg, g)
+fprod(mpg, g, TRA = "/")           # Groupwise divide by product
+
+## data.frame method
+fprod(mtcars)
+head(fprod(mtcars, TRA = "/"))
+fprod(mtcars, g)
+fprod(mtcars, g, use.g.names = FALSE) # No row-names generated
+
+## matrix method
+m &lt;- qM(mtcars)
+fprod(m)
+head(fprod(m, TRA = "/"))
+fprod(m, g) # etc..
+
+## method for grouped data frames - created with dplyr::group_by or fgroup_by
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fprod()
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fprod(TRA = "/")
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fselect(mpg) |&gt; fprod()
+</code></pre>
+
+
+</div>

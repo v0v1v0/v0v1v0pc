@@ -1,0 +1,128 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>predict.crf</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Predict the label sequence based on the Conditional Random Field</h2>
+
+<h3>Description</h3>
+
+<p>Predict the label sequence based on the Conditional Random Field
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'crf'
+predict(
+  object,
+  newdata,
+  embeddings,
+  group,
+  type = c("marginal", "sequence"),
+  trace = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>an object of class crf as returned by <code>crf</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdata</code></td>
+<td>
+<p>a character matrix of data containing attributes about the label sequence <code>y</code> or an object which can be coerced to a character matrix. 
+This data should be provided in the same format as was used for training the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>embeddings</code></td>
+<td>
+<p>a matrix with the same number of rows as <code>x</code> and in the same order with numeric information used to predict</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>group</code></td>
+<td>
+<p>an integer or character vector of the same length as nrow <code>newdata</code> indicating the group the sequence <code>y</code> belongs to (e.g. a document or sentence identifier)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>either 'marginal' or 'sequence' to get predictions at the level of <code>newdata</code> or a the level of the sequence <code>group</code>. Defaults to <code>'marginal'</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>a logical indicating to show the trace of the labelling output. Defaults to <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>not used</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>If <code>type</code> is 'marginal': a data.frame with columns label and marginal containing the viterbi decoded predicted label and marginal probability. <br>
+If <code>type</code> is 'sequence': a data.frame with columns group and probability containing for each sequence group the probability of the sequence.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>crf</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+library(udpipe)
+data(airbnb_chunks, package = "crfsuite")
+udmodel &lt;- udpipe_download_model("dutch-lassysmall")
+udmodel &lt;- udpipe_load_model(udmodel$file_model)
+airbnb_tokens &lt;- unique(airbnb_chunks[, c("doc_id", "text")])
+airbnb_tokens &lt;- udpipe_annotate(udmodel, 
+                                 x = airbnb_tokens$text, 
+                                 doc_id = airbnb_tokens$doc_id)
+airbnb_tokens &lt;- as.data.frame(airbnb_tokens)
+x &lt;- merge(airbnb_chunks, airbnb_tokens)
+x &lt;- crf_cbind_attributes(x, terms = c("upos", "lemma"), by = "doc_id")
+model &lt;- crf(y = x$chunk_entity, 
+             x = x[, grep("upos|lemma", colnames(x))], 
+             group = x$doc_id, 
+             method = "lbfgs", options = list(max_iterations = 5)) 
+scores &lt;- predict(model, 
+                  newdata = x[, grep("upos|lemma", colnames(x))], 
+                  group = x$doc_id, type = "marginal")
+head(scores)
+scores &lt;- predict(model, 
+                  newdata = x[, grep("upos|lemma", colnames(x))], 
+                  group = x$doc_id, type = "sequence")
+head(scores)
+
+
+## cleanup for CRAN
+file.remove(model$file_model)
+file.remove("modeldetails.txt")
+file.remove(udmodel$file)
+
+
+</code></pre>
+
+
+</div>

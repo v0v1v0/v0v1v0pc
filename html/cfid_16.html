@@ -1,0 +1,163 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>identifiable</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Identify a Counterfactual Query</h2>
+
+<h3>Description</h3>
+
+<p>Determine the identifiability of a (conditional) counterfactual conjunction.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">identifiable(
+  g,
+  gamma,
+  delta = NULL,
+  data = c("interventions", "observations", "both")
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>g</code></td>
+<td>
+<p>A <code>dag</code> object describing the causal graph
+(to obtain a <code>dag</code> from another format, see <code>import_graph()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gamma</code></td>
+<td>
+<p>An <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> object that can be coerced into a
+<code>counterfactual_conjunction</code> object that represents the
+counterfactual causal query.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta</code></td>
+<td>
+<p>An <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> object that can be coerced into a
+<code>counterfactual_conjunction</code> object that represents the conditioning
+conjunction (optional).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A <code>character</code> string that accepts one of the following:
+<code>"interventions"</code> (the default), <code>"observations"</code>or <code>"both"</code>. This argument
+defines the target level of identification. If <code>"interventions"</code> is used,
+the identification is attempted down to the intervention level. If
+<code>"observations"</code> is used, identification is attempted down to the
+observational level. If <code>"both"</code> is used, identification is carried out
+for each term to the lowest level where the term is still identifiable.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>To identify a non-conditional conjunction <code class="reqn">P(\gamma)</code>, the argument
+<code>delta</code> should be <code>NULL</code>.
+</p>
+<p>To identify a conditional conjunction <code class="reqn">P(\gamma|\delta)</code>, both <code>gamma</code>
+and <code>delta</code> should be specified.
+</p>
+<p>First, a parallel worlds graph is constructed based on the query. In a
+parallel worlds graph, for each <code class="reqn">do</code>-action that appears in <code class="reqn">\gamma</code>
+(and <code class="reqn">\delta</code>) a copy of the original graph is created with the new
+observational variables attaining their post-interventional values
+but sharing the latent variables. This graph is known as a parallel worlds
+graph. From the parallel worlds graph, a counterfactual graph
+is derived such that each variable is unique, which might not be the case
+in a parallel worlds graph.
+</p>
+<p>Finally, the ID* (or IDC*) algorithm is applied to determine identifiability
+of the query. Similar to the ID and IDC algorithms for causal effects,
+these algorithms exploit the so called c-component factorization to split
+the query into smaller subproblems, which are then solved recursively.
+If argument <code>data</code> is <code>"observations"</code> or <code>"both"</code>, identification of
+interventional probabilities in the resulting functional is further
+attempted in terms of the joint probability distribution by using the
+ID and IDC algorithms (see causal_effect).
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>query</code> which is a <code>list</code> containing
+one or more of the following:
+</p>
+
+<ul>
+<li> <p><code>id</code><br> A <code>logical</code> value that is <code>TRUE</code> if the query is identifiable and
+<code>FALSE</code> otherwise from the available <code>data</code> in <code>g</code>.
+Note that in cases where <code>gamma</code> itself is
+inconsistent, the query will be identifiable, but with probability 0.
+</p>
+</li>
+<li> <p><code>formula</code><br> An object of class <code>functional</code> giving the identifying
+functional of the query in LaTeX syntax via <code>format</code> or <code>print</code>,
+if identifiable. This expression is given in terms of the
+available <code>data</code>. Variables bound by summation are distinguished by a
+superscript asterisk. For tautological statements, the resulting
+probability is 1, and for inconsistent statements, the resulting
+probability is 0. For formatting options, see
+<code>format.functional()</code> and <code>format.probability()</code>.
+</p>
+</li>
+<li> <p><code>undefined</code><br> A logical value that is <code>TRUE</code> if
+a conditional conjunction <code class="reqn">p(\gamma|\delta)</code> is undefined,
+for example when <code class="reqn">p(\delta) = 0</code>, and <code>FALSE</code> otherwise.
+</p>
+</li>
+<li> <p><code>gamma</code><br> The original counterfactual conjunction..
+</p>
+</li>
+<li> <p><code>delta</code><br> The original conditioning counterfactual conjunction.
+</p>
+</li>
+<li> <p><code>data</code><br> The original data.
+</p>
+</li>
+</ul>
+<h3>See Also</h3>
+
+<p><code>dag()</code>, <code>counterfactual_variable()</code>,
+<code>probability()</code>, <code>functional()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Examples that appears in Shpitser and Pearl (2008)
+g1 &lt;- dag("X -&gt; W -&gt; Y &lt;- Z &lt;- D X &lt;-&gt; Y")
+g2 &lt;- dag("X -&gt; W -&gt; Y &lt;- Z &lt;- D X &lt;-&gt; Y X -&gt; Y")
+v1 &lt;- cf("Y", 0, c(X = 0))
+v2 &lt;- cf("X", 1)
+v3 &lt;- cf("Z", 0, c(D = 0))
+v4 &lt;- cf("D", 0)
+c1 &lt;- conj(v1)
+c2 &lt;- conj(v2, v3, v4)
+c3 &lt;- conj(v1, v2, v3, v4)
+
+# Identifiable conditional conjunction
+identifiable(g1, c1, c2)
+
+# Identifiable conjunction
+identifiable(g1, c3)
+
+# Non-identifiable conjunction
+identifiable(g2, c3)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,268 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>sensitivitiesSymb</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute sensitivity equations of a function symbolically</h2>
+
+<h3>Description</h3>
+
+<p>Compute sensitivity equations of a function symbolically
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">sensitivitiesSymb(
+  f,
+  states = names(f),
+  parameters = NULL,
+  inputs = NULL,
+  events = NULL,
+  reduce = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+<p>named vector of type character, the functions</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>states</code></td>
+<td>
+<p>Character vector. Sensitivities are computed with respect to initial
+values of these states</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parameters</code></td>
+<td>
+<p>Character vector. Sensitivities are computed with respect to initial
+values of these parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inputs</code></td>
+<td>
+<p>Character vector. Input functions or forcings. They are excluded from
+the computation of sensitivities.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>events</code></td>
+<td>
+<p>data.frame of events with columns "var" (character, the name of the state to be
+affected), "time" (numeric or character, time point), 
+"value" (numeric or character, value), "method" (character, either
+"replace" or "add"). See events.
+Within <code>sensitivitiesSymb()</code> a <code>data.frame</code> of additional events is generated to 
+reset the sensitivities appropriately, depending on the event method.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reduce</code></td>
+<td>
+<p>Logical. Attempts to determine vanishing sensitivities, removes their
+equations and replaces their right-hand side occurences by 0.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The sensitivity equations are ODEs that are derived from the original ODE f.
+They describe the sensitivity of the solution curve with respect to parameters like 
+initial values and other parameters contained in f. These equtions are also useful
+for parameter estimation by the maximum-likelihood method. For consistency with the
+time-continuous setting provided by adjointSymb, the returned equations contain
+attributes for the chisquare functional and its gradient.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Named vector of type character with the sensitivity equations. Furthermore,
+attributes "chi" (the integrand of the chisquare functional), "grad" (the integrand
+of the gradient of the chisquare functional), "forcings" (Character vector of the 
+additional forcings being necessare to compute <code>chi</code> and <code>grad</code>) and "yini" (
+The initial values of the sensitivity equations) are returned.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+
+######################################################################
+## Sensitivity analysis of ozone formation
+######################################################################
+
+library(deSolve)
+
+# O2 + O &lt;-&gt; O3
+f &lt;- c(
+  O3 = " build_O3 * O2 * O - decay_O3 * O3",
+  O2 = "-build_O3 * O2 * O + decay_O3 * O3",
+  O  = "-build_O3 * O2 * O + decay_O3 * O3"
+)
+
+# Compute sensitivity equations
+f_s &lt;- sensitivitiesSymb(f)
+
+# Generate ODE function
+func &lt;- funC(c(f, f_s))
+
+# Initialize times, states, parameters and forcings
+times &lt;- seq(0, 15, by = .1)
+yini &lt;- c(O3 = 0, O2 = 3, O = 2, attr(f_s, "yini"))
+pars &lt;- c(build_O3 = .1, decay_O3 = .01)
+
+# Solve ODE
+out &lt;- odeC(y = yini, times = times, func = func, parms = pars)
+
+# Plot solution
+par(mfcol=c(2,3))
+t &lt;- out[,1]
+M1 &lt;- out[,2:4]
+M2 &lt;- out[,5:7]
+M3 &lt;- out[,8:10]
+M4 &lt;- out[,11:13]
+M5 &lt;- out[,14:16]
+M6 &lt;- out[,17:19]
+
+matplot(t, M1, type="l", lty=1, col=1:3, 
+        xlab="time", ylab="value", main="solution")
+legend("topright", legend = c("O3", "O2", "O"), lty=1, col=1:3)
+matplot(t, M2, type="l", lty=1, col=1:3, 
+        xlab="time", ylab="value", main="d/(d O3)")
+matplot(t, M3, type="l", lty=1, col=1:3, 
+        xlab="time", ylab="value", main="d/(d O2)")
+matplot(t, M4, type="l", lty=1, col=1:3, 
+        xlab="time", ylab="value", main="d/(d O)")
+matplot(t, M5, type="l", lty=1, col=1:3, 
+        xlab="time", ylab="value", main="d/(d build_O3)")
+matplot(t, M6, type="l", lty=1, col=1:3, 
+        xlab="time", ylab="value", main="d/(d decay_O3)")
+
+
+## End(Not run)
+## Not run: 
+
+######################################################################
+## Estimate parameter values from experimental data
+######################################################################
+
+library(deSolve)
+
+# O2 + O &lt;-&gt; O3
+# diff = O2 - O3
+# build_O3 = const.
+f &lt;- c(
+  O3 = " build_O3 * O2 * O - decay_O3 * O3",
+  O2 = "-build_O3 * O2 * O + decay_O3 * O3",
+  O  = "-build_O3 * O2 * O + decay_O3 * O3"
+)
+
+# Compute sensitivity equations and get attributes
+f_s &lt;- sensitivitiesSymb(f)
+chi &lt;- attr(f_s, "chi")
+grad &lt;- attr(f_s, "grad")
+forcings &lt;- attr(f_s, "forcings")
+
+# Generate ODE function
+func &lt;- funC(f = c(f, f_s, chi, grad), forcings = forcings, 
+             fcontrol = "nospline", modelname = "example3")
+
+# Initialize times, states, parameters
+times &lt;- seq(0, 15, by = .1)
+yini &lt;- c(O3 = 0, O2 = 2, O = 2.5)
+yini_s &lt;- attr(f_s, "yini")
+yini_chi &lt;- c(chi = 0)
+yini_grad &lt;- rep(0, length(grad)); names(yini_grad) &lt;- names(grad)
+pars &lt;- c(build_O3 = .2, decay_O3 = .1)
+
+# Initialize forcings (the data)
+data(oxygenData)
+forcData &lt;- data.frame(time = oxygenData[,1],
+                       name = rep(
+                         colnames(oxygenData[,-1]), 
+                         each=dim(oxygenData)[1]),
+                       value = as.vector(oxygenData[,-1]))
+forc &lt;- setForcings(func, forcData)
+
+# Solve ODE
+out &lt;- odeC(y = c(yini, yini_s, yini_chi, yini_grad), 
+            times = times, func = func, parms = pars, forcings = forc,
+            method = "lsodes")
+
+# Plot solution
+par(mfcol=c(1,2))
+t &lt;- out[,1]
+M1 &lt;- out[,2:4]
+M2 &lt;- out[,names(grad)]
+tD &lt;- oxygenData[,1]
+M1D &lt;- oxygenData[,2:4]
+
+matplot(t, M1, type="l", lty=1, col=1:3, 
+        xlab="time", ylab="value", main="states")
+matplot(tD, M1D, type="b", lty=2, col=1:3, pch=4, add=TRUE)
+legend("topright", legend = names(f), lty=1, col=1:3)
+matplot(t, M2, type="l", lty=1, col=1:5, 
+        xlab="time", ylab="value", main="gradient")
+legend("topleft", legend = names(grad), lty=1, col=1:5)
+
+# Define objective function
+obj &lt;- function(p) {
+  out &lt;- odeC(y = c(p[names(f)], yini_s, yini_chi, yini_grad), 
+              times = times, func = func, parms = p[names(pars)], 
+	      forcings = forc, method="lsodes")
+  
+  value &lt;- as.vector(tail(out, 1)[,"chi"])
+  gradient &lt;- as.vector(
+    tail(out, 1)[,paste("chi", names(p), sep=".")])
+  hessian &lt;- gradient%*%t(gradient)
+  
+  return(list(value = value, gradient = gradient, hessian = hessian))
+}
+
+# Fit the data
+myfit &lt;- optim(par = c(yini, pars), 
+               fn = function(p) obj(p)$value, 
+               gr = function(p) obj(p)$gradient,
+               method = "L-BFGS-B", 
+               lower=0,
+               upper=5)
+
+# Model prediction for fit parameters
+prediction &lt;- odeC(y = c(myfit$par[1:3], yini_s, yini_chi, yini_grad), 
+                   times = times, func = func, parms = myfit$par[4:5], 
+		   forcings = forc, method = "lsodes")
+
+# Plot solution
+par(mfcol=c(1,2))
+t &lt;- prediction[,1]
+M1 &lt;- prediction[,2:4]
+M2 &lt;- prediction[,names(grad)]
+tD &lt;- oxygenData[,1]
+M1D &lt;- oxygenData[,2:4]
+
+matplot(t, M1, type="l", lty=1, col=1:3, 
+        xlab="time", ylab="value", main="states")
+matplot(tD, M1D, type="b", lty=2, col=1:3, pch=4, add=TRUE)
+legend("topright", legend = names(f), lty=1, col=1:3)
+matplot(t, M2, type="l", lty=1, col=1:5, 
+        xlab="time", ylab="value", main="gradient")
+legend("topleft", legend = names(grad), lty=1, col=1:5)
+
+
+## End(Not run)
+</code></pre>
+
+
+</div>

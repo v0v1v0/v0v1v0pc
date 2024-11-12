@@ -1,0 +1,233 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>gammaMLE</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Maximum Likelihood Parameter Estimation of a Gamma Model with Possibly
+Censored Data</h2>
+
+<h3>Description</h3>
+
+<p>Estimate gamma model parameters by the maximum likelihood
+method using possibly censored data. Two different parameterizations
+of the gamma distribution can be used.
+The corresponding code for this function as well as the
+manual information included here is attributed to
+Christophe Pouzat's STAR Package (archived 2022-05-23).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">gammaMLE(yi, ni = numeric(length(yi)) + 1,
+         si = numeric(length(yi)) + 1, scale = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>yi</code></td>
+<td>
+<p>vector of (possibly binned) observations or a
+<code>spikeTrain</code> object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ni</code></td>
+<td>
+<p>vector of counts for each value of <code>yi</code>; default: <code>numeric(length(yi))+1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>si</code></td>
+<td>
+<p>vector of counts of <em>uncensored</em> observations for each
+value of <code>yi</code>; default: <code>numeric(length(yi))+1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scale</code></td>
+<td>
+<p>logical should the scale (<code>TRUE</code>) or the rate
+parameterization (<code>FALSE</code>) be used?</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>There is no closed form expression for the MLE of a gamma distribution. The
+numerical method implemented here uses the profile likelihood
+described by Monahan (2001) pp 210-216.
+</p>
+<p>In order to ensure good behavior of the numerical optimization
+routines, optimization is performed on the log of the parameters
+(<code>shape</code> and <code>scale</code> or <code>rate</code>).
+</p>
+<p>Standard errors are obtained from the inverse of the observed
+information matrix at the MLE. They are transformed to go from the log
+scale used by the optimization routine to the parameterization requested.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of class <code>durationFit</code> with the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>estimate</code></td>
+<td>
+<p>the estimated parameters, a named vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>se</code></td>
+<td>
+<p>the standard errors, a named vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logLik</code></td>
+<td>
+<p>the log likelihood at maximum.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>r</code></td>
+<td>
+<p>a function returning the log of the relative likelihood function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mll</code></td>
+<td>
+<p>a function returning the opposite of the log likelihood
+function using the log of the parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the matched call.</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>The returned standard errors (component <code>se</code>) are valid in the asymptotic limit. You
+should plot contours using function <code>r</code> in the returned list and
+check that the contours are reasonably close to ellipses.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Christophe Pouzat  <a href="mailto:christophe.pouzat@gmail.com">christophe.pouzat@gmail.com</a> </p>
+
+
+<h3>References</h3>
+
+<p>Monahan, J. F. (2001) <em>Numerical Methods of Statistics</em>. CUP.
+</p>
+<p>Lindsey, J.K. (2004) <em>Introduction to Applied Statistics: A
+Modelling Approach</em>. OUP.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>invgaussMLE</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+## Simulate sample of size 100 from a gamma distribution
+set.seed(1102006,"Mersenne-Twister")
+sampleSize &lt;- 100
+shape.true &lt;- 6
+scale.true &lt;- 0.012
+sampGA &lt;- rgamma(sampleSize,shape=shape.true,scale=scale.true)
+sampGAmleGA &lt;- gammaMLE(sampGA)
+rbind(est = sampGAmleGA$estimate,se = sampGAmleGA$se,true = c(shape.true,scale.true))
+
+## Estimate the log relative likelihood on a grid to plot contours
+Shape &lt;- seq(sampGAmleGA$estimate[1]-4*sampGAmleGA$se[1],
+               sampGAmleGA$estimate[1]+4*sampGAmleGA$se[1],
+               sampGAmleGA$se[1]/10)
+Scale &lt;- seq(sampGAmleGA$estimate[2]-4*sampGAmleGA$se[2],
+             sampGAmleGA$estimate[2]+4*sampGAmleGA$se[2],
+             sampGAmleGA$se[2]/10)
+sampGAmleGAcontour &lt;- sapply(Shape, function(sh) sapply(Scale, function(sc) sampGAmleGA$r(sh,sc)))
+## plot contours using a linear scale for the parameters
+## draw four contours corresponding to the following likelihood ratios:
+##  0.5, 0.1, Chi2 with 2 df and p values of 0.95 and 0.99
+X11(width=12,height=6)
+layout(matrix(1:2,ncol=2))
+contour(Shape,Scale,t(sampGAmleGAcontour),
+        levels=c(log(c(0.5,0.1)),-0.5*qchisq(c(0.95,0.99),df=2)),
+        labels=c("log(0.5)",
+          "log(0.1)",
+          "-1/2*P(Chi2=0.95)",
+          "-1/2*P(Chi2=0.99)"),
+        xlab="shape",ylab="scale",
+        main="Log Relative Likelihood Contours"
+        )
+points(sampGAmleGA$estimate[1],sampGAmleGA$estimate[2],pch=3)
+points(shape.true,scale.true,pch=16,col=2)
+## The contours are not really symmetrical about the MLE we can try to
+## replot them using a log scale for the parameters to see if that improves
+## the situation
+contour(log(Shape),log(Scale),t(sampGAmleGAcontour),
+        levels=c(log(c(0.5,0.1)),-0.5*qchisq(c(0.95,0.99),df=2)),
+        labels="",
+        xlab="log(shape)",ylab="log(scale)",
+        main="Log Relative Likelihood Contours",
+        sub="log scale for the parameters")
+points(log(sampGAmleGA$estimate[1]),log(sampGAmleGA$estimate[2]),pch=3)
+points(log(shape.true),log(scale.true),pch=16,col=2)
+
+## make a parametric boostrap to check the distribution of the deviance
+nbReplicate &lt;- 10000
+sampleSize &lt;- 100
+system.time(
+            devianceGA100 &lt;- replicate(nbReplicate,{
+                             sampGA &lt;- rgamma(sampleSize,shape=shape.true,scale=scale.true)
+                             sampGAmleGA &lt;- gammaMLE(sampGA)
+                             -2*sampGAmleGA$r(shape.true,scale.true)
+                           }
+                                       )
+            )[3]
+
+## Get 95 and 99% confidence intervals for the QQ plot
+ci &lt;- sapply(1:nbReplicate,
+                 function(idx) qchisq(qbeta(c(0.005,0.025,0.975,0.995),
+                                            idx,
+                                            nbReplicate-idx+1),
+                                      df=2)
+             )
+## make QQ plot
+X &lt;- qchisq(ppoints(nbReplicate),df=2)
+Y &lt;- sort(devianceGA100)
+X11()
+plot(X,Y,type="n",
+     xlab=expression(paste(chi[2]^2," quantiles")),
+     ylab="MC quantiles",
+     main="Deviance with true parameters after ML fit of gamma data",
+     sub=paste("sample size:", sampleSize,"MC replicates:", nbReplicate)
+     )
+abline(a=0,b=1)
+lines(X,ci[1,],lty=2)
+lines(X,ci[2,],lty=2)
+lines(X,ci[3,],lty=2)
+lines(X,ci[4,],lty=2)
+lines(X,Y,col=2)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,111 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>computeQuery</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Execute dplyr query and save result in remote database</h2>
+
+<h3>Description</h3>
+
+<p>This function is a wrapper around <code>dplyr::compute</code> that is tested on several
+database systems. It is needed to handle edge cases where <code>dplyr::compute</code>
+does not produce correct SQL.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">computeQuery(
+  x,
+  name = uniqueTableName(),
+  temporary = TRUE,
+  schema = NULL,
+  overwrite = TRUE,
+  ...
+)
+
+compute_query(
+  x,
+  name = uniqueTableName(),
+  temporary = TRUE,
+  schema = NULL,
+  overwrite = TRUE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A dplyr query</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p>The name of the table to create.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>temporary</code></td>
+<td>
+<p>Should the table be temporary: TRUE (default) or FALSE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>schema</code></td>
+<td>
+<p>The schema where the table should be created. Ignored if
+temporary = TRUE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>overwrite</code></td>
+<td>
+<p>Should the table be overwritten if it already exists: TRUE (default)
+or FALSE Ignored if temporary = TRUE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments passed on the <code>dplyr::compute</code></p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A <code>dplyr::tbl()</code> reference to the newly created table.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+library(CDMConnector)
+
+con &lt;- DBI::dbConnect(duckdb::duckdb(), dbdir = eunomia_dir())
+cdm &lt;- cdm_from_con(con, "main")
+
+# create a temporary table in the remote database from a dplyr query
+drugCount &lt;- cdm$concept %&gt;%
+  dplyr::count(domain_id == "Drug") %&gt;%
+  computeQuery()
+
+# create a permanent table in the remote database from a dplyr query
+drugCount &lt;- cdm$concept %&gt;%
+  dplyr::count(domain_id == "Drug") %&gt;%
+  computeQuery("tmp_table", temporary = FALSE, schema = "main")
+
+DBI::dbDisconnect(con, shutdown = TRUE)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

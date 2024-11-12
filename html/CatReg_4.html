@@ -1,0 +1,224 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>scope</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute solution for SCOPE linear models.</h2>
+
+<h3>Description</h3>
+
+<p>Computes solution for SCOPE linear models. Performs K-fold cross-validation for regularisation parameter lambda and can incorporate
+both linear and categorical (including logical) variables.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">scope(
+  x,
+  y,
+  gamma = 8,
+  lambda = NULL,
+  nlambda = 100,
+  lambda_min_ratio = 0.01,
+  nfolds = 5,
+  include_intercept = TRUE,
+  return_full_beta = FALSE,
+  max_iter = 1000,
+  early_stopping = ifelse(pshrink &gt; 1, TRUE, FALSE),
+  early_stopping_rounds = 20,
+  early_stopping_criterion = "AIC",
+  noise_variance = NULL,
+  terminate_eps = 1e-07,
+  silent = TRUE,
+  only_cross_validate = FALSE,
+  grid_safe = 10,
+  block_order = NULL,
+  fold_assignment = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Data frame of covariates: Can include a mix of continuous and categorical variables (no scaling of continuous covariates is performed within the program).
+By default an intercept will be added to the linear part; see include_intercept</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Response vector of length n</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gamma</code></td>
+<td>
+<p>Concavity parameter in MCP; see Zhang (2010)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>If NULL default sequence will be generated. Matrix of values (p_categorical times nlambda) of penalty parameter lambda. Must be non-negative and each row decreasing. Note that if lambda = 0 then no shrinkage will occur.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nlambda</code></td>
+<td>
+<p>Length of default sequence of lambda values generated if lambda = NULL</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda_min_ratio</code></td>
+<td>
+<p>Ratio of largest to smallest value on default sequence of lambda values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nfolds</code></td>
+<td>
+<p>Number of folds in cross-validation. If nfolds = 1, no cross-validation is performed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include_intercept</code></td>
+<td>
+<p>If TRUE, a column of 1s will be added to the (continuous) design matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return_full_beta</code></td>
+<td>
+<p>If TRUE with cross-validation, the entire solution path will be returned instead of just the optimal point</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_iter</code></td>
+<td>
+<p>Maximum number of iterations at each point on the lambda path</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>early_stopping</code></td>
+<td>
+<p>Early stopping based on information criterion. By default is TRUE if there are more than 1 categorical variables</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>early_stopping_rounds</code></td>
+<td>
+<p>Number of iterations that information criterion must have not decreased for to terminate</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>early_stopping_criterion</code></td>
+<td>
+<p>If "AIC", Akaike Information Criterion is used for early stopping. Otherwise if a positive number is given, modified Bayes Information Criterion is used with this integer as the parameter (Wang et al., 2009)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>noise_variance</code></td>
+<td>
+<p>If noise variance is known, this will be used for scaling the default values of lambda. Otherwise this will be scaled automatically</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>terminate_eps</code></td>
+<td>
+<p>Epsilon for convergence criterion, is multiplied by null deviance to get terminate criterion for objective value</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>silent</code></td>
+<td>
+<p>If FALSE then progress updates will be printed as solutions are computed. Useful for tuning and diagnosing convergence issues.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>only_cross_validate</code></td>
+<td>
+<p>If TRUE then cross-validation scores for each value of lambda will be returned, but not the estimates themselves</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grid_safe</code></td>
+<td>
+<p>As the automatically generated sequence of lambda values is adjusted during the first fold but fixed thereafter. For subsequent folds, this sets computation to begin at a larger value of lambda to ensure that the first solution along the path is zero so as to maintain the advantages of the pathwise approach. This specifies how many larger values of lambda should be used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>block_order</code></td>
+<td>
+<p>By default the order in block coordinate descent is randomly sampled. Alternatively a permutation vector can be included here</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fold_assignment</code></td>
+<td>
+<p>By default the assignments for cross-validation are randomly sampled automatically. Alternatively assignments can be included here</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list of objects. Some may not be returned depending on value of arguments K, simply.cross.validated, return.full.beta.
+</p>
+
+<ul>
+<li>
+<p> lambda - A matrix of the values of lambda used to compute the solution path. Columns correspond to different points on the path, rows correspond to the
+categorical variables. Lambda is scaled depending on the number of categories present in the data.
+</p>
+</li>
+<li>
+<p> cverrors - Provided nfolds &gt; 1 then the cross-validation error for each point on the grid will be returned
+</p>
+</li>
+<li>
+<p> beta.full - Contains full solution path. If nfolds &gt; 1 then will only be returned if simply.cross.validated = FALSE and return.full.beta = TRUE.
+First object [[ 1 ]] is coefficients of continuous variables, [[ 2 ]] is a list of coefficients for categorical variables
+</p>
+</li>
+<li>
+<p> beta.best - Contains solution at CV-optimal point. Requires nfolds &gt; 1 to be returned. This must not be NULL in order to use predict.scope. First object [[ 1 ]] is
+coefficients of continuous variables, [[ 2 ]] is a list of coefficients for categorical variables
+</p>
+</li>
+<li>
+<p> fold.assign - Contains fold assignments for cross-validation
+</p>
+</li>
+</ul>
+<h3>References</h3>
+
+<p>Zhang C (2010).
+“Nearly unbiased variable selection under minimax concave penalty.”
+<em>The Annals of Statistics</em>, <b>38</b>(2).
+ISSN 0090-5364, doi: <a href="https://doi.org/10.1214/09-AOS729">10.1214/09-AOS729</a>.
+</p>
+<p>Wang H, Li B, Leng C (2009).
+“Shrinkage tuning parameter selection with a diverging number of parameters.”
+<em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em>, <b>71</b>(3), 671–683.
+doi: <a href="https://doi.org/10.1111/j.1467-9868.2008.00693.x">10.1111/j.1467-9868.2008.00693.x</a>, <a href="https://rss.onlinelibrary.wiley.com/doi/abs/10.1111/j.1467-9868.2008.00693.x">https://rss.onlinelibrary.wiley.com/doi/abs/10.1111/j.1467-9868.2008.00693.x</a>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(1)
+x = UniformDesignMatrix(100, 5, 8) 
+y = (as.integer(x[ , 1 ]) &lt; 5) + (as.integer(x[ , 2 ]) &lt; 5)  + rnorm(100)
+scope_mod = scope(x, y)
+x_new = UniformDesignMatrix (10, 5, 8)
+predict(scope_mod, x_new)
+
+</code></pre>
+
+
+</div>

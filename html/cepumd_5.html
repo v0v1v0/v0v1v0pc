@@ -1,0 +1,239 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ce_prepdata</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Prepare CE data for calculating an estimated mean or median</h2>
+
+<h3>Description</h3>
+
+<p>Reads in the family characteristics (FMLI/-D) and expenditure
+tabulation (MTBI/EXPD) files and merges the relevant data for calculating a
+weighted mean or median.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ce_prepdata(
+  year,
+  survey,
+  hg,
+  uccs,
+  ...,
+  int_zp = NULL,
+  dia_zp = NULL,
+  recode_variables = FALSE,
+  dict_path = NULL,
+  own_codebook = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>year</code></td>
+<td>
+<p>A year between 1997 and the last year of available CE PUMD.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>survey</code></td>
+<td>
+<p>One of either interview, diary, or integrated as a character or
+symbol.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hg</code></td>
+<td>
+<p>A data frame that has, at least, the title, level, ucc, and
+factor columns of a CE HG file. Calling <code>ce_hg()</code> will generate a
+valid HG file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>uccs</code></td>
+<td>
+<p>A character vector of UCCs corresponding to expenditure
+categories in the hierarchical grouping (HG) for a given year and survey.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Variables to include in the dataset from the family
+characteristics file. This is intended to allow the user to calculate
+estimates for subsets of the data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>int_zp</code></td>
+<td>
+<p>String indicating the path of the Interview data zip file(s) if
+already stored. If the file(s) does not exist its corresponding zip file will
+be stored in that path. The default is <code>NULL</code> which causes the zip file
+to be stored in temporary memory during function operation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dia_zp</code></td>
+<td>
+<p>Same as <code>int_zp</code> above, but for Diary data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>recode_variables</code></td>
+<td>
+<p>A logical indicating whether to recode all coded
+variables except 'UCC' using the codes in the CE's excel dictionary which can
+be downloaded from the
+<a href="https://www.bls.gov/cex/pumd_doc.htm">CE Documentation Page</a></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dict_path</code></td>
+<td>
+<p>A string indicating the path where the CE PUMD dictionary
+is stored if already stored. If the file does not exist and
+<code>recode_variables = TRUE</code> the dictionary will be stored in this path.
+The default is <code>NULL</code> which causes the zip file to be stored in
+temporary memory during function operation. Automatically changed to
+<code>NULL</code> if a valid input for <code>own_codebook</code> is given.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>own_codebook</code></td>
+<td>
+<p>An optional data frame containing a user-defined codebook
+containing the same columns as the CE Dictionary "Codes " sheet. If the input
+is not a data frame or does not have all of the required columns, the
+function will give an error message. See details for the required columns.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>CE microdata include 45 weights. The primary weight that is used for
+calculating estimated means and medians is finlwt21. The 44 replicate weights
+are computed using Balanced Repeated Replication (BRR) and are used for
+calculating weighted standard errors.
+</p>
+<p>"Months in scope" refers to the proportion of the data collection quarter for
+which a CU reported expenditures. For the Diary survey the months in scope is
+always 3 because the expenditure data collected are meant to be reported for
+the quarter in which they are collected. The Interview Survey, on the other
+hand, is a quarterly, rolling, recall survey and the CU's report expenditures
+for the 3 months previous to the month in which the data are collected. For
+example, if a CU was interviewed in February 2017, then they would be
+providing data for November 2016, December 2016, and January 2017. If one is
+calculating a weighted estimated mean for the 2017 calendar year, then only
+the January 2017 data would be "in scope."
+</p>
+<p>CE data are reported quarterly, but the sum of the weights (finlwt21) is
+for all CU's is meant to represent the total number of U.S. CU's for a given
+year. Since a calculating a calendar year estimate requires the use of 4
+quarters of data and the sum of the weights in each quarter equals the
+number of households in the U.S. for a given year, adding up the sums of the
+weights in the 4 quarters of data would yield a total number of households
+that is approximately 4 times larger than the actual number of households in
+the U.S. in the corresponding year.
+</p>
+<p>Since some UCC's can appear in both surveys, for the purposes of integration,
+the CE has a source selection procedure by which to choose which source data
+will be taken from for a given UCC. For example, of the 4 UCC's in the "Pets"
+category in 2017 two were sourced for publication from the Diary and two from
+the Interview. Please download the CE Source Selection Document for a
+complete listing: <a href="https://www.bls.gov/cex/ce_source_integrate.xlsx">https://www.bls.gov/cex/ce_source_integrate.xlsx</a>.
+</p>
+<p>Family characteristic variables added through "..." will be read in as
+character data type.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame containing the following columns:
+</p>
+
+<ul>
+<li>
+<p> newid - A consumer unit (CU), or household, identifier
+</p>
+</li>
+<li>
+<p> finlwt21 - CU weight variable
+</p>
+</li>
+<li>
+<p> wtrep01 through wtrep44 - CU replicate weight variables (see details)
+</p>
+</li>
+<li>
+<p> ... - Any family characteristics variables that were kept
+</p>
+</li>
+<li>
+<p> mo_scope - Months in scope (see details)
+</p>
+</li>
+<li>
+<p> popwt - An adjusted weight meant to account for the fact that a CUs
+value of finlwt21 is meant to be representative of only 1 quarter of
+data (see details)
+</p>
+</li>
+<li>
+<p> ucc - The UCC for a given expenditure
+</p>
+</li>
+<li>
+<p> ref_yr - The year in which the corresponding expenditure occurred
+</p>
+</li>
+<li>
+<p> ref_mo - The month in which the corresponding expenditure occurred
+</p>
+</li>
+<li>
+<p> cost - The value of the expenditure (in U.S. Dollars)
+</p>
+</li>
+<li>
+<p> survey - An indicator of which survey the data come from: "I" for
+Interview and "D" for Diary.
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+# The following workflow will prepare a dataset for calculating integrated
+# pet expenditures for 2021 keep the "sex_ref" variable in the data to
+# potentially calculate means by sex of the reference person.
+
+# First generate an HG file
+my_hg &lt;- ce_hg(2021, integrated, "CE-HG-Inter-2021.txt")
+
+# Store a vector of UCC's in the "Pets" category
+pet_uccs &lt;- ce_uccs(my_hg, "Pets")
+
+# Store the diary data (not run)
+pets_dia &lt;- ce_prepdata(
+  year = 2021,
+  survey = integrated,
+  uccs = pet_uccs,
+  integrate_data = FALSE,
+  hg = my_hg,
+  dia_zip = "diary21.zip"
+  sex_ref
+)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

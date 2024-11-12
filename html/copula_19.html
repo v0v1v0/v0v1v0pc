@@ -1,0 +1,170 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>absdPsiMC</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Absolute Value of Generator Derivatives via Monte Carlo</h2>
+
+<h3>Description</h3>
+
+<p>Computes the absolute values of the <code class="reqn">d</code>th generator derivative
+<code class="reqn">\psi^{(d)}</code> via Monte Carlo simulation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">absdPsiMC(t, family, theta, degree = 1, n.MC,
+          method = c("log", "direct", "pois.direct", "pois"),
+          log = FALSE, is.log.t = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>t</code></td>
+<td>
+<p><code>numeric</code> vector of evaluation points.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>Archimedean family (name or object).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+<p>parameter value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>degree</code></td>
+<td>
+<p>order <code class="reqn">d</code> of the derivative.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.MC</code></td>
+<td>
+<p>Monte Carlo sample size.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>different methods:
+</p>
+
+<dl>
+<dt>
+<code>"log"</code>:</dt>
+<dd>
+<p>evaluates the logarithm of the sum involved
+in the Monte Carlo approximation in a numerically stable way;</p>
+</dd>
+<dt>
+<code>"direct"</code>:</dt>
+<dd>
+<p>directly evaluates the sum;</p>
+</dd>
+<dt>
+<code>"pois.direct"</code>:</dt>
+<dd>
+<p>interprets the sum in terms of the
+density of a Poisson distribution and evaluates this density directly;</p>
+</dd>
+<dt>
+<code>"pois"</code>:</dt>
+<dd>
+<p>as for <code>method="pois"</code> but evaluates
+the logarithm of the Poisson density in a numerically stable way.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>log</code></td>
+<td>
+<p>if TRUE the logarithm of absdPsi is returned.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>is.log.t</code></td>
+<td>
+<p>if TRUE the argument <code>t</code> contains the logarithm of the
+“mathematical” <code class="reqn">t</code>, i.e., conceptually,
+<code>psi(t, *) == psi(log(t), *, is.log.t=TRUE)</code>, where the latter
+may potentially be numerically accurate, e.g., for <code class="reqn">t =
+      10^{500}</code>, where as the former would just return <code class="reqn">psi(Inf, *) = 0</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The absolute value of the <code class="reqn">d</code>th derivative of the
+Laplace-Stieltjes transform
+<code class="reqn">\psi=\mathcal{LS}[F]</code> can be approximated via
+</p>
+<p style="text-align: center;"><code class="reqn">(-1)^d\psi^{(d)}(t)=\int_0^\infty
+    x^d\exp(-tx)\,dF(x)\approx\frac{1}{N}\sum_{k=1}^NV_k^d\exp(-V_kt),\
+    t&gt; 0,</code>
+</p>
+
+<p>where <code class="reqn">V_k\sim F,\ k\in\{1,\dots,N\}</code>.
+This approximation is used where <code class="reqn">d=</code><code>degree</code> and
+<code class="reqn">N=</code><code>n.MC</code>.  Note that this is comparably fast even if
+<code>t</code> contains many evaluation points, since the random variates
+<code class="reqn">V_k\sim F,\ k\in\{1,\dots,N\}</code> only have
+to be generated once, not depending on <code>t</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>numeric</code> vector of the same length as <code>t</code> containing
+the absolute values of the generator derivatives.
+</p>
+
+
+<h3>References</h3>
+
+<p>Hofert, M., Mächler, M., and McNeil, A. J. (2013).
+Archimedean Copulas in High Dimensions: Estimators and Numerical
+Challenges Motivated by Financial Applications.
+<em>Journal de la Société Française de
+Statistique</em>
+<b>154</b>(1), 25–63.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>acopula-families</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">t &lt;- c(0:100,Inf)
+set.seed(1)
+(ps &lt;- absdPsiMC(t, family="Gumbel", theta=2, degree=10, n.MC=10000, log=TRUE))
+## Note: The absolute value of the derivative at 0 should be Inf for
+## Gumbel, however, it is always finite for the Monte Carlo approximation
+set.seed(1)
+ps2 &lt;- absdPsiMC(log(t), family="Gumbel", theta=2, degree=10,
+                 n.MC=10000, log=TRUE, is.log.t = TRUE)
+stopifnot(all.equal(ps[-1], ps2[-1], tolerance=1e-14))
+## Now is there an advantage of using "is.log.t" ?
+sapply(eval(formals(absdPsiMC)$method), function(MM)
+       absdPsiMC(780, family="Gumbel", method = MM,
+                 theta=2, degree=10, n.MC=10000, log=TRUE, is.log.t = TRUE))
+## not really better, yet...
+</code></pre>
+
+
+</div>

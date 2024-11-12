@@ -1,0 +1,371 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>pnbd</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Pareto/NBD models</h2>
+
+<h3>Description</h3>
+
+<p>Fits Pareto/NBD models on transactional data with and without covariates.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S4 method for signature 'clv.data'
+pnbd(
+  clv.data,
+  start.params.model = c(),
+  use.cor = FALSE,
+  start.param.cor = c(),
+  optimx.args = list(),
+  verbose = TRUE,
+  ...
+)
+
+## S4 method for signature 'clv.data.static.covariates'
+pnbd(
+  clv.data,
+  start.params.model = c(),
+  use.cor = FALSE,
+  start.param.cor = c(),
+  optimx.args = list(),
+  verbose = TRUE,
+  names.cov.life = c(),
+  names.cov.trans = c(),
+  start.params.life = c(),
+  start.params.trans = c(),
+  names.cov.constr = c(),
+  start.params.constr = c(),
+  reg.lambdas = c(),
+  ...
+)
+
+## S4 method for signature 'clv.data.dynamic.covariates'
+pnbd(
+  clv.data,
+  start.params.model = c(),
+  use.cor = FALSE,
+  start.param.cor = c(),
+  optimx.args = list(),
+  verbose = TRUE,
+  names.cov.life = c(),
+  names.cov.trans = c(),
+  start.params.life = c(),
+  start.params.trans = c(),
+  names.cov.constr = c(),
+  start.params.constr = c(),
+  reg.lambdas = c(),
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>clv.data</code></td>
+<td>
+<p>The data object on which the model is fitted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start.params.model</code></td>
+<td>
+<p>Named start parameters containing the optimization start parameters for the model without covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use.cor</code></td>
+<td>
+<p>Whether the correlation between the transaction and lifetime process should be estimated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start.param.cor</code></td>
+<td>
+<p>Start parameter for the optimization of the correlation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimx.args</code></td>
+<td>
+<p>Additional arguments to control the optimization which are forwarded to <code>optimx::optimx</code>.
+If multiple optimization methods are specified, only the result of the last method is further processed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Show details about the running of the function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Ignored</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>names.cov.life</code></td>
+<td>
+<p>Which of the set Lifetime covariates should be used. Missing parameter indicates all covariates shall be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>names.cov.trans</code></td>
+<td>
+<p>Which of the set Transaction covariates should be used. Missing parameter indicates all covariates shall be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start.params.life</code></td>
+<td>
+<p>Named start parameters containing the optimization start parameters for all lifetime covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start.params.trans</code></td>
+<td>
+<p>Named start parameters containing the optimization start parameters for all transaction covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>names.cov.constr</code></td>
+<td>
+<p>Which covariates should be forced to use the same parameters for the lifetime and transaction process. The covariates need to be present as both, lifetime and transaction covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start.params.constr</code></td>
+<td>
+<p>Named start parameters containing the optimization start parameters for the constraint covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reg.lambdas</code></td>
+<td>
+<p>Named lambda parameters used for the L2 regularization of the lifetime and the transaction covariate parameters. Lambdas have to be &gt;= 0.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Model parameters for the Pareto/NBD model are <code>r, alpha, s, and beta</code>. <br><code>s</code>: shape parameter of the Gamma distribution for the lifetime process.
+The smaller s, the stronger the heterogeneity of customer lifetimes. <br><code>beta</code>: rate parameter for the Gamma distribution for the lifetime process. <br><code>r</code>: shape parameter of the Gamma distribution of the purchase process.
+The smaller r, the stronger the heterogeneity of the purchase process.<br><code>alpha</code>: rate parameter of the Gamma distribution of the purchase process.
+</p>
+<p>Based on these parameters, the average purchase rate while customers are active
+is r/alpha and the average dropout rate is s/beta.
+</p>
+<p>Ideally, the starting parameters for r and s represent your best guess
+concerning the heterogeneity of customers in their buy and die rate.
+If covariates are included into the model additionally parameters for the
+covariates affecting the attrition and the purchase process are part of the model.
+</p>
+<p>If no start parameters are given, r=0.5, alpha=15, s=0.5, beta=10 is used for all model parameters and 0.1 for covariate parameters.
+The model start parameters are required to be &gt; 0.
+</p>
+
+
+<h4>The Pareto/NBD model</h4>
+
+<p>The Pareto/NBD is the first model addressing the issue of modeling customer purchases and
+attrition simultaneously for non-contractual settings. The model uses a Pareto distribution,
+a combination of an Exponential and a Gamma distribution, to explicitly model customers'
+(unobserved) attrition behavior in addition to customers' purchase process.<br>
+In general, the Pareto/NBD model consist of two parts. A first process models the purchase
+behavior of customers as long as the customers are active. A second process models customers'
+attrition. Customers live (and buy) for a certain unknown time until they become inactive
+and "die". Customer attrition is unobserved. Inactive customers may not be reactivated.
+For technical details we refer to the original paper by Schmittlein, Morrison and Colombo
+(1987) and the detailed technical note of Fader and Hardie (2005).
+</p>
+
+
+
+<h4>Pareto/NBD model with static covariates</h4>
+
+<p>The standard Pareto/NBD model captures heterogeneity was solely using Gamma distributions.
+However, often exogenous knowledge, such as for example customer demographics, is available.
+The supplementary knowledge may explain part of the heterogeneity among the customers and
+therefore increase the predictive accuracy of the model. In addition, we can rely on these
+parameter estimates for inference, i.e. identify and quantify effects of contextual factors
+on the two underlying purchase and attrition processes. For technical details we refer to
+the technical note by Fader and Hardie (2007).
+</p>
+
+
+
+<h4>Pareto/NBD model with dynamic covariates</h4>
+
+<p>In many real-world applications customer purchase and attrition behavior may be
+influenced by covariates that vary over time. In consequence, the timing of a purchase
+and the corresponding value of at covariate a that time becomes relevant. Time-varying
+covariates can affect customer on aggregated level as well as on an individual level:
+In the first case, all customers are affected simultaneously, in the latter case a
+covariate is only relevant for a particular customer. For technical details we refer to
+the paper by Bachmann, Meierer and Näf (2020).
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>Depending on the data object on which the model was fit, <code>pnbd</code> returns either an object of
+class clv.pnbd, clv.pnbd.static.cov, or clv.pnbd.dynamic.cov.
+</p>
+<p>The function <code>summary</code> can be used to obtain and print a summary of the results.
+The generic accessor functions <code>coefficients</code>, <code>vcov</code>, <code>fitted</code>,
+<code>logLik</code>, <code>AIC</code>, <code>BIC</code>, and <code>nobs</code> are available.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The Pareto/NBD model with dynamic covariates can currently not be fit with data that has a temporal resolution
+of less than one day (data that was built with time unit <code>hours</code>).
+</p>
+
+
+<h3>References</h3>
+
+<p>Schmittlein DC, Morrison DG, Colombo R (1987). “Counting Your Customers:
+Who-Are They and What Will They Do Next?” Management Science, 33(1), 1-24.
+</p>
+<p>Bachmann P, Meierer M, Naef, J (2021). “The Role of Time-Varying Contextual Factors
+in Latent Attrition Models for Customer Base Analysis” Marketing Science 40(4). 783-809.
+</p>
+<p>Fader PS, Hardie BGS (2005). “A Note on Deriving the Pareto/NBD Model and
+Related Expressions.”
+URL <a href="http://www.brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf">http://www.brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf</a>.
+</p>
+<p>Fader PS, Hardie BGS (2007). “Incorporating time-invariant covariates into the
+Pareto/NBD and BG/NBD models.”
+URL <a href="http://www.brucehardie.com/notes/019/time_invariant_covariates.pdf">http://www.brucehardie.com/notes/019/time_invariant_covariates.pdf</a>.
+</p>
+<p>Fader PS, Hardie BGS (2020). “Deriving an Expression for P(X(t)=x) Under
+the Pareto/NBD Model.”
+URL <a href="https://www.brucehardie.com/notes/012/pareto_NBD_pmf_derivation_rev.pdf">https://www.brucehardie.com/notes/012/pareto_NBD_pmf_derivation_rev.pdf</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>clvdata</code> to create a clv data object, <code>SetStaticCovariates</code>
+to add static covariates to an existing clv data object.
+</p>
+<p>gg to fit customer's average spending per transaction with the <code>Gamma-Gamma</code> model
+</p>
+<p><code>predict</code> to predict expected transactions, probability of being alive, and customer lifetime value for every customer
+</p>
+<p><code>plot</code> to plot the unconditional expectation as predicted by the fitted model
+</p>
+<p><code>pmf</code> for the probability to make exactly x transactions in the estimation period, given by the probability mass function (PMF).
+</p>
+<p><code>newcustomer</code> to predict the expected number of transactions for an average new customer.
+</p>
+<p>The generic functions <code>vcov</code>, <code>summary</code>, <code>fitted</code>.
+</p>
+<p><code>SetDynamicCovariates</code> to add dynamic covariates on which the <code>pnbd</code> model can be fit.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data("apparelTrans")
+clv.data.apparel &lt;- clvdata(apparelTrans, date.format = "ymd",
+                            time.unit = "w", estimation.split = 52)
+
+# Fit standard pnbd model
+pnbd(clv.data.apparel)
+
+# Give initial guesses for the model parameters
+pnbd(clv.data.apparel,
+     start.params.model = c(r=0.5, alpha=15, s=0.5, beta=10))
+
+
+# pass additional parameters to the optimizer (optimx)
+#    Use Nelder-Mead as optimization method and print
+#    detailed information about the optimization process
+apparel.pnbd &lt;- pnbd(clv.data.apparel,
+                     optimx.args = list(method="Nelder-Mead",
+                                        control=list(trace=6)))
+
+# estimated coefs
+coef(apparel.pnbd)
+
+# summary of the fitted model
+summary(apparel.pnbd)
+
+# predict CLV etc for holdout period
+predict(apparel.pnbd)
+
+# predict CLV etc for the next 15 periods
+predict(apparel.pnbd, prediction.end = 15)
+
+
+# Estimate correlation as well
+pnbd(clv.data.apparel, use.cor = TRUE)
+
+
+# To estimate the pnbd model with static covariates,
+#   add static covariates to the data
+data("apparelStaticCov")
+clv.data.static.cov &lt;-
+ SetStaticCovariates(clv.data.apparel,
+                     data.cov.life = apparelStaticCov,
+                     names.cov.life = c("Gender", "Channel"),
+                     data.cov.trans = apparelStaticCov,
+                     names.cov.trans = c("Gender", "Channel"))
+
+# Fit pnbd with static covariates
+pnbd(clv.data.static.cov)
+
+# Give initial guesses for both covariate parameters
+pnbd(clv.data.static.cov, start.params.trans = c(Gender=0.75, Channel=0.7),
+                   start.params.life  = c(Gender=0.5, Channel=0.5))
+
+# Use regularization
+pnbd(clv.data.static.cov, reg.lambdas = c(trans = 5, life=5))
+
+# Force the same coefficient to be used for both covariates
+pnbd(clv.data.static.cov, names.cov.constr = "Gender",
+                   start.params.constr = c(Gender=0.5))
+
+# Fit model only with the Channel covariate for life but
+# keep all trans covariates as is
+pnbd(clv.data.static.cov, names.cov.life = c("Channel"))
+
+# Add dynamic covariates data to the data object
+#   add dynamic covariates to the data
+
+## Not run: 
+data("apparelDynCov")
+clv.data.dyn.cov &lt;-
+  SetDynamicCovariates(clv.data = clv.data.apparel,
+                       data.cov.life = apparelDynCov,
+                       data.cov.trans = apparelDynCov,
+                       names.cov.life = c("High.Season", "Gender", "Channel"),
+                       names.cov.trans = c("High.Season", "Gender", "Channel"),
+                       name.date = "Cov.Date")
+
+
+# Fit PNBD with dynamic covariates
+pnbd(clv.data.dyn.cov)
+
+# The same fitting options as for the
+#  static covariate are available
+pnbd(clv.data.dyn.cov, reg.lambdas = c(trans=10, life=2))
+
+## End(Not run)
+
+
+</code></pre>
+
+
+</div>

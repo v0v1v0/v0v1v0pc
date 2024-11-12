@@ -1,0 +1,154 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>plotBdensity</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Density plot displaying Bayes prior or posterior dose response</h2>
+
+<h3>Description</h3>
+
+<p>Density plot over a grid of doses displaying the prior 
+or posterior distribution for the mean dose response computed from 
+simulated input model parameters.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">plotBdensity(dgrid, 
+      parm, 
+      modelFun=emaxfun,
+      qlevL=c(0.025,0.05,0.10,0.25),
+      plotDif= FALSE,
+      logit= FALSE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>dgrid</code></td>
+<td>
+<p>The Bayes prior or posterior summaries are evaluated and plotted on
+the <code>dgrid</code> dosing values </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parm</code></td>
+<td>
+<p>Matrix of simultated parameter values (each row is a
+simulated parameter vector).  The <code>parm</code> values
+must be constructed for use in the model function <code>modFun</code>.  The
+default is a 4-parameter Emax model with parameters
+(log(ED50),lambda,Emax,E0).  For a 3-parameter model, set lambda=1 for each
+simulated parameter vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelFun</code></td>
+<td>
+<p>The mean model function.  The first argument is a
+scalar dose, and the second argument is a matrix of parameter values.
+The rows of the matrix are random draws of parameter vectors for the
+model.  The default function is the 4-parameter Emax function <code>emaxfun</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>qlevL</code></td>
+<td>
+<p>Intervals are formed with percentile boundaries at (qlevL,1-qlevL).  
+<code>qlevL</code> must be increasing between (0,0.5).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plotDif</code></td>
+<td>
+<p>If TRUE, plot difference between doses and placebo.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logit</code></td>
+<td>
+<p>Default is F.  If T, inverse logit transform applied to
+Emax function output for comparison to dose group sample proportions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p> Parameters passed to generic plot function </p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>A sample of parameters from the joint prior or posterior distribution 
+must be supplied (typically produced by BUGS).  A density plot with
+contours corresponding to the perentiles in qlevL created by function
+<code>DRDensityPlot</code> . </p>
+
+
+<h3>Value</h3>
+
+<p>A list containing two matrices with the number of rows equal to the number dose grid points, and columns corresponding to percentiles in <code>qlevL</code>:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>qL</code></td>
+<td>
+<p>Lower perentiles from <code>qlevL</code> </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>qH</code></td>
+<td>
+<p>Upper percentiles 1-<code>qlevL</code>. </p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p> Neal Thomas </p>
+
+
+<h3>References</h3>
+
+<p> Spiegelhalter, D., Thomas, A., Best, N., and Lunn, D. (2003),<em> WinBUGS User Manual Version 1.4</em>, Electronic version www.mrc-bsu.cam.ac.uk/bugs </p>
+
+
+<h3>See Also</h3>
+
+<p><code>plot.plotB</code>, <code>plotD</code>,  <code>plot.fitEmax</code>,
+<code>DRDensityPlot</code> </p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Not run: 
+data("metaData")
+exdat&lt;-metaData[metaData$taid==6 &amp; metaData$poptype==1,]
+
+prior&lt;-emaxPrior.control(epmu=0,epsca=10,difTargetmu=0,difTargetsca=10,dTarget=80.0,
+        p50=3.75,sigmalow=0.01,sigmaup=20)
+mcmc&lt;-mcmc.control(chains=3)
+
+msSat&lt;-sum((exdat$sampsize-1)*(exdat$sd)^2)/(sum(exdat$sampsize)-length(exdat$sampsize))
+fitout&lt;-fitEmaxB(exdat$rslt,exdat$dose,prior,modType=4,
+				count=exdat$sampsize,msSat=msSat,mcmc=mcmc)
+parms&lt;-coef(fitout)[,1:4]  #use first intercept
+
+dgrid&lt;-seq(0,1,length=100)
+
+pout&lt;-plotBdensity(dgrid,parm=parms)
+
+pout2&lt;-plotBdensity(dgrid,parm=parms,plotDif=TRUE,
+       xlab='Dose',ylab='Dif with PBO')
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

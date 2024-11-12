@@ -1,0 +1,395 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>crew_launcher_aws_batch</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create an AWS Batch launcher object.</h2>
+
+<h3>Description</h3>
+
+<p>Create an <code>R6</code> AWS Batch launcher object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">crew_launcher_aws_batch(
+  name = NULL,
+  seconds_interval = 0.5,
+  seconds_timeout = 60,
+  seconds_launch = 1800,
+  seconds_idle = Inf,
+  seconds_wall = Inf,
+  tasks_max = Inf,
+  tasks_timers = 0L,
+  reset_globals = TRUE,
+  reset_packages = FALSE,
+  reset_options = FALSE,
+  garbage_collection = FALSE,
+  launch_max = 5L,
+  tls = crew::crew_tls(mode = "automatic"),
+  processes = NULL,
+  aws_batch_config = list(),
+  aws_batch_credentials = list(),
+  aws_batch_endpoint = NULL,
+  aws_batch_region = NULL,
+  aws_batch_job_definition,
+  aws_batch_job_queue,
+  aws_batch_share_identifier = NULL,
+  aws_batch_scheduling_priority_override = NULL,
+  aws_batch_parameters = NULL,
+  aws_batch_container_overrides = NULL,
+  aws_batch_node_overrides = NULL,
+  aws_batch_retry_strategy = NULL,
+  aws_batch_propagate_tags = NULL,
+  aws_batch_timeout = NULL,
+  aws_batch_tags = NULL,
+  aws_batch_eks_properties_override = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p>Name of the launcher.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seconds_interval</code></td>
+<td>
+<p>Number of seconds between
+polling intervals waiting for certain internal
+synchronous operations to complete,
+such as checking <code>mirai::status()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seconds_timeout</code></td>
+<td>
+<p>Number of seconds until timing
+out while waiting for certain synchronous operations to complete,
+such as checking <code>mirai::status()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seconds_launch</code></td>
+<td>
+<p>Seconds of startup time to allow.
+A worker is unconditionally assumed to be alive
+from the moment of its launch until <code>seconds_launch</code> seconds later.
+After <code>seconds_launch</code> seconds, the worker is only
+considered alive if it is actively connected to its assign websocket.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seconds_idle</code></td>
+<td>
+<p>Maximum number of seconds that a worker can idle
+since the completion of the last task. If exceeded, the worker exits.
+But the timer does not launch until <code>tasks_timers</code> tasks
+have completed.
+See the <code>idletime</code> argument of <code>mirai::daemon()</code>. <code>crew</code> does not
+excel with perfectly transient workers because it does not micromanage
+the assignment of tasks to workers, so please allow enough idle
+time for a new worker to be delegated a new task.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seconds_wall</code></td>
+<td>
+<p>Soft wall time in seconds.
+The timer does not launch until <code>tasks_timers</code> tasks
+have completed.
+See the <code>walltime</code> argument of <code>mirai::daemon()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tasks_max</code></td>
+<td>
+<p>Maximum number of tasks that a worker will do before
+exiting. See the <code>maxtasks</code> argument of <code>mirai::daemon()</code>.
+<code>crew</code> does not
+excel with perfectly transient workers because it does not micromanage
+the assignment of tasks to workers, it is recommended to set
+<code>tasks_max</code> to a value greater than 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tasks_timers</code></td>
+<td>
+<p>Number of tasks to do before activating
+the timers for <code>seconds_idle</code> and <code>seconds_wall</code>.
+See the <code>timerstart</code> argument of <code>mirai::daemon()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reset_globals</code></td>
+<td>
+<p><code>TRUE</code> to reset global environment
+variables between tasks, <code>FALSE</code> to leave them alone.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reset_packages</code></td>
+<td>
+<p><code>TRUE</code> to unload any packages loaded during
+a task (runs between each task), <code>FALSE</code> to leave packages alone.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reset_options</code></td>
+<td>
+<p><code>TRUE</code> to reset global options to their original
+state between each task, <code>FALSE</code> otherwise. It is recommended to
+only set <code>reset_options = TRUE</code> if <code>reset_packages</code> is also <code>TRUE</code>
+because packages sometimes rely on options they set at loading time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>garbage_collection</code></td>
+<td>
+<p><code>TRUE</code> to run garbage collection between
+tasks, <code>FALSE</code> to skip.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>launch_max</code></td>
+<td>
+<p>Positive integer of length 1, maximum allowed
+consecutive launch attempts which do not complete any tasks.
+Enforced on a worker-by-worker basis.
+The futile launch count resets to back 0
+for each worker that completes a task.
+It is recommended to set <code>launch_max</code> above 0
+because sometimes workers are unproductive under perfectly ordinary
+circumstances. But <code>launch_max</code> should still be small enough
+to detect errors in the underlying platform.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tls</code></td>
+<td>
+<p>A TLS configuration object from <code>crew_tls()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>processes</code></td>
+<td>
+<p><code>NULL</code> or positive integer of length 1,
+number of local processes to
+launch to allow worker launches to happen asynchronously. If <code>NULL</code>,
+then no local processes are launched. If 1 or greater, then the launcher
+starts the processes on <code>start()</code> and ends them on <code>terminate()</code>.
+Plugins that may use these processes should run asynchronous calls
+using <code>launcher$async$eval()</code> and expect a <code>mirai</code> task object
+as the return value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_config</code></td>
+<td>
+<p>Named list, <code>config</code> argument of
+<code>paws.compute::batch()</code> with optional configuration details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_credentials</code></td>
+<td>
+<p>Named list. <code>credentials</code> argument of
+<code>paws.compute::batch()</code> with optional credentials (if not already
+provided through environment variables such as <code>AWS_ACCESS_KEY_ID</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_endpoint</code></td>
+<td>
+<p>Character of length 1. <code>endpoint</code>
+argument of <code>paws.compute::batch()</code> with the endpoint to send HTTP
+requests.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_region</code></td>
+<td>
+<p>Character of length 1. <code>region</code> argument of
+<code>paws.compute::batch()</code> with an AWS region string such as <code>"us-east-2"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_job_definition</code></td>
+<td>
+<p>Character of length 1, name of the AWS
+Batch job definition to use. There is no default for this argument,
+and a job definition must be created prior to running the controller.
+Please see <a href="https://docs.aws.amazon.com/batch/">https://docs.aws.amazon.com/batch/</a> for details.
+</p>
+<p>To create a job definition, you will need to create a Docker-compatible
+image which can run R and <code>crew</code>. You may which to inherit
+from the images at <a href="https://github.com/rocker-org/rocker-versioned2">https://github.com/rocker-org/rocker-versioned2</a>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_job_queue</code></td>
+<td>
+<p>Character of length 1, name of the AWS
+Batch job queue to use. There is no default for this argument,
+and a job queue must be created prior to running the controller.
+Please see <a href="https://docs.aws.amazon.com/batch/">https://docs.aws.amazon.com/batch/</a> for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_share_identifier</code></td>
+<td>
+<p><code>NULL</code> or character of length 1.
+For details, visit
+<a href="https://www.paws-r-sdk.com/docs/batch_submit_job/">https://www.paws-r-sdk.com/docs/batch_submit_job/</a> and the
+"AWS arguments" sections of this help file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_scheduling_priority_override</code></td>
+<td>
+<p><code>NULL</code> or integer of length 1.
+For details, visit
+<a href="https://www.paws-r-sdk.com/docs/batch_submit_job/">https://www.paws-r-sdk.com/docs/batch_submit_job/</a> and the
+"AWS arguments" sections of this help file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_parameters</code></td>
+<td>
+<p><code>NULL</code> or a nonempty list.
+For details, visit
+<a href="https://www.paws-r-sdk.com/docs/batch_submit_job/">https://www.paws-r-sdk.com/docs/batch_submit_job/</a> and the
+"AWS arguments" sections of this help file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_container_overrides</code></td>
+<td>
+<p><code>NULL</code> or a nonempty named list of
+fields to override
+in the container specified in the job definition. Any overrides for the
+<code>command</code> field are ignored because <code>crew.aws.batch</code> needs to override
+the command to run the <code>crew</code> worker.
+For more details, visit
+<a href="https://www.paws-r-sdk.com/docs/batch_submit_job/">https://www.paws-r-sdk.com/docs/batch_submit_job/</a> and the
+"AWS arguments" sections of this help file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_node_overrides</code></td>
+<td>
+<p><code>NULL</code> or a nonempty named list.
+For more details, visit
+<a href="https://www.paws-r-sdk.com/docs/batch_submit_job/">https://www.paws-r-sdk.com/docs/batch_submit_job/</a> and the
+"AWS arguments" sections of this help file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_retry_strategy</code></td>
+<td>
+<p><code>NULL</code> or a nonempty named list.
+For more details, visit
+<a href="https://www.paws-r-sdk.com/docs/batch_submit_job/">https://www.paws-r-sdk.com/docs/batch_submit_job/</a> and the
+"AWS arguments" sections of this help file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_propagate_tags</code></td>
+<td>
+<p><code>NULL</code> or a nonempty list.
+For more details, visit
+<a href="https://www.paws-r-sdk.com/docs/batch_submit_job/">https://www.paws-r-sdk.com/docs/batch_submit_job/</a> and the
+"AWS arguments" sections of this help file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_timeout</code></td>
+<td>
+<p><code>NULL</code> or a nonempty named list.
+For more details, visit
+<a href="https://www.paws-r-sdk.com/docs/batch_submit_job/">https://www.paws-r-sdk.com/docs/batch_submit_job/</a> and the
+"AWS arguments" sections of this help file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_tags</code></td>
+<td>
+<p><code>NULL</code> or a nonempty list.
+For more details, visit
+<a href="https://www.paws-r-sdk.com/docs/batch_submit_job/">https://www.paws-r-sdk.com/docs/batch_submit_job/</a> and the
+"AWS arguments" sections of this help file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aws_batch_eks_properties_override</code></td>
+<td>
+<p><code>NULL</code> or a nonempty named list.
+For more details, visit
+<a href="https://www.paws-r-sdk.com/docs/batch_submit_job/">https://www.paws-r-sdk.com/docs/batch_submit_job/</a> and the
+"AWS arguments" sections of this help file.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An <code>R6</code> AWS Batch launcher object.
+</p>
+
+
+<h3>IAM policies</h3>
+
+<p>In order for the AWS Batch <code>crew</code> plugin to function properly, your IAM
+policy needs permission to perform the <code>SubmitJob</code> and <code>TerminateJob</code>
+AWS Batch API calls. For more information on AWS policies and permissions,
+please visit
+<a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html">https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html</a>.
+</p>
+
+
+<h3>AWS arguments</h3>
+
+<p>The AWS Batch controller and launcher accept many arguments
+which start with <code>"aws_batch_"</code>. These arguments are AWS-Batch-specific
+parameters forwarded directly to the <code>submit_job()</code> method for
+the Batch client in the <code>paws.compute</code> R package
+</p>
+<p>For a full description
+of each argument, including its meaning and format, please visit
+<a href="https://www.paws-r-sdk.com/docs/batch_submit_job/">https://www.paws-r-sdk.com/docs/batch_submit_job/</a>. The upstream API
+documentation is at
+<a href="https://docs.aws.amazon.com/batch/latest/APIReference/API_SubmitJob.html">https://docs.aws.amazon.com/batch/latest/APIReference/API_SubmitJob.html</a>
+and the analogous CLI documentation is at
+<a href="https://docs.aws.amazon.com/cli/latest/reference/batch/submit-job.html">https://docs.aws.amazon.com/cli/latest/reference/batch/submit-job.html</a>.
+</p>
+<p>The actual argument names may vary slightly, depending
+on which : for example, the <code>aws_batch_job_definition</code> argument of
+the <code>crew</code> AWS Batch launcher/controller corresponds to the
+<code>jobDefinition</code> argument of the web API and
+<code>paws.compute::batch()$submit_job()</code>, and both correspond to the
+<code>--job-definition</code> argument of the CLI.
+</p>
+
+
+<h3>Verbosity</h3>
+
+<p>Control verbosity with the <code>paws.log_level</code> global option in R.
+Set to 0 for minimum verbosity and 3 for maximum verbosity.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other plugin_aws_batch: 
+<code>crew_class_launcher_aws_batch</code>,
+<code>crew_controller_aws_batch()</code>
+</p>
+
+
+</div>

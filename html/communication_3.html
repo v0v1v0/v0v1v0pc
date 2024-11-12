@@ -1,0 +1,228 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>hmm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Train a hidden Markov model with multivariate normal state distributions.</h2>
+
+<h3>Description</h3>
+
+<p>Train a hidden Markov model with multivariate normal state distributions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">hmm(
+  Xs,
+  weights = NULL,
+  nstates,
+  par = list(),
+  control = list(),
+  labels = list()
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Xs</code></td>
+<td>
+<p>List of nsequences matrices; each matrix represents one observation
+sequence and is of dimension nobs x nfeatures. For a single observation
+sequence, a single matrix can be provided</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>Optional vector of weights, one for each observation sequence</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nstates</code></td>
+<td>
+<p>Integer; number of states</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>par</code></td>
+<td>
+<p>List of initialization parameters; see 'Details'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>List of control parameters for EM steps</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>labels</code></td>
+<td>
+<p>List of observation labels for supervised training, with each
+element corresponding to an observation sequence. Element i can either be
+an vector of integer state labels in <code>1:nstates</code> or a matrix of
+dimension <code>nstates</code> x <code>nrow(Xs[[i]])</code> with columns summing to 1.
+If labels are supplied, E-step is suppressed.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>par</code> argument is a list of initialization parameters.
+Can supply any of the following components:
+</p>
+
+<ul>
+<li>
+<p><code>method</code>
+Name of method used to automatically initialize EM run. Currently only
+<code>'dirichlet'</code> and <code>'random-spherical'</code> are implemented. If
+provided, user-specified state distributions are ignored.
+<code>'dirichlet'</code> randomly generates responsibilities which are in turn
+used to calculate starting distributions. <code>'random-spherical'</code> randomly draws
+nstates observations and uses their features as state means; all state covariance matrices are set to a
+diagonal matrix with entries <code>method_arg</code> (default=1).
+
+</p>
+</li>
+<li>
+<p><code>method_arg</code>
+Argument to supply to <code>method</code>. For <code>method='dirichlet'</code>, this
+is a scalar concentration <code>alpha</code> (same value used for all states). For <code>method='random-spherical'</code>, this is a
+scalar for diagonal entries of the spherical covariance matrices of the
+starting distributions (after features are standardized).
+<code>'dirichlet'</code> is implemented. If provided, all other arguments are ignored.
+
+</p>
+</li>
+<li>
+<p><code>resp</code>
+Matrix or list of nsequences matrices with rows summing to 1; each matrix
+represents one observation sequence and is of dimension nobs x nstates,
+with the (t,k)-th entry giving the initial probability that the t-th
+observation belongs to state k. If either <code>resp</code> or both <code>mus</code>
+and <code>Sigmas</code> are not provided, responsibilities are randomly
+initialized using <code>rdirichlet</code> with all shape parameters set to 10.
+
+</p>
+</li>
+<li>
+<p><code>mus</code>
+List of nstates vectors with length nfeatures, each corresponding to the mean of
+a state distribution
+
+</p>
+</li>
+<li>
+<p><code>Sigmas</code>
+List of nstates matrices with dimension nfeatures x nfeatures, each
+corresponding to the covariance matrix of a state distribution
+
+</p>
+</li>
+<li>
+<p><code>Gamma</code>
+Matrix of transition probabilities with dimension nstates x nstates, with
+row k representing the probabilities of each transition out of k and
+summing to 1. If not supplied, each row is randomly drawn from
+<code>rdirichlet</code> with all shape parameters set to 10.
+
+</p>
+</li>
+<li>
+<p><code>delta</code>
+Vector of initial state probabilities, of length nstates and summing to
+1. If not supplied, <code>delta</code> is set to the stationary distribution of
+<code>Gamma</code>, i.e. the normalized first left eigenvector.
+
+</p>
+</li>
+</ul>
+<p>The <code>control</code> argument is a list of EM control parameters that can supply
+any of the following components
+</p>
+
+<ul>
+<li>
+<p><code>lambda</code>
+Ridge-like regularization parameter. <code>lambda</code> is added to each
+<code>diag(Sigmas[[k]])</code> to stabilize each state's covariance matrix,
+which might otherwise be numerically singular, before inverting to
+calculate multivariate normal densities. Note that regularization is
+applied after all features are standardized, so <code>diag(Sigmas[[k]])</code>
+is unlikely to contain elements greater than 1. This parameter should be
+selected through cross-validation.
+
+</p>
+</li>
+<li>
+<p><code>tol</code>
+EM terminates when the improvement in the log-likelihood between
+successive steps is <code>&lt; tol</code>. Defaults to 1e-6.
+
+</p>
+</li>
+<li>
+<p><code>maxiter</code>
+EM terminates with a warning if <code>maxiter</code> iterations are reached
+without convergence as defined by <code>tol</code>. Defaults to 100.
+
+</p>
+</li>
+<li>
+<p><code>uncollapse</code>
+Threshold for detecting and resetting state distribution when they
+collapse on a single point. State distributions are uncollapsed by
+re-drawing <code>mus[[k]]</code> from a standard multivariate normal and
+setting <code>Sigmas[[k]]</code> to the nfeatures-dimensional identity matrix.
+Note that this distribution is with respect to the standardized features.
+
+</p>
+</li>
+<li>
+<p><code>standardize</code>
+Whether features should be standardized. Defaults to <code>TRUE</code>. This
+option also adds a small amount of noise , equal to .01 x feature
+standard deviation, to observation-features that have been zeroed out
+(e.g. f0 during unvoiced periods). If set to <code>FALSE</code>, it is assumed
+that features have been externally standardized and zeroed-out values
+handled. scaling$feature_means and scaling$feature_sds are set to 0s and
+1s, respectively, and no check is done to ensure this is correct. If
+features are in fact not standardized and zeroes handled, bad things will
+happen and nobody will feel sorry for you.
+
+</p>
+</li>
+<li>
+<p><code>verbose</code>
+Integer in 0:1. If <code>1</code>, information on the EM process is reported.
+Defaults to 1.
+
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p>An object of class hmm. Contains fitted values of model
+parameters, along with input values for hyperparameters and
+features.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data('audio')
+## Not run: 
+mod &lt;- hmm(audio$data, nstates = 2, control = list(verbose = TRUE))
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,125 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>closed testing with globaltest</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Approximated Closed Testing with Global Test</h2>
+
+<h3>Description</h3>
+
+<p> To detect the significance of the set of features after correcting for multiple global tests, with family-wise error rate controlled.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">  actgt (y, X, xs, hyps, maxit = 0, alpha = 0.05)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>The response vector (numeric vector).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>The full design matrix, whose columns are named by the covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xs</code></td>
+<td>
+<p>The name vector of all covariates (character vector). </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hyps</code></td>
+<td>
+<p>The name vector of the covariates in the pathway of interest (character vector).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxit</code></td>
+<td>
+<p>An optional integer to denote the maximal interations for branch and bound method. The default value 0 means the single-step shortcut without branch and bound method. Note that larger value is more time-consuming. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>The type I error rate allowed. The default is 0.05.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Returns a list of rejection indicator and the number of iterations. </p>
+
+
+<h3>Author(s)</h3>
+
+<p>Ningning Xu
+</p>
+<p>Maintainer: Ningning Xu &lt;n.xu@lumc.nl; xu15263142750@gmail.com&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Ningning Xu, Aldo solari, Jelle Goeman, Clsoed testing with global test, with applications on metabolomics data, arXiv:2001.01541, https://arxiv.org/abs/2001.01541
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">  #Generate the design matrix and response vector for logistic regression models
+  n= 100
+  m = 5
+  X = matrix(data = 0, nrow = n, ncol = m,byrow = TRUE )
+  for ( i in 1:n){
+    set.seed(1234+i)
+    X[i,] =  as.vector(arima.sim(model = list(order = c(1, 0, 0), ar = 0.2), n = m) )
+  }
+
+  y = rbinom(n,1,0.6)
+  X[which(y==1),1:3] = X[which(y==1),1:3] + 0.8
+
+
+  xs = paste("x",seq(1,m,1),sep="") 
+  colnames(X) = xs
+
+  hyps=xs[1]
+
+  #The sinle-step ctgt procedure
+  actgt(y = y, X = X, xs = xs, hyps = hyps, maxit = 0, alpha = 0.05)
+  #Result Iterations 
+  #"unsure"        "0" 
+
+  # The iterative ctgt procedure with more iterations
+  actgt(y = y, X = X, xs = xs, hyps = hyps, maxit = 0, alpha = 0.05)
+  #Result Iterations 
+  #"reject"       "2" 
+  #which means that x1 is rejected by closed testing within two more iterations of the shortcut
+
+
+  # For a group of feature sets
+  mysets = list(xs[1:5], xs[c(1,4)], xs[c(1,4,5)])
+  sapply(mysets, function(i) actgt(y = y, X = X, xs = xs, hyps = i, maxit = 0, alpha = 0.05))
+  #Result     "reject" "unsure" "reject"
+  #Iterations "0"      "0"      "0"         
+
+  mysets = list(xs[1:5], xs[c(1,4)], xs[c(1,4,5)])
+  sapply(mysets, function(i) actgt(y = y, X = X, xs = xs, hyps = i, maxit = 0, alpha = 0.05))
+  #Result     "reject" "reject" "reject"
+  #Iterations "0"      "2"          "0"         
+
+</code></pre>
+
+
+</div>

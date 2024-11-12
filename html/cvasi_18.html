@@ -1,0 +1,117 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CalibrationSet</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calibration set</h2>
+
+<h3>Description</h3>
+
+<p>A <em>calibration set</em> combines a scenario, observed data, and an
+optional weighting factor into one object. The <em>calibration set</em> is used to fit
+model parameters to observed data using <code>calibrate()</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">caliset(scenario, data, weight = 1.0, tag = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>scenario</code></td>
+<td>
+<p>a scenario describing conditions during the experiment</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a <code>data.frame</code> with observed data in long format containing two
+columns: the 1st column with <code>numeric</code> time points and 2nd column with
+<code>numeric</code> data to fit to.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weight</code></td>
+<td>
+<p>optional <code>numeric</code> weight to be applied when calculating the
+error term for each data point. Default value is <code>1.0</code>, i.e. no weighting.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tag</code></td>
+<td>
+<p>optional value to identify the data, e.g. a study number</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>A <em>calibration set</em> usually represents a single experiment or trial.
+Multiple experimental replicates can be combined into a single <em>set</em>, if model
+parameters are identical between trials.
+If model parameters were modified during a trial, e.g. a pump failure occurred
+or flow rates changed, this can be represented by using a <em>scenario sequence</em>
+instead of a basic scenario. Please refer to <code>sequence()</code> for details.
+</p>
+
+
+<h4>Weighting</h4>
+
+<p>An optional weighting factor can be used to scale the error term of a
+whole <em>set</em> or of individual data points when fitting parameters using e.g.
+<code>calibrate()</code>.
+</p>
+<p>The vector of weights must either be of length one or have the same length
+as the dataset. In the former case, the same weight will be applied to all
+values in the dataset. In the latter, individual weights are applied
+for each data point.
+</p>
+
+
+
+<h3>Value</h3>
+
+<p><code>caliset()</code> returns a <em>calibration set</em> object
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(dplyr)
+
+# Get observed biomass during control experiment by Schmitt et al. (2013)
+observed &lt;- Schmitt2013 %&gt;%
+  filter(ID == "T0") %&gt;%
+  select(t, BM=obs)
+
+# Create a scenario that represents conditions during experiment
+scenario &lt;- metsulfuron %&gt;%
+  set_param(c(k_phot_fix=TRUE, k_resp=0, Emax=1)) %&gt;%
+  set_init(c(BM=12)) %&gt;%
+  set_noexposure()
+
+# Create a calibration set
+cs &lt;- caliset(scenario, observed)
+
+# Fit parameter 'k_phot_max' to observed biomass growth from experiment
+calibrate(
+  cs,
+  par=c(k_phot_max=1),
+  output="BM",
+  method="Brent", # Brent is recommended for one-dimensional optimization
+  lower=0,        # lower parameter boundary
+  upper=0.5       # upper parameter boundary
+) -&gt; fit
+fit$par
+
+</code></pre>
+
+
+</div>

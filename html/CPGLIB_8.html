@@ -1,0 +1,138 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>predict.CPGLIB</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Predictions for CPGLIB Object</h2>
+
+<h3>Description</h3>
+
+<p><code>predict.CPGLIB</code> returns the predictions for a CPGLIB object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'CPGLIB'
+predict(
+  object,
+  newx,
+  groups = NULL,
+  ensemble_type = c("Model-Avg", "Coef-Avg", "Weighted-Prob", "Majority-Vote")[1],
+  class_type = c("prob", "class")[1],
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>An object of class CPGLIB.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newx</code></td>
+<td>
+<p>New data for predictions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>groups</code></td>
+<td>
+<p>The groups in the ensemble for the predictions. Default is all of the groups in the ensemble.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ensemble_type</code></td>
+<td>
+<p>The type of ensembling function for the models. Options are "Model-Avg", "Coef-Avg" or "Weighted-Prob" for 
+classifications predictions. Default is "Model-Avg".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>class_type</code></td>
+<td>
+<p>The type of predictions for classification. Options are "prob" and "class". Default is "prob".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments for compatibility.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The predictions for the CPGLIB object.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Anthony-Alexander Christidis, <a href="mailto:anthony.christidis@stat.ubc.ca">anthony.christidis@stat.ubc.ca</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cpg</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Data simulation
+set.seed(1)
+n &lt;- 50
+N &lt;- 2000
+p &lt;- 300
+beta.active &lt;- c(abs(runif(p, 0, 1/2))*(-1)^rbinom(p, 1, 0.3))
+# Parameters
+p.active &lt;- 150
+beta &lt;- c(beta.active[1:p.active], rep(0, p-p.active))
+Sigma &lt;- matrix(0, p, p)
+Sigma[1:p.active, 1:p.active] &lt;- 0.5
+diag(Sigma) &lt;- 1
+
+# Train data
+x.train &lt;- mvnfast::rmvn(n, mu = rep(0, p), sigma = Sigma) 
+prob.train &lt;- exp(x.train %*% beta)/
+              (1+exp(x.train %*% beta))
+y.train &lt;- rbinom(n, 1, prob.train)
+# Test data
+x.test &lt;- mvnfast::rmvn(N, mu = rep(0, p), sigma = Sigma)
+prob.test &lt;- exp(x.test %*% beta)/
+             (1+exp(x.test %*% beta))
+y.test &lt;- rbinom(N, 1, prob.test)
+
+# CPGLIB - Multiple Groups
+cpg.out &lt;- cpg(x.train, y.train,
+               glm_type = "Logistic",
+               G = 5, include_intercept = TRUE,
+               alpha_s = 3/4, alpha_d = 1,
+               lambda_sparsity = 0.01, lambda_diversity = 1,
+               tolerance = 1e-5, max_iter = 1e5)
+
+# Predictions
+cpg.prob &lt;- predict(cpg.out, newx = x.test, type = "prob", 
+                    groups = 1:cpg.out$G, ensemble_type = "Model-Avg")
+cpg.class &lt;- predict(cpg.out, newx = x.test, type = "prob", 
+                     groups = 1:cpg.out$G, ensemble_type = "Model-Avg")
+plot(prob.test, cpg.prob, pch=20)
+abline(h=0.5,v=0.5)
+mean((prob.test-cpg.prob)^2)
+mean(abs(y.test-cpg.class))
+
+
+
+</code></pre>
+
+
+</div>

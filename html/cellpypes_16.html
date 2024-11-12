@@ -1,0 +1,178 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>rule</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Add a cell type rule.</h2>
+
+<h3>Description</h3>
+
+<p>This is the heart of cellpypes and best used by piping from
+one rule into the next
+with <code style="white-space: pre;">⁠magrittr::%&gt;%⁠</code>. Check out examples at
+<a href="https://github.com/FelixTheStudent/cellpypes">gitHub</a>)!
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">rule(
+  obj,
+  class,
+  feature,
+  operator = "&gt;",
+  threshold,
+  parent = NULL,
+  use_CP10K = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>obj</code></td>
+<td>
+<p>A cellpypes object, see section <strong>cellpypes Objects</strong> below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>class</code></td>
+<td>
+<p>Character scalar with the class name. Typically,
+cellpypes classes
+are literature cell types ("T cell") or any subpopulation of interest
+("CD3E+TNF+LAG3-").</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>feature</code></td>
+<td>
+<p>Character scalar naming the gene you'd like to threshold.
+Must be a row name in <code>obj$raw</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>operator</code></td>
+<td>
+<p>One of <code>c("&gt;","&lt;")</code>. Use "&gt;" for positive (CD3E+) and
+"&lt;" for negative markers (MS4A1-).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold</code></td>
+<td>
+<p>Numeric scalar with the expression threshold separating positive
+from negative cells.
+Experiment with this value, until expression and selected cells agree well
+in UMAP (see examples on
+<a href="https://github.com/FelixTheStudent/cellpypes">gitHub</a>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parent</code></td>
+<td>
+<p>Character scalar with the parent class
+(e.g. "T cell" for "Cytotoxic T cells").
+Only has to be specified once per class (else most recent one is taken),
+and defaults to
+"..root.." if NULL is passed in all rules.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use_CP10K</code></td>
+<td>
+<p>If TRUE, <code>threshold</code> is taken to be
+counts per 10 thousand UMI counts, a measure for RNA molecule fractions.
+We recommend CP10K for human intuition (1 CP10K is roughly 1 UMI per cell),
+but the results are the exact same whether you use
+<code>threshold=1,CP10K=TRUE</code> or
+<code>threshold=1e-4,CP10K=FALSE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Calling <code>rule</code> is computationally cheap because it only stores
+the cell type rule while all computations
+happen in classify.
+If you have classes with multiple rules, the most recent <code>parent</code> and
+<code>feature</code>-<code>threshold</code> combination counts.
+It is ok to mix rules with and without <code>use_CP10K=TRUE</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>obj</code> is returned, but with the rule and class stored in
+<code>obj$rules</code> and <code>obj$classes</code>, to be used by
+classify.
+</p>
+
+
+<h3>cellpypes Objects</h3>
+
+<p>A cellpypes object is a list with four slots:
+</p>
+
+<dl>
+<dt><code>raw </code></dt>
+<dd>
+<p>(sparse) matrix with genes in rows, cells in columns</p>
+</dd>
+<dt><code>totalUMI </code></dt>
+<dd>
+<p>the colSums of obj$raw</p>
+</dd>
+<dt><code>embed </code></dt>
+<dd>
+<p>two-dimensional embedding of the cells, provided as data.frame
+or tibble with two columns and one row per cell.</p>
+</dd>
+<dt><code>neighbors </code></dt>
+<dd>
+<p>index matrix with one row per cell and k columns, where
+k is the number of nearest neighbors (we recommend 15&lt;k&lt;100, e.g. k=50).
+Here are two ways to get the neighbors index matrix:
+</p>
+
+<ul>
+<li>
+<p> Use <code>find_knn(featureMatrix)$idx</code>, where featureMatrix could be
+principal components, latent variables or normalized genes (features in
+rows, cells in columns).
+</p>
+</li>
+<li>
+<p> use <code>as(seurat@graphs[["RNA_nn"]], "dgCMatrix")&gt; .1</code> to extract
+the kNN
+graph computed on RNA. The <code>&gt; .1</code> ensures this also works with RNA_snn,
+wknn/wsnn or any other
+available graph – check with <code>names(seurat@graphs)</code>.
+</p>
+</li>
+</ul>
+</dd>
+</dl>
+<h3>See Also</h3>
+
+<p>To have nicely formatted code in the end, copy the output of
+<code>pype_code_template()</code> to your script and start editing.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># T cells are CD3E+:
+obj &lt;- rule(simulated_umis, "T", "CD3E", "&gt;", .1)
+# T cells are MS4A1-:
+obj &lt;- rule(obj, "T", "MS4A1", "&lt;", 1)
+# Tregs are a subset of T cells:
+obj &lt;- rule(obj, "Treg", "FOXP3", "&gt;", .1, parent="T") 
+
+</code></pre>
+
+
+</div>

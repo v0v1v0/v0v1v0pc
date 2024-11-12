@@ -1,0 +1,279 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ct_get_data</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Get trade data from the UN Comtrade API</h2>
+
+<h3>Description</h3>
+
+<p>This function queries the UN Comtrade API to retrieve
+international trade data.
+It allows for detailed specification of the query,
+including the type of data (goods or services),
+frequency (annual or monthly), commodity classification,
+flow direction, and more.
+By providing <code>everything</code> for certain parameters,
+you can query all possible values.
+The function is opinionated in that it already verifies certain parameters
+for you and is more than a pure wrapper around the API.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ct_get_data(
+  type = "goods",
+  frequency = "A",
+  commodity_classification = "HS",
+  commodity_code = "TOTAL",
+  flow_direction = c("Import", "Export", "Re-export", "Re-import"),
+  reporter = "all_countries",
+  partner = "World",
+  start_date = NULL,
+  end_date = NULL,
+  process = TRUE,
+  tidy_cols = TRUE,
+  verbose = FALSE,
+  primary_token = get_primary_comtrade_key(),
+  mode_of_transport = "TOTAL modes of transport",
+  partner_2 = "World",
+  customs_code = "C00",
+  update = FALSE,
+  requests_per_second = 10/60,
+  extra_params = NULL,
+  cache = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>The type of returned trade data.
+Possible values: 'goods' for trade in goods,
+'services' for trade in services. Default: 'goods'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>frequency</code></td>
+<td>
+<p>The frequency of returned trade data.
+Possible values: 'A' for annual data, 'M' for monthly data. Default: 'A'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>commodity_classification</code></td>
+<td>
+<p>The trade classification scheme.
+Possible values for goods: <code>c('HS','S1','S2','S3','S4','SS','B4','B5')</code>;
+for services: <code>c('EB02','EB10','EB10S','EB')</code>. Default: 'HS'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>commodity_code</code></td>
+<td>
+<p>The commodity code(s) or <code>everything</code> for all possible
+codes. See <code>comtradr::ct_get_ref_table('HS')</code> for possible values.
+Default: 'TOTAL' (sum of all commodities).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>flow_direction</code></td>
+<td>
+<p>The direction of trade flows or <code>everything</code>.
+Possible values can be found in <code>ct_get_ref_table('flow_direction')</code>. These
+are implemented case-insensitive, 'import' and 'Import' are equivalent.
+Default: c('import','export','re-export','re-import').</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reporter</code></td>
+<td>
+<p>Reporter ISO3 code(s), <code>everything</code> or <code>all_countries</code>.
+See <code>comtradr::country_codes</code> or <code>comtradr::ct_get_ref_table('reporter')</code>
+for possible values. <code>all_countries</code> returns all countries without aggregates
+<code>everything</code> returns all possible parameters. Default: 'all_countries'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>partner</code></td>
+<td>
+<p>Partner ISO3 code(s), <code>everything</code> or <code>all_countries</code>.
+See <code>comtradr::country_codes</code> for possible values.
+<code>all_countries</code> returns all countries without aggregates
+<code>everything</code> returns all possible parameters, incl. aggregates like World.
+Default: 'World' (all partners as an aggregate).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start_date</code></td>
+<td>
+<p>The start date of the query.
+Format: <code>yyyy</code> for yearly, <code>yyyy-mm</code> for monthly.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>end_date</code></td>
+<td>
+<p>The end date of the query.
+Format: <code>yyyy</code> for yearly, <code>yyyy-mm</code> for monthly.
+Max: 12 years after start date for annual data, one year for monthly data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>process</code></td>
+<td>
+<p>If TRUE, returns a data.frame with results.
+If FALSE, returns the raw httr2 request. Default: TRUE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tidy_cols</code></td>
+<td>
+<p>If TRUE, returns tidy column names.
+If FALSE, returns raw column names. Default: TRUE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>If TRUE, sends status updates to the console.
+If FALSE, runs functions quietly. Default: FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>primary_token</code></td>
+<td>
+<p>Your primary UN Comtrade API token.
+Default: stored token from <code>comtradr::set_primary_comtrade_key</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mode_of_transport</code></td>
+<td>
+<p>Text code of mode of transport or <code>everything</code> for
+all possible parameters.
+See <code>ct_get_ref_table(dataset_id = 'mode_of_transport')</code> for possible values.
+Default: 'TOTAL modes of transport' (TOTAL).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>partner_2</code></td>
+<td>
+<p>Partner 2 ISO3 code(s), <code>everything</code> or <code>all_countries</code>.
+See <code>comtradr::country_codes</code> for possible values.
+<code>all_countries</code> returns all countries without aggregates
+<code>everything</code> returns all possible parameters, incl. aggregates like World.
+Default: 'World' (all partners as an aggregate).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>customs_code</code></td>
+<td>
+<p>Customs Code ID or <code>everything</code> for all possible
+parameters.
+See <code>ct_get_ref_table(dataset_id = 'customs_code')</code> for possible values.
+Default: 'C00' (TOTAL).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>update</code></td>
+<td>
+<p>If TRUE, downloads possibly updated reference tables
+from the UN. Default: FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>requests_per_second</code></td>
+<td>
+<p>Rate of requests per second executed,
+usually specified as a fraction, e.g. 10/60 for 10 requests per minute,
+see <code>req_throttle()</code> for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extra_params</code></td>
+<td>
+<p>Additional parameters to the API, passed as query
+parameters without checking. Please provide a named list to this parameter.
+Default: NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cache</code></td>
+<td>
+<p>A logical value to determine, whether requests should be cached
+or not. If set to True, <code>tools::R_user_dir(which = 'cache')</code> is used
+to determine the location of the cache. Use the .Renviron file to set the
+R_USER_CACHE_DIR in order to change this location. Default: False.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The UN Comtrade database provides a repository of official international
+trade statistics and relevant analytical tables.
+It contains annual trade statistics starting from 1988
+and monthly trade statistics since 2000 for goods data
+</p>
+<p>Parameters that accept <code>everything</code> will query all possible values.
+For example, setting <code>commodity_code = 'everything'</code>
+will retrieve data for all commodity codes.
+This can be useful for broad queries but may result in large datasets.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data.frame with trade data or,
+if <code>process = F</code>, a httr2 response object.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Query goods data for China's trade with Argentina and Germany in 2019
+ct_get_data(
+  type = "goods",
+  commodity_classification = "HS",
+  commodity_code = "TOTAL",
+  reporter = "CHN",
+  partner = c("ARG", "DEU"),
+  start_date = "2019",
+  end_date = "2019",
+  flow_direction = "Import",
+  partner_2 = "World",
+  verbose = TRUE
+)
+
+# Query all commodity codes for China's imports from Germany in 2019
+ct_get_data(
+  commodity_code = "everything",
+  reporter = "CHN",
+  partner = "DEU",
+  start_date = "2019",
+  end_date = "2019",
+  flow_direction = "Import"
+)
+
+# Query all commodity codes for China's imports from Germany
+# from January to June of 2019
+ct_get_data(
+  commodity_code = "everything",
+  reporter = "CHN",
+  partner = "DEU",
+  start_date = "2019",
+  end_date = "2019",
+  flow_direction = "import"
+)
+
+</code></pre>
+
+
+</div>

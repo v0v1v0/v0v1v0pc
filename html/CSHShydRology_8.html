@@ -1,0 +1,215 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ch_catchment_hyps</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Catchment hypsometry</h2>
+
+<h3>Description</h3>
+
+<p>Finds the hypsometric curve, which is the total fraction of
+the area below vs. elevation, for a given basin.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ch_catchment_hyps(
+  catchment,
+  dem,
+  z_levels = NULL,
+  n_levels = 10,
+  zmin = NULL,
+  zmax = NULL,
+  quantiles = NULL,
+  hypso_plot = FALSE,
+  z_units = "m",
+  col = "red",
+  type = "o",
+  xlab = "Fraction of catchment below given elevation",
+  ylab = paste0("Elevation (", z_units, ")"),
+  add_grid = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>catchment</code></td>
+<td>
+<p>A <span class="pkg">sf</span> object containing the catchment divide.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dem</code></td>
+<td>
+<p>A <span class="pkg">raster</span> object of the Digital Elevation Model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z_levels</code></td>
+<td>
+<p>Vector of elevation levels for the hypsometry. If specified, 
+then no other elevation parameters are required. Default is <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_levels</code></td>
+<td>
+<p>If specified, sets number of elevation intervals. 
+Can be used with <code>zmin</code> and <code>zmax</code>. Default is <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>zmin</code></td>
+<td>
+<p>Minimum elevation for hypsometry. If not specified, minimum
+catchment elevation is used. Default is <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>zmax</code></td>
+<td>
+<p>Maximum elevation for hypsometry. If not specified, maximum
+catchment elevation is used. Default is <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quantiles</code></td>
+<td>
+<p>Vector of elevation quantiles. Default is <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hypso_plot</code></td>
+<td>
+<p>if <code>TRUE</code> the hypsometric curve is plotted. Default is
+<code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z_units</code></td>
+<td>
+<p>Elevation units for plot. Default is <span class="option">m</span>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>col</code></td>
+<td>
+<p>Colour for plot. Default is <span class="option">red</span>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>Type of plot. Defailt is <span class="option">o</span> (lines with overplotted
+points).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xlab</code></td>
+<td>
+<p>Plot x-axis label.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ylab</code></td>
+<td>
+<p>Plot y-axis label.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>add_grid</code></td>
+<td>
+<p>If <code>TRUE</code>, a grid is added to the plot. Default is 
+<code>FALSE</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Other parameters for the graph</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The elevations may be passed as a vector of elevations, or of elevation quantiles, or as minimum
+and maximum elevations and the number of elevation intervals. A plot of the 
+curve may also be created.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a data frame of elevations and catchment fractions below.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Dan Moore
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Note: example not tested automatically as it is very slow to execute due to the downloading
+library(raster)
+library(magrittr)
+# change the following line to specify a directory to hold the data
+dir_name &lt;- tempdir(check = FALSE)
+# create directory to store data sets
+if (!dir.exists(dir_name)) {
+  dir.create(dir_name, recursive = TRUE)
+}
+# get 25-m dem
+dem_fn &lt;- file.path(dir_name, "gs_dem25.tif")
+dem_url &lt;- "https://zenodo.org/record/4781469/files/gs_dem25.tif"
+dem_upc &lt;- ch_get_url_data(dem_url, dem_fn)
+dem_upc
+
+# get catchment boundaries
+cb_fn &lt;- file.path(dir_name, "gs_catchments.GeoJSON")
+cb_url &lt;- "https://zenodo.org/record/4781469/files/gs_catchments.GeoJSON"
+cb &lt;- ch_get_url_data(cb_url, cb_fn)
+
+# quick check plot - all catchments
+raster::plot(dem_upc)
+plot(cb, add = TRUE, col = NA)
+
+# subset 240 catchment
+cb_240 &lt;- cb %&gt;% dplyr::filter(wsc_name == "240")
+plot(cb_240, col = NA)
+
+## test function 
+
+# test different combinations of arguments
+ch_catchment_hyps(cb_240, dem_upc, quantiles = seq(0, 1, 0.1))
+ch_catchment_hyps(cb_240, dem_upc, z_levels = seq(1600, 2050, 50))
+ch_catchment_hyps(cb_240, dem_upc, n_levels = 6)
+ch_catchment_hyps(cb_240, dem_upc)
+ch_catchment_hyps(cb_240, dem_upc, zmin = 1600, zmax = 2050)
+ch_catchment_hyps(cb_240, dem_upc, zmin = 1600, zmax = 2050, n_levels = 6)
+
+# generate a graph
+ch_catchment_hyps(cb_240, dem_upc, hypso_plot = TRUE)
+ch_catchment_hyps(cb_240, dem_upc, hypso_plot = TRUE, 
+              col = "blue", type = "l", ylim = c(1500, 2200))
+ch_catchment_hyps(cb_240, dem_upc, hypso_plot = TRUE, 
+              add_grid = TRUE, quantiles = seq(0, 1, 0.1))
+ch_catchment_hyps(cb_240, dem_upc, hypso_plot = TRUE,
+              ylab = expression("z ("*10^{-3} ~ "km)"))
+
+# extract specific quantiles (e.g., median and 90%)
+ch_catchment_hyps(cb_240, dem_upc, quantiles = c(0.5,0.9))
+
+</code></pre>
+
+
+</div>

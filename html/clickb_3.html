@@ -1,0 +1,190 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fit_mixmar</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Bayesian estimation for mixture of Markov models with fixed number of components</h2>
+
+<h3>Description</h3>
+
+<p>The function use a sampling algorithm for estimating bayesian mixture of Markov models with fixed number of components. If simulated data are used, quality of classification is assessed comparing the original partition of the sequences with the one identified by the algorithm through Danon similarity and adjusted Rand indices. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fit_mixmar(
+  data,
+  iter = 1000,
+  burn = 500,
+  num.cluster,
+  states,
+  A.ini = NULL,
+  pi.ini = NULL,
+  prior.ini = 1,
+  prior.transrow = 1,
+  prior.mixcoef = 1,
+  ini.constr = NULL,
+  trans.constr = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>are dataset containing a variable for categorical observations and an ID variable to identify subjects. No missing values allowed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iter</code></td>
+<td>
+<p>is the number of iterations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>burn</code></td>
+<td>
+<p>is the number of burn-in iterations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>num.cluster</code></td>
+<td>
+<p>is the number of clusters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>states</code></td>
+<td>
+<p>is the number of states of the Markov chain</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>A.ini</code></td>
+<td>
+<p>is the list of initial values for the transition matrices</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pi.ini</code></td>
+<td>
+<p>is the list of initial values for the initial probability vectors</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.ini</code></td>
+<td>
+<p>is the hyperparameter for the prior distribution of initial probability vector (Dirichlet)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.transrow</code></td>
+<td>
+<p>is the hyperparameter for the prior distribution of transition matrices rows (Dirichlet)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.mixcoef</code></td>
+<td>
+<p>is the hyperparameter for the prior distribution of mixture coefficients (Dirichlet)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ini.constr</code></td>
+<td>
+<p>is the vector of zeros and ones indicating constrains in initial probabilities (zero: not possible to start from that state)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trans.constr</code></td>
+<td>
+<p>is the matrix of zeros and ones indicating constrains in transition probabilities (zero: transition is not allowed)</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>pi.list</code></td>
+<td>
+<p>Initial Markov chain probabilities for MCMC</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>A.list</code></td>
+<td>
+<p>Transition Markov chain probabilities for MCMC</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Sim.index.Danon</code></td>
+<td>
+<p>Danon similarity between two partitions</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Sim.index.Rand</code></td>
+<td>
+<p>Rand similarity between two partitions</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Conf.mat</code></td>
+<td>
+<p>Confusion matrix between two partitions</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p> Furio Urso <a href="mailto:furio.urso@unipa.it">furio.urso@unipa.it</a> </p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+#Compare model-based clustering with respect to another classification
+
+# Set up initial values and hyper parameters (either fixed or random)
+
+iter&lt;-5   # number of iterations for the Gibbs sampler
+burn&lt;-0
+
+num.cluster &lt;- 3 # number of components
+states &lt;- 5 # number of states
+
+ini.constr&lt;-c(1, 0, 1, 1, 1)           # constrains on initial probabilities               
+trans.constr&lt;-matrix(c(1, 1, 1, 0, 1,  # constrains on transition probabilities                   
+             1, 0, 1, 1, 1,                                  
+             1, 1, 1, 1, 0,                                 
+             0, 1, 1, 1, 1,                                 
+             1, 1, 0, 1, 1),byrow=TRUE,nrow=5) 
+
+# parameters initial values
+A.ini &lt;- 1/states*matrix(rep(1, length = (states^2)), 
+                         nrow = states, byrow = TRUE, 
+                         dimnames = list(as.character(c(1:states))) )
+pi.ini &lt;- rep(1/states, length = states)
+
+# Prior distributions' hyperparameters
+prior.ini&lt;- prior.transrow &lt;- prior.mixcoef &lt;- 1  
+
+# data is the simulated sequential dataset obtained in the sim_seq() example
+
+# Run the MCMC to estimate parameters 
+MMM_1 &lt;- fit_mixmar(data, iter, burn, num.cluster = num.cluster, states = states,
+                     A.ini = A.ini, pi.ini = pi.ini, prior.ini = prior.ini, 
+                     prior.transrow = prior.transrow, prior.mixcoef = prior.mixcoef, 
+                     ini.constr = ini.constr, trans.constr = trans.constr)
+
+ 
+</code></pre>
+
+
+</div>

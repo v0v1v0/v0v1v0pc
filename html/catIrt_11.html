@@ -1,0 +1,256 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>KL</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate Kullback-Leibler Divergence for IRT Models</h2>
+
+<h3>Description</h3>
+
+<p><code>KL</code> calculates the IRT implementation of Kullback-Leibler
+divergence for various IRT models given a vector of ability values,
+a vector/matrix of item responses, an IRT model, and a value
+indicating the half-width of an indifference region.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">KL( params, theta, delta = .1 )
+## S3 method for class 'brm'
+KL( params, theta, delta = .1 )
+## S3 method for class 'grm'
+KL( params, theta, delta = .1 )
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>params</code></td>
+<td>
+<p><b>numeric:</b> a vector or matrix of item parameters.  If specified
+as a matrix, the rows must index the items, and the columns
+must designate the item parameters.  Furthermore, if calculating
+<em>expected</em> information, the number of rows must match the number
+of columns of <code>resp</code>.  The class of <code>params</code> must match
+the model: either <span class="option">"brm"</span> or <span class="option">"grm"</span>.  For the binary response
+model, <code>params</code> must either be a 3-dimensional vector or a 3-column
+matrix.  See <b>Details</b> for more information.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+<p><b>numeric:</b> a vector of ability values, one for each simulee.  When performing
+a classification CAT, <code>theta</code> should be the boundary points for which to
+choose the next item.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta</code></td>
+<td>
+<p><b>numeric:</b> a scalar or vector indicating the half-width of the indifference
+<code>KL</code> will estimate the divergence between <code class="reqn">\theta - \delta</code> and
+<code class="reqn">\theta + \delta</code> using <code class="reqn">\theta + \delta</code> as the "true model."
+If <code>delta</code> is a vector, then <code>KL</code> will use recycling to make the length
+of <code>theta</code> and <code>delta</code> match. See <b>Details</b> for more information.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function <code>KL</code> returns item divergence and test divergence for the binary
+response model (<span class="option">"brm"</span>) and the graded response model (<span class="option">"grm"</span>).  KL-divergence
+is defined as the following:
+</p>
+<p style="text-align: center;"><code class="reqn"> KL(\theta_2 || \theta_1) = E_{\theta_2}\log\left[\frac{L(\theta_2)}{L(\theta_1)}\right]</code>
+</p>
+
+<p>where <code class="reqn">L(\theta)</code> stands for the likelihood of <code class="reqn">\theta</code>.  Essentially, KL-divergence
+is the expected log-likelihood gain when using the true model in place of an alternative model.
+</p>
+<p>For the binary response model, KL-divergence for an item simplifies to the following:
+</p>
+<p style="text-align: center;"><code class="reqn"> KL_j(\theta_2 || \theta_1)_j = p_j(\theta_2)\log\left[\frac{p_j(\theta_2)}{p_j(\theta_1)}\right] + [1 - p_j(\theta_2)]\log\left[\frac{1 - p_j(\theta_2)}{1 - p_j(\theta_1)}\right]</code>
+</p>
+
+<p>where <code class="reqn">p_{ij}</code> is the probability of response, as indicated in the help page for <code>simIrt</code>
+</p>
+<p>For the graded response model, KL-divergence for an item simplifies to the following:
+</p>
+<p style="text-align: center;"><code class="reqn"> KL_j(\theta_2 || \theta_1) = \sum_k{P_{jk}(\theta_2)\log\left[\frac{P_{jk}(\theta_2)}{P_{jk}(\theta_1)}\right]}</code>
+</p>
+
+<p>where <code class="reqn">P_{jk}(\theta_2)</code> is the probability of <code class="reqn">\theta_2</code> responding in category k as
+indicated in the help page for <code>simIrt</code>. See Eggen (1999) as applied to classification
+CAT and van der Linden and Pashley (2010) more generally.
+</p>
+<p>Because of the properties of likelihood functions in item response models, test information
+is simply the sum of the item informations, or:
+</p>
+<p style="text-align: center;"><code class="reqn"> KL(\theta_2 || \theta_1) = \sum_jKL_j(\theta_2 || \theta_1)</code>
+</p>
+
+<p><code>KL</code> is frequently used to select items in a classification CAT where the hypotheses (e.g. being
+in one category versus another category are well defined).  If "being in the upper category" is
+<code class="reqn">\theta_2</code> and "being in the lower category" is <code class="reqn">\theta_1</code>, then <code class="reqn">\theta_2 = B + \delta</code>
+and <code class="reqn">\theta_1 = B - \delta</code> where <code class="reqn">B</code> is the boundary separating the lower category from the
+upper category.  Conversely, if using <code>KL</code> to select items in a precision CAT, then
+<code class="reqn">\theta_2 = \hat{\theta}_i + \delta</code> and <code class="reqn">\theta_1 = \hat{\theta}_i</code> where <code class="reqn">\hat{\theta}_i</code>
+is the current, <em>best</em> estimate of <code class="reqn">\theta</code>. See <code>catIrt</code> for more information.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>KL</code>, <code>KL.brm</code>, and <code>KL.grm</code> return a list of the following elements:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>item</code></td>
+<td>
+<p>either: (1) a <code class="reqn">N \times J</code> matrix of item information for each simulee to
+each item; (2) a <code class="reqn">J</code>-length vector of item information for one simulee to
+each item; or (3) an <code class="reqn">N</code>-length vector of item information for all simulees
+to one item, depending on the dimensions of <code>params</code>, <code>theta</code>, annd
+<code>delta</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test</code></td>
+<td>
+<p>an <code class="reqn">N</code>-length vector of test information, one for each simulee. Test
+information is the sum of item information across items.  See <b>Details</b> for
+more information.
+</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>Kullback-Leibler divergence in IRT is not <em>true</em> KL divergence, as the expectation
+is with respect to a model that is not necessarily true.  Furthermore, it is not reciprocal,
+as <code class="reqn">KL(\theta_1 || \theta_2) \neq KL(\theta_2 || \theta_1)</code>.  There have been
+other KL-based item selection measures proposed, including global information.  See
+Eggen (1999) and <code>itChoose</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Steven W. Nydick <a href="mailto:swnydick@gmail.com">swnydick@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Eggen, T. J. H. M.  (1999).  Item selection in adaptive testing with the sequential probability ratio test.  <em>Applied Psychological Measurement</em>, <em>23</em>, 249 – 261.
+</p>
+<p>Kullback, S., &amp; Leibler, R. A.  (1951).  On information and sufficiency.  <em>The Annals of Mathematical Statistics</em>, <em>22</em>, 79 – 86.
+</p>
+<p>van dr Linden, W. J. &amp; Pashley, P. J.  (2010).  Item selection and ability estimation in adaptive testing.  In W. J. van der Linden &amp; C. A. W. Glas (Eds.), <em>Elements of Adaptive Testing</em>.  New York, NY: Springer.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>catIrt</code>, <code>FI</code>, <code>itChoose</code>, <code>simIrt</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#########################
+# Binary Response Model #
+#########################
+
+## 1 ##
+set.seed(888)
+# generating random theta:
+theta &lt;- rnorm(20)
+# generating an item bank under a 3-parameter binary response model:
+b.params &lt;- cbind(a = runif(100, .5, 1.5), b = rnorm(100, 0, 2), c = .2)
+
+# you can indicate class of params or extract it from simIrt object:
+class(b.params) &lt;- "brm"
+
+# calculating KL information with delta = .1:
+k.info1 &lt;- KL(params = b.params, theta = theta, delt = .1)
+# changing delta to .2
+k.info2 &lt;- KL(params = b.params, theta = theta, delt = .2)
+
+# notice how the overall information has increased when increasing delt:
+k.info1$test; k.info2$test
+
+# also compare with Fisher information:
+f.info &lt;- FI(params = b.params, theta = theta, type = "expected")
+
+k.info2$test; f.info$test
+
+# Fisher information is much higher because of how it weighs things.
+
+## 2 ##
+# we can maximize information at a boundary - say "0":
+k.info3 &lt;- KL(params = b.params, theta = 0, delta = .1)
+b.params[which.max(k.info3$item), ]
+
+# notice how the a parameter is high while the b parameter is close to
+# 0, so item selection is working.
+
+# does Fisher information choose a different item?
+f.info2 &lt;- FI(params = b.params, theta = 0, type = "expected")
+b.params[which.max(f.info2$item), ]
+
+# nope - although with more items, who knows?
+
+
+#########################
+# Graded Response Model #
+#########################
+
+## 1 ##
+set.seed(999)
+# generating random theta
+theta &lt;- rnorm(20)
+# generating an item bank under a graded response model:
+g.params &lt;- cbind(runif(100, .5, 1.5), rnorm(100), rnorm(100),
+                                       rnorm(100), rnorm(100), rnorm(100))
+# simulating responses (so that the parameters are ordered - see simIrt)
+g.params &lt;- simIrt(theta = theta, params = g.params, mod = "grm")$params[ , -1]
+
+# we can calculate KL information as before, noting that class(g.params) is "grm"
+class(g.params)     # so we don't need to set it ourselves
+
+# and now KL info with delt = .1
+k.info4 &lt;- KL(theta = theta, params = g.params)
+
+# KL information is higher when more boundaries
+k.info4$test
+k.info1$test
+
+# Note: k.info1 would be exactly the same if calculated with the "grm"
+#       rather than the "brm"
+
+## 2 ##
+# we can also maximize information at boundary "0"
+k.info5 &lt;- KL(params = g.params, theta = 0, delta = .1)
+g.params[which.max(k.info5$item), ]
+
+# notice how the a parameter is high while the b parameters are pretty spread out.
+
+# does Fisher information choose a different item?
+f.info3 &lt;- FI(params = g.params, theta = 0, type = "expected")
+g.params[which.max(f.info3$item), ]
+
+# nope - although with more items, who knows?
+</code></pre>
+
+
+</div>

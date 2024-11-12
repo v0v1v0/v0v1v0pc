@@ -1,0 +1,146 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fast.svd</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fast Singular Value Decomposition</h2>
+
+<h3>Description</h3>
+
+<p><code>fast.svd</code> returns the singular value decomposition of
+a rectangular real matrix 
+</p>
+<p style="text-align: center;"><code class="reqn">M = U D V^{'},</code>
+</p>
+
+<p>where <code class="reqn">U</code> and <code class="reqn">V</code> are orthogonal matrices with <code class="reqn">U' U = I</code>
+and <code class="reqn">V' V = I</code>, and <code class="reqn">D</code> is a diagonal matrix containing the 
+singular values (see <code>svd</code>).
+</p>
+<p>The main difference to the native version <code>svd</code> is that 
+<code>fast.svd</code> is substantially faster for  "fat" (small n, large p)
+and "thin" (large n, small p) matrices.
+In this case the decomposition of <code class="reqn">M</code> can be
+greatly sped up by first computing the SVD of either <code class="reqn">M M'</code> (fat matrices) or
+<code class="reqn">M' M</code> (thin matrices), rather than that of <code class="reqn">M</code>.
+</p>
+<p>A second difference to <code>svd</code> is that <code>fast.svd</code> only
+returns the <em>positive</em> singular values (thus the dimension of <code class="reqn">D</code>
+always equals the rank of <code class="reqn">M</code>).  Note that the singular
+vectors computed by <code>fast.svd</code> may differ in sign from those computed 
+by <code>svd</code>. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fast.svd(m, tol)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>m</code></td>
+<td>
+<p>matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol</code></td>
+<td>
+<p>tolerance - singular values larger than
+tol are considered non-zero (default value:
+<code>tol = max(dim(m))*max(D)*.Machine$double.eps</code>)
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For "fat" <code class="reqn">M</code> (small n, large p) the SVD decomposition of <code class="reqn">M M'</code> yields
+</p>
+<p style="text-align: center;"><code class="reqn">M M^{'} = U D^2 U</code>
+</p>
+
+<p>As the matrix <code class="reqn">M M'</code> has dimension n x n only, this is faster to compute
+than SVD of <code class="reqn">M</code>.  The <code class="reqn">V</code> matrix is subsequently obtained by
+</p>
+<p style="text-align: center;"><code class="reqn">V = M^{'} U D^{-1}</code>
+</p>
+  
+<p>Similarly, for "thin" <code class="reqn">M</code> (large n, small p), the decomposition of <code class="reqn">M' M</code>
+yields
+</p>
+<p style="text-align: center;"><code class="reqn">M^{'} M = V D^2 V^{'}</code>
+</p>
+
+<p>which is also quick to compute as <code class="reqn">M' M</code> has only dimension p x p.  The 
+<code class="reqn">U</code> matrix is then computed via
+</p>
+<p style="text-align: center;"><code class="reqn">U = M V D^{-1}</code>
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>A list with the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+<p>a vector containing the <em>positive</em> singular values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>a matrix with the corresponding left singular vectors</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>v</code></td>
+<td>
+<p>a matrix with the corresponding right singular vectors</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Korbinian Strimmer (<a href="https://strimmerlab.github.io">https://strimmerlab.github.io</a>).
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>svd</code>, <code>solve</code>.</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># load corpcor library
+library("corpcor")
+
+
+# generate a "fat" data matrix
+n = 50
+p = 5000
+X = matrix(rnorm(n*p), n, p)
+
+# compute SVD
+system.time( (s1 = svd(X)) ) 
+system.time( (s2 = fast.svd(X)) )
+
+
+eps = 1e-10
+sum(abs(s1$d-s2$d) &gt; eps)
+sum(abs(abs(s1$u)-abs(s2$u)) &gt; eps)
+sum(abs(abs(s1$v)-abs(s2$v)) &gt; eps)
+</code></pre>
+
+
+</div>

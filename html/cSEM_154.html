@@ -1,0 +1,202 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>testMICOM</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Test measurement invariance of composites</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#stable"><img src="../help/figures/lifecycle-stable.svg" alt="[Stable]"></a>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">testMICOM(
+ .object               = NULL,
+ .approach_p_adjust    = "none",
+ .handle_inadmissibles = c("drop", "ignore", "replace"), 
+ .R                    = 499,
+ .seed                 = NULL,
+ .verbose              = TRUE
+ )
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>.object</code></td>
+<td>
+<p>An R object of class cSEMResults resulting from a call to <code>csem()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.approach_p_adjust</code></td>
+<td>
+<p>Character string or a vector of character strings.
+Approach used to adjust the p-value for multiple testing.
+See the <code>methods</code> argument of <code>stats::p.adjust()</code> for a list of choices and
+their description. Defaults to "<em>none</em>".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.handle_inadmissibles</code></td>
+<td>
+<p>Character string. How should inadmissible results
+be treated? One of "<em>drop</em>", "<em>ignore</em>", or "<em>replace</em>". If "<em>drop</em>", all
+replications/resamples yielding an inadmissible result will be dropped
+(i.e. the number of results returned will potentially be less than <code>.R</code>).
+For "<em>ignore</em>" all results are returned even if all or some of the replications
+yielded inadmissible results (i.e. number of results returned is equal to <code>.R</code>).
+For "<em>replace</em>" resampling continues until there are exactly <code>.R</code> admissible solutions.
+Depending on the frequency of inadmissible solutions this may significantly increase
+computing time. Defaults to "<em>drop</em>".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.R</code></td>
+<td>
+<p>Integer. The number of bootstrap replications. Defaults to <code>499</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.seed</code></td>
+<td>
+<p>Integer or <code>NULL</code>. The random seed to use. Defaults to <code>NULL</code> in which
+case an arbitrary seed is chosen. Note that the scope of the seed is limited
+to the body of the function it is used in. Hence, the global seed will
+not be altered!</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.verbose</code></td>
+<td>
+<p>Logical. Should information (e.g., progress bar) be printed
+to the console? Defaults to <code>TRUE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The functions performs the permutation-based test for measurement invariance
+of composites across groups proposed by Henseler et al. (2016).
+According to the authors assessing measurement invariance in composite
+models can be assessed by a three-step procedure. The first two steps
+involve an assessment of configural and compositional invariance.
+The third steps involves mean and variance comparisons across groups.
+Assessment of configural invariance is qualitative in nature and hence
+not assessed by the <code>testMICOM()</code> function.
+</p>
+<p>As <code>testMICOM()</code> requires at least two groups, <code>.object</code> must be of
+class <code>cSEMResults_multi</code>. As of version 0.2.0 of the package, <code>testMICOM()</code>
+does not support models containing second-order constructs.
+</p>
+<p>It is possible to compare more than two groups, however, multiple-testing
+issues arise in this case. To adjust p-values in this case several p-value
+adjustments are available via the <code>approach_p_adjust</code> argument.
+</p>
+<p>The remaining arguments set the number of permutation runs to conduct
+(<code>.R</code>), the random number seed (<code>.seed</code>),
+instructions how inadmissible results are to be handled (<code>handle_inadmissibles</code>),
+and whether the function should be verbose in a sense that progress is printed
+to the console.
+</p>
+<p>The number of permutation runs defaults to <code>args_default()$.R</code> for
+performance reasons. According to Henseler et al. (2016)
+the number of permutations should be at least 5000 for assessment to be
+sufficiently reliable.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A named list of class <code>cSEMTestMICOM</code> containing the following list element:
+</p>
+
+<dl>
+<dt><code style="white-space: pre;">⁠$Step2⁠</code></dt>
+<dd>
+<p>A list containing the results of the test for compositional invariance (Step 2).</p>
+</dd>
+<dt><code style="white-space: pre;">⁠$Step3⁠</code></dt>
+<dd>
+<p>A list containing the results of the test for mean and variance equality (Step 3).</p>
+</dd>
+<dt><code style="white-space: pre;">⁠$Information⁠</code></dt>
+<dd>
+<p>A list of additional information on the test.</p>
+</dd>
+</dl>
+<h3>References</h3>
+
+<p>Henseler J, Ringle CM, Sarstedt M (2016).
+“Testing Measurement Invariance of Composites Using Partial Least Squares.”
+<em>International Marketing Review</em>, <b>33</b>(3), 405–431.
+<a href="https://doi.org/10.1108/imr-09-2014-0304">doi:10.1108/imr-09-2014-0304</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>csem()</code>, cSEMResults, <code>testOMF()</code>, <code>testMGD()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+# NOTE: to run the example. Download and load the newst version of cSEM.DGP
+# from GitHub using devtools::install_github("M-E-Rademaker/cSEM.DGP").
+
+# Create two data generating processes (DGPs) that only differ in how the composite
+# X is build. Hence, the two groups are not compositionally invariant.
+dgp1 &lt;- "
+# Structural model
+Y ~ 0.6*X
+
+# Measurement model
+Y =~ 1*y1
+X &lt;~ 0.4*x1 + 0.8*x2
+
+x1 ~~ 0.3125*x2
+"
+
+dgp2 &lt;- "
+# Structural model
+Y ~ 0.6*X
+
+# Measurement model
+Y =~ 1*y1
+X &lt;~ 0.8*x1 + 0.4*x2
+
+x1 ~~ 0.3125*x2
+"
+
+g1 &lt;- generateData(dgp1, .N = 399, .empirical = TRUE) # requires cSEM.DGP 
+g2 &lt;- generateData(dgp2, .N = 200, .empirical = TRUE) # requires cSEM.DGP
+
+# Model is the same for both DGPs
+model &lt;- "
+# Structural model
+Y ~ X
+
+# Measurement model
+Y =~ y1
+X &lt;~ x1 + x2
+"
+
+# Estimate
+csem_results &lt;- csem(.data = list("group1" = g1, "group2" = g2), model)
+
+# Test
+testMICOM(csem_results, .R = 50, .alpha = c(0.01, 0.05), .seed = 1987)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,400 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>plotB</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Plot Bayes  dose response curve and dose group means  </h2>
+
+<h3>Description</h3>
+
+<p>Plot a dose response curve fit by Bayes MCMC methods
+(with optional posterior interval bars).  Also plot dose
+group means (with optional CI bars)
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">plotB(y, 
+	dose, 
+	parm, 
+	sigma2,
+	count=rep(1,length(y)),
+	dgrid=sort(unique(c(seq(0,max(dose),length=50), dose))),
+	predict= TRUE,plotDif=FALSE,plotMed=FALSE,
+	plotResid=FALSE,clev=0.9,
+	binary=c('no','logit','probit','BinRes'),BinResLev,
+	BinResDir=c('&gt;','&lt;'),
+	activeControl=FALSE,ac,yac,
+	countac=rep(1,length(yac)),
+	labac='Act Comp',shapeac=8,colac='red',
+	symbol,symbolLabel='Group',symbolShape=8,
+	symbolColor='red',symbolSize=4,
+	xlim,ylim,xat=NULL,xlab="Dose",
+	ylab=ifelse(plotDif,"Diff with Comparator","Mean"),
+	modelFun=emaxfun,makePlot=TRUE,
+	...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Outcomes, which may be sample means (see <code>counts</code>).  LSmeans from a saturated anacova 
+model can be supplied, in 
+which case it is assumed that the Bayesian dose response model also included the additive
+baseline covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dose</code></td>
+<td>
+<p>Doses corresponding to outcomes </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parm</code></td>
+<td>
+<p>Matrix of simultated parameter values (each row is a
+simulated parameter vector).  The <code>parm</code> values
+must be constructed for use in the model function <code>modFun</code>.  The
+default is a 4-parameter Emax model with parameters
+(log(ED50),lambda,Emax,E0).  For a 3-parameter model, set lambda=1 for each
+simulated parameter vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sigma2</code></td>
+<td>
+<p>Simulated draws from the residual variance (assumed
+additive, homogeneous).  The length of <code>sigma2</code> must be the same
+as the number of rows of <code>parm</code>.  Set <code>sigma2</code> to all ones
+for binary data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>count</code></td>
+<td>
+<p>Sample sizes for means-only summarized data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dgrid</code></td>
+<td>
+<p>The Bayes posterior summaries are evaluated and plotted on
+the <code>dgrid</code> dosing values </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predict</code></td>
+<td>
+<p>If TRUE(default), the plotted intervals are
+predictive intervals for the dose group sample means.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plotDif</code></td>
+<td>
+<p>Plot difference between doses and placebo. 
+It is assumed the lowest dose is placebo. If <code>activeControl</code>, the
+difference is with the active control mean, and the active 
+controls are not plotted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plotMed</code></td>
+<td>
+<p>If TRUE, model-based curves are medians rather than means.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plotResid</code></td>
+<td>
+<p>If TRUE, a plot of the residuals formed from the
+dose group means minus the posterior dose group means.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clev</code></td>
+<td>
+<p>Level for confidence and Bayes intervals </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>binary</code></td>
+<td>
+<p>If <code>binary</code> is 'logit' or 'probit', <code>y</code> 
+is assumed to be binary and the appropriate backtransformation is applied
+to the Emax model output.  If <code>binary</code> is 'BinRes', the continuous
+variable <code>y</code> is converted to a binary responder variable
+using <code>BinResLev</code> and <code>BinResDir</code>.  The 
+continuous Emax model output is converted to binary estimation and
+prediction assuming normally distributed residuals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>BinResLev</code></td>
+<td>
+<p>A cut level for a responder variable formed from a 
+continuous endpoint.  Rates are computed from the (continuous
+outcome) model parameters assuming normally distributed residuals.  The
+input <code>y</code> variable is converted to a responder variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>BinResDir</code></td>
+<td>
+<p>If BinResDir='&gt;', the responder variable is 1 when
+<code>y</code> is greater than the cut level, otherwise, it is 1 when <code>y</code> is less
+than the cut level.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>activeControl</code></td>
+<td>
+<p>When TRUE, active comparator data must be supplied.  Each
+dose group (including PBO) are compared to the active comparator rather than PBO.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ac</code></td>
+<td>
+<p>Simulations from the posterior distribution of the mean response on 
+active comparator.  The number of simulations must match those for the dose
+response model.  For binary data, the simulated values must be transformed to the
+proportion scale.  This differs from the simulated model parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>yac</code></td>
+<td>
+<p>Outcomes for the active comparator group.  The coding conventions for 
+<code>y</code> are used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>countac</code></td>
+<td>
+<p>Sample sizes for summarized data corresponding to <code>count</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>labac</code></td>
+<td>
+<p>x-axis label for the active control group.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>shapeac</code></td>
+<td>
+<p>Shape of the symbol for the active control group.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>colac</code></td>
+<td>
+<p>Color of the symbol for the active control group.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>symbol</code></td>
+<td>
+<p>An optional grouping variable for the dose group sample means.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>symbolLabel</code></td>
+<td>
+<p>Label given to symbol in plot legend.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>symbolShape</code></td>
+<td>
+<p>A character vector with names giving the shapes assigned
+to different levels of variable <code>symbol</code>.  If a single shape is 
+specified, it is replicated for all dose groups.  See package
+<code>ggplot2</code> for symbol mappings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>symbolColor</code></td>
+<td>
+<p>A character vector with names giving the colors assigned
+to different levels of variable <code>symbol</code>.  If a single color is 
+specified, it is replicated for all dose groups.  See package
+<code>ggplot2</code> for color mappings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>symbolSize</code></td>
+<td>
+<p>The size of the symbol for the dose group sample means.   
+Set <code>symbolSize=0</code> to supress plotting.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xlim</code></td>
+<td>
+<p>Plot limits for the x-axis</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ylim</code></td>
+<td>
+<p>Plot limits for the y-axis</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xat</code></td>
+<td>
+<p>The points at which tick-marks are to be drawn. Errors occur if the 
+points are outside the range of xlim. By default (when NULL) tickmark locations are    computed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xlab</code></td>
+<td>
+<p>x-axis label </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ylab</code></td>
+<td>
+<p>y-axis label </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelFun</code></td>
+<td>
+<p>The mean model function.  The first argument is a
+scalar dose, and the second argument is a matrix of parameter values.
+The rows of the matrix are random draws of parameter vectors for the
+model.  The default function is the 4-parameter Emax function <code>emaxfun</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>makePlot</code></td>
+<td>
+<p>If FALSE, create numerical output but no plot.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p> Parameters passed to generic plot function (not used) </p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>A sample of parameters from the joint posterior distribution must be supplied (typically produced by BUGS).
+The Bayesian dose response curve is the Bayes posterior mean (or median) at each
+value on <code>dgrid</code>.  The bar (interval) is the (clev/2,1-clev/2)
+Bayes posterior interval (which can differ from the Bayes HPD
+interval).  The intervals are plotted only at the dose levels included
+in the study.  Predictive intervals  are formed by
+adding independent random draws from the sampling distributions of the dose group
+sample means to the population means.
+</p>
+<p>The function generates random numbers when <code>predict=TRUE</code>, so the random number generator/seed must
+be set before the function is called for exact reproducibility.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns an object of class <code>plotB</code>.  Three  inputs are saved for
+later plotting:  doses in the original design, dgrid, and clev.  
+The following matrices are saved:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>pairwise</code></td>
+<td>
+<p>The dose group means and their 
+differences with placebo.  If a <code>baseline</code> is
+supplied, the means are lsmeans adjusted to the mean baseline value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelABS</code></td>
+<td>
+<p>Model-based posterior mean, median, 
+posterior (clev/2,1-clev/2) intervals for the population means and
+sample means.  One row per dose group</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelABSG</code></td>
+<td>
+<p>Same as <code>modelABS</code> but computed on the input
+grid of doses.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelDIF</code></td>
+<td>
+<p>Same as modelABS but with differences from placebo.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelDIFG</code></td>
+<td>
+<p>Same as modelDIF  but computed on the input
+grid of doses.</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>PlotB can also be used with draws from a prior distribution to
+evaluate the prior dose response curve.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Neal Thomas </p>
+
+
+<h3>References</h3>
+
+<p> Spiegelhalter, D., Thomas, A., Best, N., and Lunn, D. (2003),<em> WinBUGS User Manual Version 1.4</em>, Electronic version www.mrc-bsu.cam.ac.uk/bugs </p>
+
+
+<h3>See Also</h3>
+
+<p><code>plot.plotB</code>, <code>plotD</code>,  <code>plot.fitEmax</code> </p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+data("metaData")
+exdat&lt;-metaData[metaData$taid==6 &amp; metaData$poptype==1,]
+
+prior&lt;-emaxPrior.control(epmu=0,epsca=100,difTargetmu=0,difTargetsca=100,dTarget=80.0,
+        p50=3.75,sigmalow=0.01,sigmaup=20)
+mcmc&lt;-mcmc.control(chains=3)
+
+msSat&lt;-sum((exdat$sampsize-1)*(exdat$sd)^2)/(sum(exdat$sampsize)-length(exdat$sampsize))
+fitout&lt;-fitEmaxB(exdat$rslt,exdat$dose,prior,modType=4,
+				count=exdat$sampsize,msSat=msSat,mcmc=mcmc)
+parms&lt;-coef(fitout)[,1:4]  #use first intercept
+
+outB&lt;-plotB(exdat$rslt,exdat$dose,parms, sigma2=(sigma(fitout))^2,
+			ylab="Change in EDD")
+			
+plot(outB,plotDif=TRUE)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

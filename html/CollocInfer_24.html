@@ -1,0 +1,191 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>FitMatch</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimating Hidden States</h2>
+
+<h3>Description</h3>
+
+<p>Estimating hidden states to maximize agreement with the process.  </p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">FitMatchOpt(coefs,which,pars,proc,meth='nlminb',control=list())
+
+FitMatchErr(coefs,allcoefs,which,pars,proc,sgn=1)
+
+FitMatchDC(coefs,allcoefs,which,pars,proc,sgn=1)
+
+FitMatchDC2(coefs,allcoefs,which,pars,proc,sgn=1)
+
+FitMatchList(coefs,allcoefs,which,pars,proc,sgn=1)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>coefs</code></td>
+<td>
+<p> Vector giving the current estimate of the coefficients for the hidden states. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>allcoefs</code></td>
+<td>
+<p> Matrix giving the coefficients of all the states including initial values for <code>coefs</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>which</code></td>
+<td>
+<p>  Vector of indices of states to be estimated. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pars</code></td>
+<td>
+<p> Parameters to be used for the processes. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>proc</code></td>
+<td>
+ <p><code>proc</code> object defining the state process. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sgn</code></td>
+<td>
+<p> Is the minimizing (1) or maximizing (0)? </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>meth</code></td>
+<td>
+<p> Optimization function currently one of 'nlminb', 'MaxNR', 'optim' or 'trust'. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p> Control object for optimization function. </p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>These routines allow the values of coefficients for some states to be optimized relative to the others. That is, the
+objective defined by <code>proc</code> is minimized over those states specified in <code>which</code> leaving the others constant. This
+would be typically done, for example, a smooth is taken to estimate some states non-parametrically, but data is not available on all
+of them.
+</p>
+<p>A number of optimization routines have been implemented in <code>FitMatchOpt</code>, some experimentation is advised.</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>FitMatchOpt</code></td>
+<td>
+<p>A list containing
+</p>
+
+<ul>
+<li>
+<p>coefs The optimized coefficients for all states.
+</p>
+</li>
+<li>
+<p>res The output of the optimization routine.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FitMatchErr</code></td>
+<td>
+<p>The value of the process likelihood at the current estimated states.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FitMatchDC</code></td>
+<td>
+<p>The derivative of <code>FitMatchErr</code> with respect to the elements <code>coefs</code> for the states being estimated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FitMatchDC2</code></td>
+<td>
+<p>The second derivative of <code>FitMatchErr</code> with respect to the elements <code>coefs</code> for the states being estimated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FitMatchList</code></td>
+<td>
+<p>Returns a list with elements <code>value</code>, <code>gradient</code> and <code>hessian</code> given by the output of
+<code>FitMatchErr</code>, <code>FitMatchDC</code> and <code>FitMatchDC2</code>.</p>
+</td>
+</tr>
+</table>
+<h3>See Also</h3>
+
+<p><code>ParsMatchErr</code>, <code>SplineCoefsErr</code>, <code>inneropt</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">###############################
+#### Some Data            #####
+###############################
+
+data(FhNdata)
+
+
+###############################
+####  Basis Object      #######
+###############################
+
+knots = seq(0,20,0.2)
+norder = 3
+nbasis = length(knots) + norder - 2
+range = c(0,20)
+
+bbasis = create.bspline.basis(range=range(FhNtimes),nbasis=nbasis,
+	norder=norder,breaks=knots)
+
+
+# Initial values for coefficients will be obtained by smoothing
+
+fd.data = FhNdata[,1]
+
+DEfd = smooth.basis(FhNtimes,fd.data,fdPar(bbasis,1,0.5))   
+
+coefs = cbind(DEfd$fd$coefs,rep(0,nbasis))
+colnames(coefs) = FhNvarnames
+
+#############################################################
+### If We Only Observe One State, We Can Re-Smooth Others ### 
+#############################################################
+
+profile.obj = LS.setup(pars=FhNpars,coefs=coefs,fn=make.fhn(),
+                      basisvals=bbasis,lambda=1000,times=FhNtimes)
+lik = profile.obj$lik
+proc= profile.obj$proc
+
+#  DD = Matrix(diag(1,200),sparse=TRUE)
+#  tDD = t(DD)
+
+fres = FitMatchOpt(coefs=coefs,which=2,pars=FhNpars,proc)
+
+plot(fd(fres$coefs,bbasis))
+</code></pre>
+
+
+</div>

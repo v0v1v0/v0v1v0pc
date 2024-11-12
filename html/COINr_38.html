@@ -1,0 +1,172 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>get_corr</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Get correlations</h2>
+
+<h3>Description</h3>
+
+<p>Helper function for getting correlations between indicators and aggregates. This retrieves subsets of correlation
+matrices between different aggregation levels, in different formats. By default, it will return a
+long-form data frame, unless <code>make_long = FALSE</code>. By default, any correlations with a p-value less than 0.05 are
+replaced with <code>NA</code>. See <code>pval</code> argument to adjust this.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">get_corr(
+  coin,
+  dset,
+  iCodes = NULL,
+  Levels = NULL,
+  ...,
+  cortype = "pearson",
+  pval = 0.05,
+  withparent = FALSE,
+  grouplev = NULL,
+  make_long = TRUE,
+  use_directions = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>coin</code></td>
+<td>
+<p>A coin class coin object</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dset</code></td>
+<td>
+<p>The name of the data set to apply the function to, which should be accessible in <code>.$Data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iCodes</code></td>
+<td>
+<p>An optional list of character vectors where the first entry specifies the indicator/aggregate
+codes to correlate against the second entry (also a specification of indicator/aggregate codes). If this is specified as a character vector
+it will coerced to the first entry of a list, i.e. <code>list(iCodes)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Levels</code></td>
+<td>
+<p>The aggregation levels to take the two groups of indicators from. See <code>get_data()</code> for details.
+Defaults to indicator level.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments to be passed to <code>get_data()</code> (<code>uCodes</code> and <code>use_group</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cortype</code></td>
+<td>
+<p>The type of correlation to calculate, either <code>"pearson"</code>, <code>"spearman"</code>, or <code>"kendall"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pval</code></td>
+<td>
+<p>The significance level for including correlations. Correlations with <code class="reqn">p &gt; pval</code> will be returned as <code>NA</code>.
+Default 0.05. Set to 0 to disable this.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>withparent</code></td>
+<td>
+<p>If <code>TRUE</code>, and <code>aglev[1] != aglev[2]</code>, will only return correlations of each row with its parent. Alternatively, if
+<code>withparent = "family"</code>, will return correlations with parents, grandparents etc, up to the highest level. In both cases the data set
+must be aggregated for this to work.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grouplev</code></td>
+<td>
+<p>The aggregation level to group correlations by if <code>aglev[1] == aglev[2]</code>. Requires that
+<code>make_long = TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>make_long</code></td>
+<td>
+<p>Logical: if <code>TRUE</code>, returns correlations in long format (default), else if <code>FALSE</code>
+returns in wide format. Note that if wide format is requested, features specified by <code>grouplev</code>
+and <code>withparent</code> are not supported.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use_directions</code></td>
+<td>
+<p>Logical: if <code>TRUE</code> the extracted data is adjusted using directions found inside the coin (i.e. the "Direction"
+column input in <code>iMeta</code>: any indicators with negative direction will have their values multiplied by -1 which will reverse the
+direction of correlation). This should only be set to <code>TRUE</code> if the data set has not yet been normalised. For example, this can be
+useful to set to <code>TRUE</code> to analyse correlations in the raw data, but would make no sense to analyse correlations in the normalised
+data because that already has the direction adjusted! So you would reverse direction twice. In other words, use this at your
+discretion.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function allows you to obtain correlations between any subset of indicators or aggregates, from
+any data set present in a coin. Indicator selection is performed using <code>get_data()</code>. Two different
+indicator sets can be correlated against each other by specifying <code>iCodes</code> and <code>Levels</code> as vectors.
+</p>
+<p>The correlation type can be specified by the <code>cortype</code> argument, which is passed to <code>stats::cor()</code>.
+</p>
+<p>The <code>withparent</code> argument will optionally only return correlations which correspond to the structure
+of the index. For example, if <code>Levels = c(1,2)</code> (i.e. we wish to correlate indicators from Level 1 with
+aggregates from Level 2), and we set <code>withparent = TRUE</code>, only the correlations between each indicator
+and its parent group will be returned (not correlations between indicators and other aggregates to which
+it does not belong). This can be useful to check whether correlations of an indicator/aggregate with
+any of its parent groups exceeds or falls below thresholds.
+</p>
+<p>Similarly, the <code>grouplev</code> argument can be used to restrict correlations to within groups corresponding
+to the index structure. Setting e.g. <code>grouplev = 2</code> will only return correlations within the groups
+defined at Level 2.
+</p>
+<p>The <code>grouplev</code> and <code>withparent</code> options are disabled if <code>make_long = FALSE</code>.
+</p>
+<p>Note that this function can only call correlations within the same data set (i.e. only one data set in <code>.$Data</code>).
+</p>
+<p>This function replaces the now-defunct <code>getCorr()</code> from COINr &lt; v1.0.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame of pairwise correlation values in wide or long format (see <code>make_long</code>).
+Correlations with <code class="reqn">p &gt; pval</code> will be returned as <code>NA</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul><li> <p><code>plot_corr()</code> Plot correlation matrices of indicator subsets
+</p>
+</li></ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R"># build example coin
+coin &lt;- build_example_coin(up_to = "new_coin", quietly = TRUE)
+
+# get correlations
+cmat &lt;- get_corr(coin, dset = "Raw", iCodes = list("Environ"),
+                 Levels = 1, make_long = FALSE)
+
+</code></pre>
+
+
+</div>

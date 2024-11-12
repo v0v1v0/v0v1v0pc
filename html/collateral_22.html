@@ -1,0 +1,82 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>has</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Determine which elements contain a type of side effect.</h2>
+
+<h3>Description</h3>
+
+<p>Returns a logical vector indicating which elements contain a type of side
+effect. If you have a large data frame or list, you can use this to isolate
+the element that contain warnings, for example, or messages.s
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">has_results(x)
+
+has_errors(x)
+
+has_warnings(x)
+
+has_messages(x)
+
+has_output(x)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table><tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A <code>safely_mapped</code> or <code>quietly_mapped</code> list to tally.</p>
+</td>
+</tr></table>
+<h3>Details</h3>
+
+<p>The <code style="white-space: pre;">⁠has_*()⁠</code> functions power the 'tally_*()“ functions and, in turn,
+the <code>summary()</code> method.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A logical vector, of the same length as <code>x</code>, which is <code>TRUE</code> for
+elements that contain a type of side effect and <code>FALSE</code> otherwise.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+library(tibble)
+library(dplyr)
+library(tidyr)
+library(collateral)
+
+list("a", 10, 100) %&gt;% map_safely(log) %&gt;% has_errors()
+list(5, -12, 103) %&gt;% map_quietly(log) %&gt;% has_warnings()
+
+# if you're working with list-columns, the tally functions are useful
+# in conjunction with dplyr::summarise()
+mtcars %&gt;%
+  rownames_to_column(var = "car") %&gt;%
+  as_tibble() %&gt;%
+  select(car, cyl, disp, wt) %&gt;%
+  # spike some rows in cyl == 4 to make them fail
+  mutate(wt = dplyr::case_when(
+    wt &lt; 2 ~ -wt,
+    TRUE ~ wt)) %&gt;%
+  # nest and do some operations quietly()
+  nest(data = -cyl) %&gt;%
+  mutate(qlog = map_quietly(data, ~ log(.$wt))) %&gt;%
+  filter(has_warnings(qlog))
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,279 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>baseline_gaussian</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create baseline evaluations for regression models</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#maturing"><img src="../help/figures/lifecycle-maturing.svg" alt="[Maturing]"></a>
+</p>
+<p>Create a baseline evaluation of a test set.
+</p>
+<p>In modelling, a <em>baseline</em> is a result that
+is meaningful to compare the results from our models to. In regression, we
+want our model to be better than a model without any predictors. If our
+model does not perform better than such a simple model, it's unlikely to
+be useful.
+</p>
+<p><code>baseline_gaussian()</code> fits the intercept-only model (<code>y ~ 1</code>) on <code>`n`</code> random
+subsets of <code>`train_data`</code> and evaluates each model on <code>`test_data`</code>. Additionally, it evaluates a
+model fitted on all rows in <code>`train_data`</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">baseline_gaussian(
+  test_data,
+  train_data,
+  dependent_col,
+  n = 100,
+  metrics = list(),
+  random_effects = NULL,
+  min_training_rows = 5,
+  min_training_rows_left_out = 3,
+  REML = FALSE,
+  parallel = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>test_data</code></td>
+<td>
+<p><code>data.frame</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>train_data</code></td>
+<td>
+<p><code>data.frame</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dependent_col</code></td>
+<td>
+<p>Name of dependent variable in the supplied test and training sets.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>The number of random samplings of <code>`train_data`</code> to fit baseline models on. (Default is <code>100</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metrics</code></td>
+<td>
+<p><code>list</code> for enabling/disabling metrics.
+</p>
+<p>E.g. <code>list("RMSE" = FALSE)</code> would remove <code>RMSE</code> from the results,
+and <code>list("TAE" = TRUE)</code> would add the <code>Total Absolute Error</code> metric
+to the results.
+Default values (<code>TRUE</code>/<code>FALSE</code>) will be used for the remaining available metrics.
+</p>
+<p>You can enable/disable all metrics at once by including
+<code>"all" = TRUE/FALSE</code> in the <code>list</code>. This is done prior to enabling/disabling
+individual metrics, why f.i. <code>list("all" = FALSE, "RMSE" = TRUE)</code>
+would return only the <code>RMSE</code> metric.
+</p>
+<p>The <code>list</code> can be created with
+<code>gaussian_metrics()</code>.
+</p>
+<p>Also accepts the string <code>"all"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>random_effects</code></td>
+<td>
+<p>Random effects structure for the baseline model. (Character)
+</p>
+<p>E.g. with <code>"(1|ID)"</code>, the model becomes <code>"y ~ 1 + (1|ID)"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min_training_rows</code></td>
+<td>
+<p>Minimum number of rows in the random subsets of <code>`train_data`</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min_training_rows_left_out</code></td>
+<td>
+<p>Minimum number of rows left out of the random subsets of <code>`train_data`</code>.
+</p>
+<p>I.e. a subset will maximally have the size:
+</p>
+<p><code>max_rows_in_subset = nrow(`train_data`) - `min_training_rows_left_out`</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>REML</code></td>
+<td>
+<p>Whether to use Restricted Maximum Likelihood. (Logical)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+<p>Whether to run the <code>`n`</code> evaluations in parallel. (Logical)
+</p>
+<p>Remember to register a parallel backend first.
+E.g. with <code>doParallel::registerDoParallel</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Packages used:
+</p>
+
+
+<h4>Models</h4>
+
+<p><code>stats::lm</code>, <code>lme4::lmer</code>
+</p>
+
+
+
+<h4>Results</h4>
+
+<p>r2m : <code>MuMIn::r.squaredGLMM</code>
+</p>
+<p>r2c : <code>MuMIn::r.squaredGLMM</code>
+</p>
+<p>AIC : <code>stats::AIC</code>
+</p>
+<p>AICc : <code>MuMIn::AICc</code>
+</p>
+<p>BIC : <code>stats::BIC</code>
+</p>
+
+
+
+<h3>Value</h3>
+
+<p><code>list</code> containing:
+</p>
+
+<ol>
+<li>
+<p> a <code>tibble</code> with summarized results (called <code>summarized_metrics</code>)
+</p>
+</li>
+<li>
+<p> a <code>tibble</code> with random evaluations (<code>random_evaluations</code>)
+</p>
+</li>
+</ol>
+<p>....................................................................
+</p>
+<p>The <strong>Summarized Results</strong> <code>tibble</code> contains:
+</p>
+<p>Average <strong><code>RMSE</code></strong>, <strong><code>MAE</code></strong>, <strong><code>NRMSE(IQR)</code></strong>,
+<strong><code>RRSE</code></strong>, <strong><code>RAE</code></strong>, <strong><code>RMSLE</code></strong>.
+</p>
+<p>See the additional metrics (disabled by default) at <code>?gaussian_metrics</code>.
+</p>
+<p>The <strong>Measure</strong> column indicates the statistical descriptor used on the evaluations.
+The row where <code>Measure == All_rows</code> is the evaluation when the baseline model
+is trained on all rows in <code>`train_data`</code>.
+</p>
+<p>The <strong>Training Rows</strong> column contains the aggregated number of rows used from <code>`train_data`</code>,
+when fitting the baseline models.
+</p>
+<p>....................................................................
+</p>
+<p>The <strong>Random Evaluations</strong> <code>tibble</code> contains:
+</p>
+<p>The <strong>non-aggregated metrics</strong>.
+</p>
+<p>A nested <code>tibble</code> with the <strong>predictions</strong> and targets.
+</p>
+<p>A nested <code>tibble</code> with the <strong>coefficients</strong> of the baseline models.
+</p>
+<p>Number of <strong>training rows</strong> used when fitting the baseline model on the training set.
+</p>
+<p>A nested <strong>Process</strong> information object with information
+about the evaluation.
+</p>
+<p>Name of <strong>dependent</strong> variable.
+</p>
+<p>Name of <strong>fixed</strong> effect (bias term only).
+</p>
+<p><strong>Random</strong> effects structure (if specified).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Ludvig Renbo Olsen, <a href="mailto:r-pkgs@ludvigolsen.dk">r-pkgs@ludvigolsen.dk</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other baseline functions: 
+<code>baseline()</code>,
+<code>baseline_binomial()</code>,
+<code>baseline_multinomial()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Attach packages
+library(cvms)
+library(groupdata2) # partition()
+library(dplyr) # %&gt;% arrange()
+
+# Data is part of cvms
+data &lt;- participant.scores
+
+# Set seed for reproducibility
+set.seed(1)
+
+# Partition data
+partitions &lt;- partition(data, p = 0.7, list_out = TRUE)
+train_set &lt;- partitions[[1]]
+test_set &lt;- partitions[[2]]
+
+# Create baseline evaluations
+# Note: usually n=100 is a good setting
+
+baseline_gaussian(
+  test_data = test_set,
+  train_data = train_set,
+  dependent_col = "score",
+  random_effects = "(1|session)",
+  n = 2
+)
+
+# Parallelize evaluations
+
+# Attach doParallel and register four cores
+# Uncomment:
+# library(doParallel)
+# registerDoParallel(4)
+
+# Make sure to uncomment the parallel argument
+baseline_gaussian(
+  test_data = test_set,
+  train_data = train_set,
+  dependent_col = "score",
+  random_effects = "(1|session)",
+  n = 4
+  #, parallel = TRUE  # Uncomment
+)
+
+</code></pre>
+
+
+</div>

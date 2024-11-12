@@ -1,0 +1,149 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>plot.cfo</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Plot the results by other functions</h2>
+
+<h3>Description</h3>
+
+<p>Plot the objects returned by other functions, including (1) dose allocation of a single trial;
+(2) the estimate of toxicity probability for each dose and corresponding 95% credible interval;
+(3) operating characteristics of multiple simulations, including MTD selection percentage,
+the averaged number of patients allocated to different doses in one simulation and the averaged
+number of DLT observed for different doses in one simulation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'cfo'
+plot(x, ..., name = deparse(substitute(x)))
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>the object returned by other functions</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>ignored arguments</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p>the name of the object to be plotted.
+User does not need to input this parameter.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>plot()</code> returns a figure or a series of figures depending on the object entered.
+</p>
+
+
+<h3>Note</h3>
+
+<p>In the example, we set <code>nsimu = 5</code> for testing time considerations. In reality, <code>nsimu</code>
+is typically set to 5000 to ensure the accuracy of the results.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jialu Fang, Wenliang Wang, Ninghao Zhang, and Guosheng Yin
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+## settings for 1dCFO
+nsimu &lt;- 5; ncohort &lt;- 12; cohortsize &lt;- 3; init.level &lt;- 1
+p.true &lt;- c(0.02, 0.05, 0.20, 0.28, 0.34, 0.40, 0.44); target &lt;- 0.2
+assess.window &lt;- 3; accrual.rate &lt;- 2; tte.para &lt;- 0.5; accrual.dist &lt;- 'unif'
+
+## plot the object returned by CFO.simu()
+CFOtrial &lt;- CFO.simu(design = 'CFO', target, p.true, init.level, ncohort, cohortsize, seed = 1)
+plot(CFOtrial)
+
+## plot the object returned by CFO.selectmtd()
+selmtd &lt;- CFO.selectmtd(target=0.2, npts=c(3,3,27,3,0,0,0), ntox=c(0,0,4,2,0,0,0))
+plot(selmtd)
+
+
+# This test may take longer than 5 seconds to run
+# It is provided for illustration purposes only
+# Users can run this code directly
+
+## plot the object returned by lateonset.simu()
+## f-aCFO design
+faCFOtrial &lt;- lateonset.simu (design = 'f-aCFO', target, p.true, init.level,  
+                ncohort, cohortsize, assess.window, tte.para, accrual.rate, accrual.dist, seed = 1)
+plot(faCFOtrial)
+
+## summarize the object returned by CFO.oc()
+faCFOoc &lt;- CFO.oc (nsimu, design = 'f-aCFO', target, p.true, init.level, ncohort, cohortsize,
+        assess.window, tte.para, accrual.rate, accrual.dist, seeds = 1:nsimu)
+plot(faCFOoc)
+
+## settings for 2dCFO
+p.true &lt;- matrix(c(0.05, 0.10, 0.15, 0.30, 0.45,
+                   0.10, 0.15, 0.30, 0.45, 0.55,
+                   0.15, 0.30, 0.45, 0.50, 0.60), 
+                 nrow = 3, ncol = 5, byrow = TRUE)
+target &lt;- 0.3; ncohort &lt;- 12; cohortsize &lt;- 3
+
+## plot the single simulation returned by CFO2d.simu()
+CFO2dtrial &lt;- CFO2d.simu(target, p.true, init.level = c(1,1), ncohort, cohortsize, seed = 1)
+plot(CFO2dtrial)
+
+## plot the multiple simulation returned by CFO2d.oc()
+CFO2doc &lt;- CFO2d.oc(nsimu = 5, target, p.true, init.level = c(1,1), ncohort, cohortsize, 
+                    seeds = 1:5)
+plot(CFO2doc)
+
+## select a MTD based on the trial data
+ntox &lt;- matrix(c(0, 0, 2, 0, 0, 0, 2, 7, 0, 0, 0, 2, 0, 0, 0), nrow = 3, ncol = 5, byrow = TRUE)
+npts &lt;- matrix(c(3, 0, 12, 0, 0, 3, 12, 24, 0, 0, 3, 3, 0, 0, 0), nrow = 3, ncol = 5, byrow = TRUE)
+selmtd &lt;- CFO2d.selectmtd(target=0.3, npts=npts, ntox=ntox)
+plot(selmtd)
+
+## summarize the object returned by CFOeff.next()
+decision &lt;- CFOeff.next(target=0.4,txs=c(3,1,7,11,26),tys=c(0,0,0,0,6),
+              tns= c(6, 3, 12, 17, 36), currdose = 3, mineff = 0.3)
+plot(decision)
+
+## summarize the object returned by CFOeff.simu()
+target &lt;- 0.30; mineff &lt;- 0.30
+prior.para = list(alp.prior = target, bet.prior = 1 - target, 
+                  alp.prior.eff = 0.5, bet.prior.eff = 0.5)
+p.true=c(0.05, 0.07, 0.1, 0.12, 0.16)
+pE.true=c(0.35, 0.45, 0.5, 0.55, 0.75)
+result &lt;- CFOeff.simu(target, p.true, pE.true, ncohort, init.level, cohortsize,
+                       prior.para, mineff = mineff, seed = 1)
+plot(result)
+
+## summarize the object returned by CFOeff.oc()
+nsimu = 10
+result &lt;- CFOeff.oc(target, p.true, pE.true, prior.para, 
+          init.level,cohortsize, ncohort, nsimu, mineff = mineff, seeds = 1:nsimu)
+plot(result)
+
+
+
+</code></pre>
+
+
+</div>

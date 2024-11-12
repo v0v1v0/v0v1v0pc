@@ -1,0 +1,171 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>get_resolution_importance</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Evaluate Stability Across Resolution, Number of Neighbors, and Graph Type</h2>
+
+<h3>Description</h3>
+
+<p>Perform a grid search over the resolution, number of neighbors
+and graph type.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">get_resolution_importance(
+  embedding,
+  resolution,
+  n_neigh,
+  n_repetitions = 100,
+  seed_sequence = NULL,
+  clustering_method = 4,
+  graph_type = 0,
+  object_name = NULL,
+  ecs_thresh = 1,
+  ncores = 1
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>embedding</code></td>
+<td>
+<p>The base embedding for the graph construction.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resolution</code></td>
+<td>
+<p>A sequence of resolution values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_neigh</code></td>
+<td>
+<p>A value or a sequence of number of neighbors used for graph construction.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_repetitions</code></td>
+<td>
+<p>The number of repetitions of applying the pipeline with
+different seeds; ignored if seed_sequence is provided by the user.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed_sequence</code></td>
+<td>
+<p>A custom seed sequence; if the value is NULL, the sequence
+will be built starting from 1 with a step of 100.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clustering_method</code></td>
+<td>
+<p>An index or a list of indexes indicating which community detection
+algorithm will be used: Louvain (1), Louvain refined (2), SLM (3) or Leiden (4).
+More details can be found in the Seurat's <code>FindClusters</code> function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>graph_type</code></td>
+<td>
+<p>Argument indicating whether the graph should be
+unweighted (0), weighted (1) or both (2).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>object_name</code></td>
+<td>
+<p>User specified string that uniquely describes the
+embedding characteristics.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ecs_thresh</code></td>
+<td>
+<p>The ECS threshold used for merging similar clusterings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncores</code></td>
+<td>
+<p>The number of parallel R instances that will run the code.
+If the value is set to 1, the code will be run sequentially.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list having two fields:
+</p>
+
+<ul>
+<li>
+<p> split_by_resolution: A five-level list. The hierarchy is as follows:
+</p>
+
+<ul>
+<li>
+<p> the configuration name: concatenation between the object name provided by
+the user, the number of neighbors, the graph type and the clustering method
+</p>
+</li>
+<li>
+<p> the resolution value <code class="reqn">\gamma</code>
+</p>
+</li>
+<li>
+<p> the number of clusters <em>k</em> that can be obtained using the specified resolution
+</p>
+</li>
+<li>
+<p> the partitions obtained with resolution <code class="reqn">\gamma</code> and have <em>k</em> clusters
+</p>
+</li>
+<li>
+<p> the structure of a partitions, which consists in having a <code>mb</code> field with
+the flat membership vector, <code>freq</code> denoting its frequency and <code>seed</code>, that is
+the seed used to obtain this partition in this configuration.
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p> split_by_k: has a similar structure, but the resolution level is removed.
+The partitions obtained in a configuration with the same number of clusters
+will be merged into the same list.
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(2021)
+# create an artificial expression matrix
+expr_matrix = matrix(runif(500*10), nrow = 500)
+
+# get the PCA embedding of the data
+pca_embedding = irlba::irlba(expr_matrix, nv = 2)
+pca_embedding = pca_embedding$u %*% diag(pca_embedding$d)
+rownames(pca_embedding) = as.character(1:500)
+
+# run the function on the pca embedding
+resolution_result = get_resolution_importance(embedding = pca_embedding,
+   resolution = c(0.8, 1),
+   n_neigh = c(5, 7),
+   n_repetitions = 5,
+   clustering_method = 1,
+   graph_type = 2,
+   object_name = "name_example")
+
+plot_k_resolution_corresp(resolution_result)
+</code></pre>
+
+
+</div>

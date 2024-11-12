@@ -1,0 +1,130 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>predict.covregrf</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Predict method for covregrf objects</h2>
+
+<h3>Description</h3>
+
+<p>Obtain predicted covariance matrices using a covregrf forest for training or
+new data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'covregrf'
+predict(object, newdata, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>An object of class <code>(covregrf, grow)</code> created by the
+function <code>covregrf</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdata</code></td>
+<td>
+<p>Test data of the set of covariates. A data.frame with numeric
+values and factors. If missing, the out-of-bag predictions in <code>object</code>
+is returned.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Optional arguments to be passed to other methods.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An object of class <code>(covregrf, predict)</code> which is a list with the
+following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>predicted</code></td>
+<td>
+<p>Predicted covariance matrices for test data. If
+<code>newdata</code> is missing, OOB predictions for training observations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bop</code></td>
+<td>
+<p>Bag of Observations for Prediction. An <code class="reqn">nxn</code> matrix of
+counts.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>Sample size of the test data (<code>NA</code>'s are omitted). If
+<code>newdata</code> is missing, sample size of the training set.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xvar.names</code></td>
+<td>
+<p>A character vector of the covariate names.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>yvar.names</code></td>
+<td>
+<p>A character vector of the response variable names.</p>
+</td>
+</tr>
+</table>
+<h3>See Also</h3>
+
+<p><code>covregrf</code>
+<code>vimp.covregrf</code>
+<code>print.covregrf</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">options(rf.cores=2, mc.cores=2)
+
+## load generated example data
+data(data, package = "CovRegRF")
+xvar.names &lt;- colnames(data$X)
+yvar.names &lt;- colnames(data$Y)
+data1 &lt;- data.frame(data$X, data$Y)
+
+## define train/test split
+set.seed(2345)
+smp &lt;- sample(1:nrow(data1), size = round(nrow(data1)*0.6), replace = FALSE)
+traindata &lt;- data1[smp,,drop=FALSE]
+testdata &lt;- data1[-smp, xvar.names, drop=FALSE]
+
+## formula object
+formula &lt;- as.formula(paste(paste(yvar.names, collapse="+"), ".", sep=" ~ "))
+
+## train covregrf
+covregrf.obj &lt;- covregrf(formula, traindata, params.rfsrc = list(ntree = 50))
+
+## predict without new data (OOB predictions will be returned)
+pred.obj &lt;- predict(covregrf.obj)
+pred.oob &lt;- pred.obj$predicted
+
+## predict with new test data
+pred.obj2 &lt;- predict(covregrf.obj, newdata = testdata)
+pred &lt;- pred.obj2$predicted
+
+
+</code></pre>
+
+
+</div>

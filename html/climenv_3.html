@@ -1,0 +1,144 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ce_extract</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>ce_extract</h2>
+
+<h3>Description</h3>
+
+<p>Extracts climate and/or elevation data for generated over an area or at fixed
+point/s.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ce_extract(
+  path = NULL,
+  location = NULL,
+  location_g = NULL,
+  c_source = "WorldClim",
+  var = "all"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>path</code></td>
+<td>
+<p>Character. Path to folder containing the climate and elevation
+raster data. The folders should be named prec, tmax, tavg and tmin and elev.
+Within each climate folder there should be 12 raster files
+(e.g. <code>"prec01.tif"</code>) corresponding to the monthly climate data. There should
+be only one raster file within the elev subfolder named <code>"srtm.tif"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>location</code></td>
+<td>
+<p>A <code>"sp"</code>, <code>"sf"</code> polygon or point object. See
+sf::st_polygon to make polygons and sf::st_as_sf to make point
+objects.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>location_g</code></td>
+<td>
+<p>Character. Informs how the zonal statistics are exported.
+Must correspond to a column of the <code>"location"</code> argument. If NULL,
+the zonal statistics are calculated for all features of <code>"location"</code> and a
+warning issued.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>c_source</code></td>
+<td>
+<p>Character (e.g., <code>"CHELSA or WorldClim"</code>). Indicating the
+climate data source.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var</code></td>
+<td>
+<p>Character. If supplied will download a subset of the climate data.
+Must be one of <code>"all"</code> (default), <code>"prec"</code>, <code>"tmax"</code>, <code>"tmin"</code> or <code>"tmean"</code>
+to download the corresponding climate data.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Returns a list storing matrices containing the mean and standard deviation
+of the climate and/or elevation data. Each column represents a month, each
+row represents a feature of the <code>location</code> <code>sp</code>, <code>sf</code> polygon
+or point object. Values returned are either degrees Celsius for (tmax, tavg,
+tmin) or mm (prec).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>James L. Tsakalos and Martin R. Smith
+</p>
+
+
+<h3>See Also</h3>
+
+<p>The downloading (<code>ce_download()</code>), and the plotting
+(<code>plot_h()</code> &amp; <code>plot_wl()</code>) functions.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Create some random data
+
+# Create temporary file
+temp_path &lt;- tempfile()
+on.exit(unlink(file.path(temp_path)), add = TRUE)
+
+# Create the required subdirectories
+dir.create(file.path(temp_path, "/elev"), recursive = TRUE)
+dir.create(file.path(temp_path, "/prec"), recursive = TRUE)
+dir.create(file.path(temp_path, "/tmax"), recursive = TRUE)
+dir.create(file.path(temp_path, "/tavg"), recursive = TRUE)
+dir.create(file.path(temp_path, "/tmin"), recursive = TRUE)
+
+# Create an empty raster
+r &lt;- terra::rast(ncol = 10, nrow = 10)
+
+# Modify the base Raster
+#* Elevation 100m ####
+terra::values(r) &lt;- 1:100
+terra::writeRaster(r, paste0(temp_path, "/elev/srtm.tif"))
+
+# create and save precipitation and temperature rasters ####
+x &lt;- c(5, 10, 15, 20, 25, 34, 25, 20, 15, 10, 5, 0) * 8
+for (i in sprintf("%02d", 1:12)) {
+terra::writeRaster(r, paste0(temp_path, paste0("/prec/prec_", i, ".tif")))
+terra::writeRaster(r, paste0(temp_path, paste0("/tmax/tmax_", i, ".tif")))
+terra::writeRaster(r, paste0(temp_path, paste0("/tmin/tmin_", i, ".tif")))
+terra::writeRaster(r, paste0(temp_path, paste0("/tavg/tavg_", i, ".tif")))
+}
+
+# Create a polygon file from the raster
+terra::values(r) &lt;- 1:100
+pol_py &lt;- sf::st_as_sf(terra::as.polygons(r))
+pol_py$grp &lt;- c(rep("low", 25), rep("high", 75))
+
+# Run the download function
+ce_extract(
+  path = temp_path,
+  location = pol_py,
+  location_g = "grp"
+)
+
+</code></pre>
+
+
+</div>

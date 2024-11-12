@@ -1,0 +1,82 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>download_climate</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Download climate data of the world</h2>
+
+<h3>Description</h3>
+
+<p>For polite scraping, 5 sec interval is set in download_climate(),
+it takes over 5 hours to get climate data of all stations.
+Please use existing links by "data(climate_world)",
+if you do not need to renew climate data.
+You can see web page as below.
+https://www.data.jma.go.jp/gmd/cpd/monitor/nrmlist/
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">download_climate(url)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table><tr style="vertical-align: top;">
+<td><code>url</code></td>
+<td>
+<p>A String to specify target html.</p>
+</td>
+</tr></table>
+<h3>Value</h3>
+
+<p>A tibble including climate and station information, or NULL when failed.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># If you want all climate data, remove head().
+# The codes take &gt; 5 sec because of poliste scraping.
+
+library(magrittr)
+library(stringi)
+library(dplyr)
+data(station_links)
+station_links &lt;-
+  station_links %&gt;%
+  dplyr::mutate_all(stringi::stri_unescape_unicode) %&gt;%
+  head(3) %T&gt;%
+  { 
+     continent &lt;&lt;- `$`(., "continent") 
+     no        &lt;&lt;- `$`(., "no") 
+  } %&gt;%
+  `$`("url")
+
+climate &lt;- list()
+for(i in seq_along(station_links)){
+  print(stringr::str_c(i, " / ", length(station_links)))
+  climate[[i]] &lt;- download_climate(station_links[i])
+}
+  # run only when download_climate() successed
+if(sum(is.null(climate[[1]]), 
+       is.null(climate[[2]]), 
+       is.null(climate[[3]])) == 0){
+  month_per_year &lt;- 12
+  climate_world &lt;- 
+    dplyr::bind_rows(climate) %&gt;%
+    dplyr::bind_cols(
+      tibble::tibble(continent = rep(continent, month_per_year))) %&gt;%
+    dplyr::bind_cols(
+      tibble::tibble(no        = rep(no,        month_per_year))) %&gt;%
+    dplyr::relocate(no, continent, country, station)
+  climate_world
+}
+
+</code></pre>
+
+
+</div>

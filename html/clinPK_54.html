@@ -1,0 +1,212 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>nca</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Perform an NCA based on a NONMEM-style dataset</h2>
+
+<h3>Description</h3>
+
+<p>Perform an NCA based on a NONMEM-style dataset
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">nca(
+  data = NULL,
+  dose = 100,
+  tau = 24,
+  method = c("log_linear", "log_log", "linear"),
+  scale = list(auc = 1, conc = 1),
+  dv_min = 0.001,
+  t_inf = NULL,
+  fit_samples = NULL,
+  weights = NULL,
+  extend = TRUE,
+  has_baseline = TRUE,
+  route = c("iv", "oral", "im", "sc")
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>data.frame with time and dv columns</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dose</code></td>
+<td>
+<p>dose amount</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau</code></td>
+<td>
+<p>dosing frequency, default is 24.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>'linear', 'log_linear' (default), or 'log_log'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scale</code></td>
+<td>
+<p>list with scaling for auc and concentration ('conc')</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dv_min</code></td>
+<td>
+<p>minimum concentrations, lower observations will be set to this value</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>t_inf</code></td>
+<td>
+<p>infusion time, defaults to 0</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fit_samples</code></td>
+<td>
+<p>vector of sample indexes used in fit to calculate elimination
+rate, e.g. 'c(3,4,5)'. If not specified (default), it will evaluate which of the last n
+samples shows the largest adjusted R^2 when log-transformed data is fitted using linear
+regression, and use those samples in the estimation of the elimination rate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>vector of weights to be used in linear regression (same size as specified concentration data), or function with concentration as argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extend</code></td>
+<td>
+<p>perform an 'extended' NCA, i.e. for the calculation of the AUCs, back-extend to the expected true Cmax to also include that area.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>has_baseline</code></td>
+<td>
+<p>does the included data include a baseline? If 'FALSE', baseline is set to zero.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>route</code></td>
+<td>
+<p>administration route, 'iv' (intravenous, default), 'oral', 'sc' (sub-cutaneous), or 'im' (intra-muscular).</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Returns a list of three lists:
+</p>
+
+<dl>
+<dt><code>pk</code></dt>
+<dd>
+<p>Lists pk parameters.
+</p>
+
+<ul>
+<li>
+<p><code>kel</code>: elimination constant
+</p>
+</li>
+<li>
+<p><code>t_12</code>: half-life
+</p>
+</li>
+<li>
+<p><code>v</code>: distribution volume
+</p>
+</li>
+<li>
+<p><code>cl</code>: clearance
+</p>
+</li>
+</ul>
+</dd>
+<dt><code>descriptive</code></dt>
+<dd>
+<p>Lists exposure parameters.
+</p>
+
+<ul>
+<li>
+<p><code>cav_t</code>: the average concentration between the first observation and the last observation without extrapolating to tau
+</p>
+</li>
+<li>
+<p><code>cav_tau</code>: the average concentration from 0 to tau
+</p>
+</li>
+<li>
+<p><code>cmin</code>: the extrapolated concentration at <code>time = tau</code>
+</p>
+</li>
+<li>
+<p><code>c_max_true</code>: only available if <code>extend = TRUE</code>, the extrapolated peak concentration
+</p>
+</li>
+<li>
+<p><code>c_max</code>: only available if <code>extend = FALSE</code>, the observed maximum concentration
+</p>
+</li>
+<li>
+<p><code>auc_inf</code>: the extrapolated AUC as time goes to infinity
+</p>
+</li>
+<li>
+<p><code>auc_24</code>: the extrapolated AUC after 24 hours, provided no further doses are administered
+</p>
+</li>
+<li>
+<p><code>auc_tau</code>: the extrapolated AUC at the end of the dosing interval
+</p>
+</li>
+<li>
+<p><code>auc_t</code>: the AUC at the time of the last observation
+</p>
+</li>
+</ul>
+</dd>
+<dt><code>settings</code></dt>
+<dd>
+<p>Lists dosing information.
+</p>
+
+<ul>
+<li>
+<p><code>dose</code>: dose quantity
+</p>
+</li>
+<li>
+<p><code>tau</code>: dosing interval
+</p>
+</li>
+</ul>
+</dd>
+</dl>
+<h3>Examples</h3>
+
+<pre><code class="language-R">data &lt;- data.frame(time = c(0, 2, 4, 6, 8, 12, 16),
+                   dv   = c(0, 10, 14, 11, 9, 5, 1.5))
+nca(data, t_inf = 2)
+</code></pre>
+
+
+</div>

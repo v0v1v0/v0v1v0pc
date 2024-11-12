@@ -1,0 +1,214 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>TrackMeasures</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Track Measures</h2>
+
+<h3>Description</h3>
+
+<p>Statistics that can be used to quantify tracks. All of these functions take a single
+track as input and give a single number as output.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">trackLength(x)
+
+duration(x)
+
+speed(x)
+
+displacement(x, from = 1, to = nrow(x))
+
+squareDisplacement(x, from = 1, to = nrow(x))
+
+displacementVector(x)
+
+maxDisplacement(x)
+
+displacementRatio(x)
+
+outreachRatio(x)
+
+straightness(x)
+
+overallAngle(x, from = 1, to = nrow(x), xdiff = diff(x), degrees = FALSE)
+
+meanTurningAngle(x, degrees = FALSE)
+
+overallDot(x, from = 1, to = nrow(x), xdiff = diff(x))
+
+overallNormDot(x, from = 1, to = nrow(x), xdiff = diff(x))
+
+asphericity(x)
+
+hurstExponent(x)
+
+fractalDimension(x)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a single input track; a matrix whose first column is time and whose
+remaining columns are a spatial coordinate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>from</code></td>
+<td>
+<p>index, or vector of indices, of the first row of the track.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>to</code></td>
+<td>
+<p>index, or vector of indices, of last row of the track.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xdiff</code></td>
+<td>
+<p>row differences of x.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>degrees</code></td>
+<td>
+<p>logical; should angles be returned in degrees rather than radians?</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Some track measures consider only the first and last position (or steps) of a track,
+and are most useful in conjunction with <code>aggregate.tracks</code>; for instance,
+<code>squareDisplacement</code> combined with <code>aggregate.tracks</code> gives a mean
+square displacement plot, and <code>overallAngle</code> combined with
+<code>aggregate.tracks</code> gives a turning angle plot (see the examples for
+<code>aggregate.tracks</code>). To speed up computation of these measures on
+subtracks of the same track, the arguments <code>from</code>, <code>to</code> and
+possibly <code>xdiff</code> are exploited by <code>aggregate.tracks</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>trackLength</code> sums up the distances between subsequent positsion; in other words,
+it estimates the length of the underlying track by linear interpolation (usually
+an underestimation). The estimation could be improved in some circumstances by using
+<code>interpolateTrack</code>. The function returns a single, non-negative number.
+</p>
+<p><code>duration</code> returns the time elapsed between <code>x</code>'s first and last
+positions (a single, non-negative number).
+</p>
+<p><code>speed</code> simply divides <code>trackLength</code> by <code>duration</code>
+</p>
+<p><code>displacement</code> returns the Euclidean distance between the track endpoints
+and <code>squareDisplacement</code> returns the squared Euclidean distance.
+</p>
+<p><code>displacementVector</code> returns the vector between the track endpoints. This
+vector has an element (can be negative) for each (x,y,z) dimension of the coordinates
+in the track.
+</p>
+<p><code>maxDisplacement</code> computes the maximal Euclidean distance of any position
+on the track from the first position.
+</p>
+<p><code>displacementRatio</code> divides the <code>displacement</code> by the <code>maxDisplacement</code>;
+<code>outreachRatio</code> divides the <code>maxDisplacement</code> by the <code>trackLength</code>
+(Mokhtari et al, 2013). Both measures return
+values between 0 and 1, where 1 means a perfectly straight track.
+If the track has <code>trackLength</code> 0, then <code>NaN</code> is returned.
+</p>
+<p><code>straightness</code> divides the <code>displacement</code> by the <code>trackLength</code>.
+This gives a number between 0 and 1, with 1 meaning a perfectly straight track.
+If the track has <code>trackLength</code> 0, then <code>NaN</code> is returned.
+</p>
+<p><code>asphericity</code> is a different appraoch to measure straightness
+(Mokhtari et al, 2013): it computes the asphericity of the set of positions on the
+track _via_ the length of its principal components. Again this gives a number between 0
+and 1, with higher values indicating straighter tracks.
+Unlike <code>straightness</code>, however, asphericity ignores
+back-and-forth motion of the object, so something that bounces between two positions
+will have low <code>straightness</code> but high <code>asphericity</code>. We define the
+asphericity of every track with two or fewer positions to be 1. For one-dimensional
+tracks with one or more positions, <code>NA</code> is returned.
+</p>
+<p><code>overallAngle</code> Computes the angle (in radians) between the first and the last
+segment of the given track. Angles are measured symmetrically, thus the return values
+range from 0 to pi; for instance, both a 90 degrees left and right turns yield the
+value pi/2. This function is useful to generate autocorrelation plots
+(together with <code>aggregate.tracks</code>). Angles can also be returned in degrees,
+in that case: set <code>degrees = TRUE</code>.
+</p>
+<p><code>meanTurningAngle</code> averages the <code>overallAngle</code> over all
+adjacent segments of a given track; a low <code>meanTurningAngle</code> indicates high
+persistence of orientation, whereas for an uncorrelated random walk we expect
+90 degrees. Note that angle measurements will yield <code>NA</code> values for tracks
+in which two subsequent positions are identical. By default returns angles in
+radians; use <code>degrees = TRUE</code> to return angles in degrees instead.
+</p>
+<p><code>overallDot</code> computes the dot product between the first and the last
+segment of the given track. This function is useful to generate autocovariance plots
+(together with <code>aggregate.tracks</code>).
+</p>
+<p><code>overallNormDot</code> computes the dot product between the unit vectors along
+the first and the last segment of the given track. This function is useful to
+generate autocorrelation plots (together with
+<code>aggregate.tracks</code>).
+</p>
+<p><code>hurstExponent</code> computes the corrected empirical Hurst exponent of the track.
+This uses the function <code>hurstexp</code> from the 'pracma' package.
+If the track has less than two positions, NA is returned.
+<code>fractalDimension</code> estimates the fractal dimension of a track using the function
+<code>fd.estim.boxcount</code> from the
+'fractaldim' package. For self-affine processes in <code class="reqn">n</code> dimensions,
+fractal dimension and Hurst exponent
+are related by the formula <code class="reqn">H=n+1-D</code>.
+For non-Brownian motion, however, this relationship
+need not hold. Intuitively, while the Hurst exponent takes a global approach to the
+track's properties, fractal dimension is a local approach to the track's properties
+(Gneiting and Schlather, 2004).
+</p>
+
+
+<h3>References</h3>
+
+<p>Zeinab Mokhtari, Franziska Mech, Carolin Zitzmann, Mike Hasenberg, Matthias Gunzer
+and Marc Thilo Figge (2013), Automated Characterization and
+Parameter–Free Classification of Cell Tracks Based on Local Migration
+Behavior. <em>PLoS ONE</em> <b>8</b>(12), e80808. doi:10.1371/journal.pone.0080808
+</p>
+<p>Tillmann Gneiting and Martin Schlather (2004), Stochastic Models That Separate Fractal
+Dimension and the Hurst Effect. <em>SIAM Review</em> <b>46</b>(2), 269–282.
+doi:10.1137/S0036144501394387
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>AngleAnalysis</code> for methods to compute angles and distances
+between pairs of tracks, or of tracks to a reference point, direction, or plane.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## show a turning angle plot with error bars for the T cell data.
+with( (aggregate(BCells,overallDot,FUN="mean.se",na.rm=TRUE)),{
+  plot( mean ~ i, xlab="time step",
+  	ylab="turning angle (rad)", type="l" )
+  segments( i, lower, y1=upper )
+} )
+
+</code></pre>
+
+
+</div>

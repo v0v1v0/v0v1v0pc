@@ -1,0 +1,211 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>funC</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate C code for a function and compile it</h2>
+
+<h3>Description</h3>
+
+<p>Generate C code for a function and compile it
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">funC(
+  f,
+  forcings = NULL,
+  events = NULL,
+  fixed = NULL,
+  outputs = NULL,
+  jacobian = c("none", "full", "inz.lsodes", "jacvec.lsodes"),
+  rootfunc = NULL,
+  boundary = NULL,
+  compile = TRUE,
+  fcontrol = c("nospline", "einspline"),
+  nGridpoints = -1,
+  includeTimeZero = TRUE,
+  precision = 1e-05,
+  modelname = NULL,
+  verbose = FALSE,
+  solver = c("deSolve", "Sundials")
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+<p>Named character vector containing the right-hand sides of the ODE.
+You may use the key word <code>time</code> in your equations for non-autonomous
+ODEs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>forcings</code></td>
+<td>
+<p>Character vector with the names of the forcings</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>events</code></td>
+<td>
+<p>data.frame of events with columns "var" (character, the name of the state to be
+affected), "time" (numeric or character, time point), 
+"value" (numeric or character, value), "method" (character, either
+"replace" or "add"). See events. If "var" and "time" are
+characters, their values need to be speciefied in the parameter vector
+when calling <code>odeC</code>. An event function is generated and compiled
+with the ODE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixed</code></td>
+<td>
+<p>character vector with the names of parameters (initial values
+and dynamic) for which no sensitivities are required (will speed up the
+integration).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outputs</code></td>
+<td>
+<p>Named character vector for additional output variables, see
+arguments <code>nout</code> and <code>outnames</code> of lsode</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>jacobian</code></td>
+<td>
+<p>Character, either "none" (no jacobian is computed), "full"
+(full jacobian is computed and written as a function into the C file) or
+"inz.lsodes" (only the non-zero elements of the jacobian are determined,
+see lsodes)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rootfunc</code></td>
+<td>
+<p>Named character vector. The root function (see
+lsoda). Besides the variable names (<code>names(f)</code>) also
+other symbols are allowed that are treated like new parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>boundary</code></td>
+<td>
+<p>data.frame with columns name, yini, yend specifying the
+boundary condition set-up. NULL if not a boundary value problem</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>compile</code></td>
+<td>
+<p>Logical. If FALSE, only the C file is written</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fcontrol</code></td>
+<td>
+<p>Character, either <code>"nospline"</code> (default, forcings are
+handled by deSolve) or <code>"einspline"</code> (forcings are handled as splines
+within the C code based on the einspline library).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nGridpoints</code></td>
+<td>
+<p>Integer, defining for which time points the ODE is evaluated
+or the solution is returned: Set <code>-1</code> to return only the explicitly requested
+time points (default). If additional time points are introduced through events, they
+will not be returned. Set <code>&gt;= 0</code> to introduce additional time points between tmin
+and tmax where the ODE is evaluated in any case. Additional time points that might be
+introduced by events will be returned.
+If splines are used with <code>fcontrol = "einspline"</code>, <code>nGridpoinnts</code> also
+indicates the number of spline nodes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>includeTimeZero</code></td>
+<td>
+<p>Logical. Include t = 0 in the integration time points if <code>TRUE</code> 
+(default). Consequently,
+integration starts at t = 0 if only positive time points are provided by the user and at
+tmin, if also negtive time points are provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>precision</code></td>
+<td>
+<p>Numeric. Only used when <code>fcontrol = "einspline"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelname</code></td>
+<td>
+<p>Character. The C file is generated in the working directory
+and is named &lt;modelname&gt;.c. If <code>NULL</code>, a random name starting with
+".f" is chosen, i.e. the file is hidden on a UNIX system.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Print compiler output to R command line.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>solver</code></td>
+<td>
+<p>Select the solver suite as either <code>deSolve</code> or
+<code>Sundials</code> (not available any more). Defaults to <code>deSolve</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function replaces variables by arrays <code>y[i]</code>, etc. and
+replaces "^" by pow() in order to have the correct C syntax. The file name
+of the C-File is derived from <code>f</code>. I.e. <code>funC(abc, ...</code> will
+generate a file abc.c in the current directory. Currently, only explicit
+ODE specification is supported, i.e. you need to have the right-hand sides
+of the ODE.
+</p>
+
+
+<h3>Value</h3>
+
+<p>the name of the generated shared object file together with a number
+of attributes
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+# Exponential decay plus constant supply
+f &lt;- c(x = "-k*x + supply")
+func &lt;- funC(f, forcings = "supply")
+
+# Example 2: root function
+f &lt;- c(A = "-k1*A + k2*B", B = "k1*A - k2*B")
+rootfunc &lt;- c(steadyState = "-k1*A + k2*B - tol")
+
+func &lt;- funC(f, rootfunc = rootfunc, modelname = "test")
+
+yini &lt;- c(A = 1, B = 2)
+parms &lt;- c(k1 = 1, k2 = 5, tol = 0.1)
+times &lt;- seq(0, 10, len = 100)
+
+odeC(yini, times, func, parms)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

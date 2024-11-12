@@ -1,0 +1,142 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>PVS</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Pooled variable scaling for cluster analysis
+</h2>
+
+<h3>Description</h3>
+
+<p>The function computes a scale for each variable in the data. 
+The result can then be used to standardize a dataset before applying
+a clustering algorithm (such as k-means). The scale estimation is based on pooled scale estimators, which result from clustering the individual variables in the data. The method is proposed in Raymaekers, and Zamar (2020) &lt;doi:10.1093/bioinformatics/btaa243&gt;.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">PVS(X, kmax = 3, dist = "euclidean",
+    method = "gap", B = 1000,
+    gapMethod = "firstSEmax",
+    minSize = 0.05, rDist = runif,
+    SE.factor = 1, refDist = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p> an <code class="reqn">n</code> by <code class="reqn">p</code> data matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kmax</code></td>
+<td>
+<p> maximum number of clusters in one variable. Default is <code>3</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist</code></td>
+<td>
+<p><code>"euclidean"</code> for pooled standard deviation and <code>"manhattan"</code> for pooled mean absolute deviation. Default is <code>"euclidean"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>either <code>"gap"</code> or <code>"jump"</code> to determine the number of clusters. Default is <code>"gap"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p> number of bootstrap samples for the reference distribution of the gap statistic. Default is <code>1000</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gapMethod</code></td>
+<td>
+<p>method to define number of clusters in the gap statistic. See <code>cluster::maxSE</code> for more info. Defaults to <code>"firstSEmax"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minSize</code></td>
+<td>
+<p> minimum cluster size as a percentage of the total number of observations. Defaults to <code>0.05</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rDist</code></td>
+<td>
+<p>Optional. Reference distribution (as a function) for the gap statistic. Defaults to <code>runif</code>, the uniform distribution.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SE.factor</code></td>
+<td>
+<p>factor for determining number of clusters when using the gap statistic.  See <code>cluster::maxSE</code> for more details. Defaults to <code>1</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>refDist</code></td>
+<td>
+<p> Optional. A <code>k</code> by <code>2</code> matrix with the mean and standard error of the reference distribution of the gap statistic in its columns. Can be used to avoid bootstrapping when repeatedly applying the function to same size data.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A vector of length <code>p</code> containing the estimated scales for the variables.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jakob Raymaekers
+</p>
+
+
+<h3>References</h3>
+
+<p>Raymaekers, J, Zamar, R.H. (2020). Pooled variable scaling for cluster analysis. <em>Bioinformatics</em>, <b>36</b>(12), 3849-3855. doi: <a href="https://doi.org/10.1093/bioinformatics/btaa243">10.1093/bioinformatics/btaa243</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+X &lt;- iris[, -5]
+y &lt;- unclass(iris[, 5])
+
+# Compute scales using different scale estimators.
+# the pooled standard deviation is considerably smaller for variable 3 and 4:
+sds     &lt;- apply(X, 2, sd); round(sds, 2)
+ranges  &lt;- apply(X, 2, function(y) diff(range(y))); round(ranges, 2)
+psds    &lt;- PVS(X); round(psds, 2)
+
+# Now cluster using k-means after scaling the data
+
+nbclus &lt;- 3
+kmeans.std &lt;- kmeans(X, nbclus, nstart = 100) # no scaling
+kmeans.sd  &lt;- kmeans(scale(X), nbclus, nstart = 100)
+kmeans.rg  &lt;- kmeans(scale(X, scale = ranges), nbclus, nstart = 100)
+kmeans.psd &lt;- kmeans(scale(X, scale = psds), nbclus, nstart = 100)
+
+# Calculate the Adjusted Rand Index for each of the clustering outcomes
+round(mclust::adjustedRandIndex(y, kmeans.std$cluster), 2) 
+round(mclust::adjustedRandIndex(y, kmeans.sd$cluster), 2) 
+round(mclust::adjustedRandIndex(y, kmeans.rg$cluster), 2) 
+round(mclust::adjustedRandIndex(y, kmeans.psd$cluster), 2)
+
+
+</code></pre>
+
+
+</div>

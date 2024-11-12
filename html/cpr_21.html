@@ -1,0 +1,160 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>get_spline</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Get the Control Polygon and the Spline Function</h2>
+
+<h3>Description</h3>
+
+<p>Generate <code>data.frame</code>s for interpolating and plotting a spline
+function, given a <code>cpr_cp</code> or <code>cpr_cn</code> object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">get_spline(x, margin = 1, at, n = 100, se = FALSE, derivative = 0)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a <code>cpr_cp</code> or <code>cpr_cn</code> object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>margin</code></td>
+<td>
+<p>an integer identifying the marginal of the control net to slice
+along.  Only used when working <code>x</code> is a <code>cpr_cn</code> object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>at</code></td>
+<td>
+<p>point value for marginals not defined in the <code>margin</code>.  Only
+used when <code>x</code> is a <code>cpr_cn</code> object.  Expected input is a list of
+length <code>length(attr(x, "bspline_list"))</code>.  Entries for elements
+<code>marginal</code> are ignored.  If omitted, the midpoint between the boundary
+knots for each marginal is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>the length of sequence to use for interpolating the spline function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>se</code></td>
+<td>
+<p>if <code>TRUE</code> return the estimated standard error for the spline
+or the derivative.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>derivative</code></td>
+<td>
+<p>A value of 0 (default) returns the spline, 1 the first
+derivative, 2 the second derivative.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>A control polygon, <code>cpr\_cp</code> object, has a spline function f(x).
+<code>get_spline</code> returns a list of two <code>data.frame</code>.  The <code>cp</code>
+element is a <code>data.frame</code> with the (x, y) coordinates control points and
+the <code>spline</code> element is a <code>data.frame</code> with <code>n</code> rows for
+interpolating f(x).
+</p>
+<p>For a control net, <code>cpr\_cn</code> object, the return is the same as for a
+<code>cpr\_cp</code> object, but conceptually different.  Where a <code>cpr\_cp</code>
+objects have a uni-variable spline function, <code>cpr\_cn</code> have
+multi-variable spline surfaces.  <code>get_spline</code> returns a "slice" of the
+higher dimensional object.  For example, consider a three-dimensional control
+net defined on the unit cube with marginals <code>x1</code>, <code>x2</code>, and
+<code>x3</code>.  The implied spline surface is the function f(x1, x2, x3).
+<code>get_spline(x, margin = 2, at = list(0.2, NA, 0.5))</code> would
+return the control polygon and spline surface for f(0.2, x, 0.5).
+</p>
+<p>See <code>get_surface</code> for taking a two-dimensional slice of a
+three-plus dimensional control net, or, for generating a useful data set for
+plotting the surface of a two-dimensional control net.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a <code>data.frame</code> <code>n</code> rows and two columns <code>x</code> and
+<code>y</code>, the values for the spline.  A third column with the standard error
+is returned if requested.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>get_surface</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(spdg, package = "cpr")
+
+## Extract the control polygon and spline for plotting.  We'll use base R
+## graphics for this example.
+a_cp &lt;- cp(pdg ~ bsplines(day, df = 10, bknots = c(-1, 1)), data = spdg)
+
+spline &lt;- get_spline(a_cp)
+plot(spline$x, spline$y, type = "l")
+
+# compare to the plot.cpr_cp method
+plot(a_cp, show_spline = TRUE)
+
+# derivatives
+f0 &lt;- function(x) {
+  #(x + 2) * (x - 1) * (x - 3)
+  x^3 - 2 * x^2 - 5 * x + 6
+}
+f1 &lt;- function(x) {
+  3 * x^2 - 4 * x - 5
+}
+f2 &lt;- function(x) {
+  6 * x - 4
+}
+
+x &lt;- sort(runif(n = 100, min = -3, max = 5))
+bknots = c(-3, 5)
+bmat &lt;- bsplines(x, bknots = bknots)
+theta &lt;- coef(lm(f0(x) ~ bsplines(x, bknots = bknots) + 0) )
+
+cp0 &lt;- cp(bmat, theta)
+spline0 &lt;- get_spline(cp0, derivative = 0)
+spline1 &lt;- get_spline(cp0, derivative = 1)
+spline2 &lt;- get_spline(cp0, derivative = 2)
+
+old_par &lt;- par()
+
+par(mfrow = c(1, 3))
+plot(x, f0(x), type = "l", main = "spline")
+points(spline0$x, spline0$y, pch = 2, col = 'blue')
+
+plot(x, f1(x), type = "l", main = "first derivative")
+points(spline1$x, spline1$y, pch = 2, col = 'blue')
+
+plot(x, f2(x), type = "l", main = "second derivative")
+points(spline2$x, spline2$y, pch = 2, col = 'blue')
+
+par(old_par)
+
+</code></pre>
+
+
+</div>

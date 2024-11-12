@@ -1,0 +1,146 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>calc_weights</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate inverse probability of censoring weights at time <code>t</code>.</h2>
+
+<h3>Description</h3>
+
+<p>Estimates the inverse probability of censoring weights by fitting a cox-propotinal hazards model
+in a landmark cohort of individuals. Primarily used internally, this function has
+been exported to allow users to reproduce results in the vignette when
+estimating confidence intervals using bootstrapping manually.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">calc_weights(
+  data.ms,
+  data.raw,
+  covs = NULL,
+  t,
+  s,
+  landmark.type = "state",
+  j = NULL,
+  max.weight = 10,
+  stabilised = FALSE,
+  max.follow = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data.ms</code></td>
+<td>
+<p>Validation data in msdata format</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data.raw</code></td>
+<td>
+<p>Validation data in data.frame (one row per individual)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covs</code></td>
+<td>
+<p>Character vector of variable names to adjust for when calculating inverse probability of censoring weights</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>t</code></td>
+<td>
+<p>Follow up time at which to calculate weights</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>s</code></td>
+<td>
+<p>Landmark time at which predictions were made</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>landmark.type</code></td>
+<td>
+<p>Whether weights are estimated in all individuals uncensored at time s ('all') or only in individuals uncensored and in state j at time s ('state')</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>j</code></td>
+<td>
+<p>Landmark state at which predictions were made (only required in landmark.type = 'state')</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.weight</code></td>
+<td>
+<p>Maximum bound for weights</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stabilised</code></td>
+<td>
+<p>Indicates whether weights should be stabilised or not</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.follow</code></td>
+<td>
+<p>Maximum follow up for model calculating inverse probability of censoring weights. Reducing this to <code>t</code> + 1 may aid in the proportional hazards assumption being met in this model.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Estimates inverse probability of censoring weights (Hernan M, Robins J, 2020).
+Fits a cox proportional hazards model to individuals in a landmark cohort, predicting the probability of being censored
+at time <code>t</code>. This landmark cohort may either be all individuals uncensored at time <code>s</code>, or those uncensored
+and in state <code>j</code> at time <code>s</code>. All predictors in <code>w.covs</code> are assumed to have a linear effect on the hazard.
+Weights are estimated for all individuals in <code>data.raw</code>, even if they will not be used in the analysis as they do not meet the landmarking
+requirements. If an individual enters an absorbing state prior to <code>t</code>, we estimate the probability of being censored
+before the time of entry into the absorbing state, rather than at <code>t</code>. Details on all the above this are provided in
+vignette <em>overview</em>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame with two columns. <code>id</code> corresponds to the patient ids from <code>data.raw</code>. <code>ipcw</code> contains the inverse probability
+of censoring weights (specifically the inverse of the probability of being uncesored). If <code>stabilised = TRUE</code> was specified,
+a third variable <code>ipcw.stab</code> will be returned, which is the stabilised inverse probability of censoring weights.
+</p>
+
+
+<h3>References</h3>
+
+<p>Hernan M, Robins J (2020). “12.2 Estimating IP weights via modeling.” In <em>Causal Inference:
+What If</em>, chapter 12.2. Chapman Hall/CRC, Boca Raton.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Estimate inverse probability of censoring weights for individual in cohort ebmtcal.
+# Specifically the probability of being uncensored at t = 1826 days.
+# Weights are estimated using a model fitted in all individuals uncensored at time s = 0.
+weights.manual &lt;-
+calc_weights(data.ms = msebmtcal,
+  data.raw = ebmtcal,
+  covs = c("year", "agecl", "proph", "match"),
+  t = 1826,
+  s = 0,
+  landmark.type = "state",
+  j = 1)
+
+ str(weights.manual)
+
+</code></pre>
+
+
+</div>

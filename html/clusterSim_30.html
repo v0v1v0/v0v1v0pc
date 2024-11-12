@@ -1,0 +1,202 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>index.Gap</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculates Tibshirani, Walther and Hastie gap index</h2>
+
+<h3>Description</h3>
+
+<p>Calculates Tibshirani, Walther and Hastie gap index</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">index.Gap (x, clall, reference.distribution="unif", B=10, 
+	method="pam",d=NULL,centrotypes="centroids")</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>data</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clall</code></td>
+<td>
+<p>Two vectors of integers indicating the cluster to which each object is allocated in partition of n objects into u, and u+1 clusters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reference.distribution</code></td>
+<td>
+<p>"unif" - generate each reference variable uniformly over the range of the observed values for that variable
+or
+"pc" - generate the reference variables from a uniform distribution over a box aligned with the principal components of the data. In detail, if <code class="reqn">X=\{x_{ij}\}</code>  is our   n x m data matrix, assume that the columns have mean 0 and compute the singular value decomposition $X=UDV^T$. We transform via $X'=XV$ and then draw uniform features Z'  over the ranges of the columns of X' , as in method a) above. Finally we back-transform via $Z=Z'V^T$   to give reference data Z 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p>the number of simulations used to compute the gap statistic</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>the cluster analysis method to be used. This should be one of: "ward.D", "ward.D2", "single", "complete", "average", "mcquitty", "median", "centroid", "pam", "k-means","diana"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+<p>optional distance matrix, used for calculations if centrotypes="medoids"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>centrotypes</code></td>
+<td>
+<p>"centroids" or "medoids"</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>See file <a href="../doc/indexGap_details.pdf">../doc/indexGap_details.pdf</a> for further details
+</p>
+<p>Thanks to dr Michael P. Fay from National Institute of Allergy and Infectious Diseases for finding "one column error".
+</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Gap</code></td>
+<td>
+<p>Tibshirani, Walther and Hastie gap index for u clusters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>diffu</code></td>
+<td>
+<p>necessary value for choosing correct number of clusters via gap statistic Gap(u)-[Gap(u+1)-s(u+1)]</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Marek Walesiak <a href="mailto:marek.walesiak@ue.wroc.pl">marek.walesiak@ue.wroc.pl</a>, Andrzej Dudek <a href="mailto:andrzej.dudek@ue.wroc.pl">andrzej.dudek@ue.wroc.pl</a> 
+</p>
+<p>Department of Econometrics and Computer Science, University of Economics, Wroclaw, Poland
+</p>
+
+
+<h3>References</h3>
+
+<p>Tibshirani, R., Walther, G., Hastie, T. (2001), <em>Estimating the number of clusters in a data set via the gap statistic</em>, "Journal of the Royal Statistical Society", ser. B, vol. 63, part 2, 411-423. Available at: <a href="https://doi.org/10.1111/1467-9868.00293">doi:10.1111/1467-9868.00293</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>index.G1</code>, <code>index.G2</code>, <code>index.G3</code>, <code>index.C</code>,
+<code>index.S</code>, <code>index.H</code>, <code>index.KL</code>, <code>index.DB</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Example 1
+library(clusterSim)
+data(data_ratio)
+cl1&lt;-pam(data_ratio,4)
+cl2&lt;-pam(data_ratio,5)
+clall&lt;-cbind(cl1$clustering,cl2$clustering)
+g&lt;-index.Gap(data_ratio, clall, reference.distribution="unif", B=10,
+   method="pam")
+print(g)
+
+# Example 2
+library(clusterSim)
+means &lt;- matrix(c(0,2,4,0,3,6), 3, 2)
+cov &lt;- matrix(c(1,-0.9,-0.9,1), 2, 2)
+x &lt;- cluster.Gen(numObjects=40, means=means, cov=cov, model=2)
+x &lt;- x$data
+md &lt;- dist(x, method="euclidean")^2
+# nc - number_of_clusters
+min_nc=1
+max_nc=5
+min &lt;- 0
+clopt &lt;- NULL
+res &lt;- array(0, c(max_nc-min_nc+1, 2))
+res[,1] &lt;- min_nc:max_nc
+found &lt;- FALSE
+for (nc in min_nc:max_nc){
+  cl1 &lt;- pam(md, nc, diss=TRUE)
+  cl2 &lt;- pam(md, nc+1, diss=TRUE)
+  clall &lt;- cbind(cl1$clustering, cl2$clustering)
+  gap &lt;- index.Gap(x,clall,B=20,method="pam",centrotypes="centroids")
+  res[nc-min_nc+1, 2] &lt;- diffu &lt;- gap$diffu
+  if ((res[nc-min_nc+1, 2] &gt;=0) &amp;&amp; (!found)){
+    nc1 &lt;- nc
+    min &lt;- diffu
+    clopt &lt;- cl1$cluster
+    found &lt;- TRUE
+  }
+}
+if (found){
+print(paste("Minimal nc where diffu&gt;=0 is",nc1,"for diffu=",round(min,4)),quote=FALSE)
+}else{
+print("I have not found clustering with diffu&gt;=0", quote=FALSE)
+}
+plot(res,type="p",pch=0,xlab="Number of clusters",ylab="diffu",xaxt="n")
+abline(h=0, untf=FALSE)
+axis(1, c(min_nc:max_nc))
+
+# Example 3
+library(clusterSim)
+means &lt;- matrix(c(0,2,4,0,3,6), 3, 2)
+cov &lt;- matrix(c(1,-0.9,-0.9,1), 2, 2)
+x &lt;- cluster.Gen(numObjects=40, means=means, cov=cov, model=2)
+x &lt;- x$data
+md &lt;- dist(x, method="euclidean")^2
+# nc - number_of_clusters
+min_nc=1
+max_nc=5
+min &lt;- 0
+clopt &lt;- NULL
+res &lt;- array(0, c(max_nc-min_nc+1, 2))
+res[,1] &lt;- min_nc:max_nc
+found &lt;- FALSE
+for (nc in min_nc:max_nc){
+  cl1 &lt;- pam(md, nc, diss=TRUE)
+  cl2 &lt;- pam(md, nc+1, diss=TRUE)
+  clall &lt;- cbind(cl1$clustering, cl2$clustering)
+  gap &lt;- index.Gap(x,clall,B=20,method="pam",d=md,centrotypes="medoids")
+  res[nc-min_nc+1, 2] &lt;- diffu &lt;- gap$diffu
+  if ((res[nc-min_nc+1, 2] &gt;=0) &amp;&amp; (!found)){
+    nc1 &lt;- nc
+    min &lt;- diffu
+    clopt &lt;- cl1$cluster
+    found &lt;- TRUE
+  }
+}
+if (found){
+print(paste("Minimal nc where diffu&gt;=0 is",nc1,"for diffu=",round(min,4)),quote=FALSE)
+}else{
+print("I have not found clustering with diffu&gt;=0",quote=FALSE)
+}
+plot(res, type="p", pch=0, xlab="Number of clusters", ylab="diffu", xaxt="n")
+abline(h=0, untf=FALSE)
+axis(1, c(min_nc:max_nc))
+</code></pre>
+
+
+</div>

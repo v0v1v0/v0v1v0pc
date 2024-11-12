@@ -1,0 +1,189 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>wtRecal</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Weighted Logistic Recalibration
+</h2>
+
+<h3>Description</h3>
+
+<p>When recalibrating a risk model, where the intended purpose of the risk model is to prescribe an intervention to those deemed at high risk, it is desirable to have good calibration at the clinically relevant threshold used to define high risk (i.e. threshold used to identify who recieves treatment). This function realibrates risk scores (predicting binary outcome) using the weighted logistic recalibration method (Mishra et al. [2020]).
+</p>
+<p>Under this method, a recalibration intercept and slope are estimated via weighted logistic regression. Weights are constructed such that observations further from the clinically relevant risk threshold are down-weighted, meaning observations closer to the clinically relevant risk threshold have higher contribution to the risk threshold. The resulting estimated weighted recalibration slope and intercept are used to scale and shift the existing risk score, producing better calibrated risk scores near the risk threhold and potentially increaseing the net benefit of the risk score.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">wtRecal(y,p,r,rl,ru,lambda,delta)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+
+<p>Vector of binary outcomes, with 1 indicating event (case) and 0 indicating no event (controls)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+
+<p>Vector of risk score values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>r</code></td>
+<td>
+
+<p>Clinically relevant risk threshold</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rl</code></td>
+<td>
+
+<p>Lower bound of clinically relevant region</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ru</code></td>
+<td>
+
+<p>Upper bound of clinically relevant region</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+
+<p>Tuning parameter for weights inside relevant region</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta</code></td>
+<td>
+
+<p>Weight assigned to observations outside relevant region
+</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Vector of binary outcomes, with 1 indicating event (case) and 0 indicating no event (controls)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p.wt</code></td>
+<td>
+<p>Vector of weighted reclaibrated risk scores</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha.wt</code></td>
+<td>
+<p>Weighted recalibration slope and intercept</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wt</code></td>
+<td>
+<p>Calibration weights</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wt.conv</code></td>
+<td>
+<p>Indicator of convergence of the weighted logistic regression model. 1 indicates model convergence, 0 indicates model did not converge</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Anu Mishra
+</p>
+
+
+<h3>References</h3>
+
+<p>Mishra, A. (2019). Methods for Risk Markers that Incorporate Clinical Utility (Doctoral dissertation). (Available Upon Request)</p>
+
+
+<h3>See Also</h3>
+
+<p><code>calWt</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+### Load data ##
+data(fakeData)
+
+## Implement standard logistic recalibration
+stdRecal.res &lt;- stdRecal(y = fakeData$y,p = fakeData$p)
+stdRecal.res$alpha #standard recalibration parameters
+p.std &lt;- stdRecal.res$p.std
+
+## Look at potential sNB under recalibration plot
+snbRecalPlot(p = fakeData$p,p.std = p.std,y = fakeData$y,r = 0.3)
+## both original and std logistic recalibrated risk score are below 1 std err from maximum
+## indicating that alternative recalibration methods could improve
+
+### Get grid of tuning parameters  ###
+## In this example keeping delta fixed, and selecting lambda
+
+grid &lt;- RAWgrid(r = 0.3,rl = -Inf,ru = Inf,p = fakeData$p,y = fakeData$y,
+                cvParm = "lambda",rl.raw = 0.25,ru.raw = 0.35)
+
+
+### Select tuning parameter lamba using 5-fold cross-validation repeated 25 times
+### with one standard error rule implemented
+
+repCV &lt;- cvRepWtTuning(y = fakeData$y,p = fakeData$p,rl = -Inf,ru = Inf,r = 0.3,
+                       kFold = 5,cvRep = 25,cvParm = "lambda",tuneSeq = grid,stdErrRule = TRUE)
+
+## Implement weighted logistic recalibration
+wtRecal.res &lt;- wtRecal(y = fakeData$y,p = fakeData$p,r = 0.3,rl = -Inf,ru = Inf,
+                       lambda = repCV$cv.lambda,delta=1)
+# note that delta here is set to 1 as a place holder, but not used since the clinically
+# relevant region is [-Inf, Inf]
+wtRecal.res$alpha.wt #weighted recalibration parameters
+p.recal &lt;- wtRecal.res$p.wt
+
+## comparing standardized net benefit of the two
+nb(y = fakeData$y,p = fakeData$p,r = 0.3)$snb #original
+nb(y = stdRecal.res$y,p = stdRecal.res$p.std,r = 0.3)$snb #std recal
+nb(y = wtRecal.res$y,p = wtRecal.res$p.wt,r = 0.3)$snb #weighted
+
+### Calibration curve of only original, standard and weighted recalibrated risk score
+calCurvPlot(y = fakeData$y,p = fakeData$p,p.std=p.std,p.recal=p.recal,
+            stdPlot=TRUE, recalPlot=TRUE,
+            xlim=c(0,1),ylim=c(0,1),
+            label="Original Risk Score",
+            label2 = "Standard Recalibrated Risk Score",
+            label3 = "Weighted/Constrained Recalibrated Risk Score",
+            legendLab = c("Orig.", "Std.", "Wt."),
+            mainTitle="Calibration of Risk Score",
+            hist=TRUE,ylimHist = c(0,0.5),
+            r=0.3,rl = -Inf, ru = Inf)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,186 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>average_curve_optim</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate an average curve using <code>optim</code>
+</h2>
+
+<h3>Description</h3>
+
+<p>The user must decide on a single dependent variable (<code>Y</code>) and a
+single independent variable (<code>X</code>). The user will specify a function defining
+the relationship between the dependent and independent variables.
+For a <code>data.frame</code> containing stress-strain (or load-deflection) data for
+more than one coupon, the maximum value of <code>X</code> for each coupon is found and
+the smallest maximum value determines the range over which the curve
+fit is performed: the range is from zero to this value. Only positive
+values of <code>X</code> are considered. For each coupon individually, the data is
+divided into a user-specified number of bins and averaged within each bin.
+The resulting binned/averaged data is then used for curve fitting.
+The mean squared error between the observed value of <code>Y</code> and the result of
+the user-specified function evaluated at each <code>X</code> is minimized by varying
+the parameters <code>par</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">average_curve_optim(
+  data,
+  coupon_var,
+  x_var,
+  y_var,
+  fn,
+  par,
+  n_bins = 100,
+  method = "L-BFGS-B",
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a <code>data.frame</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coupon_var</code></td>
+<td>
+<p>the variable for coupon identification</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x_var</code></td>
+<td>
+<p>the independent variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y_var</code></td>
+<td>
+<p>the dependent variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fn</code></td>
+<td>
+<p>a function defining the relationship between <code>Y</code> and <code>X</code>.
+See Details for more information.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>par</code></td>
+<td>
+<p>the initial guess for the parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_bins</code></td>
+<td>
+<p>the number of bins to average the data inside into before
+fitting</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>The method to be used by <code>optim()</code>. Defaults to "L-BFGS-B"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>extra parameters to be passed to <code>optim()</code></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function <code>fn</code> must have two arguments. The first argument must be the
+value of the independent variable (<code>X</code>): this must be a numeric value
+(of length one). The second argument must be a vector of the parameters of
+the model, which are to be varied in order to obtain the best fit. See below
+for an example.
+</p>
+
+
+<h3>Value</h3>
+
+<p>an object of class <code>average_curve_optim</code> with the following content:
+</p>
+
+<ul>
+<li> <p><code>data</code> the original data provided to the function
+</p>
+</li>
+<li> <p><code>binned_data</code> the data after the binning/averaging operation
+</p>
+</li>
+<li> <p><code>fn</code> the function supplied
+</p>
+</li>
+<li> <p><code>fit_optim</code> the results of the call to <code>optim</code>
+</p>
+</li>
+<li> <p><code>call</code> the call
+</p>
+</li>
+<li> <p><code>n_bins</code> the number of bins specified by the user
+</p>
+</li>
+<li> <p><code>max_x</code> the upper end of the range used for fitting
+</p>
+</li>
+<li> <p><code>y_var</code> the independent (<code>Y</code>) variable
+</p>
+</li>
+<li> <p><code>x_var</code> the dependent (<code>X</code>) variable
+</p>
+</li>
+</ul>
+<h3>See Also</h3>
+
+<p><code>optim()</code>, <code>average_curve_lm()</code>,
+<code>print.average_curve_optim()</code>, <code>augment.average_curve_optim()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># using the `pa12_tension` dataset and fitting a cubic polynomial with
+# zero intercept:
+curve_fit &lt;- average_curve_optim(
+  pa12_tension,
+  Coupon,
+  Strain,
+  Stress,
+  function(strain, par) {
+    sum(par * c(strain, strain^2, strain^3))
+  },
+  c(c1 = 1, c2 = 1, c3 = 1),
+  n_bins = 100
+)
+## Range: ` Strain ` in  [ 0,  0.1409409 ]
+##
+## Call:
+## average_curve_optim(data = pa12_tension, coupon_var = Coupon,
+##                     x_var = Strain, y_var = Stress,
+##                     fn = function(strain, par) {
+##                       sum(par * c(strain, strain^2, strain^3))
+##                     }, par = c(c1 = 1, c2 = 1, c3 = 1), n_bins = 100)
+##
+## Parameters:
+##       c1        c2        c3
+## 1174.372 -8783.106 20585.898
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,148 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>rsplit</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fast (Recursive) Splitting
+</h2>
+
+<h3>Description</h3>
+
+<p><code>rsplit</code> (recursively) splits a vector, matrix or data frame into subsets according to combinations of (multiple) vectors / factors and returns a (nested) list. If <code>flatten = TRUE</code>, the list is flattened yielding the same result as <code>split</code>. <code>rsplit</code> is implemented as a wrapper around <code>gsplit</code>, and significantly faster than <code>split</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">rsplit(x, ...)
+
+## Default S3 method:
+rsplit(x, fl, drop = TRUE, flatten = FALSE, use.names = TRUE, ...)
+
+## S3 method for class 'matrix'
+rsplit(x, fl, drop = TRUE, flatten = FALSE, use.names = TRUE,
+       drop.dim = FALSE, ...)
+
+## S3 method for class 'data.frame'
+rsplit(x, by, drop = TRUE, flatten = FALSE, cols = NULL,
+       keep.by = FALSE, simplify = TRUE, use.names = TRUE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a vector, matrix, data.frame or list like object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fl</code></td>
+<td>
+<p>a <code>GRP</code> object, or a (list of) vector(s) / factor(s) (internally converted to a <code>GRP</code> object(s)) used to split <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by</code></td>
+<td>
+<p><em>data.frame method</em>: Same as <code>fl</code>, but also allows one- or two-sided formulas i.e. <code>~ group1</code> or <code>var1 + var2 ~ group1 + group2</code>. See Examples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop</code></td>
+<td>
+<p>logical. <code>TRUE</code> removes unused levels or combinations of levels from factors before splitting; <code>FALSE</code> retains those combinations yielding empty list elements in the output.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>flatten</code></td>
+<td>
+<p>logical. If <code>fl</code> is a list of vectors / factors, <code>TRUE</code> calls <code>GRP</code> on the list, creating a single grouping used for splitting; <code>FALSE</code> yields recursive splitting.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use.names</code></td>
+<td>
+<p>logical. <code>TRUE</code> returns a named list (like <code>split</code>); <code>FALSE</code> returns a plain list.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop.dim</code></td>
+<td>
+<p>logical. <code>TRUE</code> returns atomic vectors for matrix-splits consisting of one row. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cols</code></td>
+<td>
+<p><em>data.frame method</em>: Select columns to split using a function, column names, indices or a logical vector. <em>Note</em>: <code>cols</code> is ignored if a two-sided formula is passed to <code>by</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.by</code></td>
+<td>
+<p>logical. If a formula is passed to <code>by</code>, then <code>TRUE</code> preserves the splitting (right-hand-side) variables in the data frame.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>simplify</code></td>
+<td>
+<p><em>data.frame method</em>: Logical. <code>TRUE</code> calls <code>rsplit.default</code> if a single column is split e.g. <code>rsplit(data, col1 ~ group1)</code> becomes the same as <code>rsplit(data$col1, data$group1)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>further arguments passed to <code>GRP</code>. Sensible choices would be <code>sort = FALSE</code>, <code>decreasing = TRUE</code> or <code>na.last = FALSE</code>. Note that these options only apply if <code>fl</code> is not already a (list of) factor(s).</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a (nested) list containing the subsets of <code>x</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>gsplit</code>, <code>rapply2d</code>, <code>unlist2d</code>, List Processing, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">rsplit(mtcars$mpg, mtcars$cyl)
+rsplit(mtcars, mtcars$cyl)
+
+rsplit(mtcars, mtcars[.c(cyl, vs, am)])
+rsplit(mtcars, ~ cyl + vs + am, keep.by = TRUE)  # Same thing
+rsplit(mtcars, ~ cyl + vs + am)
+
+rsplit(mtcars, ~ cyl + vs + am, flatten = TRUE)
+
+rsplit(mtcars, mpg ~ cyl)
+rsplit(mtcars, mpg ~ cyl, simplify = FALSE)
+rsplit(mtcars, mpg + hp ~ cyl + vs + am)
+rsplit(mtcars, mpg + hp ~ cyl + vs + am, keep.by = TRUE)
+
+# Split this sectoral data, first by Variable (Emloyment and Value Added), then by Country
+GGDCspl &lt;- rsplit(GGDC10S, ~ Variable + Country, cols = 6:16)
+str(GGDCspl)
+
+# The nested list can be reassembled using unlist2d()
+head(unlist2d(GGDCspl, idcols = .c(Variable, Country)))
+rm(GGDCspl)
+
+# Another example with mtcars (not as clean because of row.names)
+nl &lt;- rsplit(mtcars, mpg + hp ~ cyl + vs + am)
+str(nl)
+unlist2d(nl, idcols = .c(cyl, vs, am), row.names = "car")
+rm(nl)
+</code></pre>
+
+
+</div>

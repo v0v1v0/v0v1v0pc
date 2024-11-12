@@ -1,0 +1,170 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>traj_sim</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate a Trajectory with Correlated Step Lengths and Turn Angles</h2>
+
+<h3>Description</h3>
+
+<p>The function draws values from a circular-linear bivariate distribution of
+turn angles and step lengths specified by the marginal distributions and a
+circular-linear copula. From the start
+point (0,0) and the second (potentially user specified)
+point, a trajectory is then built with these turn angles and step lengths.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">traj_sim(
+  n,
+  copula,
+  marginal_circ,
+  marginal_lin,
+  ignore_first = TRUE,
+  pos_2 = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>integer, number of trajectory steps to generate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>copula</code></td>
+<td>
+<p>'<code>cyl_copula</code>' object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>marginal_circ</code></td>
+<td>
+<p>named list (for parametric estimates) or
+a '<code>density.circular</code>' object (for kernel density estimates).
+The output of function <code>fit_angle()</code> can be used here directly for
+both cases.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>marginal_lin</code></td>
+<td>
+<p>named list (for parametric estimates) or
+a '<code>density</code>' object (for kernel density estimates).
+The output of function <code>fit_steplength()</code> can be used here directly for
+both cases.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ignore_first</code></td>
+<td>
+<p>logical value. If <code>ignore_first = TRUE</code> (default),
+a trajectory of length <code>n+2</code> is generated and the first two steps of that
+trajectory are removed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pos_2</code></td>
+<td>
+<p>(optional) numeric vector of length 2
+containing the coordinates of the second point in the trajectory.
+The first point is always at (0,0). If
+no value is specified, the second point is obtained by going in a random direction
+from the first point for a distance drawn from the marginal step length distribution.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Samples are drawn from the circular-linear copula and then transformed
+using the quantile functions of the marginal circular and the marginal linear
+distribution. To generate draws from any bivariate joint distribution (not
+necessarily a circular-linear one) without also producing a trajectory,
+the function <code>rjoint()</code> can be used.
+</p>
+<p>If entered "by hand", the named lists describing the parametric distributions
+(<code>marginal_circ</code> and <code>marginal_lin</code>) must contain 2 entries:
+</p>
+
+<ol>
+<li>
+<p><code>name</code>:
+a character string denoting the name of the distribution.
+For the circular distribution, it can be <code>"vonmises"</code>, <code>"vonmisesmix"</code>, or
+<code>"wrappedcauchy"</code>. For the linear distribution, it must be a
+string denoting the name of a linear distribution in the environment, i.e. the name of its
+distribution function without the "p",
+e.g. "norm" for normal distribution
+</p>
+</li>
+<li>
+<p><code>coef</code>: For the circular distribution <code>coef</code> is a (named) list of
+parameters of the circular
+marginal distribution as taken by the functions
+<code>qvonmises()</code>, <code>qvonmisesmix()</code>,
+or <code>qwrappedcauchy()</code>. For the linear distribution, <code>coef</code> is
+a named list containing the parameters of the distribution given in <code>"name"</code>.
+</p>
+</li>
+</ol>
+<h3>Value</h3>
+
+<p>A data.frame containing the trajectory. It has 6 columns
+containing the x and y coordinates, the turn angles, the step lengths, and
+the values sampled from the copula.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>traj_get()</code>,
+<code>fit_steplength()</code>, <code>fit_angle()</code>,
+<code>plot_track()</code>, <code>plot_cop_scat()</code>,
+<code>plot_joint_scat()</code>, <code>plot_joint_circ()</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">require(circular)
+set.seed(123)
+
+traj &lt;- traj_sim(n = 5,
+copula = cyl_quadsec(0.1),
+marginal_circ = list(name="vonmises",coef=list(0, 1)),
+marginal_lin = list(name="weibull",coef=list(shape=3))
+)
+
+traj
+
+angles &lt;- rvonmisesmix(100,
+  mu = c(0, pi),
+  kappa = c(2, 3),
+  prop = c(0.4, 0.6)
+)
+angles &lt;- full2half_circ(angles)
+bw &lt;- opt_circ_bw(theta = angles, method = "nrd", kappa.est = "trigmoments")
+marg_ang &lt;- fit_angle(theta = angles, parametric = FALSE, bandwidth = bw)
+
+steplengths &lt;- rlnorm(100, 0, 0.3)
+marg_stepl &lt;- fit_steplength(x = steplengths, parametric = "lnorm")
+
+traj_sim(n = 5,
+copula = cyl_quadsec(0.1),
+marginal_circ = marg_ang,
+marginal_lin = marg_stepl,
+ignore_first = FALSE,
+pos_2 = c(5,5)
+)
+
+</code></pre>
+
+
+</div>

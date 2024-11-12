@@ -1,0 +1,491 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cobs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>COnstrained B-Splines Nonparametric Regression Quantiles</h2>
+
+<h3>Description</h3>
+
+<p>Computes constrained quantile curves using linear or
+quadratic splines.  The median spline (<code class="reqn">L_1</code> loss) is a robust
+(constrained) smoother.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cobs(x, y, constraint = c("none", "increase", "decrease",
+                          "convex", "concave", "periodic"),
+     w = rep(1,n),
+     knots, nknots = if(lambda == 0) 6 else 20,
+     method = "quantile", degree = 2, tau = 0.5,
+     lambda = 0, ic = c("AIC", "SIC", "BIC", "aic", "sic", "bic"),
+     knots.add = FALSE, repeat.delete.add = FALSE, pointwise = NULL,
+     keep.data = TRUE, keep.x.ps = TRUE,
+     print.warn = TRUE, print.mesg = TRUE, trace = print.mesg,
+     lambdaSet = exp(seq(log(lambda.lo), log(lambda.hi), length.out = lambda.length)),
+     lambda.lo = f.lambda*1e-4, lambda.hi = f.lambda*1e3, lambda.length = 25,
+     maxiter = 100,
+     rq.tol = 1e-8, toler.kn = 1e-6, tol.0res = 1e-6, nk.start = 2)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>vector of covariate; missing values are omitted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>vector of response variable.  It must have the same length as
+<code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>constraint</code></td>
+<td>
+<p>character (string) specifying the kind of
+constraint; must be one of the values in the default list above;
+may be abbreviated.  More flexible constraints can be specified via
+the <code>pointwise</code> argument (below).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>vector of weights the same length as <code>x</code> (y) assigned to
+both <code>x</code> and <code>y</code>;  default to all weights being one.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>knots</code></td>
+<td>
+<p>vector of locations of the knot mesh; if missing,
+<code>nknots</code> number of <code>knots</code> will be created using the
+specified <code>method</code> and automatic knot selection will be carried
+out for regression B-spline (<code>lambda=0</code>); if not missing and
+<code>length(knots)==nknots</code>, the provided knot mesh will be used in
+the fit and no automatic knot selection will be performed;
+otherwise, automatic knots selection will be performed on the
+provided <code>knots</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nknots</code></td>
+<td>
+<p>maximum number of knots; defaults to 6 for regression
+B-splines, 20 for smoothing B-splines.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>character string specifying the method for generating
+<code>nknots</code> number of <code>knots</code> when <code>knots</code> is not provided;
+either <code>"quantile"</code> (equally spaced in percentile levels)
+or <code>"uniform"</code> (equally spaced knots); defaults to "quantile".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>degree</code></td>
+<td>
+<p>degree of the splines; 1 for linear spline (equivalent
+to <code class="reqn">L_1</code>-roughness) and 2 for quadratic
+spline (corresponding to <code class="reqn">L_{\infty}</code>
+roughness); defaults to 2.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau</code></td>
+<td>
+<p>desired quantile level; defaults to 0.5 (median).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>penalty parameter <code class="reqn">\lambda</code><br><code class="reqn">\lambda = 0</code>: no penalty (regression B-spline);<br><code class="reqn">\lambda &gt; 0</code>: smoothing B-spline with the given <code class="reqn">\lambda</code>;<br><code class="reqn">\lambda &lt; 0</code>: smoothing B-spline with <code class="reqn">\lambda</code> chosen by a
+Schwarz-type information criterion.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ic</code></td>
+<td>
+<p>string indicating the information  criterion used in knot
+deletion and addition for the regression B-spline method, i.e., when
+<code>lambda == 0</code>;<br><code>"AIC"</code> (Akaike-type, equivalently <code>"aic"</code>) or<br><code>"SIC"</code> (Schwarz-type, equivalently <code>"BIC"</code>, <code>"sic"</code>
+or <code>"bic"</code>).  Defaults to <code>"AIC"</code>.
+</p>
+<p><em>Note that the default was <code>"SIC"</code> up to <span class="pkg">cobs</span> version 1.1-6
+(dec.2008).</em></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>knots.add</code></td>
+<td>
+<p>logical indicating if an additional step of stepwise
+knot addition should be performed for regression B-splines.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>repeat.delete.add</code></td>
+<td>
+<p>logical indicating if an additional step of stepwise
+knot deletion should be performed for regression B-splines.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pointwise</code></td>
+<td>
+<p>an optional three-column matrix with each row
+specifies one of the following constraints:
+</p>
+
+<dl>
+<dt>
+<code>( 1,xi,yi)</code>:</dt>
+<dd>
+<p>fitted value at xi will be <code class="reqn">\ge</code> yi;</p>
+</dd>
+<dt>
+<code>(-1,xi,yi)</code>:</dt>
+<dd>
+<p>fitted value at xi will be <code class="reqn">\le</code> yi;</p>
+</dd>
+<dt>
+<code>( 0,xi,yi)</code>:</dt>
+<dd>
+<p>fitted value at xi will be <code class="reqn">=</code> yi;</p>
+</dd>
+<dt>
+<code>( 2,xi,yi)</code>:</dt>
+<dd>
+<p>derivative of the fitted function at xi
+will be yi.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.data</code></td>
+<td>
+<p>logical indicating if the <code>x</code> and <code>y</code> input
+vectors <b>after</b> removing <code>NA</code>s should be kept in
+the result.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.x.ps</code></td>
+<td>
+<p>logical indicating if the pseudo design matrix
+<code class="reqn">\tilde{X}</code> should be returned (as <em>sparse</em> matrix).
+That is needed for interval prediction, <code>predict.cobs(*,
+      interval=..)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>print.warn</code></td>
+<td>
+<p>flag for printing of interactive warning messages;
+true by default; set to <code>FALSE</code> if performing simulation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>print.mesg</code></td>
+<td>
+
+<p>logical flag or integer for printing of intermediate messages; true
+by default.  Probably needs to be set to <code>FALSE</code> in simulations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>integer <code class="reqn">\ge 0</code> indicating how much diagnostics
+the low-level code in <code>drqssbc2</code> should print;  defaults
+to <code>print.mesg</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambdaSet</code></td>
+<td>
+<p>numeric vector of lambda values to use for grid search;
+in that case, defaults to a geometric sequence (a “grid in
+log scale”) from <code>lambda.lo</code> to <code>lambda.hi</code> of length
+<code>lambda.length</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.lo, lambda.hi</code></td>
+<td>
+<p>lower and upper bound of the grid search
+for lambda (when <code>lambda &lt; 0</code>).  The defaults are meant to keep
+everything scale-equivariant and are hence using the factor
+
+
+<code class="reqn">f = \sigma_x^d</code>, i.e.,
+<code>f.lambda &lt;- sd(x)^degree</code>.
+
+Note however that currently the underlying algorithms in package
+<span class="pkg">quantreg</span> are <em>not</em> scale equivariant yet.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.length</code></td>
+<td>
+<p>number of grid points in the grid search for
+optimal lambda.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxiter</code></td>
+<td>
+<p>upper bound of the number of iterations; defaults to 100.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rq.tol</code></td>
+<td>
+<p>numeric convergence tolerance for the interior point
+algorithm called from <code>rq.fit.sfnc()</code> or
+<code>rq.fit.sfn()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>toler.kn</code></td>
+<td>
+<p>numeric tolerance for shifting the boundary knots
+outside; defaults to <code class="reqn">10^{-6}</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol.0res</code></td>
+<td>
+<p>tolerance for testing <code class="reqn">|r_i| = 0</code>,  passed to
+<code>qbsks2</code> and <code>drqssbc2</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nk.start</code></td>
+<td>
+<p>number of starting knots used in automatic knot
+selection. Defaults to the minimum of 2 knots.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>cobs()</code> computes the constraint quantile smoothing B-spline with
+penalty when lambda is not zero.<br>
+If lambda &lt; 0, an optimal lambda will be chosen using Schwarz type
+information criterion. <br>
+If lambda &gt; 0, the supplied lambda will be used.<br>
+If lambda = 0, cobs computes the constraint quantile regression B-spline
+with no penalty using the provided knots or those selected by Akaike or
+Schwarz information criterion.
+</p>
+
+
+<h3>Value</h3>
+
+<p>an object of class <code>cobs</code>, a list with components
+
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the <code>cobs(..)</code> call used for creation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau, degree</code></td>
+<td>
+<p>same as input</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>constraint</code></td>
+<td>
+<p>as input (but no more abbreviated).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pointwise</code></td>
+<td>
+<p>as input.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coef</code></td>
+<td>
+<p>B-spline coefficients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>knots</code></td>
+<td>
+<p>the final set of knots used in the computation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ifl</code></td>
+<td>
+<p>exit code := <code>1 + ierr</code> and <code>ierr</code> is the error
+from <code>rq.fit.sfnc</code> (package <span class="pkg">quantreg</span>);
+consequently, <code>ifl = 1</code> means “success”; all other
+values point to algorithmic problems or failures.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>icyc</code></td>
+<td>
+<p>length 2: number of cycles taken to achieve convergence
+for final lambda, and total number of cycles for all lambdas.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p>the effective dimensionality of the final fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k0</code></td>
+<td>
+<p>(usually the same)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x.ps</code></td>
+<td>
+<p>the pseudo design matrix <code class="reqn">X</code> (as returned by
+<code>qbsks2</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resid</code></td>
+<td>
+<p>vector of residuals from the fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitted</code></td>
+<td>
+<p>vector of fitted values from the fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SSy</code></td>
+<td>
+<p>the sum of squares around centered <code>y</code> (e.g. for
+computation of <code class="reqn">R^2</code>.)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>the penalty parameter used in the final fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pp.lambda</code></td>
+<td>
+<p>vector of all lambdas used for
+lambda search when <code>lambda</code> &lt; 0 on input.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pp.sic</code></td>
+<td>
+<p>vector of Schwarz information criteria evaluated at
+<code>pp.lambda</code>; note that it is not quite sure how good these are
+for determining an optimal <code>lambda</code>.</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Ng, P. and Maechler, M. (2007)
+A Fast and Efficient Implementation of Qualitatively Constrained Quantile Smoothing Splines,
+<em>Statistical Modelling</em> <b>7(4)</b>, 315-328.
+</p>
+<p>Koenker, R. and Ng, P. (2005)
+Inequality Constrained Quantile Regression,
+<em>Sankhya, The Indian Journal of Statistics</em> <b>67</b>, 418–440.
+</p>
+<p>He, X. and Ng, P. (1999)
+COBS: Qualitatively Constrained Smoothing via Linear Programming;
+<em>Computational Statistics</em> <b>14</b>, 315–337.
+</p>
+<p>Koenker, R. and Ng, P. (1996)
+A Remark on Bartels and Conn's Linearly Constrained L1 Algorithm,
+<em>ACM Transaction on Mathematical Software</em> <b>22</b>, 493–495.
+</p>
+<p>Ng, P. (1996)
+An Algorithm for Quantile Smoothing Splines,
+<em>Computational Statistics &amp; Data Analysis</em> <b>22</b>, 99–118.
+</p>
+<p>Bartels, R. and Conn A. (1980)
+Linearly Constrained Discrete <code class="reqn">L_1</code> Problems,
+<em>ACM Transaction on Mathematical Software</em> <b>6</b>, 594–608.
+</p>
+<p>A postscript version of the paper that describes the details of COBS
+can be downloaded from <a href="https://www2.nau.edu/PinNg/cobs.html">https://www2.nau.edu/PinNg/cobs.html</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>smooth.spline</code> for unconstrained smoothing
+splines; <code>bs</code> for unconstrained (regression)
+B-splines.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">x &lt;- seq(-1,3,,150)
+y &lt;- (f.true &lt;- pnorm(2*x)) + rnorm(150)/10
+## specify pointwise constraints (boundary conditions)
+con &lt;- rbind(c( 1,min(x),0), # f(min(x)) &gt;= 0
+             c(-1,max(x),1), # f(max(x)) &lt;= 1
+             c(0,  0,   0.5))# f(0)      = 0.5
+
+## obtain the median  REGRESSION  B-spline using automatically selected knots
+Rbs &lt;- cobs(x,y, constraint= "increase", pointwise = con)
+Rbs
+plot(Rbs, lwd = 2.5)
+lines(spline(x, f.true), col = "gray40")
+lines(predict(cobs(x,y)), col = "blue")
+mtext("cobs(x,y)   # completely unconstrained", 3, col= "blue")
+
+## compute the median  SMOOTHING  B-spline using automatically chosen lambda
+Sbs &lt;- cobs(x,y, constraint="increase", pointwise= con, lambda= -1)
+summary(Sbs)
+plot(Sbs) ## by default  includes  SIC ~ lambda
+
+Sb1 &lt;- cobs(x,y, constraint="increase", pointwise= con, lambda= -1,
+            degree = 1)
+summary(Sb1)
+plot(Sb1)
+
+plot(Sb1, which = 2) # only the  data + smooth
+rug(Sb1$knots, col = 4, lwd = 1.6)# (too many knots)
+xx &lt;- seq(min(x) - .2, max(x)+ .2, len = 201)
+pxx &lt;- predict(Sb1, xx, interval = "both")
+lines(pxx, col = 2)
+mtext(" + pointwise and simultaneous 95% - confidence intervals")
+matlines(pxx[,1], pxx[,-(1:2)], col= rep(c("green3","blue"), c(2,2)), lty=2)
+</code></pre>
+
+
+</div>

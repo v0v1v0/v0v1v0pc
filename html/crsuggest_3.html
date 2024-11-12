@@ -1,0 +1,114 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>guess_crs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Guess the CRS of a dataset that is missing CRS information</h2>
+
+<h3>Description</h3>
+
+<p>This function will "guess" possible coordinate reference systems for spatial data that are
+lacking a CRS definition.  Input data, which must be of class <code>"sf"</code>
+(or which can be converted to sf) might be objects
+created from CSV files that use projected coordinates or objects created from shapefiles
+loaded with <code>sf::st_read()</code> that are missing .prj files.  The function requires a
+"target location" that the user knows to be within the general area of the input dataset.  It
+then identifies suitable coordinate reference systems for that area and "tests out"
+those CRSs for the input data by analyzing the distance between the dataset and the known location
+when that CRS is used.  Those distances are returned by the function in a column <code>dist_km</code>;
+short distances represent better guesses for the CRS whereas longer distances suggest that
+the CRS wouldn't work.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">guess_crs(input, target_location, units = NULL, n_return = 10, input_sf = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>input</code></td>
+<td>
+<p>A spatial dataset of class <code>"sf"</code>, <code>"Spatial*"</code>,
+<code>"RasterLayer"</code>, <code>"SpatVector"</code>, or <code>"SpatRaster"</code>
+in a projected coordinate reference system that is
+missing CRS information. For example, you may have loaded in a shapefile without
+a .prj file, or your input data has no CRS definition attached.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>target_location</code></td>
+<td>
+<p>A coordinate pair of form <code>c(longitude, latitude)</code>
+or an address/location that you know is located within your
+input sf object.  If the mapboxapi package is installed, you can
+supply a location name (e.g. an address or a city) instead of a
+coordinate pair.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>units</code></td>
+<td>
+<p>If known, the units of your projected coordinate system (e.g. <code>"m"</code> for
+meters or <code>"us-ft"</code> for US feet).  This is not required but will make
+the guesses more accurate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_return</code></td>
+<td>
+<p>The number of possible CRS choices to return; defaults to 10. A higher
+number than that may include CRS options that are unlikely to work with
+your data. Use the returned <code>dist_km</code> column to judge whether the CRS
+guess makes sense for your data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_sf</code></td>
+<td>
+<p>Deprecated; use <code>input</code> instead.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A tibble of CRS guesses for your data, sorted in ascending order of distance between
+your target location and the input sf object's centroid when in that CRS.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+library(crsuggest)
+library(sf)
+# An example data frame of projected coordinates with no CRS information included
+locations &lt;- data.frame(
+  X = c(2312654.74514528, 2357493.02092003, 2398978.30047505, 2344378.47525209,
+        2475776.26735713, 2493751.94421798, 2456797.1698781, 2448392.13089886,
+        2319704.35367616, 2350119.25250331, 2449088.54659236, 2423774.3668849),
+  Y = c(6966055.04531077, 6994256.06222144, 6951975.79788762, 6902972.35980149,
+        6918178.81070276, 6977643.56941746, 7053989.26343385, 7024543.36487243,
+        7015476.52061313, 6953350.28550116, 6945011.24615857, 6912284.16691977),
+  id = 1:12
+)
+
+# Create an sf object but the CRS is not known
+locations_sf &lt;- st_as_sf(locations, coords = c("X", "Y"))
+
+# Use `guess_crs()` to guess the CRS used for the coordinates along with a known coordinate
+# in the area of interest
+guesses &lt;- guess_crs(locations_sf, target_location = c(-97.1071, 32.7356))
+# Set the CRS of your data with the "best guess"
+st_crs(locations_sf) &lt;- 6584
+
+## End(Not run)
+</code></pre>
+
+
+</div>

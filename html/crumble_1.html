@@ -1,0 +1,249 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>crumble</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Flexible and general mediation analysis</h2>
+
+<h3>Description</h3>
+
+<p>General estimator for common mediation causal effects, including recanting
+twins, natural effects, organic effects, and randomized interventional
+effects. Interventions are specified using modified treatment policies.
+Nuisance parameters are estimated using the 'super learner' algorithm and
+'Riesz learning'. Supports binary, categorical, and continuous exposures.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">crumble(
+  data,
+  trt,
+  outcome,
+  mediators,
+  moc = NULL,
+  covar,
+  obs = NULL,
+  id = NULL,
+  d0 = NULL,
+  d1 = NULL,
+  effect = c("RT", "N", "RI", "O"),
+  weights = rep(1, nrow(data)),
+  learners = "glm",
+  nn_module = sequential_module(),
+  control = crumble_control()
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>[<code>data.frame</code>]<br>
+A <code>data.frame</code> in wide format containing all necessary variables
+for the estimation problem.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trt</code></td>
+<td>
+<p>[<code>character</code>]<br>
+A vector containing the column names of treatment variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outcome</code></td>
+<td>
+<p>[<code>character(1)</code>]<br>
+The column name of the outcome variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mediators</code></td>
+<td>
+<p>[<code>character</code>]<br>
+A vector containing the column names of the mediator variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>moc</code></td>
+<td>
+<p>[<code>character</code>]<br>
+An optional vector containing the column names of the mediator-outcome confounders.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covar</code></td>
+<td>
+<p>[<code>character</code>]<br>
+An vector containing the column names of baseline covariates to be
+controlled for.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>obs</code></td>
+<td>
+<p>[<code>character(1)</code>]<br>
+An optional column name (with values coded as 0 or 1) for whether or not the <code>outcome</code> is observed.
+Must be provided if there is missingness in the outcome! Default is <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id</code></td>
+<td>
+<p>[<code>character(1)</code>]<br>
+An optional column name containing cluster level identifiers.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d0</code></td>
+<td>
+<p>[<code>closure</code>]<br>
+A two argument function that specifies how treatment variables should be shifted.
+See examples for how to specify shift functions for continuous, binary, and categorical exposures.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d1</code></td>
+<td>
+<p>[<code>closure</code>]<br>
+A two argument function that specifies how treatment variables should be shifted.
+See examples for how to specify shift functions for continuous, binary, and categorical exposures.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>effect</code></td>
+<td>
+<p>[<code>character(1)</code>]<br>
+The type of effect to estimate. Options are <code>"RT"</code> for recanting twins,
+<code>"N"</code> for natural effects, <code>"RI"</code> for randomized interventional effects,
+and <code>"O"</code> for organic effects.
+If <code>"RT"</code> or <code>"RI"</code> is selected, <code>moc</code> must be provided.
+If <code>"N"</code> or <code>"O"</code> is selected, <code>moc</code> must be <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>[<code>numeric</code>]<br>
+A optional vector of survey weights.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>learners</code></td>
+<td>
+<p>[<code>character</code>]<br>
+A vector of <code>mlr3superlearner</code> algorithms
+for estimation of the outcome regressions. Default is <code>"glm"</code>, a main effects GLM.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nn_module</code></td>
+<td>
+<p>[<code>function</code>]<br> A function that returns a neural network module.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>[<code>crumble_control</code>]<br>
+Control parameters for the estimation procedure. Use <code>crumble_control()</code> to set these values.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A <code>crumble</code> object containing the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>estimates</code></td>
+<td>
+<p>A list of parameter estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outcome_reg</code></td>
+<td>
+<p>Predictions from the outcome regressions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha_n</code></td>
+<td>
+<p>A list of density ratio estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha_r</code></td>
+<td>
+<p>A list of density ratio estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fits</code></td>
+<td>
+<p>A list of the fitted values from the outcome regressions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>The matched call.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>effect</code></td>
+<td>
+<p>The estimated effect type.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id</code></td>
+<td>
+<p>Vector of cluster level identifiers.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>Vector of survey weights.</p>
+</td>
+</tr>
+</table>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+if (require("mma") &amp;&amp; torch::torch_is_installed()) {
+	library(mma)
+	data(weight_behavior)
+
+	weight_behavior &lt;- na.omit(weight_behavior)
+
+	res &lt;- crumble(
+		data = weight_behavior,
+		trt = "sports",
+		outcome = "bmi",
+		covar = c("age", "sex", "tvhours"),
+		mediators = c("exercises", "overweigh"),
+		moc = "snack",
+		d0 = \(data, trt) factor(rep(1, nrow(data)), levels = c("1", "2")),
+		d1 = \(data, trt) factor(rep(2, nrow(data)), levels = c("1", "2")),
+		learners = c("mean", "glm"),
+		nn_module = sequential_module(),
+		control = crumble_control(crossfit_folds = 1L, zprime_folds = 5L, epochs = 10L)
+	)
+
+	print(res)
+	tidy(res)
+}
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,140 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>getConsensusClustersParallel</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generates an optimal set of clusters for a clickstream based on consensus clustering and with parallel computation</h2>
+
+<h3>Description</h3>
+
+<p>This is an experimental function for a consensus clustering algorithm based on targeting a range of average next state probabilities derived when fitting each cluster to a markov chain. This function parallelizes k-means and fitToMarkovChain operations across computer cores, and depends on the parallel package to function.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">getConsensusClustersParallel(
+  trainingCLS,
+  testCLS,
+  maxIterations = 5,
+  optimalProbMean = 0.5,
+  range = 0.3,
+  centresMin = 2,
+  clusterCentresRange = 0,
+  order = 1,
+  cores = 2,
+  takeHighest = FALSE,
+  verbose = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>trainingCLS</code></td>
+<td>
+<p>Clickstream object with training data (this should be the data used to build the markov chain object).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>testCLS</code></td>
+<td>
+<p>Clickstream object with test data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxIterations</code></td>
+<td>
+<p>Number of times to iterate (repeat) through the k-means clustering.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimalProbMean</code></td>
+<td>
+<p>The target average probability of each next page click prediction in a 1st order markov chain.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>range</code></td>
+<td>
+<p>The range above the optimal probability to target.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>centresMin</code></td>
+<td>
+<p>The minimum cluster centres to evaluate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clusterCentresRange</code></td>
+<td>
+<p>the additional cluster centres to evaluate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>order</code></td>
+<td>
+<p>The order for markov chains that will be used to evaluate each cluster.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cores</code></td>
+<td>
+<p>Number of cores used for clustering.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>takeHighest</code></td>
+<td>
+<p>Determines whether to default to the highest mean next click probability, or error if the target is not reached after the given number of k-means iterations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Should this function report extra information on progress?</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Theo van Kraay <a href="mailto:theo.vankraay@hotmail.com">theo.vankraay@hotmail.com</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">training &lt;- c("User1,h,c,c,p,c,h,c,p,p,c,p,p,o",
+              "User2,i,c,i,c,c,c,d",
+              "User3,h,i,c,i,c,p,c,c,p,c,c,i,d",
+              "User4,h,c,c,p,p,c,p,p,p,i,p,o",
+              "User5,i,h,c,c,p,p,c,p,c,d",
+              "User6,i,h,c,c,p,p,c,p,c,o",
+              "User7,i,h,c,c,p,p,c,p,c,d",
+              "User8,i,h,c,c,p,p,c,p,c,d,o")
+
+test &lt;- c(
+    "User1,h,c,c,p,c,h,c,p,p,c,p,p,o",
+    "User2,i,c,i,c,c,c,d",
+    "User3,h,i,c,i,c,p,c,c,p,c,c,i,d"
+)
+
+trainingCLS &lt;- as.clickstreams(training, header = TRUE)
+testCLS &lt;- as.clickstreams(test, header = TRUE)
+
+clusters &lt;- getConsensusClustersParallel(trainingCLS, testCLS, maxIterations=3, 
+                                 optimalProbMean=0.40, range = 0.70, centresMin = 2, 
+                                 clusterCentresRange = 0, order = 1, cores = 1,
+                                 takeHighest = FALSE, verbose = FALSE)
+markovchains &lt;- fitMarkovChains(clusters)
+startPattern &lt;- new("Pattern", sequence = c("i", "h", "c", "p"))
+mc &lt;- getOptimalMarkovChain(startPattern, markovchains, clusters)
+predict(mc, startPattern)
+</code></pre>
+
+
+</div>

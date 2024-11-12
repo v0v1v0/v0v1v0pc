@@ -1,0 +1,292 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>joeskewCOP</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Joe's Nu-Skew and the copBasic Nu-Star of a Copula</h2>
+
+<h3>Description</h3>
+
+<p>Compute the measure of <em>permutation asymmetry</em>, which can be thought of as <em>bivariate skewness</em>, named for the <span class="pkg">copBasic</span> package as <em>Nu-Skew</em> <code class="reqn">\nu_\mathbf{C}</code> of a copula according to Joe (2014, p. 66) by
+</p>
+<p style="text-align: center;"><code class="reqn">\nu_\mathbf{C} = 3\mathrm{E}[UV^2 - U^2V] = 6\int\!\!\int_{\mathcal{I}^2} (v-u)\mathbf{C}(u,v)\, \mathrm{d}u\mathrm{d}v\mbox{.}</code>
+</p>
+
+<p>This definition is effectively the <code>type="nu"</code> for the function for which the multiplier <code class="reqn">6</code> has been converted to <code class="reqn">96</code> as explained in the <b>Note</b>.
+</p>
+<p>Numerical results indicate <code class="reqn">\nu_\mathbf{W} \approx 0</code> (<code>W</code>), <code class="reqn">\nu_\mathbf{\Pi} = 0</code> (<code>P</code>), <code class="reqn">\nu_\mathbf{M} \approx 0</code> (<code>M</code>), <code class="reqn">\nu_\mathbf{PL} \approx 0</code> for all <code class="reqn">\Theta</code> (<code>PLcop</code>), and the <code class="reqn">\nu^\star_\mathbf{GH} = 0</code> (<code>GHcop</code>); copulas with mirror symmetry across the equal value line have <code class="reqn">\nu_\mathbf{C} = 0</code>.
+</p>
+<p>Asymmetric copulas do exist. For example, consider an asymmetric Gumbel–Hougaard <code class="reqn">\mathbf{GH}</code> copula with <code class="reqn">\Theta_p = (5,0.8,p)</code>:
+</p>
+<pre>
+  optimize(function(p) { nuskewCOP(cop=GHcop, para=c(5,0.8, p)) },
+           c(0,0.99) )$minimum
+  UV &lt;- simCOP(n=10000, cop=GHcop, c(5,0.8, 0.2836485)) # inspect the graphics
+  48*mean(UV$U*$V^2 - UV$U^2*UV$V) # -0.2847953 (not the 3rd parameter)
+</pre>
+<p>The minimization yields <code class="reqn">\nu_{\mathbf{GH}(5, 0.8, 0.2836485)} = -0.2796104</code>, which is close the expectation computed where <code class="reqn">48 = 96/2</code>.
+</p>
+<p>A complementary definition is supported, triggered by <code>type="nustar"</code>, and is computed by
+</p>
+<p style="text-align: center;"><code class="reqn">\nu^\star_\mathbf{C} = 12\int\!\!\int_{\mathcal{I}^2} (v+u)\mathbf{C}(u,v)\, \mathrm{d}u\mathrm{d}v - 4\mbox{,}</code>
+</p>
+
+<p>which has been for the <span class="pkg">copBasic</span> package, <code class="reqn">\nu^\star_\mathbf{C}</code> is named as <em>Nu-Star</em>, which the <code class="reqn">12</code> and the <code class="reqn">-4</code> have been chosen so that numerical results indicate <code class="reqn">\nu^\star_\mathbf{W} = -1</code> (<code>W</code>), <code class="reqn">\nu^\star_\mathbf{\Pi} = 0</code> (<code>P</code>), and <code class="reqn">\nu^\star_\mathbf{M} = +1</code> (<code>M</code>).
+</p>
+<p>Lastly, the <code>uvlmoms</code> function provides for a quantile-based measure of bivariate skewness based on the difference <code class="reqn">U - V</code> that also is discussed by Joe (2014, p. 66).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">joeskewCOP(cop=NULL, para=NULL, type=c("nu", "nustar", "nuskew"),
+                               as.sample=FALSE, brute=FALSE, delta=0.002, ...)
+
+nuskewCOP(cop=NULL, para=NULL, as.sample=FALSE, brute=FALSE, delta=0.002, ...)
+nustarCOP(cop=NULL, para=NULL, as.sample=FALSE, brute=FALSE, delta=0.002, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cop</code></td>
+<td>
+<p>A copula function;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>Vector of parameters or other data structure, if needed, to pass to the copula;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>The type of metric to compute (<code>nu</code> and <code>nuskew</code> are synonymous for <code class="reqn">\nu_\mathbf{C}</code> and <code>nustar</code> is for <code class="reqn">\nu^\star_\mathbf{C}</code>);</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>brute</code></td>
+<td>
+<p>Should brute force be used instead of two nested <code>integrate()</code> functions to perform the double integration;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta</code></td>
+<td>
+<p>The <code class="reqn">\mathrm{d}u</code> and <code class="reqn">\mathrm{d}v</code> for the brute force integration using <code>brute</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>as.sample</code></td>
+<td>
+<p>A logical controlling whether an optional <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> <code>data.frame</code> in <code>para</code> is used to compute the sample <code class="reqn">\hat\nu</code> or <code class="reqn">\hat\nu^\star</code> (see <b>Note</b>). If set to <code>-1</code>, then the message concerning CPU effort will be surpressed; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The implementation of <code>joeskewCOP</code> for <span class="pkg">copBasic</span> provides the second metric of asymmetry, but why?  Consider the results that follow:
+</p>
+<pre>
+  joeskewCOP(cop=GHcop, para=c(5, 0.8,    0.2836485), type="nu")
+     # -0.2796104
+  joeskewCOP(cop=GHcop, para=c(5, 0.2836485,    0.8), type="nu")
+     # +0.2796103
+  joeskewCOP(cop=GHcop, para=c(5, 0.8,    0.2836485), type="nu")
+     #  0.3571276
+  joeskewCOP(cop=GHcop, para=c(5, 0.2836485,    0.8), type="nu")
+     #  0.3571279
+  tauCOP(    cop=GHcop, para=c(5, 0.2836485,    0.8))
+     #  0.2443377
+</pre>
+<p>The demonstration shows—at least for the symmetry (switchability) of the 2nd and 3rd parameters (<code class="reqn">\pi_2</code> and <code class="reqn">\pi_3</code>) of the asymmetric <code class="reqn">\mathbf{GH}</code> copula—that the first definition <code class="reqn">\nu</code> is magnitude symmetric but carries a sign change. The demonstration shows magnitude and sign stability for <code class="reqn">\nu^\star</code>, and ends with <em>Kendall Tau</em> (<code>tauCOP</code>). Collectively, Kendall Tau (or the other <em>symmetric measures of association</em>, <em>e.g.</em> <code>blomCOP</code>, <code>footCOP</code>, <code>giniCOP</code>, <code>hoefCOP</code>, <code>rhoCOP</code>, <code>wolfCOP</code>) when combined with <code class="reqn">\nu</code> and <code class="reqn">\nu^\star</code> might provide a framework for parameter optimization of the asymmetric <code class="reqn">\mathbf{GH}</code> copula (see below).
+</p>
+<p>The asymmetric <code class="reqn">\mathbf{GH}_{(5, 0.2836485, 0.8)}</code> is not radial (<code>isCOP.radsym</code>) or permutation (<code>isCOP.permsym</code>), but if <code class="reqn">\pi_2 = \pi_3</code> then the resulting <code class="reqn">\mathbf{GH}</code> copula is not radially symmetric but is permutation symmetric:
+</p>
+<pre>
+  isCOP.radsym( cop=GHcop, para=c(5, 0.2836485, 0.8)) # FALSE
+  isCOP.permsym(cop=GHcop, para=c(5, 0.2836485, 0.8)) # FALSE
+  isCOP.radsym( cop=GHcop, para=c(5, 0.8,       0.8)) # FALSE
+  isCOP.permsym(cop=GHcop, para=c(5, 0.8,       0.8)) # TRUE
+</pre>
+<p>The use of <code class="reqn">\nu_\mathbf{C}</code> and <code class="reqn">\nu^\star_\mathbf{C}</code> with a <em>measure of association</em> is just suggested above for parameter optimization. Suppose we have <code class="reqn">\mathbf{GH}_{(5,0.5,0.7)}</code> with <em>Spearman Rho</em> <code class="reqn">\rho = 0.4888</code>, <code class="reqn">\nu = 0.001475</code>, and <code class="reqn">\nu^\star = 0.04223</code>, and the asymmetric <code class="reqn">\mathbf{GH}</code> coupla is to be fit. Parameter estimation for the asymmetric <code class="reqn">\mathbf{GH}</code> is accomplished by
+</p>
+<pre>
+  "fitGHcop" &lt;- function(hats, assocfunc=rhoCOP, init=NA, eps=1E-4, ...) {
+     H &lt;- GHcop # shorthand for the copula
+     "objfunc" &lt;- function(par) {
+        par[1]   &lt;- ifelse(par[1] &lt; 1, return(Inf), exp(par[1])) # edge check
+        par[2:3] &lt;-  pnorm(par[2:3]) # detransform
+        hp &lt;- c(assocfunc(H, par), nuskewCOP(H, par), nustarCOP(H, par))
+        return(sum((hats-hp)^2))
+     }
+     # Theta=1 and Pi2 = Pi3 = 1/2 # as default initial estimates
+     if(is.na(init)) init &lt;- c(1, rep(1/2, times=2))
+     opt  &lt;- optim(init, objfunc, ...); par &lt;- opt$par
+     para &lt;- c( exp(par[1]), pnorm(par[2:3]) )
+     names(para) &lt;- c("Theta", "Pi2", "Pi3")
+     fit &lt;- c(assocfunc(H, para), nuskewCOP(H, para), nustarCOP(H, para))
+     txt &lt;- c("AssocMeasure", "NuSkew", "NuStar")
+     names(fit) &lt;- txt; names(hats) &lt;- txt
+     if(opt$value &gt; eps) warning("inspect the fit")
+     return(list(para=para, fit=fit, given=hats, optim=opt))
+  }
+  father &lt;- c(5,.5,.7)
+  densityCOPplot(cop=GHcop, para=father, contour.col=8)
+  fRho  &lt;- rhoCOP(   cop=GHcop, father)
+  fNu   &lt;- nuskewCOP(cop=GHcop, father)
+  fStar &lt;- nustarCOP(cop=GHcop, father)
+
+  child &lt;- fitGHcop(c(fRho, fNu, fStar))$para
+  densityCOPplot(cop=GHcop, para=child, ploton=FALSE)
+
+  cRho  &lt;- rhoCOP(   cop=GHcop, child)
+  cNu   &lt;- nuskewCOP(cop=GHcop, child)
+  cStar &lt;- nustarCOP(cop=GHcop, child)
+  message("Father stats: ", paste(fRho, fNu, fStar, sep=", "))
+  message("Child  stats: ", paste(cRho, cNu, cStar, sep=", "))
+  message("Father para: ",  paste(father,      collapse=", "))
+  message("Child  para: ",  paste(child,       collapse=", "))
+</pre>
+<p>The initial parameter estimate has the value <code class="reqn">\Theta = 1</code>, which is <em>independence</em> for the one parameter <code class="reqn">\mathbf{GH}</code>. The two other parameters are set as <code class="reqn">\pi_2 = \pi_3 = 1/2</code> to be in the mid-point of their domain. The transformations using the <code>log()</code> <code class="reqn">\leftrightarrow</code> <code>exp()</code> and <code>qnorm()</code> <code class="reqn">\leftrightarrow</code> <code>pnorm()</code> functions in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> are used to keep the optimization in the viable parameter domain. The results produce a fitted copula of <code class="reqn">\mathbf{GH}_{(4.907, 0.5006, 0.7014)}</code>. This fit aligns well with the parent, and the three statistics are essentially matched during the fitting.
+</p>
+<p>The <code class="reqn">\nu^\star_\mathbf{C}</code> can be similar to <code>rhoCOP</code>, but differences do exist. In the presence of radial symmetry, (<code class="reqn">\nu_\mathbf{C} == 0</code>), the <code class="reqn">\nu^\star_\mathbf{C}</code> is nearly equal to <em>Spearman Rho</em> for some copulas. Let us test further:
+</p>
+<pre>
+  p &lt;- 10^seq(0,2,by=.01)
+  s &lt;- sapply(p, function(t) nustarCOP(cop=GHcop, para=c(t)))
+  r &lt;- sapply(p, function(t)    rhoCOP(cop=GHcop, para=c(t)))
+  plot(p,s, log="x", type="l", col=3, lwd=3); lines(p,r)
+</pre>
+<p>Now let us add some asymmetry
+</p>
+<pre>
+  s &lt;- sapply(p, function(t) nustarCOP(cop=GHcop, para=c(t, 0.25, 0.75)))
+  r &lt;- sapply(p, function(t)    rhoCOP(cop=GHcop, para=c(t, 0.25, 0.75)))
+  plot(p,s, log="x", type="l", col=3, lwd=3); lines(p,r)
+</pre>
+<p>Now let us choose a different (the <em>Clayton</em>) copula
+</p>
+<pre>
+  s &lt;- sapply(p, function(t) nustarCOP(cop=CLcop, para=c(t)))
+  r &lt;- sapply(p, function(t)    rhoCOP(cop=CLcop, para=c(t)))
+  plot(p,s, log="x", type="l", col=3, lwd=3); lines(p,r)
+</pre>
+
+
+<h3>Value</h3>
+
+<p>The value for <code class="reqn">\nu_\mathbf{C}</code> or <code class="reqn">\nu^\star_\mathbf{C}</code> is returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The <code class="reqn">\nu_\mathbf{C}</code> definition is given with a multiplier of <code class="reqn">6</code> on the integrals in order to agree with Joe (2014) relation that is also shown. However, in mutual parameter estimation experiments using a simple sum-of-square errors as shown in the <b>Details</b>, it is preferred to have <code class="reqn">\nu_\mathbf{C}</code> measured on a larger scale. Where does the <code class="reqn">96</code> then come from? It is heuristically made so that the upright and rotated <code>cophalf</code> (see <b>Examples</b> under <code>asCOP</code> and <code>bilmoms</code> for this copula) acquires <code class="reqn">\nu_\mathbf{C}</code> values of <code class="reqn">+1</code> and <code class="reqn">-1</code>, respectively. As a result to make back comparisons to Joe results, the ratios of <code class="reqn">96</code> are made in this documentation.
+</p>
+<p>The source code shows slightly different styles of division by the sample size as part of the sample estimation of the statistics. The <code class="reqn">\hat\nu</code> using just division by the sample size as testing indicates that this statistic is reasonably unbiased for simple copula. The <code class="reqn">\hat\nu^\star</code> with similar division is a biased statistic and the bias is not symmetrical in magnitude or sign it seems whether the <code class="reqn">\hat\nu^\star</code> is positive or negative. The salient code is <code>spm &lt;- ifelse(corsgn == -1, +2.4, +1.1)</code> within the sources for which the corrections were determined heuristically through simulation, and <code>corsgn</code> is the sign of the sample Spearman Rho through the <code>cor()</code> function of <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Joe, H., 2014, Dependence modeling with copulas: Boca Raton, CRC Press, 462 p.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>uvskew</code>, <code>blomCOP</code>, <code>footCOP</code>, <code>giniCOP</code>,
+<code>hoefCOP</code>, <code>rhoCOP</code>, <code>tauCOP</code>, <code>wolfCOP</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">nuskewCOP(cop=GHcop,para=c(1.43,1/2,1))*(6/96) # 0.005886 (Joe, 2014, p. 184; 0.0059)
+
+## Not run: 
+joeskewCOP(            cop=GHcop, para=c(8, .7, .5)) # -0.1523491
+joeskewCOP(            cop=GHcop, para=c(8, .5, .7)) # +0.1523472
+# UV &lt;- simCOP(n=1000, cop=GHcop, para=c(8, .7, .5)) # see the switch in
+# UV &lt;- simCOP(n=1000, cop=GHcop, para=c(8, .5, .7)) # curvature
+## End(Not run)
+
+## Not run: 
+para=c(19,0.3,0.8); set.seed(341)
+nuskew &lt;-  nuskewCOP( cop=GHcop, para=para) # 0.3057744
+UV &lt;- simCOP(n=10000, cop=GHcop, para=para) #   a large simulation
+mean((UV$U - UV$V)^3)/(6/96)                # 0.3127398
+
+# Two other definitions of skewness follow and are not numerically the same.
+uvskew(u=UV$U, v=UV$V, umv=TRUE)  # 0.3738987  (see documentation uvskew)
+uvskew(u=UV$U, v=UV$V, umv=FALSE) # 0.3592739  ( or documentation uvlmoms)
+# Yet another definition of skew, which requires large sample approximation
+# using the L-comoments (3rd L-comoment is L-coskew).
+lmomco::lcomoms2(UV)$T3 # L-coskew of the simulated values [1,2] and [2,1]
+#             [,1]        [,2]
+#[1,]  0.007398438  0.17076600
+#[2,] -0.061060260 -0.00006613
+# See the asymmetry in the two L-coskew values and consider this in light of
+# the graphic produced by the simCOP() called for n=10,000. The T3[1,1] is
+# the sampled L-skew (univariate) of the U margin and T3[2,2] is the same
+# but for the V margin. Because the margins are uniform (ideally) then these
+# for suitable large sample must be zero because the L-skew of the uniform
+# distribution is by definition zero.
+#
+# Now let us check the sample estimator for sample of size n=300, and the
+# t-test will (should) result in acceptance of the NULL hypothesis.
+S &lt;- replicate(60, nuskewCOP(para=simCOP(n=300, cop=GHcop, para=para,
+                                         graphics=FALSE), as.sample=TRUE))
+t.test(S, mu=nuskew)
+# t = 0.004633, df = 59, p-value = 0.9963
+# alternative hypothesis: true mean is not equal to 0.3057744
+# 95 percent confidence interval:
+#  0.2854282 0.3262150
+# sample estimates:
+# mean of x
+# 0.3058216 
+## End(Not run)
+
+## Not run: 
+# Let us run a large ensemble of copula properties that use the whole copula
+# (not tail properties). We composite a Plackett with a Gumbel-Hougaard for
+# which the over all association (correlation) sign is negative, but amongst
+# these statistics with nuskew and nustar at the bottom, there are various
+# quantities that can be extracted. These could be used for fitting.
+set.seed(873)
+para &lt;- list(cop1=PLcop, cop2=GHcop, alpha=0.6, beta=0.9,
+             para1=.005, para2=c(8.3,0.25,0.7))
+UV &lt;- simCOP(1000, cop=composite2COP, para=para) # just to show
+  blomCOP(composite2COP, para)            # -0.4078657
+  footCOP(composite2COP, para)            # -0.2854227
+  hoefCOP(composite2COP, para)            # +0.5713775
+  lcomCOP(composite2COP, para)$lcomUV[3]  # +0.1816084
+  lcomCOP(composite2COP, para)$lcomVU[3]  # +0.1279844
+   rhoCOP(composite2COP, para)            # -0.5688417
+rhobevCOP(composite2COP, para)            # -0.2005210
+   tauCOP(composite2COP, para)            # -0.4514693
+  wolfCOP(composite2COP, para)            # +0.5691933
+nustarCOP(composite2COP, para)            # -0.5172434
+nuskewCOP(composite2COP, para)            # +0.0714987 
+## End(Not run)
+</code></pre>
+
+
+</div>

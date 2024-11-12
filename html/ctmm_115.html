@@ -1,0 +1,198 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>speed</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate the average speed of a tracked animal</h2>
+
+<h3>Description</h3>
+
+<p>Given a <code>ctmm</code> movement model and <code>telemetry</code> data, <code>speed</code> simulates multiple realizations of the individual's trajectory to estimate the time-averaged speed, which is proportional to distance traveled, while <code>speeds</code> estimates instantaneous speeds at a specified array of times <code>t</code>. Both tortuosity (non straight-line motion between the data) and telemetry error can be accounted for. Given only a <code>ctmm</code> movement model and no data, <code>speed</code> calculates the mean speed of the Gaussian movement process. All methods are described in Noonan &amp; Fleming et al (2019).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">speed(object,...)
+
+## S3 method for class 'ctmm'
+speed(object,data=NULL,t=NULL,level=0.95,robust=FALSE,units=TRUE,prior=TRUE,fast=TRUE,
+      cor.min=0.5,dt.max=NULL,error=0.01,cores=1,trace=TRUE,...)
+
+## S3 method for class 'telemetry'
+speed(object,CTMM,t=NULL,level=0.95,robust=FALSE,units=TRUE,prior=TRUE,fast=TRUE,
+      cor.min=0.5,dt.max=NULL,error=0.01,cores=1,trace=TRUE,...)
+
+speeds(object,...)
+
+## S3 method for class 'ctmm'
+speeds(object,data=NULL,t=NULL,cycle=Inf,level=0.95,robust=FALSE,prior=FALSE,fast=TRUE,
+       error=0.01,cores=1,trace=TRUE,...)
+
+## S3 method for class 'telemetry'
+speeds(object,CTMM,t=NULL,cycle=Inf,level=0.95,robust=FALSE,prior=FALSE,fast=TRUE,
+       error=0.01,cores=1,trace=TRUE,...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>A <code>ctmm</code> movement-model or <code>telemetry</code> object, which requires an additional <code>CTMM</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>Optional <code>telemetry</code> object on which the simulations will be conditioned.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CTMM</code></td>
+<td>
+<p>Movement model object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>t</code></td>
+<td>
+<p>Array of times to estimate instantaneous speeds at, or range of times to estimate mean speed over.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cycle</code></td>
+<td>
+<p>Average over time <code>t</code> indices modulo <code>cycle</code>. E.g., for <code>t</code> sequenced by hours, <code>cycle=24</code> gives daily the cycle of speeds. (Not yet supported.)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>level</code></td>
+<td>
+<p>Confidence level to report on the estimated average speed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>robust</code></td>
+<td>
+<p>Use robust statistics for the ensemble average and its confidence intervals (see Details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>units</code></td>
+<td>
+<p>Convert result to natural units.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior</code></td>
+<td>
+<p>Account for model parameter uncertainty.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fast</code></td>
+<td>
+<p>Whether or not to invoke the central-limit theorem when propagating parameter uncertainty (see <code>emulate</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cor.min</code></td>
+<td>
+<p>Velocity correlation threshold for skipping gaps.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dt.max</code></td>
+<td>
+<p>Absolute gap sizes to skip (in seconds), alternative to <code>cor.min</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>error</code></td>
+<td>
+<p>Target (relative) standard error.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cores</code></td>
+<td>
+<p>Number of simulations to run in parallel. <code>cores=0</code> will use all cores, while <code>cores&lt;0</code> will reserve <code>abs(cores)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>Display a progress bar.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Arguments passed to <code>emulate</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>cor.min</code> or <code>dt.max</code> arguments are used to constrain the estimate to be derived from simulations near the data, and therefore ensure that the estimate is more reflective of the data than the model.
+</p>
+<p>If data quality is poor and velocity can barely be resolved, then the sampling distribution may occassionally include impersistent motion and its mean will be infinite. In these cases <code>robust=TRUE</code> can be used to report the sampling distribution's median rather than its mean. The time average of <code>speed</code>, in either case, is still the mean average of times and the resulting quantity is still proportional to distance traveled. Furthermore, note that medians should be compared to medians and means to means, so the <code>robust</code> option should be the same for all compared individuals.
+</p>
+
+
+<h3>Value</h3>
+
+<p> Returns the estimated mean speed of the sampled trajectory with CIs by default. If <code>level=NULL</code>, then the ensemble of mean speeds is returned instead. </p>
+
+
+<h3>Note</h3>
+
+<p> The mean speed estimated by <code>speed</code> is applicable only during the sampling periods. If an individual is diurnal/nocturnal and only tracked during the day/night, then the output of <code>speed</code> will only be the mean speed during the day/night. For instance, if an individual is tracked the 12 hours per day during which it is active, and <code>speed</code> reports a mean speed of 10 kilometers per day during those periods, then the average distance traveled per day is only 5 kilometers (from 10 kilometers <code>/</code> day <code>*</code> 12 hours). An average of 10 kilometers would only result if the individual were similarly active for 24 hours a day.
+</p>
+<p>The average speeds estimated here are mean speeds. The speeds reported by <code>summary.ctmm</code> are root-mean-square (RMS) speeds. These quantities are sometimes proportional, but not equivalent. </p>
+
+
+<h3>Author(s)</h3>
+
+<p> C. H. Fleming. </p>
+
+
+<h3>References</h3>
+
+<p>M. J. Noonan, C. H. Fleming, T. S. Akre, J. Drescher-Lehman, E. Gurarie, A.-L. Harrison, R. Kays, Justin Calabrese,
+“Scale-insensitive estimation of speed and distance traveled from animal tracking data”,
+<a href="https://movementecologyjournal.biomedcentral.com/articles/10.1186/s40462-019-0177-1">Movement Ecology, 7:35 (2019)</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code>emulate</code>, <code>simulate</code> </p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Load package and data
+library(ctmm)
+data(buffalo)
+DATA &lt;- buffalo$Gabs
+
+GUESS &lt;- ctmm.guess(DATA,interactive=FALSE)
+# in general, you should use ctmm.select instead
+FIT &lt;- ctmm.fit(DATA,GUESS)
+
+# stationary Gaussian estimate
+speed(FIT)
+
+# conditional estimate
+# you will likely want trace=TRUE
+speed(FIT,DATA,trace=FALSE)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,141 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>data_admin_init</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Encrypted data administration</h2>
+
+<h3>Description</h3>
+
+<p>Encrypted data administration; functions for setting up, adding
+users, etc.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">data_admin_init(path_data, path_user = NULL, quiet = FALSE)
+
+data_admin_authorise(
+  path_data = NULL,
+  hash = NULL,
+  path_user = NULL,
+  yes = FALSE,
+  quiet = FALSE
+)
+
+data_admin_list_requests(path_data = NULL)
+
+data_admin_list_keys(path_data = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>path_data</code></td>
+<td>
+<p>Path to the data set.  We will store a bunch of
+things in a hidden directory within this path.  By default in
+most functions we will search down the tree until we find the
+.cyphr directory</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>path_user</code></td>
+<td>
+<p>Path to the directory with your ssh key.
+Usually this can be omitted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quiet</code></td>
+<td>
+<p>Suppress printing of informative messages.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hash</code></td>
+<td>
+<p>A vector of hashes to add.  If provided, each hash can
+be the binary or string representation of the hash to add.  Or
+omit to add each request.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>yes</code></td>
+<td>
+<p>Skip the confirmation prompt?  If any request is
+declined then the function will throw an error on exit.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>data_admin_init</code> initialises the system; it will create a
+data key if it does not exist and authorise you.  If it already
+exists and you do not have access it will throw an error.
+</p>
+<p><code>data_admin_authorise</code> authorises a key by creating a key to
+the data that the user can use in conjunction with their personal
+key.
+</p>
+<p><code>data_admin_list_requests</code> lists current requests.
+</p>
+<p><code>data_admin_list_keys</code> lists known keys that can access the
+data.  Note that this is <em>not secure</em>; keys not listed here
+may still be able to access the data (if a key was authorised and
+moved elsewhere for example).  Conversely, if the user has deleted
+or changed their key they will not be able to access the data
+despite the key being listed here.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>data_request_access()</code> for requesting access
+to the data, and and <code>data_key</code> for using the data
+itself.  But for a much more thorough overview, see the vignette
+(<code>vignette("data", package = "cyphr")</code>).
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# The workflow here does not really lend itself to an example,
+# please see the vignette instead.
+
+# First we need a set of user ssh keys.  In a non example
+# environment your personal ssh keys will probably work well, but
+# hopefully they are password protected so cannot be used in
+# examples.  The password = FALSE argument is only for testing,
+# and should not be used for data that you care about.
+path_ssh_key &lt;- tempfile()
+cyphr::ssh_keygen(path_ssh_key, password = FALSE)
+
+# Initialise the data directory, using this key path.  Ordinarily
+# the path_user argument would not be needed because we would be
+# using your user ssh keys:
+path_data &lt;- tempfile()
+dir.create(path_data, FALSE, TRUE)
+cyphr::data_admin_init(path_data, path_user = path_ssh_key)
+
+# Now you can get the data key
+key &lt;- cyphr::data_key(path_data, path_user = path_ssh_key)
+
+# And encrypt things with it
+cyphr::encrypt_string("hello", key)
+
+# See the vignette for more details.  This is not the best medium
+# to explore this.
+
+# Cleanup
+unlink(path_ssh_key, recursive = TRUE)
+unlink(path_data, recursive = TRUE)
+</code></pre>
+
+
+</div>

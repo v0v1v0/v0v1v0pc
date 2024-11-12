@@ -1,0 +1,216 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>policyFX</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate Causal Effects of Population Treatment Policies Assuming Clustered
+Interference</h2>
+
+<h3>Description</h3>
+
+<p>This function implements the estimators from Barkley et al. (2017) for
+estimating causal effects <em>("FX")</em> of treatment policies from an
+observational study when <strong>clustered interference</strong> is assumed.
+Clustered interference is also often known as "partial" interference. For the
+manuscript introducing the methods in <span class="pkg">clusteredinterference</span>, see: URL
+<a href="https://arxiv.org/abs/1711.04834">https://arxiv.org/abs/1711.04834</a>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">policyFX(data, formula, alphas, k_samps = NULL, ..., verbose = FALSE,
+  root_options = NULL, nAGQ = 2, return_matrices = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A <code>data.frame</code> (not a <code>tibble</code>). Columns of
+<code>factor</code> types are not recommended and will sometimes throw
+(defensive) errors.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>The <code>formula</code> defines the different components of the
+method. The components are specified by <code>outcome | treatment ~
+f(covariates) + (1|cluster_id) | cluster_id</code>. The middle component is
+passed to <code>glmer</code>, so <code>treatment ~ f(covariates) +
+(1|cluster_id)</code> specifies the model form for the propensity score (i.e.,
+treatment) model. See Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alphas</code></td>
+<td>
+<p>A numeric vector for the probabilities corresponding to the
+policies of interest. Each entry must be between 0 and 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k_samps</code></td>
+<td>
+<p>The maximum number of vectors to evaluate to estimate the
+counterfactual probabilities (i.e., <code class="reqn">\omega(A,N,\alpha)</code>). Setting to 0
+avoids approximation at the cost of increased computation time. Recommended
+to set &lt;= 5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>The dots argument. The user may supply their own
+<code>target_grid</code> through the dots argument. The <code>target_grid</code> can be
+made through exported function <code>makeTargetGrid</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>A Boolean on whether to print output to <code>stderr</code>.
+Defaults to FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>root_options</code></td>
+<td>
+<p>These are passed to <code>multiroot</code>
+function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nAGQ</code></td>
+<td>
+<p>This is the number of Adaptive Gaussian Quadrature points used in
+the <code>glmer</code> model fitting computation. Defaults to 2. It
+is recommended to use more than 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return_matrices</code></td>
+<td>
+<p>A Boolean on whether to return the "bread" and "meat"
+matrices in the sandwich variance. Defaults to <code>FALSE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>These estimators are based on inverse probability-weighting by the
+propensity score for treatment (IPW) to estimate causal effects of
+counterfactual policies of interest (i.e., <em>"policy effects"</em>) when
+clustered interference is assumed. The policies of interest correspond to
+counterfactual scenarios in which treatment may be correlated within
+clusters.
+</p>
+<p>This method estimates causal contrasts of these policies by estimating the
+counterfactual treatment probabilities; taking the correlation structures
+into account requires heavy computational resources, so the user should be
+patient.
+</p>
+<p>The modeling formula for the propensity score (i.e., treatment) model is
+specified via the <code>formula</code> formal argument. An example of a model
+logit-linear fixed effects would be <code>Y | A ~ X1 + X2 + (1 |
+  cluster_ID) | cluster_ID</code>. A similar model that also includes an
+interaction term is <code>Y | A ~ X1 + X2 + X1:X2 + (1 | cluster_ID) |
+  cluster_ID</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>list</code> object including: </p>
+ <ol>
+<li> <p><code>estimates</code>: A
+tidy <code>data.frame</code> with columns <code>estimand</code>, <code>estimate</code>,
+<code>var</code>, <code>se</code>, <code>LCI</code> and <code>UCI</code> for 95% CI's, and more
+information. </p>
+</li>
+<li> <p><code>parameters</code>: An untidy <code>list</code> of the point
+estimates of all (target and nuisance) parameters. </p>
+</li>
+<li>
+<p><code>variance_matrices</code>: When <code>return_matrices</code> is <code>TRUE</code> this
+is a <code>list</code> object for the "bread" and "meat" matrices in the sandwich
+variance calculations for each estimand. Otherwise, it is a <code>list</code>
+object with length 0. </p>
+</li>
+<li> <p><code>propensity_scores</code>: The estimated
+propensity scores for each cluster. </p>
+</li>
+<li> <p><code>model</code>: The treatment model
+object. </p>
+</li>
+<li> <p><code>formula</code>: The full formula argument provided, after
+coercion to a <code>Formula</code> object</p>
+</li>
+</ol>
+<h3>Author(s)</h3>
+
+<p>Brian G. Barkley, <a href="mailto:BarkleyBG@unc.edu">BarkleyBG@unc.edu</a>.
+</p>
+<p>Some of the plumbing functions for estimating the sandwich variance matrix
+were adapted from Bradley Saul's
+<a href="https://cran.r-project.org/package=geex"><span class="pkg">geex</span></a> package.
+</p>
+<p>Some of the plumbing functions for the logistic mixed model likelihood were
+adapted from Bradley Saul's
+<a href="https://cran.r-project.org/package=inferference"><span class="pkg">inferference</span></a>
+package.
+</p>
+<p>Brian G. Barkley
+</p>
+
+
+<h3>References</h3>
+
+<p>Barkley, B. G., Hudgens, M. G., Clemens, J. D., Ali, M., and
+Emch, M. E. (2017). Causal Inference from Observational Studies with
+Clustered Interference. <em>arXiv preprint arXiv:1711.04834</em>. (URL:
+<a href="https://arxiv.org/abs/1711.04834">https://arxiv.org/abs/1711.04834</a>.)
+</p>
+<p>Bradley C Saul and Michael G Hudgens (2017). A Recipe for
+<code>inferference</code>: Start with Causal Inference. Add Interference. Mix
+Well with R. <em>Journal of Statistical Software</em> <strong>82</strong>(2), pp.
+1-21. doi: &lt;10.18637/jss.v082.i02&gt; (URL:
+<a href="http://doi.org/10.18637/jss.v082.i02">http://doi.org/10.18637/jss.v082.i02</a>).
+<a href="https://cran.r-project.org/package=inferference">https://cran.r-project.org/package=inferference</a>.
+<a href="https://github.com/bsaul/inferference">https://github.com/bsaul/inferference</a>.
+</p>
+<p>Bradley Saul (2017). <code>geex</code>: An API for M-Estimation.
+<a href="https://cran.r-project.org/package=geex">https://cran.r-project.org/package=geex</a>.
+<a href="https://github.com/bsaul/geex">https://github.com/bsaul/geex</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Please see the main package vignette at
+<code>vignette("estimate-policyFX")</code>. It describes the necessary arguments,
+as well as some extra functionality.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+toy_data &lt;- clusteredinterference::toy_data
+causal_fx &lt;- policyFX(
+  data = toy_data,
+  formula = Outcome | Treatment ~ Age + Distance + (1 | Cluster_ID) | Cluster_ID,
+  alphas = c(.3, .5),
+  k_samps = 1,
+  verbose = FALSE
+)
+## End(Not run)
+</code></pre>
+
+
+</div>

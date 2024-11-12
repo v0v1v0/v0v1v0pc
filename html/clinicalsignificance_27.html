@@ -1,0 +1,450 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cs_anchor</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Anchor-Based Analysis of Clinical Significance</h2>
+
+<h3>Description</h3>
+
+<p><code>cs_anchor()</code> can be used to determine the clinical significance
+of intervention studies employing the anchor-based approach. For this, a
+predefined minimally important difference (MID) for an instrument is known
+that corresponds to an important symptom improvement for patients. The data
+can then be analyzed on the individual as well as the group level to
+estimate, if the change because of an intervention is clinically
+significant.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cs_anchor(
+  data,
+  id,
+  time,
+  outcome,
+  group,
+  pre = NULL,
+  post = NULL,
+  mid_improvement = NULL,
+  mid_deterioration = NULL,
+  better_is = c("lower", "higher"),
+  target = c("individual", "group"),
+  effect = c("within", "between"),
+  bayesian = TRUE,
+  prior_scale = "medium",
+  reference_group = NULL,
+  ci_level = 0.95
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A tidy data frame</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id</code></td>
+<td>
+<p>Participant ID</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>Time variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outcome</code></td>
+<td>
+<p>Outcome variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>group</code></td>
+<td>
+<p>Grouping variable (optional)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pre</code></td>
+<td>
+<p>Pre measurement (only needed if the time variable contains more
+than two measurements)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>post</code></td>
+<td>
+<p>Post measurement (only needed if the time variable contains more
+than two measurements)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mid_improvement</code></td>
+<td>
+<p>Numeric, change that indicates a clinically
+significant improvement</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mid_deterioration</code></td>
+<td>
+<p>Numeric, change that indicates a clinically
+significant deterioration (optional). If <code>mid_deterioration</code> is not
+provided, it will be assumed to be equal to <code>mid_improvement</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>better_is</code></td>
+<td>
+<p>Which direction means a better outcome for the used
+instrument? Available are
+</p>
+
+<ul>
+<li> <p><code>"lower"</code> (lower outcome scores are desirable, the default) and
+</p>
+</li>
+<li> <p><code>"higher"</code> (higher outcome scores are desirable)
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>target</code></td>
+<td>
+<p>String, whether an individual or group analysis should be
+calculated. Available are
+</p>
+
+<ul>
+<li> <p><code>"individual"</code> (the default) for which every individual participant is
+evaluated
+</p>
+</li>
+<li> <p><code>"group"</code> for which only the group wise effect is evaluated
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>effect</code></td>
+<td>
+<p>String, if <code>target = "group"</code>, specify which effect should be
+calculated. Available are
+</p>
+
+<ul>
+<li> <p><code>"within"</code> (the default), which yields the mean pre-post intervention
+difference with associated confidence intervals
+</p>
+</li>
+<li> <p><code>"between"</code>, which estimates the group wise mean difference and
+confidence intervals between two or more groups specified with the <code>group</code>
+argument at the specified measurement supplied with the <code>post</code>- argument
+The reference group may be supplied with <code>reference_group</code>
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bayesian</code></td>
+<td>
+<p>Logical, only relevant if <code>target = "group"</code>. Indicates if a
+Bayesian estimate (i.e., the median) of group differences with a credible
+interval should be calculated (if set to <code>TRUE</code>, the default) or a
+frequentist mean difference with confidence interval (if set to <code>FALSE</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior_scale</code></td>
+<td>
+<p>String or numeric, can be adjusted to change the Bayesian
+prior distribution. See the documentation for <code>rscale</code> in
+<code>BayesFactor::ttestBF()</code> for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reference_group</code></td>
+<td>
+<p>Specify the reference group to which all subsequent
+groups are compared against if <code>target = "group"</code> and <code>effect = "within"</code>
+(optional). Otherwise, the first distinct group is chosen based on
+alphabetical, numerical or factor ordering.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ci_level</code></td>
+<td>
+<p>Numeric, define the credible or confidence interval level.
+The default is 0.95 for a 95%-CI.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An S3 object of class <code>cs_analysis</code> and <code>cs_anchor</code>
+</p>
+
+
+<h3>Computational details</h3>
+
+<p>For the individual-level analyses, the
+analysis is straight forward. An MID can be specified for an improvement as
+well as a deterioration (because these must not necessarily be identical)
+and the function basically counts how many patients fall within the MID
+range for both, improvement and deterioration, or how many patients exceed
+the limits of this range in either direction. A patient may than be
+categorized as:
+</p>
+
+<ul>
+<li>
+<p> Improved, the patient demonstrated a change that is equal or greater then
+the MID for an improvement
+</p>
+</li>
+<li>
+<p> Unchanged, the patient demonstrated a change that is less than both MIDs
+</p>
+</li>
+<li>
+<p> Deteriorated, the patient demonstrated a change that is equal or greater
+then the MID for a deterioration
+</p>
+</li>
+</ul>
+<p>For group-level analyses, the whole sample is either treated as a single
+group or is split up by grouping presented in the data. For within group
+analyses, the function calculates the median change from pre to post
+intervention with the associated credible interval (CI). Based on the
+median change and the limits of this CI, a group change can be categorized
+in 5 distinctive categories:
+</p>
+
+<ul>
+<li>
+<p> Statistically not significant, the CI contains 0
+</p>
+</li>
+<li>
+<p> Statistically significant but not clinically relevant, the CI does not
+contain 0, but the median and both CI limits are beneath the MID threshold
+</p>
+</li>
+<li>
+<p> Not significantly less than the threshold, the MID threshold falls within
+the CI but the median is still below that threshold
+</p>
+</li>
+<li>
+<p> Probably clinically significant effect, the median crossed the MID
+threshold but the threshold is still inside the CI
+</p>
+</li>
+<li>
+<p> Large clinically significant effect, the median crossed the MID threshold
+and the CI does not contain the threshold
+</p>
+</li>
+</ul>
+<p>If a between group comparison is desired, a reference group can be defined
+with the <code>reference_group</code> argument to which all subsequent groups are
+compared. This is usually an inactive comparator such as a placebo or
+wait-list control group. The difference between the pairwise compared
+groups is categorized just as the within group difference above, so the
+same categories apply.
+</p>
+<p>The approach can be changed to a classical frequentist framework for which
+the point estimate then represents the mean difference and the CI a
+confidence interval. For an extensive overview over the differences between
+a Bayesian and frequentist CI, refer to Hespanhol et al. (2019).
+</p>
+
+
+<h3>Data preparation</h3>
+
+<p>The data set must be tidy, which corresponds to a
+long data frame in general. It must contain a patient identifier which must
+be unique per patient. Also, a column containing the different measurements
+and the outcome must be supplied. Each participant-measurement combination
+must be unique, so for instance, the data must not contain two "After"
+measurements for the same patient.
+</p>
+<p>Additionally, if the measurement column contains only two values, the first
+value based on alphabetical, numerical or factor ordering will be used as
+the <code>pre</code> measurement. For instance, if the column contains the
+measurements identifiers <code>"pre"</code> and <code>"post"</code> as strings, then <code>"post"</code>
+will be sorted before <code>"pre"</code> and thus be used as the <code>"pre"</code> measurement.
+The function will throw a warning but generally you may want to explicitly
+define the <code>"pre"</code> and <code>"post"</code> measurement with arguments <code>pre</code> and
+<code>post</code>. In case of more than two measurement identifiers, you have to
+define <code>pre</code> and <code>post</code> manually since the function does not know what your
+pre and post intervention measurements are.
+</p>
+<p>If your data is grouped, you can specify the group by referencing the
+grouping variable (see examples below). The analysis is then run for every
+group to compare group differences.
+</p>
+
+
+<h3>References</h3>
+
+<p>Hespanhol, L., Vallio, C. S., Costa, L. M., &amp; Saragiotto, B. T.
+(2019). Understanding and interpreting confidence and credible intervals
+around effect estimates. Brazilian Journal of Physical Therapy, 23(4),
+290–301. https://doi.org/10.1016/j.bjpt.2018.12.006
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Main clinical signficance functions
+<code>cs_combined()</code>,
+<code>cs_distribution()</code>,
+<code>cs_percentage()</code>,
+<code>cs_statistical()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">cs_results &lt;- antidepressants |&gt;
+  cs_anchor(patient, measurement, mom_di, mid_improvement = 8)
+
+cs_results
+plot(cs_results)
+
+# Set argument "pre" to avoid a warning
+cs_results &lt;- antidepressants |&gt;
+  cs_anchor(
+    patient,
+    measurement,
+    mom_di,
+    pre = "Before",
+    mid_improvement = 8
+  )
+
+
+# Inlcude the MID for deterioration
+cs_results_with_deterioration &lt;- antidepressants |&gt;
+  cs_anchor(
+    patient,
+    measurement,
+    mom_di,
+    pre = "Before",
+    mid_improvement = 8,
+    mid_deterioration = 5
+  )
+
+cs_results_with_deterioration
+summary(cs_results_with_deterioration)
+plot(cs_results_with_deterioration)
+
+
+# Group the results by experimental condition
+cs_results_grouped &lt;- antidepressants |&gt;
+  cs_anchor(
+    patient,
+    measurement,
+    mom_di,
+    pre = "Before",
+    group = condition,
+    mid_improvement = 8,
+    mid_deterioration = 5
+  )
+
+cs_results_grouped
+summary(cs_results_grouped)
+plot(cs_results_grouped)
+
+# The plot method always returns a ggplot2 object, so the plot may be further
+# modified with ggplot2 code, e.g., facetting to avoid overplotting of groups
+plot(cs_results_grouped) +
+  ggplot2::facet_wrap(~ group)
+
+
+# Compute group wise results
+cs_results_groupwise &lt;- antidepressants |&gt;
+  cs_anchor(
+    patient,
+    measurement,
+    mom_di,
+    pre = "Before",
+    mid_improvement = 8,
+    target = "group"
+  )
+
+cs_results_groupwise
+summary(cs_results_groupwise)
+plot(cs_results_groupwise)
+
+
+# Group wise analysis, but split by experimentawl condition
+cs_results_groupwise_condition &lt;- antidepressants |&gt;
+  cs_anchor(
+    patient,
+    measurement,
+    mom_di,
+    pre = "Before",
+    group = condition,
+    mid_improvement = 8,
+    target = "group"
+  )
+
+cs_results_groupwise_condition
+summary(cs_results_groupwise_condition)
+plot(cs_results_groupwise_condition)
+
+
+# Compare all groups to a predefined reference group at a predefined measurement
+cs_results_groupwise_between &lt;- antidepressants |&gt;
+  cs_anchor(
+    patient,
+    measurement,
+    mom_di,
+    post = "After",
+    group = condition,
+    mid_improvement = 8,
+    target = "group",
+    effect = "between"
+  )
+
+cs_results_groupwise_between
+summary(cs_results_groupwise_between)
+plot(cs_results_groupwise_between)
+
+
+# Compare all groups to a predefined reference group with frequentist appraoch
+cs_results_groupwise_between_freq &lt;- antidepressants |&gt;
+  cs_anchor(
+    patient,
+    measurement,
+    mom_di,
+    post = "After",
+    group = condition,
+    mid_improvement = 8,
+    target = "group",
+    effect = "between",
+    bayesian = FALSE
+  )
+
+cs_results_groupwise_between_freq
+summary(cs_results_groupwise_between_freq)
+plot(cs_results_groupwise_between_freq)
+</code></pre>
+
+
+</div>

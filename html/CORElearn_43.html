@@ -1,0 +1,140 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>reliabilityPlot</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Plots reliability plot of probabilities</h2>
+
+<h3>Description</h3>
+
+<p>Given probability scores <code>probScore</code> and  true probabilities <code>trueProb</code> the methods plots one against the other using a selected boxing method 
+which groups scores and probabilities to show calibration of probabilities in given probability bands.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">reliabilityPlot(probScore, trueProb, titleText="", boxing="equipotent", 
+                noBins=10, classValue = 1, printWeight=FALSE) 
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>probScore</code></td>
+<td>
+<p> A vector of predicted probabilities for a given class <code>classValue</code>. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trueProb</code></td>
+<td>
+<p> A vector of true probabilities for a given <code>classValue</code>, should be of the same length as <code>probScore</code>. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>titleText</code></td>
+<td>
+<p>The text of the graph title.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>boxing</code></td>
+<td>
+<p> One of <code>"unique"</code>, <code>"equidistant"</code> or <code>"equipotent"</code>, determines the grouping of probabilities. See details below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>noBins</code></td>
+<td>
+<p>The value of parameter depends on the parameter <code>boxing</code> and specifies the number of bins. See details below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>classValue</code></td>
+<td>
+<p>A class value (factor) or an index of the class value (integer) for which reliability plot is made.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>printWeight</code></td>
+<td>
+<p> A boolean specifying if box weights are to be printed.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Depending on the specified <code>boxing</code> the probability scores are grouped in one of three possible ways
+</p>
+
+<ul>
+<li> <p><code>"unique"</code> each unique probability score forms its own box.
+</p>
+</li>
+<li> <p><code>"equidistant"</code> forms <code>noBins</code> equally wide boxes.
+</p>
+</li>
+<li> <p><code>"equipotent"</code> forms <code>noBins</code> boxes with equal number of scores in each box.
+</p>
+</li>
+</ul>
+<p>The parameter <code>trueProb</code> can represent either probabilities (in [0, 1] range, in most cases these will be 0s or 1s), 
+or the true class values from which the method will form 0 and 1 values corresponding to probabilities for class value <code>classValue</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A function returns a graph containing reliability plot on a current graphical device.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Marko Robnik-Sikonja</p>
+
+
+<h3>See Also</h3>
+
+<p><code>CORElearn</code>,
+<code>calibrate</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># generate data consisting from 3 parts:
+#  one part for training, one part for calibration, one part for testing
+train &lt;-classDataGen(noInst=200)
+cal &lt;-classDataGen(noInst=200)
+test &lt;- classDataGen(noInst=200)
+
+# build random forests model with default parameters
+modelRF &lt;- CoreModel(class~., train, model="rf")
+# prediction of calibration and test set
+predCal &lt;- predict(modelRF, cal, rfPredictClass=FALSE)
+predTest &lt;- predict(modelRF, test, rfPredictClass=FALSE)
+destroyModels(modelRF) # no longer needed, clean up
+
+# show reliability plot of uncalibrated test set
+class1&lt;-1
+par(mfrow=c(1,2))
+reliabilityPlot(predTest$prob[,class1], test$class, 
+                titleText="Uncalibrated probabilities", classValue=class1) 
+
+# calibrate for a chosen class1 and method using calibration set
+calibration &lt;- calibrate(cal$class, predCal$prob[,class1], class1=1, 
+                         method="isoReg", assumeProbabilities=TRUE)
+calTestProbs &lt;- applyCalibration(predTest$prob[,class1], calibration)
+# display calibrated probabilities
+reliabilityPlot(calTestProbs, test$class, 
+                titleText="Calibrated probabilities", classValue=class1) 
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,160 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>vsim</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simulation of V-approximation</h2>
+
+<h3>Description</h3>
+
+<p>The function provides the V-approximation simulation by adopting the results of <code>vaprox</code>. Available for multiple stock problems.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">vsim(vcoeff, adata, wval = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>vcoeff</code></td>
+<td>
+<p>An approximation result from <code>varpox</code> function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>adata</code></td>
+<td>
+<p>A data.frame or matrix of [stock]=[<code class="reqn">\mathbf{S}</code>]</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wval</code></td>
+<td>
+<p>(Optional for <code>plotgen</code>) An array of <code class="reqn">W</code>-value</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Let <code class="reqn">\hat{\beta}</code> be the approximation coefficent from the results of <code>vaprox</code> function.
+The estimated shadow (accounting) price of <code class="reqn">i</code>-th stock over the given approximation intervals of <code class="reqn">s_{i} \in [a_{i},b_{i}]</code>,
+<code class="reqn">\hat{p}_{i}</code> can be calcuated as:<br><br><code class="reqn">\hat{p}_{i} = \mathbf{\mu}(\mathbf{S})\mathbf{\hat{\beta}}</code> where <code class="reqn">\mathbf{\mu}(\mathbf{S})</code> Chebyshev polynomial basis.<br><br>
+The value function is:<br><br><code class="reqn">\hat{V} = \delta \mathbf{\mu}(\mathbf{S})\mathbf{\hat{\beta}}</code>.<br><br>
+For more detils see Fenichel and Abbott (2014), Fenichel et al. (2016a), Fenichel et al. (2016b), and Yun et al. (2017).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of simulation resuts: shadow (accounting) prices, inclusive wealth, Value function,<br>
+stock, and W values. Use <code>results$item</code> (or <code>results[["item"]]</code>) to import each result item.
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>shadowp</code></td>
+<td>
+<p>Shadow price</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iweach</code></td>
+<td>
+<p>Inclusive wealth for each stock for multi-stock case</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vfun</code></td>
+<td>
+<p>Value function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stock</code></td>
+<td>
+<p>Stock</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wval</code></td>
+<td>
+<p>W-value if <code>wval</code> is provided</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Fenichel, Eli P. and Joshua K. Abbott. (2014) "<a href="http://www.journals.uchicago.edu/doi/abs/10.1086/676034">Natural Capital: From Metaphor to Measurement</a>."
+<em>Journal of the Association of Environmental Economists</em>. 1(1/2):1-27.<br>
+Fenichel, Eli P., Joshua K. Abbott, Jude Bayham, Whitney Boone, Erin M. K. Haacker, and Lisa Pfeiffer. (2016a) "<a href="http://www.pnas.org/content/113/9/2382">Measuring the Value of Groundwater and Other Forms of Natural Capital</a>."
+<em>Proceedings of the National Academy of Sciences</em>.113:2382-2387.<br>
+Fenichel, Eli P., Simon A. Levin, Bonnie McCay, Kevin St. Martin, Joshua K. Abbott, and Malin L. Pinsky. (2016b) "<a href="http://www.nature.com/nclimate/index.html">Wealth Reallocation and Sustainability under Climate Change</a>."
+<em>Nature Climate change</em>.6:237-244.<br>
+Yun, Seong Do, Barbara Hutniczak, Joshua K. Abbott, and Eli P. Fenichel. (2017) "Ecosystem Based Management and the Welath of Ecosystems" <em>Proceedings of the National Academy of Sciences</em>. (forthcoming).
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>aproxdef, vsim</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## 1-D Reef-fish example: see Fenichel and Abbott (2014)
+data("GOM")
+nodes &lt;- chebnodegen(param$nodes,param$lowerK,param$upperK)
+simuDataV &lt;- cbind(nodes,sdot(nodes,param),profit(nodes,param))
+Aspace &lt;- aproxdef(param$order,param$lowerK,param$upperK,param$delta)
+vC &lt;- vaprox(Aspace,simuDataV)
+# Note vcol function requries a data.frame or matrix!
+GOMSimV &lt;- vsim(vC,as.matrix(simuDataV[,1],ncol=1),profit(nodes,param))
+
+# plot shadow (accounting) price: Figure 4 in Fenichel and Abbott (2014)
+plotgen(GOMSimV, xlabel="Stock size, s", ylabel="Shadow price")
+
+## 2-D Prey-Predator example
+data("lvdata")
+aproxdeg &lt;- c(20,20)
+lower &lt;- c(0.1,0.1)
+upper &lt;- c(1.5,1.5)
+delta &lt;- 0.03
+lvspace &lt;- aproxdef(aproxdeg,lower,upper,delta)
+lvaproxc &lt;- vaprox(lvspace,lvaproxdata)
+lvsim &lt;- vsim(lvaproxc,lvsimdata.time[,2:3])
+
+# plot Biomass
+plot(lvsimdata.time[,1], lvsimdata.time[,2], type='l', lwd=2, col="blue",
+     xlab="Time",
+     ylab="Biomass")
+lines(lvsimdata.time[,1], lvsimdata.time[,3], lwd=2, col="red")
+legend("topright", c("Prey", "Predator"), col=c("blue", "red"),
+       lty=c(1,1), lwd=c(2,2), bty="n")
+
+# plot shadow (accounting) prices
+plot(lvsimdata.time[,1],lvsim[["shadowp"]][,1],type='l', lwd=2, col="blue",
+     ylim = c(-5,7),
+     xlab="Time",
+     ylab="Shadow price")
+lines(lvsimdata.time[,1],lvsim[["shadowp"]][,2], lwd=2, col="red")
+legend("topright", c("Prey", "Predator"), col=c("blue", "red"),
+       lty=c(1,1), lwd=c(2,2), bty="n")
+
+# plot inclusive weath and value function
+plot(lvsimdata.time[,1],lvsim[["iw"]],type='l', lwd=2, col="blue",
+     ylim = c(-0.5,1.2),
+     xlab="Time",
+     ylab="Inclusive Wealth / Value Function ($)")
+lines(lvsimdata.time[,1],lvsim[["vfun"]], lwd=2, col="red")
+legend("topright", c("Inclusive Wealth", "Value Function"),
+       col=c("blue", "red"), lty=c(1,1), lwd=c(2,2), bty="n")
+</code></pre>
+
+
+</div>

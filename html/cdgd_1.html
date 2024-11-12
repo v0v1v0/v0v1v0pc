@@ -1,0 +1,165 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cdgd0_manual</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Perform unconditional decomposition with nuisance functions estimated beforehand</h2>
+
+<h3>Description</h3>
+
+<p>This function gives the user full control over the estimation of the nuisance functions.
+For the unconditional decomposition, three nuisance functions (YgivenGX.Pred_D0, YgivenGX.Pred_D1, and DgivenGX.Pred) need to be estimated.
+The nuisance functions should be estimated using cross-fitting if Donsker class is not assumed.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cdgd0_manual(
+  Y,
+  D,
+  G,
+  YgivenGX.Pred_D1,
+  YgivenGX.Pred_D0,
+  DgivenGX.Pred,
+  data,
+  alpha = 0.05
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Y</code></td>
+<td>
+<p>Outcome. The name of a numeric variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>D</code></td>
+<td>
+<p>Treatment status. The name of a binary numeric variable taking values of 0 and 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>G</code></td>
+<td>
+<p>Advantaged group membership. The name of a binary numeric variable taking values of 0 and 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>YgivenGX.Pred_D1</code></td>
+<td>
+<p>A numeric vector of predicted Y values given X, G, and D=1. Vector length=nrow(data).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>YgivenGX.Pred_D0</code></td>
+<td>
+<p>A numeric vector of predicted Y values given X, G, and D=0. Vector length=nrow(data).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>DgivenGX.Pred</code></td>
+<td>
+<p>A numeric vector of predicted D values given X and G. Vector length=nrow(data).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data frame.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>1-alpha confidence interval.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list of estimates.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># This example will take a minute to run.
+
+data(exp_data)
+
+Y="outcome"
+D="treatment"
+G="group_a"
+X=c("Q","confounder")
+data=exp_data
+
+set.seed(1)
+
+### estimate the nuisance functions with cross-fitting
+sample1 &lt;- sample(nrow(data), floor(nrow(data)/2), replace=FALSE)
+sample2 &lt;- setdiff(1:nrow(data), sample1)
+
+### outcome regression model
+
+message &lt;- utils::capture.output( YgivenDGX.Model.sample1 &lt;-
+    caret::train(stats::as.formula(paste(Y, paste(D,G,paste(X,collapse="+"),sep="+"), sep="~")),
+             data=data[sample1,], method="ranger", trControl=caret::trainControl(method="cv"),
+             tuneGrid=expand.grid(mtry=c(2,4),splitrule=c("variance"),min.node.size=c(50,100))) )
+message &lt;- utils::capture.output( YgivenDGX.Model.sample2 &lt;-
+    caret::train(stats::as.formula(paste(Y, paste(D,G,paste(X,collapse="+"),sep="+"), sep="~")),
+             data=data[sample2,], method="ranger", trControl=caret::trainControl(method="cv"),
+             tuneGrid=expand.grid(mtry=c(2,4),splitrule=c("variance"),min.node.size=c(50,100))) )
+
+### propensity score model
+data[,D] &lt;- as.factor(data[,D])
+levels(data[,D]) &lt;- c("D0","D1")  # necessary for caret implementation of ranger
+
+message &lt;- utils::capture.output( DgivenGX.Model.sample1 &lt;-
+    caret::train(stats::as.formula(paste(D, paste(G,paste(X,collapse="+"),sep="+"), sep="~")),
+             data=data[sample1,], method="ranger",
+             trControl=caret::trainControl(method="cv", classProbs=TRUE),
+             tuneGrid=expand.grid(mtry=c(1,2),splitrule=c("gini"),min.node.size=c(50,100))) )
+message &lt;- utils::capture.output( DgivenGX.Model.sample2 &lt;-
+    caret::train(stats::as.formula(paste(D, paste(G,paste(X,collapse="+"),sep="+"), sep="~")),
+             data=data[sample2,], method="ranger",
+             trControl=caret::trainControl(method="cv", classProbs=TRUE),
+             tuneGrid=expand.grid(mtry=c(1,2),splitrule=c("gini"),min.node.size=c(50,100))) )
+
+data[,D] &lt;- as.numeric(data[,D])-1
+
+### cross-fitted predictions
+YgivenGX.Pred_D0 &lt;- YgivenGX.Pred_D1 &lt;- DgivenGX.Pred &lt;- rep(NA, nrow(data))
+
+pred_data &lt;- data
+pred_data[,D] &lt;- 0
+YgivenGX.Pred_D0[sample2] &lt;- stats::predict(YgivenDGX.Model.sample1, newdata = pred_data[sample2,])
+YgivenGX.Pred_D0[sample1] &lt;- stats::predict(YgivenDGX.Model.sample2, newdata = pred_data[sample1,])
+
+pred_data &lt;- data
+pred_data[,D] &lt;- 1
+YgivenGX.Pred_D1[sample2] &lt;- stats::predict(YgivenDGX.Model.sample1, newdata = pred_data[sample2,])
+YgivenGX.Pred_D1[sample1] &lt;- stats::predict(YgivenDGX.Model.sample2, newdata = pred_data[sample1,])
+
+pred_data &lt;- data
+DgivenGX.Pred[sample2] &lt;- stats::predict(DgivenGX.Model.sample1,
+    newdata = pred_data[sample2,], type="prob")[,2]
+DgivenGX.Pred[sample1] &lt;- stats::predict(DgivenGX.Model.sample2,
+    newdata = pred_data[sample1,], type="prob")[,2]
+
+results &lt;- cdgd0_manual(Y=Y,D=D,G=G,
+                       YgivenGX.Pred_D0=YgivenGX.Pred_D0,
+                       YgivenGX.Pred_D1=YgivenGX.Pred_D1,
+                       DgivenGX.Pred=DgivenGX.Pred,
+                       data=data)
+
+results
+</code></pre>
+
+
+</div>

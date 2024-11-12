@@ -1,0 +1,518 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>snomadr</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+R interface to NOMAD
+</h2>
+
+<h3>Description</h3>
+
+<p><code>snomadr</code> is an R interface to NOMAD (Nonsmooth Optimization by
+Mesh Adaptive Direct Search, Abramson, Audet, Couture and Le Digabel
+(2011)), an open source software C++ implementation of the Mesh Adaptive
+Direct Search (MADS, Le Digabel (2011)) algorithm designed for
+constrained optimization of blackbox functions.
+</p>
+<p>NOMAD is designed to find (local) solutions of mathematical optimization
+problems of the form
+</p>
+<pre>
+   min     f(x)
+x in R^n
+
+s.t.       g(x) &lt;= 0 
+           x_L &lt;=  x   &lt;= x_U
+</pre>           
+<p>where <code class="reqn">f(x)\colon R^n \to R^k</code> is the objective
+function, and <code class="reqn">g(x)\colon R^n \to R^m</code> are
+the constraint functions. The vectors <code class="reqn">x_L</code> and <code class="reqn">x_U</code>
+are the bounds on the variables <code class="reqn">x</code>. The functions <code class="reqn">f(x)</code> and
+<code class="reqn">g(x)</code> can be nonlinear and nonconvex. The variables can be integer,
+continuous real number, binary, and categorical.
+</p>
+<p>Kindly see <a href="https://www.gerad.ca/en/software/nomad">https://www.gerad.ca/en/software/nomad</a> and the
+references below for details.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">snomadr(eval.f, 
+        n, 
+        bbin = NULL,  
+        bbout = NULL, 
+        x0 = NULL, 
+        lb = NULL, 
+        ub = NULL, 
+        nmulti = 0,
+        random.seed = 0,
+        opts = list(),
+        print.output = TRUE, 
+        information = list(), 
+        snomadr.environment = new.env(), 
+        ... ) 
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>eval.f</code></td>
+<td>
+
+<p>function that returns the value of the objective function
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+ 
+<p>the number of variables
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bbin</code></td>
+<td>
+
+<p>types of variables. Variable types are 0 (CONTINUOUS), 1
+(INTEGER), 2 (CATEGORICAL), 3 (BINARY)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bbout</code></td>
+<td>
+
+<p>types of output of <code>eval.f</code>.  See the NOMAD User Guide
+<a href="https://nomad-4-user-guide.readthedocs.io/en/latest/#">https://nomad-4-user-guide.readthedocs.io/en/latest/#</a>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x0</code></td>
+<td>
+
+<p>vector with starting values for the optimization. If it is
+provided and nmulti is bigger than 1, <code>x0</code> will be the first
+initial point for multiple initial points
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lb</code></td>
+<td>
+
+<p>vector with lower bounds of the controls (use -1.0e19 for controls without lower bound)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ub</code></td>
+<td>
+
+<p>vector with upper bounds of the controls (use  1.0e19 for controls without upper bound)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nmulti</code></td>
+<td>
+
+<p>when it is missing, or it is equal to 0 and <code>x0</code> is provided,
+<code>snomadRSolve</code> will be called to solve the problem. Otherwise,
+<code>smultinomadRSolve</code> will be called
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>random.seed</code></td>
+<td>
+
+<p>when it is not missing and not equal to 0, the initial points  will 
+be generated using this seed when <code>nmulti &gt; 0</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>opts</code></td>
+<td>
+
+<p>list of options for NOMAD, see the NOMAD user guide
+<a href="https://nomad-4-user-guide.readthedocs.io/en/latest/#">https://nomad-4-user-guide.readthedocs.io/en/latest/#</a>.  Options
+can also be set by nomad.opt which should be in the folder where R
+(<code>snomadr</code>) is executed. Options that affect the solution and
+their defaults and some potential values are
+</p>
+<p><code>"MAX_BB_EVAL"=10000</code>
+</p>
+<p><code>"INITIAL_MESH_SIZE"=1</code>
+</p>
+<p><code>"MIN_MESH_SIZE"="r1.0e-10"</code>
+</p>
+<p><code>"MIN_POLL_SIZE"=1</code>
+</p>
+<p>Note that the <code>"r..."</code> denotes relative measurement (relative
+to <code>lb</code> and <code>ub</code>)
+</p>
+<p>Note that decreasing the maximum number of black box evaluations
+(<code>"MAX_BB_EVAL"</code>) will terminate search sooner and may result
+in a less accurate solution. For complicated problems you may want
+to increase this value. When experimenting it is desirable to set
+<code>"DISPLAY_DEGREE"=1</code> (or a larger integer) to get some sense
+for how the algorithm is progressing
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>print.output</code></td>
+<td>
+
+<p>when FALSE, no output from <code>snomadr</code> is displayed on the
+screen. If the NOMAD option <code>"DISPLAY_DEGREE"=0,</code> is set,
+there will also be no output from NOMAD. Higher integer values for
+<code>"DISPLAY_DEGREE"=</code> provide successively more detail
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>information</code></td>
+<td>
+
+<p>is a list. <code>snomadr</code> will call <code>snomadRInfo</code> to return
+the information about NOMAD according to the values of <code>"info"</code>,
+<code>"version"</code> and <code>"help"</code>.
+</p>
+<p><code>"info"="-i"</code>: display the usage and copyright of NOMAD
+</p>
+<p><code>"version"="-v"</code>: display the version of NOMAD you are using
+</p>
+<p><code>"help"="-h"</code>: display all options
+</p>
+<p>You also can display a specific option, for example,
+<code>"help"="-h x0"</code>, this will tell you how to set <code>x0</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>snomadr.environment</code></td>
+<td>
+
+<p>environment that is used to evaluate the functions. Use this to pass 
+additional data or parameters to a function
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+
+<p>arguments that will be passed to the user-defined objective and
+constraints functions. See the examples below
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>snomadr</code> is used in the <span class="pkg">crs</span> package to numerically
+minimize an objective function with respect to the spline degree,
+number of knots, and optionally the kernel bandwidths when using
+<code>crs</code> with the option <code>cv="nomad"</code> (default). This
+is a constrained mixed integer combinatoric problem and is known to
+be computationally ‘hard’. See <code>frscvNOMAD</code> and
+<code>krscvNOMAD</code> for the functions called when
+<code>cv="nomad"</code> while using <code>crs</code>.
+</p>
+<p>However, the user should note that for simple problems involving one
+predictor exhaustive search may be faster and potentially more
+accurate, so please bear in mind that <code>cv="exhaustive"</code> can be
+useful when using <code>crs</code>.
+</p>
+<p>Naturally, exhaustive search is also useful for verifying solutions
+returned by <code>snomadr</code>. See <code>frscv</code> and
+<code>krscv</code> for the functions called when
+<code>cv="exhaustive"</code> while using <code>crs</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The return value contains a list with the inputs, and additional elements
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the call that was made to solve</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>status</code></td>
+<td>
+<p>integer value with the status of the optimization </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>message</code></td>
+<td>
+<p>more informative message with the status of the optimization</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iterations</code></td>
+<td>
+<p>number of iterations that were executed, if multiple initial points are set, 
+this number will be the sum for each initial point.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>objective</code></td>
+<td>
+<p>value if the objective function in the solution</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>solution</code></td>
+<td>
+<p>optimal value of the controls</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Zhenghua Nie &lt;niez@mcmaster.ca&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Abramson, M.A. and C. Audet and G. Couture and J.E. Dennis Jr. and
+S. Le Digabel (2011), “The NOMAD project”. Software available
+at https://www.gerad.ca/en/software/nomad/
+</p>
+<p>Le Digabel, S. (2011), “Algorithm 909: NOMAD: Nonlinear
+Optimization With The MADS Algorithm”. ACM Transactions on
+Mathematical Software, 37(4):44:1-44:15.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>optim</code>, <code>nlm</code>, <code>nlminb</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+## List all options
+snomadr(information=list("help"="-h"))
+
+## Print given option,  for example,  MESH_SIZE
+snomadr(information=list("help"="-h MESH_SIZE"))
+
+## Print the version of NOMAD
+snomadr(information=list("version"="-v"))
+
+## Print usage and copyright
+snomadr(information=list("info"="-i"))
+
+## This is the example found in
+## NOMAD/examples/basic/library/single_obj/basic_lib.cpp
+
+eval.f &lt;- function ( x ) {
+
+    f &lt;- c(Inf, Inf, Inf);
+    n &lt;- length (x);
+
+    if ( n == 5 &amp;&amp; ( is.double(x) || is.integer(x) ) ) {
+        f[1] &lt;- x[5];
+        f[2] &lt;- sum ( (x-1)^2 ) - 25;
+        f[3] &lt;- 25 - sum ( (x+1)^2 );
+    }  
+
+    return ( as.double(f) );
+}
+
+## Initial values
+x0 &lt;- rep(0.0, 5 )
+
+bbin &lt;-c(1, 1, 1, 1, 1)
+## Bounds
+lb &lt;- rep(-6.0,5 )
+ub &lt;- c(5.0, 6.0, 7.0, 1000000, 100000)
+
+bbout &lt;-c(0, 2, 1)
+## Options
+opts &lt;-list("MAX_BB_EVAL"=500,
+            "MIN_MESH_SIZE"=0.001,
+            "INITIAL_MESH_SIZE"=0.1,
+            "MIN_POLL_SIZE"=1)
+
+snomadr(eval.f=eval.f,n=5,  x0=x0, bbin=bbin, bbout=bbout, lb=lb, ub=ub, opts=opts)
+
+
+## How to transfer other parameters into eval.f
+##
+## First example: supply additional arguments in user-defined functions
+##
+
+## objective function and gradient in terms of parameters
+eval.f.ex1 &lt;- function(x, params) { 
+    return( params[1]*x^2 + params[2]*x + params[3] ) 
+}
+
+## Define parameters that we want to use
+params &lt;- c(1,2,3)
+
+## Define initial value of the optimization problem
+x0 &lt;- 0
+
+## solve using snomadr 
+snomadr( n          =1, 
+        x0          = x0, 
+        eval.f      = eval.f.ex1, 
+        params      = params )
+
+
+##
+## Second example: define an environment that contains extra parameters
+##
+
+## Objective function and gradient in terms of parameters
+## without supplying params as an argument
+eval.f.ex2 &lt;- function(x) { 
+    return( params[1]*x^2 + params[2]*x + params[3] ) 
+}
+
+## Define initial value of the optimization problem
+x0 &lt;- 0
+
+## Define a new environment that contains params
+auxdata        &lt;- new.env()
+auxdata$params &lt;- c(1,2,3)
+
+## pass The environment that should be used to evaluate functions to snomadr 
+snomadr(n                  =1, 
+        x0                 = x0, 
+        eval.f             = eval.f.ex2, 
+        snomadr.environment = auxdata )
+
+## Solve using algebra
+cat( paste( "Minimizing f(x) = ax^2 + bx + c\n" ) )
+cat( paste( "Optimal value of control is -b/(2a) = ", -params[2]/(2*params[1]), "\n" ) )
+cat( paste( "With value of the objective function f(-b/(2a)) = ",
+           eval.f.ex1( -params[2]/(2*params[1]), params ), "\n" ) )
+
+## The following example is NOMAD/examples/advanced/multi_start/multi.cpp
+## This will call smultinomadRSolve to resolve the problem.  
+eval.f.ex1 &lt;- function(x, params) { 
+    M&lt;-as.numeric(params$M)
+    NBC&lt;-as.numeric(params$NBC)
+
+    f&lt;-rep(0, M+1)
+    x&lt;-as.numeric(x)
+
+    x1 &lt;- rep(0.0, NBC)
+    y1 &lt;- rep(0.0, NBC)
+
+    x1[1]&lt;-x[1]
+    x1[2]&lt;-x[2]
+    y1[3]&lt;-x[3]
+    x1[4]&lt;-x[4]
+    y1[4]&lt;-x[5]
+
+    epi &lt;- 6
+    for(i in 5:NBC){
+        x1[i]&lt;-x[epi]
+        epi &lt;- epi+1
+        y1[i]&lt;-x[epi]
+        epi&lt;-epi+1
+    }
+    constraint &lt;- 0.0
+    ic &lt;- 1
+    f[ic]&lt;-constraint
+    ic &lt;- ic+1
+
+    constraint &lt;- as.numeric(1.0)
+    distmax &lt;- as.numeric(0.0)
+    avg_dist &lt;- as.numeric(0.0)
+    dist1&lt;-as.numeric(0.0)
+
+    for(i in 1:(NBC-1)){
+        for (j in (i+1):NBC){
+            dist1 &lt;- as.numeric((x1[i]-x1[j])*(x1[i]-x1[j])+(y1[i]-y1[j])*(y1[i]-y1[j]))
+            
+            if((dist1 &gt; distmax)) {distmax &lt;- as.numeric(dist1)}
+            if((dist1[1]) &lt; 1) {constraint &lt;- constraint*sqrt(dist1)}
+            else if((dist1) &gt; 14) {avg_dist &lt;- avg_dist+sqrt(dist1)}
+        }
+    }
+
+    if(constraint &lt; 0.9999) constraint &lt;- 1001.0-constraint
+    else constraint = sqrt(distmax)+avg_dist/(10.0*NBC)
+
+    f[2] &lt;- 0.0
+    f[M+1] &lt;- constraint 
+
+
+    return(as.numeric(f) ) 
+}
+
+## Define parameters that we want to use
+params&lt;-list()
+NBC &lt;- 5
+M &lt;- 2
+n&lt;-2*NBC-3
+
+params$NBC&lt;-NBC
+params$M&lt;-M
+x0&lt;-rep(0.1, n)
+lb&lt;-rep(0, n)
+ub&lt;-rep(4.5, n)
+
+eval.f.ex1(x0, params)
+
+bbout&lt;-c(2, 2, 0)
+nmulti=5
+bbin&lt;-rep(0, n)
+## Define initial value of the optimization problem
+
+## Solve using snomadRSolve
+snomadr(n            = as.integer(n), 
+        x0           = x0, 
+        eval.f       = eval.f.ex1, 
+        bbin         = bbin, 
+        bbout        = bbout, 
+        lb           = lb, 
+        ub           = ub, 
+        params       = params )
+
+## Solve using smultinomadRSolve, if x0 is provided,  x0 will
+## be the first initial point,  otherwise,  the program will
+## check best_x.txt,  if it exists,  it will be read in as
+## the first initial point. Other initial points will be
+## generated by uniform distribution.
+## nmulti represents the number of mads will run.
+##
+snomadr(n            = as.integer(n), 
+        eval.f       = eval.f.ex1, 
+        bbin         = bbin, 
+        bbout        = bbout, 
+        lb           = lb, 
+        ub           = ub, 
+        nmulti = as.integer(nmulti), 
+        print.output = TRUE, 
+        params       = params )
+
+## End(Not run) 
+</code></pre>
+
+
+</div>

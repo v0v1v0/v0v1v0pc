@@ -1,0 +1,215 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>selSLSE</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Knots Selection Method
+</h2>
+
+<h3>Description</h3>
+
+<p>This is the main function to select the knots in <code>cslseModel</code> or
+<code>slseModel</code> objects. It returns a model with an optimal set of
+knots. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'cslseModel'
+selSLSE(model, selType=c("BLSE", "FLSE"),
+        selCrit = c("AIC", "BIC", "PVT"), 
+        pvalT = function(p) 1/log(p),
+        vcovType = c("HC0", "Classical", "HC1", "HC2", "HC3"),
+        reSelect=FALSE, ...)
+## S3 method for class 'slseModel'
+selSLSE(model, selType=c("BLSE", "FLSE"),
+        selCrit = c("AIC", "BIC", "PVT"), 
+        pvalT = function(p) 1/log(p),
+        vcovType = c("HC0", "Classical", "HC1", "HC2", "HC3"),
+        reSelect=FALSE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>A model of class <code>cslseModel</code> or
+<code>slseModel</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>selType</code></td>
+<td>
+<p>The selection method: backward (<code>"BLSE"</code>) or
+forward (<code>"FLSE"</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>selCrit</code></td>
+<td>
+<p>The criterion to select the piecewise polynomial knots.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pvalT</code></td>
+<td>
+<p>A function to determine the p-value threshold for the
+significance of the coefficients. It has to be a function of one
+parameter, which is the average number of knots in the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vcovType</code></td>
+<td>
+<p>The type of least squares covariance matrix used to
+compute the p-values needed for the selection.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reSelect</code></td>
+<td>
+<p>By default, the stored selections are used. If
+<code>reSelect</code> is set to <code>TRUE</code>, the selection is re-computed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass to other methods. Currently
+not used.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>It selects the knots using one of the two methods, FLSE or BLSE, with
+either the AIC, BIC or a p-value threshold (see the vignette for more
+details). Any of these selection methods requires several least squares
+estimations and it is performed only if the method has not been applied
+yet and <code>reSelect</code> is set to <code>TRUE</code>. This is possible because
+any new knots selection is saved into the returned model. A model may
+have more than one selection saved into it. The active knots (the ones
+used when we estimate the model) is stored into the element <code>knots</code>
+of the model and the saved selections are stored into the element
+<code>selections</code>. See below for what is included in this element.  
+</p>
+<p>Note that the selections for the three criteria AIC, BIC and PVT are
+computed and saved automatically in the returned model when
+<code>selCrit</code> is set to either <code>"AIC"</code> or <code>"BIC"</code>, because it
+does not require many more operations to select them all once we do it
+for AIC or BIC. However, it is only computed for PVT when <code>selCrit</code>
+is set to <code>"PVT"</code>. 
+</p>
+<p>The knots are selected jointly for all treatment groups in
+<code>cslseModel</code> objects. However, the active knots and all saved
+selections are stored separately for each treatment group. For example,
+the active knots for the treated in the <code>cslseModel</code> object
+<code>mod</code> are stored in <code>mod$treated$knots</code>. See the Vignette for
+more details.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The method returns an object of class <code>slseModel</code> or
+<code>cslseModel</code> depending on which object it is applied
+to. When it does not already exist, the element <code>selections</code> is added
+to the <code>slseModel</code> object (or to each <code>slseModel</code> object in
+<code>cslseModel</code> objects). The element <code>selections</code> is a list with
+one or more of the following elements:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>originalKnots</code></td>
+<td>
+<p>The original knots as selected initially by
+<code>slseModel</code> or <code>cslseModel</code>. This element is
+always included.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FLSE, BLSE</code></td>
+<td>
+<p>This is where selections based on the forward (FLSE) and
+the backward (BLSE) methods are stored.</p>
+</td>
+</tr>
+</table>
+<p>Finally, <code>BLSE</code> and <code>FLSE</code> are lists that may contain the following elements:   
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>AIC, BIC</code></td>
+<td>
+<p>A list of integer vectors, one for each covariate in the
+<code>slseModel</code> model. The vectors of integers indicate which sets the
+original set of knots minimizes the AIC or the BIC.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PVT</code></td>
+<td>
+<p>Same as the AIC and BIC, but the selection is based on a p-value
+threshold.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>JAIC, JBIC</code></td>
+<td>
+<p>This criteria is for <code>cslseModel</code> models. It is
+like the AIC and BIC, but it indicates that the AIC or BIC was
+computes by estimating the models of all treatment groups
+jointly. This selection is not the same as a selection group by group.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Threshold</code></td>
+<td>
+<p>The p-value threshold used for the PVT criterion.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pval</code></td>
+<td>
+<p>A list of p-values, one for each original knots. See
+vignette for a definition of the p-values.</p>
+</td>
+</tr>
+</table>
+<h3>See Also</h3>
+
+<p><code>slseModel</code> and <code>cslseModel</code> for model
+objects description and <code>update</code> for
+ways of selecting stored selections</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(simDat3)
+mod1 &lt;- cslseModel(Y~Z|~X1*X2, data=simDat3)
+mod1 &lt;- selSLSE(mod1, selType="FLSE", selCrit="AIC")
+
+## The following does not require additional computation
+## because the selection is stored in mod1
+
+mod1 &lt;- selSLSE(mod1, selType="FLSE", selCrit="BIC")
+
+
+## But the following does
+
+mod1 &lt;- selSLSE(mod1, selType="BLSE", selCrit="BIC")
+
+## See one selection:
+
+mod1$treated$selections$BLSE$JBIC
+
+</code></pre>
+
+
+</div>

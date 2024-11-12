@@ -1,0 +1,330 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>repCV</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Cross-validation for linear models</h2>
+
+<h3>Description</h3>
+
+<p>Estimate the prediction error of a linear model via (repeated) <code class="reqn">K</code>-fold
+cross-validation.  Cross-validation functions are available for least
+squares fits computed with <code>lm</code> as well as for the
+following robust alternatives: MM-type models computed with
+<code>lmrob</code> and least trimmed squares fits computed with
+<code>ltsReg</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">repCV(object, ...)
+
+## S3 method for class 'lm'
+repCV(
+  object,
+  cost = rmspe,
+  K = 5,
+  R = 1,
+  foldType = c("random", "consecutive", "interleaved"),
+  grouping = NULL,
+  folds = NULL,
+  seed = NULL,
+  ...
+)
+
+## S3 method for class 'lmrob'
+repCV(
+  object,
+  cost = rtmspe,
+  K = 5,
+  R = 1,
+  foldType = c("random", "consecutive", "interleaved"),
+  grouping = NULL,
+  folds = NULL,
+  seed = NULL,
+  ...
+)
+
+## S3 method for class 'lts'
+repCV(
+  object,
+  cost = rtmspe,
+  K = 5,
+  R = 1,
+  foldType = c("random", "consecutive", "interleaved"),
+  grouping = NULL,
+  folds = NULL,
+  fit = c("reweighted", "raw", "both"),
+  seed = NULL,
+  ...
+)
+
+cvLm(
+  object,
+  cost = rmspe,
+  K = 5,
+  R = 1,
+  foldType = c("random", "consecutive", "interleaved"),
+  grouping = NULL,
+  folds = NULL,
+  seed = NULL,
+  ...
+)
+
+cvLmrob(
+  object,
+  cost = rtmspe,
+  K = 5,
+  R = 1,
+  foldType = c("random", "consecutive", "interleaved"),
+  grouping = NULL,
+  folds = NULL,
+  seed = NULL,
+  ...
+)
+
+cvLts(
+  object,
+  cost = rtmspe,
+  K = 5,
+  R = 1,
+  foldType = c("random", "consecutive", "interleaved"),
+  grouping = NULL,
+  folds = NULL,
+  fit = c("reweighted", "raw", "both"),
+  seed = NULL,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>an object returned from a model fitting function.  Methods
+are implemented for objects of class <code>"lm"</code> computed with
+<code>lm</code>, objects of class <code>"lmrob"</code> computed with
+<code>lmrob</code>, and object of class <code>"lts"</code> computed
+with <code>ltsReg</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments to be passed to the prediction loss
+function <code>cost</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cost</code></td>
+<td>
+<p>a cost function measuring prediction loss.  It should expect
+the observed values of the response to be passed as the first argument and
+the predicted values as the second argument, and must return either a
+non-negative scalar value, or a list with the first component containing
+the prediction error and the second component containing the standard
+error.  The default is to use the root mean squared prediction error
+for the <code>"lm"</code> method and the root trimmed mean squared prediction
+error for the <code>"lmrob"</code> and <code>"lts"</code> methods (see
+<code>cost</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K</code></td>
+<td>
+<p>an integer giving the number of folds into which the data should
+be split (the default is five).  Keep in mind that this should be chosen
+such that all folds are of approximately equal size.  Setting <code>K</code>
+equal to the number of observations or groups yields leave-one-out
+cross-validation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>R</code></td>
+<td>
+<p>an integer giving the number of replications for repeated
+<code class="reqn">K</code>-fold cross-validation.  This is ignored for for leave-one-out
+cross-validation and other non-random splits of the data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>foldType</code></td>
+<td>
+<p>a character string specifying the type of folds to be
+generated.  Possible values are <code>"random"</code> (the default),
+<code>"consecutive"</code> or <code>"interleaved"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grouping</code></td>
+<td>
+<p>a factor specifying groups of observations.  If supplied,
+the data are split according to the groups rather than individual
+observations such that all observations within a group belong to the same
+fold.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>folds</code></td>
+<td>
+<p>an object of class <code>"cvFolds"</code> giving the folds of the
+data for cross-validation (as returned by <code>cvFolds</code>).  If
+supplied, this is preferred over the arguments for generating
+cross-validation folds.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>optional initial seed for the random number generator (see
+<code>.Random.seed</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fit</code></td>
+<td>
+<p>a character string specifying for which fit to estimate the
+prediction error.  Possible values are <code>"reweighted"</code> (the default) for
+the prediction error of the reweighted fit, <code>"raw"</code> for the prediction
+error of the raw fit, or <code>"both"</code> for the prediction error of both
+fits.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>(Repeated) <code class="reqn">K</code>-fold cross-validation is performed in the following
+way.  The data are first split into <code class="reqn">K</code> previously obtained blocks of
+approximately equal size.  Each of the <code class="reqn">K</code> data blocks is left out once
+to fit the model, and predictions are computed for the observations in the
+left-out block with the <code>predict</code> method of the fitted
+model.  Thus a prediction is obtained for each observation.
+</p>
+<p>The response variable and the obtained predictions for all observations are
+then passed to the prediction loss function <code>cost</code> to estimate the
+prediction error.  For repeated cross-validation, this process is replicated
+and the estimated prediction errors from all replications as well as their
+average are included in the returned object.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>"cv"</code> with the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>an integer giving the number of observations or groups.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K</code></td>
+<td>
+<p>an integer giving the number of folds.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>R</code></td>
+<td>
+<p>an integer giving the number of replications.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cv</code></td>
+<td>
+<p>a numeric vector containing the estimated prediction
+errors.  For the <code>"lm"</code> and <code>"lmrob"</code> methods, this is a single
+numeric value.  For the <code>"lts"</code> method, this contains one value for
+each of the requested fits.  In the case of repeated cross-validation, those
+are average values over all replications.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>se</code></td>
+<td>
+<p>a numeric vector containing the estimated standard
+errors of the prediction loss.  For the <code>"lm"</code> and <code>"lmrob"</code>
+methods, this is a single numeric value.  For the <code>"lts"</code> method, this
+contains one value for each of the requested fits.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reps</code></td>
+<td>
+<p>a numeric matrix containing the estimated prediction
+errors from all replications.  For the <code>"lm"</code> and <code>"lmrob"</code>
+methods, this is a matrix with one column.  For the <code>"lts"</code> method,
+this contains one column for each of the requested fits.  However, this is
+only returned for repeated cross-validation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>the seed of the random number generator before
+cross-validation was performed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the matched function call.</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>The <code>repCV</code> methods are simple wrapper functions that extract the
+data from the fitted model and call <code>cvFit</code> to perform
+cross-validation.  In addition, <code>cvLm</code>, <code>cvLmrob</code> and <code>cvLts</code>
+are aliases for the respective methods.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Andreas Alfons
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cvFit</code>, <code>cvFolds</code>, <code>cost</code>,
+<code>lm</code>, <code>lmrob</code>,
+<code>ltsReg</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library("robustbase")
+data("coleman")
+set.seed(1234)  # set seed for reproducibility
+
+# set up folds for cross-validation
+folds &lt;- cvFolds(nrow(coleman), K = 5, R = 10)
+
+# perform cross-validation for an LS regression model
+fitLm &lt;- lm(Y ~ ., data = coleman)
+repCV(fitLm, cost = rtmspe, folds = folds, trim = 0.1)
+
+# perform cross-validation for an MM regression model
+fitLmrob &lt;- lmrob(Y ~ ., data = coleman)
+repCV(fitLmrob, cost = rtmspe, folds = folds, trim = 0.1)
+
+# perform cross-validation for an LTS regression model
+fitLts &lt;- ltsReg(Y ~ ., data = coleman)
+repCV(fitLts, cost = rtmspe, folds = folds, trim = 0.1)
+repCV(fitLts, cost = rtmspe, folds = folds, 
+    fit = "both", trim = 0.1)
+</code></pre>
+
+
+</div>

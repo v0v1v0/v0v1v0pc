@@ -1,0 +1,236 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fitEmax</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>ML fit of hyperbolic or sigmoidal Emax models to continuous/binary dose
+response data.
+</h2>
+
+<h3>Description</h3>
+
+<p>Calls Newton-Raphson optimizers, nls and nlm,
+for a hyperbolic or sigmoidal 
+Emax model.  Different intercepts for multiple protocol-data are supported.  For binary
+data, the Emax model is on the logit scale.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fitEmax(y,dose,iparm,xparm,modType=4,
+	prot=rep(1,length(y)),count=rep(1,length(y)),xbase=NULL,
+	binary=FALSE,diagnostics=TRUE,msSat=NULL,
+	pboAdj=rep(FALSE,max(prot)),optObj=TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Outcome for each patient.  Missing <code>Y</code> values
+are are not permitted.  Dose/protocol group means for grouped continuous data.  For binary
+data, <code>y</code> must be 0/1 and counts must be supplied for each 0/1 value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dose</code></td>
+<td>
+<p>Dose for each patient.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iparm</code></td>
+<td>
+<p>Optional starting values for the Newton-Raphson algorithm.  The
+order of the variables is (log(ED50),Emax,E0) or
+(log(ED50),lambda,Emax,E0).  Note the transformation of ED50. If there is more
+than one protocol, the E0 is automatically duplicated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xparm</code></td>
+<td>
+<p>Optional starting values for the baseline covariate slopes (if any).
+<code>xparm</code> must be specified when <code>iparm</code> and <code>xbase</code> are specified.
+<code>startEmax</code> is used to obtain starting values if no starting values are specified.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modType</code></td>
+<td>
+<p>modType=3 (default) for the 3-parameter hyperbolic Emax model.
+modType=4 for the 4-parameter sigmoidal Emax model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prot</code></td>
+<td>
+<p>Protocol (group) membership used to create multiple intercepts.  
+The default is a single protocol.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>count</code></td>
+<td>
+<p>Counts for the number of patients when the <code>Y</code> are dose 
+continuous group means or binary 0/1 values.  
+Default is 1 (ungrouped data).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xbase</code></td>
+<td>
+<p>A matrix of baseline covariates with rows corresponding to 
+<code>y</code> that enter as linear additive predictors.  The baseline covariates must 
+be centered about
+their (protocol-specific) means.  <code>xbase</code> does not include an intercept or
+protocol indicators.  Covariates cannnot be specified with PBO adjusted or 
+aggregated input.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>diagnostics</code></td>
+<td>
+<p>Print trace information per iteration and any error messages from the optimizing
+methods.  Printing can be suppressed for use in simulation studies.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>binary</code></td>
+<td>
+<p>When <code>TRUE</code>, the <code>y</code> are assumed to be coded <code>0/1</code>, and 
+the the means reported are proportions.  The Emax model is specified on the logit 
+scale, and proportions are estimated from the model by back-transformation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>msSat</code></td>
+<td>
+<p>If continuous <code>Y</code> are dose/protocol group means rather than
+individual measurements, the within group variance, <code>msSat</code>, should be 
+supplied.  This variance is the mean square from the model saturated in
+dose and protocol.  It is used for goodness-of-fit (GOF) testing, and to 
+improve the residual variance estimate for the Emax model.  If it is not
+supplied, statistics needed for GOF will not be available, and the
+residual SD (and associated SE) will have low degrees of freedom.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pboAdj</code></td>
+<td>
+<p>For published data with only pbo-adjusted dose group means and
+SEs, the model is fit without an intercept(s).  If initial parameters
+are supplied, the intercept (E0) should be assigned <code>0</code>.  
+A zero for the placebo mean should not be included in <code>Y</code>.  
+This option is not available for binary data.  Potential correlation between between
+placebo-adjusted means is ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optObj</code></td>
+<td>
+<p>Include the output object from the R optimization code in the <code>fitEmax</code>
+output.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Fits the 3- or 4- Emax model  using
+<code>nls</code>.  A newton-raphson algorithm is tried first 
+followed by a partial linear optimatization if needed.  Binary
+data are fit using <code>nlm</code>.</p>
+
+
+<h3>Value</h3>
+
+<p>A list assigned class "fitEmax" with:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>fit</code></td>
+<td>
+<p>The parameter estimates and their variance-covariance matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y, dose, modType, prot, count, binary, pboAdj</code></td>
+<td>
+<p>Input values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gofTest</code></td>
+<td>
+<p>Goodness of fit p-value based on likelihood ratio comparison of
+the model to a saturated fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nll</code></td>
+<td>
+<p><code>-2*loglikelihood</code> for the Emax model and the saturated model.  
+Residual sums of squares are returned for continuous data models.  These
+statistics can be used to construct other tests using multiple calls to
+<code>fitEmax</code> (e.g., 3 vs 4 parameter Emax
+models, or a common intercept model across protocols).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>Residual degrees of freedom for the Emax model and the saturated model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optobj</code></td>
+<td>
+<p>When requested, the fit object returned by the R optimation functions.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Neal Thomas </p>
+
+
+<h3>See Also</h3>
+
+<p><code>nls</code>, <code>nlm</code>,  <code>nllogis</code>, 
+<code>predict.fitEmax</code>, <code>plot.fitEmax</code>, <code>coef.fitEmax</code> </p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## the example changes the random number seed
+
+doselev&lt;-c(0,5,25,50,100,350)
+n&lt;-c(78,81,81,81,77,80)
+
+### population parameters for simulation
+e0&lt;-2.465375 
+ed50&lt;-67.481113 
+
+dtarget&lt;-100
+diftarget&lt;-9.032497
+emax&lt;-solveEmax(diftarget,dtarget,log(ed50),1,e0)
+
+
+sdy&lt;-8.0
+pop&lt;-c(log(ed50),emax,e0)    
+dose&lt;-rep(doselev,n)
+meanlev&lt;-emaxfun(dose,pop)  
+
+y&lt;-rnorm(sum(n),meanlev,sdy)
+
+testout&lt;-fitEmax(y,dose,modType=4)
+</code></pre>
+
+
+</div>

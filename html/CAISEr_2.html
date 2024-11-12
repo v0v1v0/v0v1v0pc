@@ -1,0 +1,224 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>calc_instances</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculates number of instances for the comparison of multiple algorithms</h2>
+
+<h3>Description</h3>
+
+<p>Calculates either the number of instances, or the power(s) of the
+comparisons of multiple algorithms.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">calc_instances(
+  ncomparisons,
+  d,
+  ninstances = NULL,
+  power = NULL,
+  sig.level = 0.05,
+  alternative.side = "two.sided",
+  test = "t.test",
+  power.target = "mean"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>ncomparisons</code></td>
+<td>
+<p>number of comparisons planned</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+<p>minimally relevant effect size (MRES, expressed as a standardized
+effect size, i.e., "deviation from H0" / "standard deviation")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ninstances</code></td>
+<td>
+<p>the number of instances to be used in the experiment.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>power</code></td>
+<td>
+<p>target power for the comparisons (see <code>Details</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sig.level</code></td>
+<td>
+<p>desired family-wise significance level (alpha) for the
+experiment</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alternative.side</code></td>
+<td>
+<p>type of alternative hypothesis to be performed
+("two.sided" or "one.sided")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test</code></td>
+<td>
+<p>type of test to be used
+("t.test", "wilcoxon" or "binomial")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>power.target</code></td>
+<td>
+<p>which comparison should have the desired <code>power</code>?
+Accepts "mean", "median", or "worst.case" (this last one
+is equivalent to the Bonferroni correction).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The main use of this routine uses the closed formula of the t-test to
+calculate the number of instances required for the comparison of pairs of
+algorithms, given a desired power and standardized effect size of
+interest. Significance levels of each comparison are adjusted using
+Holm's step-down correction (the default). The routine also takes into
+account whether the desired statistical power refers to the mean power
+(the default), median, or worst-case (which is equivalent to
+designing the experiment for the more widely-known Bonferroni correction).
+See the reference by <code style="white-space: pre;">⁠Campelo and Wanner⁠</code> for details.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a list object containing the following items:
+</p>
+
+<ul>
+<li> <p><code>ninstances</code> - number of instances
+</p>
+</li>
+<li> <p><code>power</code> - the power of the comparison
+</p>
+</li>
+<li> <p><code>d</code> - the effect size
+</p>
+</li>
+<li> <p><code>sig.level</code> - significance level
+</p>
+</li>
+<li> <p><code>alternative.side</code> - type of alternative hypothesis
+</p>
+</li>
+<li> <p><code>test</code> - type of test
+</p>
+</li>
+</ul>
+<h3>Sample Sizes for Nonparametric Methods</h3>
+
+<p>If the parameter <code>test</code> is set to either <code>Wilcoxon</code> or <code>Binomial</code>, this
+routine approximates the number of instances using the ARE of these tests
+in relation to the paired t.test, using the formulas (see reference by
+<code style="white-space: pre;">⁠Campelo and Takahashi⁠</code> for details):
+</p>
+<p style="text-align: center;"><code class="reqn">n.wilcox = n.ttest / 0.86 = 1.163 * n.ttest</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">n.binom = n.ttest / 0.637 = 1.570 * n.ttest</code>
+</p>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Felipe Campelo (<a href="mailto:fcampelo@ufmg.br">fcampelo@ufmg.br</a>,
+<a href="mailto:f.campelo@aston.ac.uk">f.campelo@aston.ac.uk</a>)
+</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li>
+<p> P. Mathews.
+Sample size calculations: Practical methods for engineers and scientists.
+Mathews Malnar and Bailey, 2010.
+</p>
+</li>
+<li>
+<p> F. Campelo, F. Takahashi:
+Sample size estimation for power and accuracy in the experimental
+comparison of algorithms. Journal of Heuristics 25(2):305-338, 2019.
+</p>
+</li>
+<li>
+<p> F. Campelo, E. Wanner:
+Sample size calculations for the experimental comparison of multiple
+algorithms on multiple problem instances.
+Submitted, Journal of Heuristics, 2019.
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Calculate sample size for mean-case power
+K      &lt;- 10   # number of comparisons
+alpha  &lt;- 0.05 # significance level
+power  &lt;- 0.9  # desired power
+d      &lt;- 0.5  # MRES
+
+out &lt;- calc_instances(K, d,
+                      power     = power,
+                      sig.level = alpha)
+
+# Plot power of each comparison to detect differences of magnitude d
+plot(1:K, out$power,
+     type = "b", pch = 20, las = 1, ylim = c(0, 1), xlab = "comparison",
+     ylab = "power", xaxs = "i", xlim = c(0, 11))
+grid(11, NA)
+points(c(0, K+1), c(power, power), type = "l", col = 2, lty = 2, lwd = .5)
+text(1, 0.93, sprintf("Mean power = %2.2f for N = %d",
+                     out$mean.power, out$ninstances), adj = 0)
+
+# Check sample size if planning for Wilcoxon tests:
+calc_instances(K, d,
+               power     = power,
+               sig.level = alpha,
+               test = "wilcoxon")$ninstances
+
+
+# Calculate power profile for predefined sample size
+N &lt;- 45
+out2 &lt;- calc_instances(K, d, ninstances = N, sig.level = alpha)
+
+points(1:K, out2$power, type = "b", pch = 19, col = 3)
+text(6, .7, sprintf("Mean power = %2.2f for N = %d",
+                     out2$mean.power, out2$ninstances), adj = 0)
+
+# Sample size for worst-case (Bonferroni) power of 0.8, using Wilcoxon
+out3 &lt;- calc_instances(K, d, power = 0.9, sig.level = alpha,
+                       test = "wilcoxon", power.target = "worst.case")
+out3$ninstances
+
+# For median power:
+out4 &lt;- calc_instances(K, d, power = 0.9, sig.level = alpha,
+                       test = "wilcoxon", power.target = "median")
+out4$ninstances
+out4$power
+
+</code></pre>
+
+
+</div>

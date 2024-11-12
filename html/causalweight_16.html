@@ -1,0 +1,147 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>medDML</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Causal mediation analysis with double machine learning</h2>
+
+<h3>Description</h3>
+
+<p>Causal mediation analysis (evaluation of natural direct and indirect effects) for a binary treatment and one or several mediators using double machine learning to control for confounders based on (doubly robust) efficient score functions for potential outcomes.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">medDML(
+  y,
+  d,
+  m,
+  x,
+  k = 3,
+  trim = 0.05,
+  order = 1,
+  multmed = TRUE,
+  fewsplits = FALSE,
+  normalized = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Dependent variable, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+<p>Treatment, must be binary (either 1 or 0), must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>m</code></td>
+<td>
+<p>Mediator, must not contain missings. May be a scalar or a vector of binary, categorical, or continuous variables if <code>multmed</code> is <code>TRUE</code>. Must be a binary scalar if  <code>multmed</code> is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>(Potential) pre-treatment confounders of the treatment, mediator, and/or outcome, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p>Number of folds in k-fold cross-fitting if <code>multmed</code> is <code>FALSE</code>. <code>k</code>-1 folds are used for estimating the model parameters of the treatment, mediator, and outcome equations and one fold is used for predicting the efficient score functions. The roles of the folds are swapped. Default for <code>k</code> is 3. If <code>multmed</code> is <code>TRUE</code>, then 3-fold cross-valdiation is used, irrespective of the number provided in <code>k</code> (i.e. <code>k</code> is ignored if <code>multmed</code> is <code>TRUE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trim</code></td>
+<td>
+<p>Trimming rule for discarding observations with extreme conditional treatment or mediator probabilities (or products thereof). Observations with (products of) conditional probabilities that are smaller than <code>trim</code> in any denominator of the potential outcomes are dropped. Default is 0.05.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>order</code></td>
+<td>
+<p>If set to an integer larger than 1, then polynomials of that order and interactions (using the power series) rather than the original control variables are used in the estimation of any conditional probability or conditional mean outcome. Polynomials/interactions are created using the <code>Generate.Powers</code> command of the <code>LARF</code> package.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>multmed</code></td>
+<td>
+<p>If set to <code>TRUE</code>, a representation of direct and indirect effects that avoids conditional mediator densities/probabilities is used, see Farbmacher, Huber, Langen, and Spindler (2019). This method can incorporate multiple and/or continuous mediators. If <code>multmed</code> is <code>FALSE</code>, the representation of Tchetgen Tchetgen and Shpitser (2012) is used, which involves mediator densities. In this case, the mediator must be a binary scalar. Default of <code>multimed</code> is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fewsplits</code></td>
+<td>
+<p>If set to <code>TRUE</code>, the same training data are used for estimating nested models of nuisance parameters, i.e. <code>E[Y|D=d,M,X]</code> and <code>E[E[Y|D=d,M,X]|D=1-d,X]</code>. If <code>fewsplits</code> is <code>FALSE</code>, the training data are split for the sequential estimation of nested models <code>E[Y|D=d,M,X]</code> and <code>E[E[Y|D=d,M,X]|D=1-d,X]</code>. This parameter is only relevant if <code>multmed</code> is <code>TRUE</code>. Default of <code>fewsplits</code> is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>normalized</code></td>
+<td>
+<p>If set to <code>TRUE</code>, then the inverse probability-based weights are normalized such that they add up to 1 within treatment groups. Default is <code>TRUE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Estimation of causal mechanisms (natural direct and indirect effects) of a treatment under selection on observables, assuming that all confounders of the binary treatment and the mediator, the treatment and the outcome, or the mediator and the outcome are observed and not affected by the treatment. Estimation is based on the (doubly robust) efficient score functions for potential outcomes, see Tchetgen Tchetgen and Shpitser (2012) and Farbmacher, Huber, Langen, and Spindler (2019),
+as well as on double machine learning with cross-fitting, see Chernozhukov et al (2018). To this end, one part of the data is used for estimating the model parameters of the treatment, mediator, and outcome equations based on post-lasso regression, using the <code>rlasso</code> and <code>rlassologit</code> functions (for conditional means and probabilities, respectively) of the <code>hdm</code> package with default settings. The other part of the data is used for predicting the efficient score functions. The roles of the data parts are swapped and the direct and indirect effects are estimated based on averaging the predicted efficient score functions in the total sample.
+Standard errors are based on asymptotic approximations using the estimated variance of the (estimated) efficient score functions.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A medDML object contains two components, <code>results</code> and <code>ntrimmed</code>:
+</p>
+<p><code>results</code>: a 3X6 matrix containing the effect estimates in the first row ("effects"), standard errors in the second row ("se"), and p-values in the third row ("p-value").
+The first column provides the total effect, namely the average treatment effect (ATE). The second and third columns provide the direct effects under treatment and control, respectively ("dir.treat", "dir.control"). The fourth and fifth columns provide the indirect effects under treatment and control, respectively ("indir.treat", "indir.control"). The sixth column provides the estimated mean under non-treatment ("Y(0,M(0))").
+</p>
+<p><code>ntrimmed</code>: number of discarded (trimmed) observations due to extreme conditional probabilities.
+</p>
+
+
+<h3>References</h3>
+
+<p>Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., Robins, J. (2018): "Double/debiased machine learning for treatment and structural parameters", The Econometrics Journal, 21, C1-C68.
+</p>
+<p>Farbmacher, H., Huber, M., Laffers, L., Langen, H., and Spindler, M. (2019): "Causal mediation analysis with double machine learning", working paper, University of Fribourg.
+</p>
+<p>Tchetgen Tchetgen, E. J., and Shpitser, I. (2012): "Semiparametric theory for causal mediation analysis: efficiency bounds, multiple robustness, and sensitivity analysis", The Annals of Statistics, 40, 1816-1845.
+</p>
+<p>Tibshirani, R. (1996): "Regression shrinkage and selection via the lasso", Journal of the Royal Statistical Society: Series B, 58, 267-288.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># A little example with simulated data (10000 observations)
+## Not run: 
+n=10000                           # sample size
+p=100                             # number of covariates
+s=2                               # number of covariates that are confounders
+x=matrix(rnorm(n*p),ncol=p)       # covariate matrix
+beta=c(rep(0.25,s), rep(0,p-s))   # coefficients determining degree of confounding
+d=(x%*%beta+rnorm(n)&gt;0)*1         # treatment equation
+m=(x%*%beta+0.5*d+rnorm(n)&gt;0)*1   # mediator equation
+y=x%*%beta+0.5*d+m+rnorm(n)       # outcome equation
+# The true direct effects are equal to 0.5, the indirect effects equal to 0.19
+output=medDML(y=y,d=d,m=m,x=x)
+round(output$results,3)
+output$ntrimmed
+## End(Not run)
+</code></pre>
+
+
+</div>

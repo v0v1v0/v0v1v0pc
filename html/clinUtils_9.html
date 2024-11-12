@@ -1,0 +1,359 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>compareTables</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compare tables</h2>
+
+<h3>Description</h3>
+
+<p>Compare tables
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">compareTables(
+  newData,
+  oldData,
+  referenceVars = intersect(colnames(newData), colnames(oldData)),
+  changeableVars = NULL,
+  outputType = c("table-comparison", "newData-diff", "oldData-diff",
+    "table-comparison-interactive", "newData-diff-interactive",
+    "oldData-diff-interactive"),
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>newData</code></td>
+<td>
+<p>data.frame object representing the new data</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>oldData</code></td>
+<td>
+<p>data.frame object representing the old data</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>referenceVars</code></td>
+<td>
+<p>character vector of the columns in the data that are the used as
+reference for the comparison. <br> 
+If not specified, all columns present both in
+<code>newData</code> and <code>oldData</code> are considered.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>changeableVars</code></td>
+<td>
+<p>character vector of the columns in the data for which you want to assess the change,
+e.g. variables that might have changed from the old to the new data.<br>
+If not specified, only 'Addition' and 'Removal' are detected.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outputType</code></td>
+<td>
+<p>String describing which output should be returned,
+(multiple are possible), either:
+</p>
+
+<ul>
+<li>
+<p> 'table-comparison': data.frame containing difference between
+two datasets, see 'output' of <code>compareDiff</code> function.
+</p>
+</li>
+<li>
+<p> 'table-comparison-interactive': <code>datatable</code> object 
+with differences between the two datasets, see 'output' of 
+<code>exportDiffData</code>.
+</p>
+</li>
+<li>
+<p> 'newData-diff' or 'oldData-diff': data.frame with new/old data 
+respectively, containing the information if each record differs in the 
+old/new datasets respectively. See output of <code>mergeDiffWithData</code>.
+</p>
+</li>
+<li>
+<p> 'newData-diff-interactive' or 'oldData-diff-interactive': 
+<code>datatable</code> with new/old data respectively, containing the 
+information if each record differs in the old/new datasets respectively.
+See output of <code>exportDiffData</code>.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Any parameters passed to the <code>exportDiffData</code> function.
+These are only used if 'table-comparison-interactive' is specified in <code>outputType</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>One of the output types specified in <code>outputType</code>.
+By default, all outputs are returned.
+If multiple output types are specified, a list of those are returned
+(named by output type).
+</p>
+
+
+<h3>Identification of the differences between datasets</h3>
+
+<p>To identify the differences between datasets, the following steps are followed:
+</p>
+
+<ol>
+<li>
+<p> removal of records identical between the old and new dataset
+(will be considered as 'Identical' later on)
+</p>
+</li>
+<li>
+<p> records with a reference value present in the old dataset but not
+in the new dataset are considered 'Removal'
+</p>
+</li>
+<li>
+<p> records with a reference value present in the new dataset but not
+in the old dataset are considered 'Addition'
+</p>
+</li>
+<li>
+<p> records with reference value present both in the new and old dataset,
+<strong>after filtering of identical records</strong> and with difference in
+the changeable variables are considered 'Change'
+</p>
+</li>
+</ol>
+<h3>Author(s)</h3>
+
+<p>Laure Cougnaud, Michela Pasetto
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Example 1
+# In this case the referenceVar 'a' is the same
+# the comparison highlights only as change in the variables 'c' and 'd' 
+newData &lt;- data.frame(
+	"a" = c(1, 2, 3, 4),
+	"b" = c(5, 6, 7, 8),
+	"c" = rep(1, 4),
+	"d" = rep(2, 4)
+)
+oldData &lt;- data.frame(
+	"a" = c(1, 2, 3, 4),
+	"b" = c(3, 4, 7, 8),
+	"c" = rep(2, 4),
+	"d" = rep(1, 4)
+)
+compareTables(
+	newData = newData,
+	oldData = oldData,
+	referenceVars = "a",
+	changeableVars = c("c", "d")
+)
+
+## Example 2
+# In this case the referenceVar 'a' changes in the last two rows
+# the comparison highlights as change the second and third rows in the variables 'c' and 'd'
+# whereas the last rows are additions/removals with respect to the reference 'a'
+newData &lt;- data.frame(
+		"a" = c(7, 1, 2, 3, 4),
+		"b" = c(2, 1, 6, 7, 8),
+		"c" = rep(1, 5),
+		"d" = rep(2, 5)
+)
+oldData &lt;- data.frame(
+		"a" = c(7, 1, 2, 5, 6),
+		"b" = c(2, 3, 4, 7, 8),
+		"c" = c(1, rep(2, 4)),
+		"d" = c(2, rep(1, 4))
+)
+compareTables(
+		newData = newData,
+		oldData = oldData,
+		referenceVars = "a",
+		changeableVars = c("c", "d")
+)
+
+## Example 3
+# In this case the referenceVar 'a' is the same
+# also the variable 'c' is the same and it's the only changeable var evaluated
+newData &lt;- data.frame(
+		"a" = c(1, 2, 3, 4),
+		"b" = c(5, 6, 7, 8),
+		"c" = rep(1, 4),
+		"d" = rep(2, 4)
+)
+oldData &lt;- data.frame(
+		"a" = c(1, 2, 3, 4),
+		"b" = c(3, 4, 7, 8),
+		"c" = rep(1, 4),
+		"d" = rep(1, 4)
+)
+compareTables(
+		newData = newData,
+		oldData = oldData,
+		referenceVars = "a",
+		changeableVars = "c"
+)
+
+## Not run: # due to time constraint in CRAN
+
+## In case only a specific output should be returned:
+newData &lt;- data.frame(
+	"a" = c(7, 1, 2, 3, 4),
+	"b" = c(2, 1, 6, 7, 8),
+	"c" = rep(1, 5),
+	"d" = rep(2, 5)
+)
+oldData &lt;- data.frame(
+	"a" = c(7, 1, 2, 5, 6),
+	"b" = c(2, 3, 4, 7, 8),
+	"c" = c(1, rep(2, 4)),
+	"d" = c(2, rep(1, 4))
+)
+
+# get only the differences between datasets:
+
+# as a data.frame
+compareTables(newData = newData, oldData = oldData, 
+	referenceVars = "a", changeableVars = c("c", "d"), 
+	outputType = "table-comparison")
+
+# as an interactive DataTable
+compareTables(newData = newData, oldData = oldData, 
+	referenceVars = "a", changeableVars = c("c", "d"), 
+	outputType = "table-comparison-interactive"
+)
+# only the new data
+compareTables(
+    newData = newData, oldData = oldData, 
+	referenceVars = "a", changeableVars = c("c", "d"), 
+	outputType = "newData-diff"
+)
+# only the new data in interactive mode
+compareTables(
+    newData = newData, oldData = oldData, 
+    referenceVars = "a", changeableVars = c("c", "d"), 
+    outputType = "newData-diff-interactive"
+)
+# only the new data in static and interactive mode
+compareTables(
+    newData = newData, oldData = oldData, 
+    referenceVars = "a", changeableVars = c("c", "d"), 
+    outputType = c("newData-diff", "newData-diff-interactive")
+)
+# only the old data
+compareTables(newData = newData, oldData = oldData, 
+	referenceVars = "a", changeableVars = c("c", "d"), 
+	outputType = "oldData-diff"
+)
+# only the old data in interactive mode
+compareTables(
+    newData = newData, oldData = oldData, 
+    referenceVars = "a", changeableVars = c("c", "d"), 
+    outputType = "oldData-diff-interactive"
+)
+# only the old data in static and interactive mode
+compareTables(
+    newData = newData, oldData = oldData, 
+    referenceVars = "a", changeableVars = c("c", "d"), 
+    outputType = c("oldData-diff", "oldData-diff-interactive")
+)
+
+
+## End(Not run)
+## no changeable vars
+
+newData &lt;- data.frame(
+	"a" = c(7, 1, 2, 3, 4),
+	"b" = c(2, 1, 6, 7, 8),
+	"c" = rep(1, 5),
+	"d" = rep(2, 5)
+)
+oldData &lt;- data.frame(
+	"a" = c(7, 1, 2, 5, 6),
+	"b" = c(2, 3, 4, 7, 8),
+	"c" = c(1, rep(2, 4)),
+	"d" = c(2, rep(1, 4))
+)
+
+compareTables(newData = newData, oldData = oldData, 
+	referenceVars = "a"
+)
+
+## duplicated records
+
+# in case there are multiple records for the same reference variables,
+# identical records are flagged as 'Identity' and reported in the table
+# reporting differences; and the different record are flagged as 'Change', 'Addition' or 'Removal'
+newData &lt;- data.frame(
+	"a" = c(7, 7),
+	"b" = c(1, 2),
+	"c" = c(1, 2),
+	"d" = c(2, 3)
+)
+oldData &lt;- data.frame(
+	"a" = c(7, 7, 7),
+	"b" = c(3, 4, 5),
+	"c" = c(1, 3, 5),
+	"d" = c(2, 4, 6)
+)
+compareTables(
+	newData = newData, oldData = oldData, 
+	referenceVars = "a", changeableVars = c("c", "d"), 
+)
+
+## with labels in the interactive format, see ? getClinDT
+
+## Not run: # due to time constraint in CRAN
+	
+newData &lt;- data.frame(
+	"a" = c(7, 1, 2, 3, 4),
+	"b" = c(2, 1, 6, 7, 8),
+	"c" = rep(1, 5),
+	"d" = rep(2, 5)
+)
+oldData &lt;- data.frame(
+	"a" = c(7, 1, 2, 5, 6),
+	"b" = c(2, 3, 4, 7, 8),
+	"c" = c(1, rep(2, 4)),
+	"d" = c(2, rep(1, 4))
+)
+compareTables(
+	newData = newData,
+	oldData = oldData,
+	referenceVars = "a",
+	changeableVars = c("c", "d"),
+	# parameters passed to datatable
+	colnames = c(
+		"My reference variable" = "a", 
+		"Changeable variable c" = "c",
+		"Changeable variable d" = "d"
+	)
+)
+
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

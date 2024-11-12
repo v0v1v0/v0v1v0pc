@@ -1,0 +1,94 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>getStatistics</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Returns the Test Statistics Associated With A CPM S4 Object</h2>
+
+<h3>Description</h3>
+
+<p>Returns the <code class="reqn">D_{k,t}</code> statistics associated with an existing Change Point Model (CPM) S4 object. These statistics depend on the state of the object, which depends on the observations which have been processed to date. Calling this function returns the most recent set of statistics, which were generated after the previous observation was processed. 
+</p>
+<p>Note that this function is part of the S4 object section of the <code>cpm</code> package, which allows for more precise control over the change detection process. For many simple change detection applications this extra complexity will not be required, and the <code>detectChangePoint</code> and <code>processStream</code> functions should be used instead.
+</p>
+<p>For a fuller overview of this function including a description of the CPM framework and examples of how to use the various functions, please consult the package manual "Parametric and Nonparametric Sequential Change Detection in R: The cpm Package" available from www.gordonjross.co.uk
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">     getStatistics(cpm)
+     </code></pre>
+
+
+<h3>Arguments</h3>
+
+<table><tr style="vertical-align: top;">
+<td><code>cpm</code></td>
+<td>
+<p>The CPM S4 object for which the test statistics are to be returned.</p>
+</td>
+</tr></table>
+<h3>Value</h3>
+
+<p>A vector containing the <code class="reqn">D_{k,t}</code> statistics generated after the previous observation was processed.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Gordon J. Ross <a href="mailto:gordon@gordonjross.co.uk">gordon@gordonjross.co.uk</a></p>
+
+
+<h3>See Also</h3>
+
+<p><code>makeChangePointModel, processObservation, changeDetected</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#generate a sequence containing two change points
+x &lt;- c(rnorm(200,0,1),rnorm(200,1,1),rnorm(200,0,1))
+
+#vectors to hold the result
+detectiontimes &lt;- numeric()
+changepoints &lt;- numeric()
+
+#use a Lepage CPM
+cpm &lt;- makeChangePointModel(cpmType="Lepage", ARL0=500)
+
+
+i &lt;- 0
+while (i &lt; length(x)) {
+  i &lt;- i + 1
+  #process each observation in turn
+  cpm &lt;- processObservation(cpm,x[i])
+  
+  #if a change has been found, log it, and reset the CPM
+  if (changeDetected(cpm) == TRUE) {
+    print(sprintf("Change detected at observation %d", i))
+    detectiontimes &lt;- c(detectiontimes,i)
+    
+    #the change point estimate is the maximum D_kt statistic 
+    Ds &lt;- getStatistics(cpm)
+    tau &lt;- which.max(Ds)
+    
+    if (length(changepoints) &gt; 0) {
+      tau &lt;- tau + changepoints[length(changepoints)]
+    }
+    changepoints &lt;- c(changepoints,tau)
+    
+    #reset the CPM
+    cpm &lt;- cpmReset(cpm)
+    
+    #resume monitoring from the observation following the 
+    #change point
+    i &lt;- tau
+  }
+}
+</code></pre>
+
+
+</div>

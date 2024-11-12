@@ -1,0 +1,153 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>write_civis_file</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Upload a R object or file to Civis Platform (Files endpoint)</h2>
+
+<h3>Description</h3>
+
+<p>Uploads a data frame, R object or file to the files endpoint on Civis
+Platform (Amazon S3). It returns the id of the file for use with <code>read_civis</code>
+or <code>download_civis</code>.
+</p>
+<p>Data frames are uploaded as CSVs with <code>write.csv</code>.
+R objects are serialized with <code>saveRDS</code>. Files are uploaded as-is.
+Objects or files larger than 50mb are chunked and can be uploaded in parallel
+if a <code>plan</code> has been set. Files larger than 5TB cannot be uploaded.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">write_civis_file(x, ...)
+
+## Default S3 method:
+write_civis_file(x, name = "r-object.rds", expires_at = NULL, ...)
+
+## S3 method for class 'data.frame'
+write_civis_file(
+  x,
+  name = "data.csv",
+  expires_at = NULL,
+  row.names = FALSE,
+  ...
+)
+
+## S3 method for class 'character'
+write_civis_file(x, name = x, expires_at = NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>R object or path of file to upload.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments passed to <code>saveRDS</code> or <code>write.csv</code> for
+data frames.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p>string, Name of the file or object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>expires_at</code></td>
+<td>
+<p>string, The date and time the object will expire on in the
+format <code>"YYYY-MM-DD HH:MM:SS"</code>. <code>expires_at = NULL</code> allows files to be kept indefinitely.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>row.names</code></td>
+<td>
+<p>default FALSE. Either a logical value indicating whether the row names
+of x are to be written along with x, or a character vector of row names to be written.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Data frames are uploaded as CSVs using <code>write.csv</code>, with row.names = FALSE
+by default. Additional arguments to <code>write.csv</code> can be passed through <code>...</code>.
+</p>
+<p>By default, R objects are serialized using <code>saveRDS</code> before uploading the object
+to the files endpoint. If given a filepath, the file is uploaded as-is.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The file id which can be used to later retrieve the file using
+<code>read_civis</code>.
+</p>
+
+
+<h3>Methods (by class)</h3>
+
+
+<ul>
+<li> <p><code>write_civis_file(default)</code>: Serialize R object
+</p>
+</li>
+<li> <p><code>write_civis_file(data.frame)</code>: Upload a data frame as a csv
+</p>
+</li>
+<li> <p><code>write_civis_file(character)</code>: Upload any file
+</p>
+</li>
+</ul>
+<h3>See Also</h3>
+
+<p>Other io: 
+<code>download_civis()</code>,
+<code>query_civis_file()</code>,
+<code>query_civis()</code>,
+<code>read_civis()</code>,
+<code>write_civis()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+data(iris)
+file_id &lt;- write_civis_file(iris)
+read_civis(file_id)
+
+file_id &lt;- write_civis_file("path/to/my.csv")
+read_civis(file_id)
+read_civis(file_id, using = readr::read_csv)
+
+file_id &lt;- write_civis_file(list(a = 1))
+read_civis(file_id, using = readRDS)
+
+# Does not expire
+file_id &lt;- write_civis_file(iris, expires_at = NULL)
+
+# Expires on a given date and time
+file_id &lt;- write_civis_file(iris, expires_at = "2030-01-01")
+file_id &lt;- write_civis_file(iris, expires_at = "12:00:00")
+file_id &lt;- write_civis_file(iris, expires_at = "2030-01-01 12:00:00")
+
+# Upload a large file in parallel.
+library(future)
+plan(multisession)
+file_id &lt;- write_civis_file("my_large_file")
+
+## End(Not run)
+</code></pre>
+
+
+</div>

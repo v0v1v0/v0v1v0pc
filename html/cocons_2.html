@@ -1,0 +1,221 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>coco</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Creates a coco S4 object</h2>
+
+<h3>Description</h3>
+
+<p>Creates an S4 object of class <code>coco</code>, which is the centerpiece of the <span class="pkg">cocons</span> package. The function provides a set of consistency checks for ensuring the suitability of the different objects involved.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">coco(type, data, locs, z, model.list, info, output = list())
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>(<code>character</code>) One of two available types <code>"dense"</code> or <code>"sparse"</code>. See description.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>(<code>data.frame</code>) A <code>data.frame</code> with covariates information, where <code>colnames(data)</code> matches model.list specification.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>locs</code></td>
+<td>
+<p>(<code>matrix</code>) A <code>matrix</code> with spatial locations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>(<code>vector</code> or <code>matrix</code>) A matrix of <code class="reqn">n \times r</code> response realizations, one realization per column. When considering only one realization, a vector can also be provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model.list</code></td>
+<td>
+<p>(<code>list</code>) A <code>list</code> specifying a model for each aspect of the spatial structure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>info</code></td>
+<td>
+<p>(<code>list</code> or <code>NULL</code>) A <code>list</code> specifying characteristics of the coco object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output</code></td>
+<td>
+<p>(<code>list</code> or <code>NULL</code>) Empty or the resulting object from running optimParallel, adding to this a list with boundary information (check getBoundaries to check the expected structure).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Two types of <code>coco</code> objects are available, each assuming a different type of covariance matrix for the Gaussian process.
+Type <code>"dense"</code> builds dense covariance matrices (non zero elements), while type <code>"sparse"</code> builds sparse covariance
+matrices by tapering the dense covariance matrix with a compact isotropic compact-supported correlation matrix [1].
+Type <code>"sparse"</code> allows a set of efficient algorithms, thus making it more suitable for large sample sizes.
+</p>
+<p>An important component of the <code>coco</code> S4 class is the <code>model.list</code> specification, involving individual formulas provided as a list, where each of them specifies a covariate-based parametric model for a specific source of nonstationarity.
+It involves <code>"trend"</code> for the spatial trend, the <code>"std.dev"</code> for the marginal standard deviation,
+<code>"scale"</code>, <code>"aniso"</code> and <code>"tilt"</code>, each of them shaping specific aspects of the local spatial geometrically anisotropy structure,
+<code>"smooth"</code> handling local smoothness, and <code>"nugget"</code> handling the local nugget effect. The models are defined as:</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+   Source </td>
+<td style="text-align: left;"> Related to </td>
+<td style="text-align: left;"> Description </td>
+<td style="text-align: left;"> Model </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <em>mean</em> </td>
+<td style="text-align: left;"> <code class="reqn">\mu</code> </td>
+<td style="text-align: left;"> Mean function </td>
+<td style="text-align: left;"> <code class="reqn">\boldsymbol{X}_1\boldsymbol{\beta}</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <em>std.dev</em> </td>
+<td style="text-align: left;"> <code class="reqn">\sigma^{X}</code> </td>
+<td style="text-align: left;"> Marginal standard deviation </td>
+<td style="text-align: left;"> <code class="reqn">\text{exp}(0.5 \boldsymbol{X}_2 \boldsymbol{\alpha})</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <em>scale</em> </td>
+<td style="text-align: left;"> <code class="reqn">\boldsymbol{\Sigma}^{X}</code> </td>
+<td style="text-align: left;"> Local scale </td>
+<td style="text-align: left;"> <code class="reqn">\text{exp}(\boldsymbol{X}_3 \boldsymbol{\theta}_1)</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <em>aniso</em> </td>
+<td style="text-align: left;"> <code class="reqn">\boldsymbol{\Sigma}^{X}</code> </td>
+<td style="text-align: left;"> Local geometric anisotropy </td>
+<td style="text-align: left;"> <code class="reqn">\text{exp}(\boldsymbol{X}_4 \boldsymbol{\theta}_2)</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <em>tilt</em> </td>
+<td style="text-align: left;"> <code class="reqn">\boldsymbol{\Sigma}^{X}</code> </td>
+<td style="text-align: left;"> (Restricted) local tilt </td>
+<td style="text-align: left;"> <code class="reqn">\cos(\text{logit}^{-1}(\boldsymbol{X}_5 \boldsymbol{\theta}_3))</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <em>smooth</em> </td>
+<td style="text-align: left;"> <code class="reqn">\nu^{X}</code> </td>
+<td style="text-align: left;"> Local smoothness </td>
+<td style="text-align: left;"> <code class="reqn">(\nu_{u} - \nu_{l})/(1+\text{exp}(-\boldsymbol{X}_6 \boldsymbol{\phi})) + \nu_{l}</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <em>nugget</em> </td>
+<td style="text-align: left;"> <code class="reqn">\sigma^{X}_{\epsilon}</code> </td>
+<td style="text-align: left;"> Local micro-scale variability </td>
+<td style="text-align: left;"> <code class="reqn">\text{exp}(\boldsymbol{X}_7 \boldsymbol{\zeta})</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+</td>
+</tr>
+</table>
+<p>where <code class="reqn">\boldsymbol{\beta}</code>, <code class="reqn">\boldsymbol{\alpha}</code>, <code class="reqn">\boldsymbol{\theta}_1</code>, <code class="reqn">\boldsymbol{\theta}_2</code>, <code class="reqn">\boldsymbol{\theta}_3</code>, <code class="reqn">\boldsymbol{\phi}</code>, and <code class="reqn">\boldsymbol{\zeta}</code> are the parameter vectors of each model,
+<code class="reqn">\nu_{l}</code>, and <code class="reqn">\nu_{u}</code> are the lower and upper bounds limiting the range of variation of the spatially-varying smoothness, and where <code class="reqn">\boldsymbol{X}_{\ell}</code> relates to a specific design matrix defined by the specific models for each of the source of nonstationarity.
+</p>
+<p>Lastly, arguments for the <code>"info"</code> list argument involve: </p>
+
+<ul>
+<li> <p><code>"lambda"</code>: (<code>numeric</code>) a positive scalar specifying the regularization parameter.
+</p>
+</li>
+<li> <p><code>"smooth.limits"</code>: (<code>numeric vector</code>) specifying the allowed range of variation for the spatially varying smoothness.
+</p>
+</li>
+<li> <p><code>"taper"</code>: (<code>numeric</code>) specifying the desired taper function from the spam package (only for "sparse" coco objects).
+</p>
+</li>
+<li> <p><code>"delta"</code>: (<code>numeric</code>) specifying the taper range/scale (only for "sparse" coco objects).
+</p>
+</li>
+<li> <p><code>"cat.vars"</code>: (<code>integer vector</code>) index of those variables in <code>data</code> that should not be scaled during the optimization (e.g., categorical).
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p>(<code>S4</code>) An S4 object of class <code>coco</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Federico Blasi
+</p>
+
+
+<h3>References</h3>
+
+<p>[1] Furrer, Reinhard, Marc G. Genton, and Douglas Nychka.
+<em>"Covariance tapering for interpolation of large spatial datasets."</em>
+Journal of Computational and Graphical Statistics 15.3 (2006): 502-523.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>spam::cov.wend1()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+locs &lt;- expand.grid(seq(0,1,length.out = 10),
+seq(0,1,length.out = 10))
+
+toydata &lt;- data.frame('x' = locs[,1])
+
+set.seed(1)
+z &lt;- rnorm(100)
+
+model.list &lt;- list('mean' = 0,
+                   'std.dev' = formula( ~ 1),
+                   'scale' = formula( ~ 1 + x),
+                   'aniso' = 0,
+                   'tilt' = 0,
+                   'smooth' = 3/2,
+                   'nugget' = -Inf)
+                   
+coco_object &lt;- coco(type = 'dense',
+                    data = toydata,
+                    locs = as.matrix(locs),
+                    z = z,
+                    model.list = model.list)
+
+coco_object
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

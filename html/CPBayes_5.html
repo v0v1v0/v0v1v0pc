@@ -1,0 +1,233 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cpbayes_uncor</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Run uncorrelated version of CPBayes.</h2>
+
+<h3>Description</h3>
+
+<p>Run uncorrelated version of CPBayes when the main genetic effect (beta/log(odds ratio)) estimates across
+studies/traits are uncorrelated.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cpbayes_uncor(
+  BetaHat,
+  SE,
+  Phenotypes,
+  Variant,
+  UpdateSlabVar = TRUE,
+  MinSlabVar = 0.6,
+  MaxSlabVar = 1,
+  MCMCiter = 7500,
+  Burnin = 500
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>BetaHat</code></td>
+<td>
+<p>A numeric vector of length K where K is the number of phenotypes. It
+contains the beta-hat values across studies/traits. No default is specified.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SE</code></td>
+<td>
+<p>A numeric vector with the same dimension as BetaHat providing the standard errors
+corresponding to BetaHat. Every element of SE must be positive. No default is specified.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Phenotypes</code></td>
+<td>
+<p>A character vector of the same length as BetaHat providing the name of
+the phenotypes. Default is specified as trait1, trait2, . . . , traitK. Note that BetaHat,
+SE, and Phenotypes must be in the same order.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Variant</code></td>
+<td>
+<p>A character vector of length one specifying the name of the genetic variant.
+Default is ‘Variant’.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>UpdateSlabVar</code></td>
+<td>
+<p>A logical vector of length one. If TRUE, the variance of the slab distribution
+that presents the prior distribution of non-null effects
+is updated at each MCMC iteration in a range (MinSlabVar – MaxSlabVar) (see next). If FALSE,
+it is fixed at (MinSlabVar + MaxSlabVar)/2. Default is TRUE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MinSlabVar</code></td>
+<td>
+<p>A numeric value greater than 0.01 providing the minimum value of
+the variance of the slab distribution. Default is 0.6.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MaxSlabVar</code></td>
+<td>
+<p>A numeric value smaller than 10.0 providing the maximum value of
+the variance of the slab distribution. Default is 1.0. **Note that,
+a smaller value of the slab variance will increase the sensitivity of CPBayes while selecting the optimal
+subset of associated traits but at the expense of lower specificity. Hence the slab variance
+parameter in CPBayes is inversely related to the level of false discovery rate (FDR) in a frequentist
+FDR controlling procedure. For a specific dataset, an user
+can experiment different choices of these three arguments: UpdateSlabVar, MinSlabVar, and MaxSlabVar.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MCMCiter</code></td>
+<td>
+<p>A positive integer greater than or equal to 2200 providing the total number of
+iterations in the MCMC. Default is 7500.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Burnin</code></td>
+<td>
+<p>A positive integer greater than or equal to 200 providing the burn in period
+in the MCMC. Default is 500. Note that the MCMC sample size (MCMCiter - Burnin) must be at least 2000, which is 7000 by default.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The output produced by the function is a list which consists of various components.
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>variantName</code></td>
+<td>
+<p>It is the name of the genetic variant provided by the user. If not
+specified by the user, default name is ‘Variant’.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>log10_BF</code></td>
+<td>
+<p>It provides the log10(Bayes factor) produced by CPBayes that measures the
+evidence of the overall pleiotropic association.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>locFDR</code></td>
+<td>
+<p>It provides the local false discovery rate (posterior probability of null association) produced by CPBayes
+which is a measure of the evidence of the
+aggregate-level pleiotropic association. Bayes factor is adjusted for prior odds, but
+locFDR is solely a function of the posterior odds. locFDR can sometimes be small
+indicating an association, but log10_BF may not indicate an association. Hence, always check both log10_BF and locFDR.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subset</code></td>
+<td>
+<p>It provides the optimal subset of associated/non-null traits selected
+by CPBayes. It is NULL if no phenotype is selected.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>important_traits</code></td>
+<td>
+<p>It provides the traits which yield a trait-specific posterior probability of
+association (PPAj) &gt; 20%. Even if a phenotype is not selected in the optimal subset of non-null
+traits, it can produce a non-negligible value of trait-specific posterior probability of
+association (PPAj). Note that, ‘important_traits’ is expected to include the traits
+already contained in ‘subset’. It provides both the name of the important traits and
+their corresponding values of PPAj. Always check 'important_traits' even if 'subset' contains
+a single trait. It helps to better explain an observed pleiotropic signal.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>auxi_data</code></td>
+<td>
+<p>It contains supplementary data including the MCMC data which is used later
+by <code>post_summaries</code> and <code>forest_cpbayes</code>:
+</p>
+
+<ol>
+<li>
+<p> traitNames: Name of all the phenotypes.
+</p>
+</li>
+<li>
+<p> K: Total number of phenotypes.
+</p>
+</li>
+<li>
+<p> mcmc.samplesize: MCMC sample size.
+</p>
+</li>
+<li>
+<p> PPAj: Trait-specific posterior probability of association for all the traits.
+</p>
+</li>
+<li>
+<p> Z.data: MCMC data on the latent association status of all the traits (Z).
+</p>
+</li>
+<li>
+<p> sim.beta: MCMC data on the unknown true genetic effect (beta) on all the traits.
+</p>
+</li>
+<li>
+<p> betahat: The beta-hat vector provided by the user which will be used by <code>forest_cpbayes</code>.
+</p>
+</li>
+<li>
+<p> se: The standard error vector provided by the user which will be used by <code>forest_cpbayes</code>.
+</p>
+</li>
+</ol>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>runtime</code></td>
+<td>
+<p>It provides the runtime (in seconds) taken by <code>cpbayes_uncor</code>. It will help the user
+to plan the whole analysis.</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Majumdar A, Haldar T, Bhattacharya S, Witte JS (2018) An efficient Bayesian meta analysis approach for studying cross-phenotype genetic associations. PLoS Genet 14(2): e1007139.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>analytic_locFDR_BF_uncor</code>, <code>post_summaries</code>, <code>forest_cpbayes</code>, <code>analytic_locFDR_BF_cor</code>, <code>cpbayes_cor</code>, <code>estimate_corln</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(ExampleDataUncor)
+BetaHat &lt;- ExampleDataUncor$BetaHat
+BetaHat
+SE &lt;- ExampleDataUncor$SE
+SE
+traitNames &lt;- paste("Disease", 1:10, sep = "")
+SNP1 &lt;- "rs1234"
+result &lt;- cpbayes_uncor(BetaHat, SE, Phenotypes = traitNames, Variant = SNP1)
+str(result)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,85 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>tally</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Determine how many elements contain a type of mapped side effect.</h2>
+
+<h3>Description</h3>
+
+<p>Unlike <code>summary()</code>, the tally functions return counts of individual
+types of side effects. This makes them easy to use with
+<code>dplyr::summarise()</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">tally_results(x)
+
+tally_errors(x)
+
+tally_warnings(x)
+
+tally_messages(x)
+
+tally_output(x)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table><tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A “safely_mapped<code>or</code>quietly_mapped' list to tally.</p>
+</td>
+</tr></table>
+<h3>Details</h3>
+
+<p>Importantly, the tally functions tell you how many <em>elements</em> returned a type
+of side effect, not how many <em>side effects</em> were returned. Some list elements
+might return more than one warning, for example, and these are not counted
+separately.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An integer vector of length 1.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+library(tibble)
+library(dplyr)
+library(tidyr)
+library(collateral)
+
+list("a", 10, 100) %&gt;% map_safely(log) %&gt;% tally_errors()
+list(5, -12, 103) %&gt;% map_quietly(log) %&gt;% tally_warnings()
+
+# if you're working with list-columns, the tally functions are useful
+# in conjunction with dplyr::summarise()
+mtcars %&gt;%
+  rownames_to_column(var = "car") %&gt;%
+  as_tibble() %&gt;%
+  select(car, cyl, disp, wt) %&gt;%
+  # spike some rows in cyl == 4 to make them fail
+  mutate(wt = dplyr::case_when(
+    wt &lt; 2 ~ -wt,
+    TRUE ~ wt)) %&gt;%
+  # nest and do some operations quietly()
+  nest(data = -cyl) %&gt;%
+  mutate(qlog = map_quietly(data, ~ log(.$wt))) %&gt;%
+  summarise(
+    num_results = tally_results(qlog),
+    num_warnings = tally_warnings(qlog))
+
+</code></pre>
+
+
+</div>

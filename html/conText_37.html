@@ -1,0 +1,159 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>nns_ratio</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Computes the ratio of cosine similarities for two embeddings over
+the union of their respective top N nearest neighbors.</h2>
+
+<h3>Description</h3>
+
+<p>Computes the ratio of cosine similarities between group embeddings and features
+–that is, for any given feature it first computes the similarity between that feature
+and each group embedding, and then takes the ratio of these two similarities.
+This ratio captures how "discriminant" a feature is of a given group.
+Values larger (smaller) than 1 mean the feature is more (less)
+discriminant of the group in the numerator (denominator).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">nns_ratio(
+  x,
+  N = 10,
+  numerator = NULL,
+  candidates = character(0),
+  pre_trained,
+  stem = FALSE,
+  language = "porter",
+  verbose = TRUE,
+  show_language = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a (quanteda) <code>dem-class</code> or <code>fem-class</code> object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>N</code></td>
+<td>
+<p>(numeric) number of nearest neighbors to return. Nearest neighbors
+consist of the union of the top N nearest neighbors of the embeddings in <code>x</code>.
+If these overlap, then resulting N will be smaller than 2*N.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>numerator</code></td>
+<td>
+<p>(character) defines which group is the nuemerator in the ratio</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>candidates</code></td>
+<td>
+<p>(character) vector of features to consider as candidates to be nearest neighbor
+You may for example want to only consider features that meet a certian count threshold
+or exclude stop words etc. To do so you can simply identify the set of features you
+want to consider and supply these as a character vector in the <code>candidates</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pre_trained</code></td>
+<td>
+<p>(numeric) a F x D matrix corresponding to pretrained embeddings.
+F = number of features and D = embedding dimensions.
+rownames(pre_trained) = set of features for which there is a pre-trained embedding.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stem</code></td>
+<td>
+<p>(logical) - whether to stem candidates when evaluating nns. Default is FALSE.
+If TRUE, candidate stems are ranked by their average cosine similarity to the target.
+We recommend you remove misspelled words from candidate set <code>candidates</code> as these can
+significantly influence the average.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>language</code></td>
+<td>
+<p>the name of a recognized language, as returned by
+<code>getStemLanguages</code>, or a two- or three-letter ISO-639
+code corresponding to one of these languages (see references for
+the list of codes).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>report which group is the numerator and which group is the denominator.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>show_language</code></td>
+<td>
+<p>(logical) if TRUE print out message with language used for stemming.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a <code>data.frame</code> with following columns:
+</p>
+
+<dl>
+<dt><code>feature</code></dt>
+<dd>
+<p>(character) features in <code>candidates</code>
+(or all features if <code>candidates</code> not defined), one instance for each embedding in <code>x</code>.</p>
+</dd>
+<dt><code>value</code></dt>
+<dd>
+<p>(numeric) ratio of cosine similarities.</p>
+</dd>
+</dl>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+library(quanteda)
+
+# tokenize corpus
+toks &lt;- tokens(cr_sample_corpus)
+
+# build a tokenized corpus of contexts sorrounding a target term
+immig_toks &lt;- tokens_context(x = toks, pattern = "immigr*", window = 6L)
+
+# build document-feature matrix
+immig_dfm &lt;- dfm(immig_toks)
+
+# construct document-embedding-matrix
+immig_dem &lt;- dem(immig_dfm, pre_trained = cr_glove_subset,
+transform = TRUE, transform_matrix = cr_transform, verbose = FALSE)
+
+# to get group-specific embeddings, average within party
+immig_wv_party &lt;- dem_group(immig_dem, groups = immig_dem@docvars$party)
+
+# compute the cosine similarity between each party's
+# embedding and a specific set of features
+nns_ratio(x = immig_wv_party, N = 10, numerator = "R",
+candidates = immig_wv_party@features,
+pre_trained = cr_glove_subset, verbose = FALSE)
+
+# with stemming
+nns_ratio(x = immig_wv_party, N = 10, numerator = "R",
+candidates = immig_wv_party@features,
+pre_trained = cr_glove_subset, stem = TRUE, verbose = FALSE)
+</code></pre>
+
+
+</div>

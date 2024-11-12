@@ -1,0 +1,147 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>crops</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generic implementation of the crops algorithm (ref goes here).</h2>
+
+<h3>Description</h3>
+
+<p>Provides a generic implementation of the crops (changepoints for a range of penalties) algorithm of Haynes et al. (2014)  which efficiently searches a range of penalty values in multiple changepoint problems.
+The crops algorithm finds the optimal segmentations for a different number of segments without incurring as large a computational cost as solving the constrained optimisation problem
+for a range of values for the number of changepoints. To make the method generic, the user must provide a function that maps a penalty value to the results obtained by a penalised cost
+changepoint method, and formats these results in a specific way. This interface to the generic method is similar to that as used by the <span class="pkg">optimx</span> package.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">crops(method, beta_min, beta_max, max_iterations = 20, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>A function mapping a penalty value to the results obtained by a penalised cost changepoint method. The function must return a list containing the cost and
+a vector of changepoint locations corresponding to the optimal segmentation as determined by a penalised cost changepoint method.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta_min</code></td>
+<td>
+<p>A positive numeric value indicating the smallest penalty value to consider.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta_max</code></td>
+<td>
+<p>A positive numeric value indicating the maximum penalty value to consider.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_iterations</code></td>
+<td>
+<p>Positive non zero integer. Limits the maximum number of iterations of the crops algorithm to <code>max_iterations</code>. Default value is <code>max_iterations=20</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional parameters to pass to the underlying changepoint method if required.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An instance of an S4 class of type <code>crops.class</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Haynes K, Eckley IA, Fearnhead P (2017).
+“Computationally Efficient Changepoint Detection for a Range of Penalties.”
+<em>Journal of Computational and Graphical Statistics</em>, <b>26</b>(1), 134-143.
+<a href="https://doi.org/10.1080/10618600.2015.1116445">doi:10.1080/10618600.2015.1116445</a>.
+</p>
+<p>Nash JC, Varadhan R (2011).
+“Unifying Optimization Algorithms to Aid Software System Users: optimx for R.”
+<em>Journal of Statistical Software</em>, <b>43</b>(9), 1–14.
+<a href="https://www.jstatsoft.org/v43/i09/">https://www.jstatsoft.org/v43/i09/</a>.
+</p>
+<p>Nash JC (2014).
+“On Best Practice Optimization Methods in R.”
+<em>Journal of Statistical Software</em>, <b>60</b>(2), 1–14.
+<a href="https://www.jstatsoft.org/v60/i02/">https://www.jstatsoft.org/v60/i02/</a>.
+</p>
+<p>Nash JC (2021).
+<em>optimx: Expanded Replacement and Extension of the 'optim' Function</em>.
+R package version 2021-6.12.
+</p>
+<p>Maidstone R, Hocking T, Rigaill G, Fearnhead P (2017).
+“On optimal multiple changepoint algorithms for large data.”
+<em>Statistics and Computing</em>, <b>27</b>.
+<a href="https://link.springer.com/article/10.1007/s11222-016-9636-3">https://link.springer.com/article/10.1007/s11222-016-9636-3</a>.
+</p>
+<p>Rigaill G (2019).
+<em>fpop: Segmentation using Optimal Partitioning and Function Pruning</em>.
+R package version 2019.08.26.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># generate some simple data
+set.seed(1)
+N &lt;- 100
+data.vec &lt;- c(rnorm(N), rnorm(N, 2), rnorm(N))
+
+# example one - calling fpop via crops using global scope
+# need the fpop library
+library(pacman)
+p_load(fpop)
+# create a function to wrap a call to fpop for use with crops
+fpop.for.crops&lt;-function(beta)
+    {
+       # Note - this code is taken from the example in the fpop package
+       fit &lt;- Fpop(data.vec, beta)
+       end.vec &lt;- fit$t.est
+       change.vec &lt;- end.vec[-length(end.vec)]
+       start.vec &lt;- c(1, change.vec+1)
+       segs.list &lt;- list()
+       for(seg.i in seq_along(start.vec))
+           {
+            start &lt;- start.vec[seg.i]
+            end &lt;- end.vec[seg.i]
+            seg.data &lt;- data.vec[start:end]
+            seg.mean &lt;- mean(seg.data)
+            segs.list[[seg.i]] &lt;- data.frame(
+                                    start, end,
+                                    mean=seg.mean,
+                                    seg.cost=sum((seg.data-seg.mean)^2))
+            }
+        segs &lt;- do.call(rbind, segs.list)
+        return(list(sum(segs$seg.cost),segs$end[-length(segs$end)]))
+    }
+
+# now use this wrapper function with crops
+res&lt;-crops(fpop.for.crops,0.5*log(300),2.5*log(300))
+# print summary of analysis
+summary(res)
+# summarise the segmentations
+segmentations(res)
+# visualise the segmentations
+plot(res)
+# overlay the data on the segmentations
+df &lt;- data.frame("x"=1:300,"y"=data.vec)
+plot(res,df) 
+
+</code></pre>
+
+
+</div>

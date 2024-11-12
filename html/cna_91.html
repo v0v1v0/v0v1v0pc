@@ -1,0 +1,141 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>selectCases</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Select the cases/configurations compatible with a data generating causal structure
+</h2>
+
+<h3>Description</h3>
+
+<p><code>selectCases</code> selects the cases/configurations that are compatible with a Boolean function, in particular (but not exclusively), a data generating causal structure, from a data frame or <code>configTable</code>.
+</p>
+<p><code>selectCases1</code> allows for setting consistency (<code>con</code>) and coverage (<code>cov</code>) thresholds. It then selects cases/configurations that are compatible with the data generating structure to degrees <code>con</code> and <code>cov</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">selectCases(cond, x = full.ct(cond), type = "auto", cutoff = 0.5, 
+            rm.dup.factors = FALSE, rm.const.factors = FALSE)
+selectCases1(cond, x = full.ct(cond), type = "auto", con = 1, cov = 1, 
+             rm.dup.factors = FALSE, rm.const.factors = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cond</code></td>
+<td>
+<p>Character string specifying the Boolean function for which compatible cases are to be selected.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Data frame or <code>configTable</code>; if not specified, <code>full.ct(cond)</code> is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>Character vector specifying the type of <code>x</code>: <code>"auto"</code> (automatic detection; default), <code>"cs"</code> (crisp-set), <code>"mv"</code> (multi-value),  or <code>"fs"</code> (fuzzy-set).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cutoff</code></td>
+<td>
+<p>Cutoff value in case of <code>"fs"</code> data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rm.dup.factors</code></td>
+<td>
+<p>Logical; if <code>TRUE</code>, all but the first of a set of factors with identical value distributions are eliminated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rm.const.factors</code></td>
+<td>
+<p>Logical; if <code>TRUE</code>, constant factors are eliminated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>con, cov</code></td>
+<td>
+<p>Numeric scalars between 0 and 1 to set the minimum consistency and coverage thresholds.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>In combination with <code>allCombs</code>, <code>full.ct</code>, <code>randomConds</code> and <code>makeFuzzy</code>, <code>selectCases</code> is useful for simulating data, which are needed for inverse search trials benchmarking the output of the <code>cna</code> function. 
+</p>
+<p><code>selectCases</code> draws those cases/configurations from a data frame or <code>configTable</code> <code>x</code> that are compatible with a data generating causal structure (or any other Boolean or set-theoretic function), which is given to <code>selectCases</code> as a character string <code>cond</code>. If the argument <code>x</code> is not specified, configurations are drawn from <code>full.ct(cond)</code>. <code>cond</code> can be a condition of any of the three types of conditions, <em>boolean</em>, <em>atomic</em> or <em>complex</em> (see <code>condition</code>). To illustrate, if the data generating structure is "A + B &lt;-&gt; C", then a case featuring A=1, B=0, and C=1 is selected by <code>selectCases</code>, whereas a case featuring A=1, B=0, and C=0 is not (because according to the data generating structure, A=1 must be associated with C=1, which is violated in the latter case). The type of the data frame is automatically detected by default, but can be manually specified by giving the argument <code>type</code> one of its non-default values: <code>"cs"</code> (crisp-set), <code>"mv"</code> (multi-value), and <code>"fs"</code> (fuzzy-set).
+</p>
+<p><code>selectCases1</code> allows for providing consistency (<code>con</code>) and coverage (<code>cov</code>) thresholds, such that some cases that are incompatible with <code>cond</code> are also drawn, as long as <code>con</code> and <code>cov</code> remain satisfied. The solution is identified by an algorithm aiming to find a subset of maximal size meeting the <code>con</code> and <code>cov</code> requirements. In contrast to  <code>selectCases</code>, <code>selectCases1</code> only accepts a condition of type <em>atomic</em> as its <code>cond</code> argument, i.e. an atomic solution formula. Data drawn by <code>selectCases1</code> can only be modeled with consistency = <code>con</code> and coverage = <code>cov</code>. 
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>configTable</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>allCombs</code>, <code>full.ct</code>, <code>randomConds</code>, <code>makeFuzzy</code>, <code>configTable</code>, <code>condition</code>, <code>cna</code>, <code>d.jobsecurity</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Generate all configurations of 5 dichotomous factors that are compatible with the causal
+# chain (A*b + a*B &lt;-&gt; C) * (C*d + c*D &lt;-&gt; E).
+groundTruth.1 &lt;- "(A*b + a*B &lt;-&gt; C) * (C*d + c*D &lt;-&gt; E)"
+(dat1 &lt;- selectCases(groundTruth.1))
+condition(groundTruth.1, dat1)
+
+# Randomly draw a multi-value ground truth and generate all configurations compatible with it.
+dat1 &lt;- allCombs(c(3, 3, 4, 4, 3))
+groundTruth.2 &lt;- randomCsf(dat1, n.asf=2)
+(dat2 &lt;- selectCases(groundTruth.2, dat1))
+condition(groundTruth.2, dat2)
+
+# Generate all configurations of 5 fuzzy-set factors compatible with the causal structure
+# A*b + C*D &lt;-&gt; E, such that con = .8 and cov = .8.
+dat1 &lt;- allCombs(c(2, 2, 2, 2, 2)) - 1
+dat2 &lt;- makeFuzzy(dat1, fuzzvalues = seq(0, 0.45, 0.01))
+(dat3 &lt;- selectCases1("A*b + C*D &lt;-&gt; E", con = .8, cov = .8, dat2))
+condition("A*b + C*D &lt;-&gt; E", dat3)
+
+# Inverse search for the data generating causal structure A*b + a*B + C*D &lt;-&gt; E from
+# fuzzy-set data with non-perfect consistency and coverage scores.
+dat1 &lt;- allCombs(c(2, 2, 2, 2, 2)) - 1
+set.seed(7)
+dat2 &lt;- makeFuzzy(dat1, fuzzvalues = 0:4/10)
+dat3 &lt;- selectCases1("A*b + a*B + C*D &lt;-&gt; E", con = .8, cov = .8, dat2)
+cna(dat3, outcome = "E", con = .8, cov = .8)
+
+# Draw cases satisfying specific conditions from real-life fuzzy-set data.
+ct.js &lt;- configTable(d.jobsecurity)
+selectCases("S -&gt; C", ct.js)  # Cases with higher membership scores in C than in S.
+selectCases("S -&gt; C", d.jobsecurity)  # Same.
+selectCases("S &lt;-&gt; C", ct.js) # Cases with identical membership scores in C and in S.
+selectCases1("S -&gt; C", con = .8, cov = .8, ct.js)  # selectCases1() makes no distinction 
+              #  between "-&gt;" and "&lt;-&gt;".
+condition("S -&gt; C", selectCases1("S -&gt; C", con = .8, cov = .8, ct.js))
+
+# selectCases() not only draws cases compatible with Boolean causal models. Any Boolean 
+# function of factor values appearing in the data can be given as cond.
+selectCases("C=1*B=3", allCombs(2:4))
+selectCases("A=1 * !(C=2 + B=3)", allCombs(2:4), type = "mv")
+selectCases("A=1 + (C=3 &lt;-&gt; B=1)*D=3", allCombs(c(3,3,3,3)), type = "mv")
+</code></pre>
+
+
+</div>

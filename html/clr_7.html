@@ -1,0 +1,127 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>predict.clr</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Prediction from fitted CLR model(s)</h2>
+
+<h3>Description</h3>
+
+<p>Takes a fitted <code>clr</code> object produced by <code>clr()</code> and produces
+predictions given a new set of functions or the original values used for
+the model fit.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'clr'
+predict(object, newX = NULL, newclust = NULL,
+  newXmean = NULL, simplify = FALSE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>A fitted <code>clr</code> object produced by <code>clr()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newX</code></td>
+<td>
+<p>An object of class <code>clrdata</code> or a matrix with one function a
+row. If this is not provided then predictions corresponding to the original
+data are returned. If <code>newX</code> is provided then it should contain the
+same type of functions as the original ones (same dimension, same clusters
+eventually, ...).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newclust</code></td>
+<td>
+<p>A new list of indices to obtain (approximately) homogeneous
+dependence structure inside each cluster of functions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newXmean</code></td>
+<td>
+<p>To complete when done</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>simplify</code></td>
+<td>
+<p>If TRUE, one matrix of predicted functions is returned
+instead of a list of matrices (one matrix by cluster). In the final matrix,
+rows are sorted by increasing row numbers.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments are ignored.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>predicted functions
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(clr)
+data(gb_load)
+
+clr_load &lt;- clrdata(x = gb_load$ENGLAND_WALES_DEMAND,
+                    order_by = gb_load$TIMESTAMP,
+                    support_grid = 1:48)
+
+# data cleaning: replace zeros with NA
+clr_load[rowSums((clr_load == 0) * 1) &gt; 0, ] &lt;- NA
+
+Y &lt;- clr_load[2:nrow(clr_load), ]
+X &lt;- clr_load[1:(nrow(clr_load) - 1), ]
+
+begin_pred &lt;- which(substr(rownames(Y), 1, 4) == '2016')[1]
+Y_train &lt;- Y[1:(begin_pred - 1), ]
+X_train &lt;- X[1:(begin_pred - 1), ]
+Y_test &lt;- Y[begin_pred:nrow(Y), ]
+X_test &lt;- X[begin_pred:nrow(X), ]
+
+
+## Example without any cluster
+model &lt;- clr(Y = Y_train, X = X_train)
+
+pred_on_train &lt;- predict(model)
+head(pred_on_train[[1]])
+
+pred_on_test &lt;- predict(model, newX = X_test)
+head(pred_on_test[[1]])
+
+
+## Example with clusters
+model &lt;- clr(Y = Y_train, X = X_train, clust = clust_train)
+
+pred_on_train &lt;- predict(model)
+str(pred_on_train)
+head(pred_on_train[[1]])
+
+pred_on_test &lt;- predict(model, newX = X_test, newclust = clust_test,
+                        simplify = TRUE)
+str(pred_on_test)
+head(pred_on_test)
+
+# With dates as row names
+rownames(pred_on_test) &lt;- rownames(Y_test)[as.numeric(rownames(pred_on_test))]
+</code></pre>
+
+
+</div>

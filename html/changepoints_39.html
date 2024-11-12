@@ -1,0 +1,143 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>online.network</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Online change point detection for network data.</h2>
+
+<h3>Description</h3>
+
+<p>Perform online change point detection for network data by controlling the false alarm rate at level alpha or controlling the average run length gamma. The default choice of the tuning parameters tau1, tau2 and tau3 are used (see Section 4.1 of the reference).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">online.network(
+  data_mat1,
+  data_mat2,
+  self = TRUE,
+  b_vec = NULL,
+  train_mat = NULL,
+  alpha = NULL,
+  gamma = NULL,
+  permu_num = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data_mat1</code></td>
+<td>
+<p>A <code>numeric</code> matrix of observations with with horizontal axis being time, and with each column be the vectorized adjacency matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data_mat2</code></td>
+<td>
+<p>A <code>numeric</code> matrix of observations with with horizontal axis being time, and with each column be the vectorized adjacency matrix (data_mat1 and data_mat2 are independent and have the same dimensions ).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>self</code></td>
+<td>
+<p>A <code>logic</code> scalar indicating if adjacency matrices are required to have self-loop.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>b_vec</code></td>
+<td>
+<p>A <code>numeric</code> vector of thresholds b_t with t &gt;= 2.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>train_mat</code></td>
+<td>
+<p>A <code>numeric</code> matrix of training data from a pre-change distribution(no change point), which is only needed to when b_vec is NULL in order to calibrate b_t.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>A <code>numeric</code> scalar in (0,1) representing the level.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gamma</code></td>
+<td>
+<p>An <code>integer</code> scalar of desired average run length.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>permu_num</code></td>
+<td>
+<p>An <code>integer</code> scalar of number of random permutation for calibration.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A <code>list</code> with the following structure:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>cpt</code></td>
+<td>
+<p>Estimated change point</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>score</code></td>
+<td>
+<p>A <code>numeric</code> vector of computed cumsum statistics</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>b_vec</code></td>
+<td>
+<p>A <code>numeric</code> vector of thresholds b_t with t &gt;= 2</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Oscar Hernan Madrid Padilla &amp; Haotian Xu
+</p>
+
+
+<h3>References</h3>
+
+<p>Yu, Padilla, Wang and Rinaldo (2021) &lt;arxiv:2101.05477&gt;
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(123)
+p = 15 # number of nodes
+rho = 0.5 # sparsity parameter
+block_num = 3 # number of groups for SBM
+n = 100 # sample size for each segment
+# connectivity matrix for the first and the third segments
+conn1_mat = rho * matrix(c(0.6,1,0.6,1,0.6,0.5,0.6,0.5,0.6), nrow = 3) 
+# connectivity matrix for the second segment
+conn2_mat = rho * matrix(c(0.6,0.5,0.6,0.5,0.6,1,0.6,1,0.6), nrow = 3) 
+set.seed(1)
+can_vec = sample(1:p, replace = FALSE) # randomly assign nodes into groups
+sbm1 = simu.SBM(conn1_mat, can_vec, n, symm = TRUE, self = TRUE)
+sbm2 = simu.SBM(conn2_mat, can_vec, n, symm = TRUE, self = TRUE)
+data_mat = cbind(sbm1$obs_mat, sbm2$obs_mat)
+data_mat1 = data_mat[,seq(1,ncol(data_mat),2)]
+data_mat2 = data_mat[,seq(2,ncol(data_mat),2)]
+train_mat = simu.SBM(conn1_mat, can_vec, n = 150, symm = TRUE, self = TRUE)$obs_mat
+temp = online.network(data_mat1, data_mat2, self = TRUE, b_vec = NULL, train_mat, alpha = 0.05, 
+                      gamma = NULL, permu_num = 20)
+cpt_hat = 2 * temp$cpt
+</code></pre>
+
+
+</div>

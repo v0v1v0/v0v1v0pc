@@ -1,0 +1,320 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>knndm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>K-fold Nearest Neighbour Distance Matching</h2>
+
+<h3>Description</h3>
+
+<p>This function implements the kNNDM algorithm and returns the necessary
+indices to perform a k-fold NNDM CV for map validation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">knndm(
+  tpoints,
+  modeldomain = NULL,
+  predpoints = NULL,
+  space = "geographical",
+  k = 10,
+  maxp = 0.5,
+  clustering = "hierarchical",
+  linkf = "ward.D2",
+  samplesize = 1000,
+  sampling = "regular",
+  useMD = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>tpoints</code></td>
+<td>
+<p>sf or sfc point object, or data.frame if space = "feature". Contains the training points samples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modeldomain</code></td>
+<td>
+<p>sf polygon object or SpatRaster defining the prediction area. Optional; alternative to predpoints (see Details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predpoints</code></td>
+<td>
+<p>sf or sfc point object, or data.frame if space = "feature". Contains the target prediction points. Optional; alternative to modeldomain (see Details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>space</code></td>
+<td>
+<p>character. Either "geographical" or "feature".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p>integer. Number of folds desired for CV. Defaults to 10.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxp</code></td>
+<td>
+<p>numeric. Maximum fold size allowed, defaults to 0.5, i.e. a single fold can hold a maximum of half of the training points.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clustering</code></td>
+<td>
+<p>character. Possible values include "hierarchical" and "kmeans". See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>linkf</code></td>
+<td>
+<p>character. Only relevant if clustering = "hierarchical". Link function for agglomerative hierarchical clustering.
+Defaults to "ward.D2". Check 'stats::hclust' for other options.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>samplesize</code></td>
+<td>
+<p>numeric. How many points in the modeldomain should be sampled as prediction points?
+Only required if modeldomain is used instead of predpoints.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sampling</code></td>
+<td>
+<p>character. How to draw prediction points from the modeldomain? See 'sf::st_sample'.
+Only required if modeldomain is used instead of predpoints.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>useMD</code></td>
+<td>
+<p>boolean. Only for 'space'=feature: shall the Mahalanobis distance be calculated instead of Euclidean?
+Only works with numerical variables.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>knndm is a k-fold version of NNDM LOO CV for medium and large datasets. Brielfy, the algorithm tries to
+find a k-fold configuration such that the integral of the absolute differences (Wasserstein W statistic)
+between the empirical nearest neighbour distance distribution function between the test and training data during CV (Gj*),
+and the empirical nearest neighbour distance distribution function between the prediction and training points (Gij),
+is minimised. It does so by performing clustering of the training points' coordinates for different numbers of
+clusters that range from k to N (number of observations), merging them into k final folds,
+and selecting the configuration with the lowest W.
+</p>
+<p>Using a projected CRS in 'knndm' has large computational advantages since fast nearest neighbour search can be
+done via the 'FNN' package, while working with geographic coordinates requires computing the full
+spherical distance matrices. As a clustering algorithm, 'kmeans' can only be used for
+projected CRS while 'hierarchical' can work with both projected and geographical coordinates, though it requires
+calculating the full distance matrix of the training points even for a projected CRS.
+</p>
+<p>In order to select between clustering algorithms and number of folds 'k', different 'knndm' configurations can be run
+and compared, being the one with a lower W statistic the one that offers a better match. W statistics between 'knndm'
+runs are comparable as long as 'tpoints' and 'predpoints' or 'modeldomain' stay the same.
+</p>
+<p>Map validation using 'knndm' should be used using 'CAST::global_validation', i.e. by stacking all out-of-sample
+predictions and evaluating them all at once. The reasons behind this are 1) The resulting folds can be
+unbalanced and 2) nearest neighbour functions are constructed and matched using all CV folds simultaneously.
+</p>
+<p>If training data points are very clustered with respect to the prediction area and the presented 'knndm'
+configuration still show signs of Gj* &gt; Gij, there are several things that can be tried. First, increase
+the 'maxp' parameter; this may help to control for strong clustering (at the cost of having unbalanced folds).
+Secondly, decrease the number of final folds 'k', which may help to have larger clusters.
+</p>
+<p>The 'modeldomain' is either a sf polygon that defines the prediction area, or alternatively a SpatRaster out of which a polygon,
+transformed into the CRS of the training points, is defined as the outline of all non-NA cells.
+Then, the function takes a regular point sample (amount defined by 'samplesize') from the spatial extent.
+As an alternative use 'predpoints' instead of 'modeldomain', if you have already defined the prediction locations (e.g. raster pixel centroids).
+When using either 'modeldomain' or 'predpoints', we advise to plot the study area polygon and the training/prediction points as a previous step to ensure they are aligned.
+</p>
+<p>'knndm' can also be performed in the feature space by setting 'space' to "feature".
+Euclidean distances or Mahalanobis distances can be used for distance calculation, but only Euclidean are tested.
+In this case, nearest neighbour distances are calculated in n-dimensional feature space rather than in geographical space.
+'tpoints' and 'predpoints' can be data frames or sf objects containing the values of the features. Note that the names of 'tpoints' and 'predpoints' must be the same.
+'predpoints' can also be missing, if 'modeldomain' is of class SpatRaster. In this case, the values of of the SpatRaster will be extracted to the 'predpoints'.
+In the case of any categorical features, Gower distances will be used to calculate the Nearest Neighbour distances [Experimental]. If categorical
+features are present, and 'clustering' = "kmeans", K-Prototype clustering will be performed instead.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <em>knndm</em> consisting of a list of eight elements:
+indx_train, indx_test (indices of the observations to use as
+training/test data in each kNNDM CV iteration), Gij (distances for
+G function construction between prediction and target points), Gj
+(distances for G function construction during LOO CV), Gjstar (distances
+for modified G function during kNNDM CV), clusters (list of cluster IDs),
+W (Wasserstein statistic), and space (stated by the user in the function call).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Carles Milà and Jan Linnenbrink
+</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li>
+<p> Linnenbrink, J., Milà, C., Ludwig, M., and Meyer, H.: kNNDM: k-fold Nearest Neighbour Distance Matching Cross-Validation for map accuracy estimation, EGUsphere [preprint], https://doi.org/10.5194/egusphere-2023-1308, 2023.
+</p>
+</li>
+<li>
+<p> Milà, C., Mateu, J., Pebesma, E., Meyer, H. (2022): Nearest Neighbour Distance Matching Leave-One-Out Cross-Validation for map validation. Methods in Ecology and Evolution 00, 1– 13.
+</p>
+</li>
+</ul>
+<h3>See Also</h3>
+
+<p><code>geodist</code>, <code>nndm</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">########################################################################
+# Example 1: Simulated data - Randomly-distributed training points
+########################################################################
+
+library(sf)
+library(ggplot2)
+
+# Simulate 1000 random training points in a 100x100 square
+set.seed(1234)
+simarea &lt;- list(matrix(c(0,0,0,100,100,100,100,0,0,0), ncol=2, byrow=TRUE))
+simarea &lt;- sf::st_polygon(simarea)
+train_points &lt;- sf::st_sample(simarea, 1000, type = "random")
+pred_points &lt;- sf::st_sample(simarea, 1000, type = "regular")
+plot(simarea)
+plot(pred_points, add = TRUE, col = "blue")
+plot(train_points, add = TRUE, col = "red")
+
+# Run kNNDM for the whole domain, here the prediction points are known.
+knndm_folds &lt;- knndm(train_points, predpoints = pred_points, k = 5)
+knndm_folds
+plot(knndm_folds)
+plot(knndm_folds, type = "simple") # For more accessible legend labels
+plot(knndm_folds, type = "simple", stat = "density") # To visualize densities rather than ECDFs
+folds &lt;- as.character(knndm_folds$clusters)
+ggplot() +
+  geom_sf(data = simarea, alpha = 0) +
+  geom_sf(data = train_points, aes(col = folds))
+
+########################################################################
+# Example 2: Simulated data - Clustered training points
+########################################################################
+## Not run: 
+library(sf)
+library(ggplot2)
+
+# Simulate 1000 clustered training points in a 100x100 square
+set.seed(1234)
+simarea &lt;- list(matrix(c(0,0,0,100,100,100,100,0,0,0), ncol=2, byrow=TRUE))
+simarea &lt;- sf::st_polygon(simarea)
+train_points &lt;- clustered_sample(simarea, 1000, 50, 5)
+pred_points &lt;- sf::st_sample(simarea, 1000, type = "regular")
+plot(simarea)
+plot(pred_points, add = TRUE, col = "blue")
+plot(train_points, add = TRUE, col = "red")
+
+# Run kNNDM for the whole domain, here the prediction points are known.
+knndm_folds &lt;- knndm(train_points, predpoints = pred_points, k = 5)
+knndm_folds
+plot(knndm_folds)
+plot(knndm_folds, type = "simple") # For more accessible legend labels
+plot(knndm_folds, type = "simple", stat = "density") # To visualize densities rather than ECDFs
+folds &lt;- as.character(knndm_folds$clusters)
+ggplot() +
+  geom_sf(data = simarea, alpha = 0) +
+  geom_sf(data = train_points, aes(col = folds))
+
+## End(Not run)
+########################################################################
+# Example 3: Real- world example; using a modeldomain instead of previously
+# sampled prediction locations
+########################################################################
+## Not run: 
+library(sf)
+library(terra)
+library(ggplot2)
+
+### prepare sample data:
+data(cookfarm)
+dat &lt;- aggregate(cookfarm[,c("DEM","TWI", "NDRE.M", "Easting", "Northing","VW")],
+   by=list(as.character(cookfarm$SOURCEID)),mean)
+pts &lt;- dat[,-1]
+pts &lt;- st_as_sf(pts,coords=c("Easting","Northing"))
+st_crs(pts) &lt;- 26911
+studyArea &lt;- rast(system.file("extdata","predictors_2012-03-25.tif",package="CAST"))
+pts &lt;- st_transform(pts, crs = st_crs(studyArea))
+terra::plot(studyArea[["DEM"]])
+terra::plot(vect(pts), add = T)
+
+knndm_folds &lt;- knndm(pts, modeldomain=studyArea, k = 5)
+knndm_folds
+plot(knndm_folds)
+folds &lt;- as.character(knndm_folds$clusters)
+ggplot() +
+  geom_sf(data = pts, aes(col = folds))
+
+#use for cross-validation:
+library(caret)
+ctrl &lt;- trainControl(method="cv",
+   index=knndm_folds$indx_train,
+   savePredictions='final')
+model_knndm &lt;- train(dat[,c("DEM","TWI", "NDRE.M")],
+   dat$VW,
+   method="rf",
+   trControl = ctrl)
+global_validation(model_knndm)
+
+## End(Not run)
+########################################################################
+# Example 4: Real- world example; kNNDM in feature space
+########################################################################
+## Not run: 
+library(sf)
+library(terra)
+library(ggplot2)
+
+data(splotdata)
+splotdata &lt;- splotdata[splotdata$Country == "Chile",]
+
+predictors &lt;- c("bio_1", "bio_4", "bio_5", "bio_6",
+               "bio_8", "bio_9", "bio_12", "bio_13",
+               "bio_14", "bio_15", "elev")
+
+trainDat &lt;- sf::st_drop_geometry(splotdata)
+predictors_sp &lt;- terra::rast(system.file("extdata", "predictors_chile.tif",package="CAST"))
+
+
+terra::plot(predictors_sp[["bio_1"]])
+terra::plot(vect(splotdata), add = T)
+
+knndm_folds &lt;- knndm(trainDat[,predictors], modeldomain = predictors_sp, space = "feature",
+                    clustering="kmeans", k=4, maxp=0.8)
+plot(knndm_folds)
+
+
+## End(Not run)
+</code></pre>
+
+
+</div>

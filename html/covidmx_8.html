@@ -1,0 +1,494 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>descarga_datos_abiertos</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Descarga de datos abiertos</h2>
+
+<h3>Description</h3>
+
+<p>Funcion para la descarga de datos abiertos de
+la Direccion General de Epidemiologia (DGE)
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">descarga_datos_abiertos(
+  dbdir = tempfile(fileext = ".duckdb"),
+  sites.covid = get_sites_covid(),
+  site.covid.dic = get_site_dic(),
+  read_format = c("duckdb", "tibble"),
+  drv = duckdb::duckdb(),
+  pragma_memory_limit = Sys.getenv("pragma_memory_limit"),
+  tblname = "covidmx",
+  colClasses = get_col_class(),
+  download_process = c("pins", "download.file"),
+  unzip_command = Sys.getenv("unzip_command"),
+  unzip_args = Sys.getenv("unzip_args"),
+  unzip_args_dict = list(exdir = ".", overwrite = TRUE),
+  check_unzip_install = TRUE,
+  clear_zip = (download_process[1] != "pins"),
+  clear_csv = TRUE,
+  use_dict = TRUE,
+  datos_abiertos_zip_paths = NULL,
+  datos_abiertos_unzipped_path = NULL,
+  datos_abiertos_tbl = NULL,
+  diccionario_zip_path = NULL,
+  diccionario_unzipped_path = NULL,
+  diccionario = NULL,
+  quiet = FALSE,
+  cache_datos = NULL,
+  use_cache_on_failure = TRUE,
+  cache_diccionario = NULL,
+  force_download = FALSE,
+  show_warnings = TRUE,
+  board_url_name = "datos_abiertos",
+  board_url_name_dict = "diccionario_covid",
+  download_file_args = list(method = "curl", destfile = tempfile(), quiet = quiet),
+  download_file_args_dict = download_file_args,
+  descarga_db_datos_abiertos_tbl_args = list(),
+  descarga_db_diccionario_ssa_args = list(),
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>dbdir</code></td>
+<td>
+<p>(<strong>opcional</strong>) Direccion donde guardar la base de datos con terminacion <code>.duckdb</code>.
+Corresponde al argumento de <code>duckdb::dbConnect__duckdb_driver()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sites.covid</code></td>
+<td>
+<p>(<strong>opcional</strong>)  Sitios web con el vinculo a los archivos <code>.zip</code> de l
+os datos abiertos. Puedes cambiarlo por uno de los historicos, por ejemplo. La estructura es
+<code>c("nombre" = "url", "nombre2" = "url2")</code>. La ultima verificacion del sitio web default fue
+el 6 de septiembre del 2022.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>site.covid.dic</code></td>
+<td>
+<p>(<strong>opcional</strong>)  Sitio desde el cual descarga del diccionario de datos.
+La ultima verificacion del sitio fue el 6 de septiembre 2022.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>read_format</code></td>
+<td>
+<p>(<strong>opcional</strong>) <code>"duckdb"</code> o <code>"tibble"</code> establece el formato
+de lectura de la base de datos. En la mayoria de los casos <code>"tibble"</code> va a
+resultar en un error de memoria. La opcion de <code>"duckdb"</code> siempre es mas rapida por lo cual
+es el default.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drv</code></td>
+<td>
+<p>(<strong>opcional</strong>) Un  driver para <code>dbConnect</code> (default <code>duckdb::duckdb()</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pragma_memory_limit</code></td>
+<td>
+<p>(<strong>opcional</strong>) Limite de memoria para el programa
+(ver <a href="https://duckdb.org/docs/sql/pragmas">PRAGMAS</a>). Cambialo a que sea mas o menos la mitad
+de tu RAM. La forma mas sencilla es como una variable ambiental con
+<code>Sys.setenv('pragma_memory_limit' = '1GB')</code> por ejemplo para un limite de 1 gigabyte.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tblname</code></td>
+<td>
+<p>(<strong>opcional</strong>)  Nombre de la tabla de <code>duckdb</code> donde guardar los datos por
+default se llama <code>covidmx</code>. Solo es relevante si estas usando el mismo <code>dbdir</code> para otro
+proyecto distinto.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>colClasses</code></td>
+<td>
+<p>(<strong>opcional</strong>) Clases de la columna para leer en <code>duckdb::read_csv_duckdb()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>download_process</code></td>
+<td>
+<p>(<strong>opcional</strong>)  Metodo para descargar ya sea <code>pins</code> o <code>download.file</code>.
+Se recomienda <code>pins</code> pues guarda en memoria la fecha de la ultima descarga y analiza
+si ha pasado mas de un dia desde la descarga. En caso afirmativo verifica si el
+archivo ha cambiado y si hubo cambios entonces lo descarga.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>unzip_command</code></td>
+<td>
+<p>(<strong>opcional</strong>) Forma de extraer la base de datos de datos abiertos
+si <code>unzip</code> falla.
+La forma de llamarla es con <code>system2(unzip_command, args = c(unzip_args, file_download_data))</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>unzip_args</code></td>
+<td>
+<p>(<strong>opcional</strong>) Argumentos de extraccion de la base de datos de datos abiertos
+si <code>unzip</code> falla.
+La forma de llamarla es con <code>system2(unzip_command, args = c(unzip_args, file_download_data))</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>unzip_args_dict</code></td>
+<td>
+<p>(<strong>opcional</strong>) Lista de argumentos para usar <code>utils::unzip</code> en el
+diccionario de datos.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>check_unzip_install</code></td>
+<td>
+<p>(<strong>opcional</strong>) Bandera de verificacion para checar si tienes
+lo necesario para unzippear los datos en el caso de que <code>unzip</code> no sirva.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clear_zip</code></td>
+<td>
+<p>(<strong>opcional</strong>) Si borrar los archivos <code>.zip</code> descargados para el diccionario
+y los datos abiertos. No se recomienda si estas usando <code>pins</code>. Ve la nota para mas informacion.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clear_csv</code></td>
+<td>
+<p>(<strong>opcional</strong>) Si borrar los archivos <code>.csv</code> que se generan despues de abrir
+el zip. El default es que si pues en general solo requieres el <code>duckdb</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use_dict</code></td>
+<td>
+<p>(<strong>opcional</strong>) Si descargar el diccionario de <code>site.covid.dic</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>datos_abiertos_zip_paths</code></td>
+<td>
+<p>(<strong>opcional</strong>)  Camino a los datos abiertos si ya los
+descargaste en <code>zip</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>datos_abiertos_unzipped_path</code></td>
+<td>
+<p>(<strong>opcional</strong>)  Camino a los datos abiertos <code>csv</code> si ya
+los descargaste y descomprimiste el archivo <code>zip</code> en un <code>csv</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>datos_abiertos_tbl</code></td>
+<td>
+<p>(<strong>opcional</strong>) Camino a un archivo <code>.duckdb</code> con los datos formateados</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>diccionario_zip_path</code></td>
+<td>
+<p>(<strong>opcional</strong>)  Camino al diccionario si ya losdescargaste en <code>zip</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>diccionario_unzipped_path</code></td>
+<td>
+<p>(<strong>opcional</strong>)  Camino al diccionario <code>csv</code> si ya
+lo descargaste y descomprimiste el archivo <code>zip</code> en un <code>csv</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>diccionario</code></td>
+<td>
+<p>(<strong>opcional</strong>)  Lo que resulta de realizar una descarga del diccionario
+usando <code>descarga_diccionario</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quiet</code></td>
+<td>
+<p>(<strong>opcional</strong>) Variable para no mostrar mensajes</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cache_datos</code></td>
+<td>
+<p>(<strong>opcional</strong>) Direccion donde guardar los datos en memoria usando <code>pins</code>
+para no tener que volver a descargarlos si nada ha cambiado</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use_cache_on_failure</code></td>
+<td>
+<p>(<strong>opcional</strong>) Booleana. Establece que si no se pueden descargar
+datos nuevos utilice los que tenga en memoria. Por default es <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cache_diccionario</code></td>
+<td>
+<p>(<strong>opcional</strong>) Direccion donde guardar el diccionario en memoria
+usando <code>pins</code> para no tener que volver a descargarlo si nada ha cambiado</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>force_download</code></td>
+<td>
+<p>(<strong>opcional</strong>) Analiza si cambio el pin y descarga datos nuevos en caso
+afirmativo aunque haya pasado menos de un dia.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>show_warnings</code></td>
+<td>
+<p>(<strong>opcional</strong>) si arrojar <code>warnings</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>board_url_name</code></td>
+<td>
+<p>(<strong>opcional</strong>) Establece el nombre del <code>pins::board_url</code> para
+los datos abiertos (si ya usas pins para que no se empalme).
+Por default se llama <code>datos_abiertos</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>board_url_name_dict</code></td>
+<td>
+<p>(<strong>opcional</strong>) Establece el nombre del <code>pins::board_url</code> para los
+datos abiertos. Por default se llama <code>diccionario_covid</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>download_file_args</code></td>
+<td>
+<p>(<strong>opcional</strong>) Lista de argumentos adicionales para <code>download.file</code>
+de los datos si se elige este metodo para descargar.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>download_file_args_dict</code></td>
+<td>
+<p>(<strong>opcional</strong>) Lista de argumentos adicionales
+para <code>download.file</code> del diccionario si se elige este metodo de descarga.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>descarga_db_datos_abiertos_tbl_args</code></td>
+<td>
+<p>(<strong>opcional</strong>) Lista con argumentos adicionales
+para el <code>pins::pin_download</code> de datos abiertos</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>descarga_db_diccionario_ssa_args</code></td>
+<td>
+<p>(<strong>opcional</strong>) Lista con argumentos adicionales para el
+<code>pins::pin_download</code> de datos abiertos</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>(<strong>opcional</strong>) Parametros adicionales para <code>DBI::dbConnect</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>La funcion de descarga principal es <code>descarga_datos_abiertos()</code> llama las siguientes funciones
+en orden:
+</p>
+
+<ul>
+<li> <p><code>descarga_diccionario()</code> Se encarga de descargar y formatear el diccionario de datos
+</p>
+</li>
+<li> <p><code>descarga_db()</code> Se encarga de descargar y formatear la base de datos
+</p>
+</li>
+<li> <p><code>pega_db_datos_abiertos_tbl_y_diccionario()</code> Pega ambos en el formato lista de <code>covidmx</code>
+</p>
+</li>
+</ul>
+<p>A su vez <code>descarga_diccionario()</code> ejecuta las siguientes para obtener el diccionario de datos:
+</p>
+
+<ul>
+<li> <p><code>descarga_db_diccionario_ssa()</code> Descarga el diccionario de la DGE
+</p>
+</li>
+<li> <p><code>unzip_db_diccionario_ssa()</code> Libera el archivo <code>zip</code> descargado
+</p>
+</li>
+<li> <p><code>parse_db_diccionario_ssa()</code> Genera una lista de tiblles con el diccionario por variable
+</p>
+</li>
+</ul>
+<p>Por otro lado,<code>descarga_db()</code> ejecuta las siguientes para obtener los datos abiertos:
+</p>
+
+<ul>
+<li> <p><code>descarga_db_datos_abiertos_tbl()</code> Descarga las bases de datos de covid de la DGE
+</p>
+</li>
+<li> <p><code>unzip_db_datos_abiertos_tbl()</code> Libera el archivo <code>zip</code> descargado
+</p>
+</li>
+<li> <p><code>parse_db_datos_abiertos_tbl()</code> Genera una base de datos en <code>duckdb</code> (o <code>tibble</code>) c
+on la informacion
+</p>
+</li>
+</ul>
+<p>Si en algun momento se interrumpio la descarga o hubo problemas de conexion o detuviste
+el proceso de generacion de la base de datos abiertos puedes llamar a las funciones
+de <code>read_datos_abiertos()</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Lista de valores:
+</p>
+
+<ul>
+<li>
+<p> dats        - Tabla conectada mediante <code>duckdb::dbConnect__duckdb_driver()</code>
+(si <code>duckdb</code>) o tibble (si <code>tibble</code>)
+</p>
+</li>
+<li>
+<p> disconnect  - Funcion para cerrar la conexion a la base de datos.
+</p>
+</li>
+<li>
+<p> dict        - Lista de <code>tibble</code>s con el diccionario de datos para cada variable
+</p>
+</li>
+</ul>
+<h3>Memoria <code>RAM</code>
+</h3>
+
+<p>Si tienes RAM que te sobre puedes no crear una base de datos en <code>duckdb</code> sino leer directo
+el archivo <code>csv</code>. Esto se logra con <code>read_format = tibble</code>. No lo recomiendo pues puedes
+terminar con tu sesion de <code>R</code> si se te acaba la memoria.
+</p>
+<p><em>Windows</em> Para abrir el archivo <code>.zip</code> quiza requieras tambien descargar e instalar
+<a href="https://www.7-zip.org/"><code style="white-space: pre;">⁠7Zip⁠</code></a> por default el sistema lo busca en
+<code style="white-space: pre;">⁠C:\\Program Files\\7-Zip\\7z.exe⁠</code> pero si no esta ese directorio es necesario que
+en <code>unzip_command</code> especifiques el camino donde se instalo <code style="white-space: pre;">⁠7z.exe⁠</code>.
+</p>
+
+
+<h3>Uso de <code>pins</code>
+</h3>
+
+<p>Para almacenar los datos se utiliza un pequenio cambio sobre la libreria <code>pins</code>. Los datos
+se descargan y se almacenan en cache junto con informacion sobre cuando fue la descarga. Si
+no ha pasado un dia desde la ultima descarga no se descarga nada nuevo. Si los datos que
+se tienen no han cambiado respecto a lo que esta en linea tampoco se vuelven a descargar aunque
+haya pasado mas de un dia.
+</p>
+<p><strong>Si se te fue el Internet</strong> No te preocupes, <code>pins</code> lee tu descarga mas reciente.
+</p>
+<p>Para ver donde estan descargados tus datos usa <code>pins::board_cache_path()</code>. Para borrarlos usa
+<code>pins::cache_prune()</code>.
+</p>
+
+
+<h3>Metodos de <code>unzip</code>
+</h3>
+
+<p>Por default el programa intenta abrir la base de datos con <code>utils::unzip()</code>. Sin embargo
+historicamente la base de datos ha estado codificada de tal forma que <code>utils::unzip()</code> no
+pueda abrirla. Para ello se utilizaban diferentes comandos en particular el default que
+hemos visto funcionaba son los comandos de terminal <code>unzip</code> (en Linux/OSX) y <code style="white-space: pre;">⁠7zip⁠</code> (en Windows).
+En caso de ser requeridos el sistema te lo hara saber junto con las instrucciones de instalacion
+</p>
+
+
+<h3>Note</h3>
+
+<p>No te recomiendo borrar el cache con <code>clear_zip</code> o editarlo por cualquier otro medio si
+estas usando <code>pins</code> pues puede romperse la dependencia. Si accidentalmente lo borraste
+usa <code>pins::board_cache_path()</code> para ir al <code>path</code> y borrar manualmente toda la carpeta.
+</p>
+
+
+<h3>References</h3>
+
+<p>Secretaría de Salud (2022). Datos Abiertos de COVID-19
+URL: <a href="https://www.gob.mx/salud/documentos/datos-abiertos-152127">https://www.gob.mx/salud/documentos/datos-abiertos-152127</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>read_datos_abiertos()</code>  <code>descarga_datos_red_irag()</code>
+<code>descarga_datos_variantes_GISAID()</code> <code>casos()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Descarga de la base de datos junto con diccionario en duckdb y la guarda en
+# un archivo temporal.
+# Puede cambiarse el dlink por el adecuado o dejarse en blanco
+# quita la opción de sites.covid t site.covid.dic para descargar los de la DGE. 
+# Esto es solo un ejemplo.
+file_duck &lt;- tempfile(fileext = ".duckdb")
+
+#Estos links deben omitirse en una corrida normal. Se incluyen por ahora como ejemplo
+#pero las opciones site.covid.dic y sites.covid deben eliminarse de abajo.
+dlink     &lt;- "https://github.com/RodrigoZepeda/covidmx/raw/main/datos_abiertos_covid19.zip"
+diclink   &lt;- "https://github.com/RodrigoZepeda/covidmx/raw/main/diccionario_datos_covid19.zip"
+
+#En el ejemplo de R por normas de CRAN tenemos que hacerlo así pero en tu
+#computadora puedes solo usar descargar datos sin el if else
+if (RCurl::url.exists(dlink) &amp; RCurl::url.exists(diclink)){
+  datos_covid &lt;- descarga_datos_abiertos(
+    dbdir = file_duck,
+    sites.covid = dlink, 
+    site.covid.dic = diclink,
+    show_warnings = FALSE
+  )
+  # Luego haces algo con esos datos...
+
+  # Cuando terminas cierras la sesion:
+  datos_covid$disconnect()
+
+  # Despues podras leerlos con read_datos_abiertos cuando quieras:
+  datos_covid &lt;- read_datos_abiertos(dbdir = file_duck, site.covid.dic = diclink)
+  datos_covid$disconnect()
+
+  # Si no pones `dbdir` nota que los datos se guardan en un archivo temporal que se elimina
+  # al cerrar tu sesion
+  datos_covid &lt;- descarga_datos_abiertos(sites.covid = dlink, show_warnings = FALSE,
+                      site.covid.dic = diclink)
+
+} else {
+  datos_covid &lt;- datosabiertos
+}
+
+# Desconectamos
+datos_covid$disconnect()
+
+</code></pre>
+
+
+</div>

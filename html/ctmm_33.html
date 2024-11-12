@@ -1,0 +1,133 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>difference</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate the proximity of two individuals</h2>
+
+<h3>Description</h3>
+
+<p>Given a pair of <code>telemetry</code> objects and <code>ctmm</code> movement models, predict their location differences or midpoints at shared times and estimate their distances.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">difference(data,CTMM,t=NULL,...)
+
+midpoint(data,CTMM,t=NULL,complete=FALSE,...)
+
+distances(data,CTMM,t=NULL,level=0.95,...)
+
+proximity(data,CTMM,t=NULL,GUESS=ctmm(error=TRUE),debias=TRUE,level=0.95,...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A <code>list</code> of two <code>telemetry</code> objects.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CTMM</code></td>
+<td>
+<p>A <code>list</code> of two <code>ctmm</code> movement-model objects.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>t</code></td>
+<td>
+<p>An optional vector of times or range of times over which to predict the location differences.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>complete</code></td>
+<td>
+<p>Additionally calculate timestamps and geographic coordinates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>level</code></td>
+<td>
+<p>Confidence level for the distance/proximity estimate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>GUESS</code></td>
+<td>
+<p>An optional <code>ctmm</code> object to specify the candidate model parameters of the location differences.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>debias</code></td>
+<td>
+<p>Include inverse-<code class="reqn">\chi^2</code> bias corrections.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Options passed to <code>ctmm.select</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>difference</code> function predicts the location difference vectors, <code class="reqn">(x_A-x_B,y_A-y_B)</code>, for a pair of individuals, <code class="reqn">\{A,B\}</code>, at overlapping times. The <code>midpoint</code> function predicts the location midpoints, <code class="reqn">(x_A+x_B,y_A+y_B)/2</code>, for a pair of individuals. The <code>distances</code> function further estimates the instantaneous distances between individuals. The <code>proximity</code> function fits an autocorrelation model to the output of <code>difference</code>, and then compares the mean-square distance between the individuals to what you would expect if the two individuals were moving independently.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>difference</code> and <code>midpoint</code> output <code>telemetry</code> objects of the location differences and midpoints with prediction covariances. <code>distances</code> outputs a <code>data.frame</code> of distance estimates with confidence intervals. <code>proximity</code> outputs a ratio estimate with confidence intervals, where values <code>&lt;1</code> indiciate that the two individuals are closer on average than expected for independent movement, <code>1</code> is consistent with independent movement, and values <code>&gt;1</code> indicate that the individuals are farther from each other on average than expected for independent movement. Therefore, if the CIs contain 1, then the distance is insignificant with a p-value threshold of <code>1-level</code> (two-sided) or half that for a one-sided test.</p>
+
+
+<h3>Author(s)</h3>
+
+<p> C. H. Fleming. </p>
+
+
+<h3>See Also</h3>
+
+ <p><code>ctmm.select</code>, <code>predict.ctmm</code> </p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+#Load package
+library(ctmm)
+
+# load buffalo data
+data(buffalo)
+
+# select two buffalo that overlap in space and time
+DATA &lt;- buffalo[c(1,3)]
+# plot the two buffalo
+plot(DATA,col=c('red','blue'))
+
+FITS &lt;- list()
+for(i in 1:2)
+{
+  GUESS &lt;- ctmm.guess(DATA[[i]],interactive=FALSE)
+  # in general, you want to use ctmm.select
+  FITS[[i]] &lt;- ctmm.fit(DATA[[i]],GUESS)
+}
+
+# calculate difference vectors
+DIFF &lt;- difference(DATA,FITS)
+# plot the difference vectors with prediction-error ellipses
+plot(DIFF)
+
+# calculate the proximity statistic
+# disabling location error for speed
+proximity(DATA,FITS,GUESS=ctmm(error=FALSE))
+</code></pre>
+
+
+</div>

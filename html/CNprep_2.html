@@ -1,0 +1,206 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>applyCNPmask</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Apply a mask to a table of copy number events.
+</h2>
+
+<h3>Description</h3>
+
+<p>A mask is applied to amplified or deleted segments as tabulated in 
+<code>segtable</code>. A decision whether to mask a segment is taken based on what 
+portion of the segment is covered by the mask. A position is chosen at random 
+within a segment to be masked, the flanking segments are extended to that 
+position and the segment to be masked is indicated as such in the value 
+returned.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">applyCNPmask(segtable,chrom,startPos,endPos,startProbe,endProbe,
+	eventIndex,masktable,maskchrom,maskstart,maskend,maskindex,mincover=1,
+	indexvals=c(-1,1))
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>segtable</code></td>
+<td>
+
+<p>A matrix or a data frame with columns named or enumerated by the values of 
+<code>chrom, startPos, endPos, startProbe, endProbe, eventIndex</code>. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>chrom</code></td>
+<td>
+
+<p>A character string specifying the name for the column in <code>segtable</code>
+tabulating the (integer) chromosome number for each segment.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>startPos, endPos</code></td>
+<td>
+
+<p>Character strings or integers specifying the names or numbers of columns in 
+<code>segtable</code> that tabulate the (integer) genomic start and end coordinates 
+of each segment.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>startProbe, endProbe</code></td>
+<td>
+
+<p>Character strings specifying the names of columns in <code>segtable</code> that
+tabulate the (integer) start and end postions of each segment in internal
+units such as probe numbers for data of CGH microarray origin.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eventIndex</code></td>
+<td>
+
+<p>A character string giving the name of a column in <code>segtable</code> where copy number variation status of the segments is tabulated. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>masktable</code></td>
+<td>
+
+<p>A matrix or a data frame with columns named or enumerated as given by
+<code>maskchrom, maskstart, maskend, maskindex</code> and with rows corresponding to
+genomic intervals that comprise the mask.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maskchrom,maskstart,maskend</code></td>
+<td>
+
+<p>Character strings or integers specifying the names or numbers of columns 
+in <code>masktable</code> that tabulate the chromosome number and (integer) genomic 
+start and end coordinates of the intervals comprising the mask. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maskindex</code></td>
+<td>
+
+<p>A numeric vector corresponding to <code>eventIndex</code>,specifying copy number 
+events status for measuring units.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mincover</code></td>
+<td>
+
+<p>A numeric value specifying the minimal portion of the segment that must be 
+covered by the mask in order to trigger masking.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>indexvals</code></td>
+<td>
+
+<p>A numeric vector of length 2 specifying the two values in <code>maskindex</code> to 
+be matched with values in <code>eventIndex</code> to determine the events that are to 
+be masked.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Masking is performed separately for each value in <code>indexvals</code>. Segments 
+(rows of <code>segtable</code>) with that value of <code>eventIndex</code> are examined
+for coverage by mask intervals with that value of <code>maskindex</code> in 
+<code>masktable</code>. If the coverage is at least <code>mincover</code>, the segment is
+slated for masking, while its flanking segments are extended to a random 
+point within the segment being masked.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A matrix with same number of observations/rows as <code>segtable</code> and with 
+following three columns:
+
+
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>startProbe,endProbe</code></td>
+<td>
+
+<p>An integer vector for the start and end positions of the segments after masking.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>toremove</code></td>
+<td>
+
+<p>An integer vector whose values are 1 if the segment is masked and 0 otherwise.
+</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Alex Krasnitz
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+data(segexample)
+data(ratexample)
+data(normsegs)
+data(cnpexample)
+segtable&lt;-CNpreprocessing(segall=segexample[segexample[,"ID"]=="WZ1",],
+ratall=ratexample,"ID","start","end",chromcol="chrom",bpstartcol="chrom.pos.start",
+bpendcol="chrom.pos.end",blsize=50,minjoin=0.25,cweight=0.4,bstimes=50,
+chromrange=1:22,distrib="Rparallel",njobs=2,modelNames="E",normalength=normsegs[,1],
+normalmedian=normsegs[,2])
+#form a eventIndex vector
+eventIndex&lt;-rep(0,nrow(segtable))
+eventIndex[segtable[,"marginalprob"]&lt;1e-4&amp;segtable[,"negtail"]&gt;
+0.999&amp;segtable[,"mediandev"]&lt;0] &lt;- -1
+eventIndex[segtable[,"marginalprob"]&lt;1e-4&amp;segtable[,"negtail"]&gt;
+0.999&amp;segtable[,"mediandev"]&gt;0] &lt;- 1
+segtable&lt;-cbind(segtable,eventIndex)
+#form a cnpindex vector
+namps17&lt;-cnpexample[cnpexample[,"copy.num"]=="amp",]
+aCNPmask&lt;-makeCNPmask(imat=namps17,chromcol=2,startcol=3,endcol=4,
+nprof=1203,uthresh=0.02,dthresh=0.008)
+ndels17&lt;-cnpexample[cnpexample[,"copy.num"]=="del",]
+dCNPmask&lt;-makeCNPmask(imat=ndels17,chromcol=2,startcol=3,endcol=4,
+nprof=1203,uthresh=0.02,dthresh=0.008)
+cnptable&lt;-rbind(cbind(aCNPmask,cnpindex=1),cbind(dCNPmask,cnpindex=-1))
+#run the CNP test
+myCNPtable&lt;-applyCNPmask(segtable,"chrom",startPos="chrom.pos.start",
+endPos="chrom.pos.end","start","end","eventIndex",masktable=cnptable,"chrom",
+maskstart="start",maskend="end",maskindex="cnpindex",mincover=0.005,indexvals=c(-1,1))
+
+## End(Not run)
+</code></pre>
+
+
+</div>

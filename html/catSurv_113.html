@@ -1,0 +1,172 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>selectItem</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Select Next Item</h2>
+
+<h3>Description</h3>
+
+<p>Selects the next item in the question set to be administered to respondent based on the specified selection method.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">selectItem(catObj)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table><tr style="vertical-align: top;">
+<td><code>catObj</code></td>
+<td>
+<p>An object of class <code>Cat</code></p>
+</td>
+</tr></table>
+<h3>Details</h3>
+
+<p>Selection approach is specified in the <code>selection</code> slot of the <code>Cat</code> object.
+</p>
+<p>The minimum expected posterior variance criterion is used when the <code>selection</code>
+slot is <code>"EPV"</code>.  This method calls <code>expectedPV</code> for each unasked item.
+</p>
+<p>The maximum Fisher's information criterion is used when the <code>selection</code>
+slot is <code>"MFI"</code>.  This method calls <code>fisherInf</code> for each unasked item.
+</p>
+<p>The maximum likelihood weighted information criterion is used when the <code>selection</code>
+slot is <code>"MLWI"</code>.  Note that when no questions have been answered, likelihood evaluates to 1. This method involves integration. See <strong>Note</strong> for more information.
+</p>
+<p>The maximum posterior weighted information criterion is used when the <code>selection</code>
+slot is <code>"MPWI"</code>. Note that when no questions have been answered, likelihood evaluates to 1. This method involves integration. See <strong>Note</strong> for more information.
+</p>
+<p>The maximum expected information criterion is used when the <code>selection</code>
+slot is <code>"MEI"</code>.  This method calls <code>expectedObsInf</code> for each unasked item. **Not implemented
+for three parameter model for binary data.**
+</p>
+<p>The maximum Kullback-Leibler information criterion is used when the <code>selection</code>
+slot is <code>"KL"</code>.  This method calls <code>expectedKL</code> for each unasked item.  See <code>expectedKL</code> for more information.
+</p>
+<p>The maximum likelihood weighted Kullback-Leibler information criterion is used when the <code>selection</code>
+slot is <code>"LKL"</code>.  This method calls <code>likelihoodKL</code> for each unasked item.
+</p>
+<p>The maximum posterior weighted Kullback-Leibler information criterion is used when the <code>selection</code>
+slot is <code>"PKL"</code>.  This method calls <code>posteriorKL</code> for each unasked item.
+</p>
+<p>The maximum Fisher interval information criterion is used when the <code>selection</code>
+slot is <code>"MFII"</code>. This method involves integration. See <strong>Note</strong> for more information.
+The bounds of integration are <code class="reqn">\hat{\theta} \pm \delta</code>,
+where <code class="reqn">\delta</code> is qnorm(<code class="reqn">z</code>) times the square root of the Fisher test information and
+<code class="reqn">z</code> is specified in the <code>z</code> slot of the <code>Cat</code> object.
+</p>
+<p>A random number generator is used when the <code>selection</code>
+slot is <code>"RANDOM"</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The function <code>selectItem</code> returns a list with three elements:
+</p>
+<p><code>estimates</code>: a data frame with a row for each unasked question and three columns representing 
+the item index number, the item name, and the item value (calculated by the specified selection method), 
+and
+</p>
+<p><code>next_item</code>: a numeric representing the index of the item that should be asked next.
+</p>
+<p><code>next_item_name</code>: a string representing the unique identifier of the item that should be asked next.
+</p>
+
+
+<h3>Note</h3>
+
+<p>This function is to allow users to access the internal functions of the package. During item selection, all calculations are done in compiled <code>C++</code> code.
+</p>
+<p>This function uses adaptive quadrature methods from the GNU Scientific
+Library (GSL) to approximate single-dimensional
+integrals with high accuracy.  The bounds of integration are determined by the
+<code>lowerBound</code> and <code>upperBound</code> slots of the <code>Cat</code> object unless otherwise noted.
+</p>
+<p>The <code>"RANDOM"</code> item selection criterion uses the package <code>RcppArmadillo</code> to randomly
+choose the next item among unasked questions.  <code>RcppArmadillo</code> provides an exact reproduction
+of R's <code>sample</code> function that can be called from C++.
+</p>
+<p>In the rare instance that item parameters are identical, it may be that that <code>selectItem</code> must choose
+between two items with the same value calculated by the selection criterion.  In such an instance, <code>selectItem</code>
+will choose the item with the lower question index.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Haley Acevedo, Ryden Butler, Josh W. Cutler, Matt Malis, Jacob M. Montgomery,
+Tom Wilkinson, Erin Rossiter, Min Hee Seo, Alex Weil
+</p>
+
+
+<h3>References</h3>
+
+<p>van der Linden, Wim J. 1998. "Bayesian Item Selection Criteria for Adaptive Testing." Psychometrika
+63(2):201-216.
+</p>
+<p>Van der Linden, Wim J., and Peter J. Pashley. 2009. "Item Selection and Ability
+Estimation in Adaptive Testing." Elements of Adaptive Testing. 
+Springer New York, 3-30.
+</p>
+<p>Veldkamp, B.P., 2003. Item Selection in Polytomous CAT.
+In New Developments in Psychometrics (pp. 207-214). Springer Japan.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>estimateTheta</code>, <code>expectedPV</code>, <code>fisherInf</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Loading ltm Cat object
+data(ltm_cat)
+
+## Store example answers
+setAnswers(ltm_cat) &lt;- c(1,0,1,0,1, rep(NA, 35))
+
+## Set different selection criterion and choose next item
+setSelection(ltm_cat) &lt;- "EPV"
+selectItem(ltm_cat)
+
+setSelection(ltm_cat) &lt;- "MFI"
+selectItem(ltm_cat)
+
+setSelection(ltm_cat) &lt;- "MLWI"
+selectItem(ltm_cat)
+
+setSelection(ltm_cat) &lt;- "MPWI"
+selectItem(ltm_cat)
+
+setSelection(ltm_cat) &lt;- "MEI"
+selectItem(ltm_cat)
+
+setSelection(ltm_cat) &lt;- "KL"
+selectItem(ltm_cat)
+
+setSelection(ltm_cat) &lt;- "LKL"
+selectItem(ltm_cat)
+
+setSelection(ltm_cat) &lt;- "PKL"
+selectItem(ltm_cat)
+
+setSelection(ltm_cat) &lt;- "MFII"
+selectItem(ltm_cat)
+
+setSelection(ltm_cat) &lt;- "RANDOM"
+selectItem(ltm_cat)
+
+
+</code></pre>
+
+
+</div>

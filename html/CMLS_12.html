@@ -1,0 +1,258 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>mlsun</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Multivariate Least Squares with Unimodality (and E/I) Constraints
+</h2>
+
+<h3>Description</h3>
+
+<p>Finds the <code class="reqn">q</code> x <code class="reqn">p</code> matrix <code>B</code> that minimizes the multivariate least squares problem
+</p>
+
+<table><tr>
+<td style="text-align: center;">
+<code> sum(( Y - X %*% t(Z %*% B) )^2) </code>
+</td>
+</tr></table>
+<p>subject to <code>Z %*% B[,j]</code> is unimodal and <code>t(A) %*% B[,j] &gt;= b</code> for all <code>j = 1:p</code>. Unique basis functions and constraints are allowed for each column of <code>B</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">mlsun(X, Y, Z, A, b, meq,
+      mode.range = NULL, maxit = 1000, 
+      eps = 1e-10, del = 1e-6,
+      XtX = NULL, ZtZ = NULL, 
+      simplify = TRUE, catchError = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>Matrix of dimension <code class="reqn">n</code> x <code class="reqn">p</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Y</code></td>
+<td>
+<p>Matrix of dimension <code class="reqn">n</code> x <code class="reqn">m</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Z</code></td>
+<td>
+<p>Matrix of dimension <code class="reqn">m</code> x <code class="reqn">q</code>. Can also input a list (see Note). If missing, then <code>Z = diag(m)</code> so that <code class="reqn">q = m</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>A</code></td>
+<td>
+<p>Constraint matrix of dimension <code class="reqn">q</code> x <code class="reqn">r</code>. Can also input a list (see Note). If missing, no equality/inequality (E/I) constraints are imposed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>b</code></td>
+<td>
+<p>Consraint vector of dimension <code class="reqn">r</code> x 1. Can also input a list (see Note). If missing, then <code>b = rep(0, r)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>meq</code></td>
+<td>
+<p>The first <code>meq</code> columns of <code>A</code> are equality constraints, and the remaining <code>r - meq</code> are inequality constraints. Can also input a vector (see Note). If missing, then <code>meq = 0</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mode.range</code></td>
+<td>
+<p>Mode search ranges, which should be a 2 x <code class="reqn">p</code> matrix of integers such that <code>1 &lt;= mode.range[1,j] &lt;= mode.range[2,j] &lt;= m</code> for all <code>j = 1:p</code>. Default is  <code>mode.range = matrix(c(1, m), 2, p)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxit</code></td>
+<td>
+<p>Maximum number of iterations for back-fitting algorithm. Ignored if <code>backfit = FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eps</code></td>
+<td>
+<p>Convergence tolerance for back-fitting algorithm. Ignored if <code>backfit = FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>del</code></td>
+<td>
+<p>Stability tolerance for back-fitting algorithm. Ignored if <code>backfit = FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>XtX</code></td>
+<td>
+<p>Crossproduct matrix:  <code>XtX = crossprod(X)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ZtZ</code></td>
+<td>
+<p>Crossproduct matrix:  <code>ZtZ = crossprod(Z)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>simplify</code></td>
+<td>
+<p>If <code>Z</code> is a list, should <code>B</code> be returned as a matrix (if possible)? See Note.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>catchError</code></td>
+<td>
+<p>If <code>catchError = FASLE</code>, an error induced by <code>solve.QP</code> will be returned. Otherwise <code>tryCatch</code> will be used in attempt to catch the error.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>A back-fitting algorithm is used to estimate <code>B</code>, where the columns of <code>B</code> are updated sequentially until convergence (outer loop). For each column of <code>B</code>, (the inner loop of) the algorithm searches for the j-th mode across the search range specified by the j-th column of <code>mode.range</code>. The backfitting algorithm is determined to have converged when 
+</p>
+<p><code>mean((B.new - B.old)^2) &lt; eps * (mean(B.old^2) + del)</code>, 
+</p>
+<p>where <code>B.old</code> and <code>B.new</code> denote the parameter estimates at outer iterations <code class="reqn">t</code> and <code class="reqn">t+1</code> of the backfitting algorithm.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If <code>Z</code> is a list with <code class="reqn">q_j = q</code> for all <code class="reqn">j = 1,\ldots,p</code>, then...
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p>is returned as a <code class="reqn">q</code> x <code class="reqn">p</code> matrix when <code>simplify = TRUE</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p>is returned as a list of length <code class="reqn">p</code> when <code>simplify = FALSE</code></p>
+</td>
+</tr>
+</table>
+<p>If <code>Z</code> is a list with <code class="reqn">q_j \neq q</code> for some <code class="reqn">j</code>, then <code>B</code> is returned as a list of length <code class="reqn">p</code>.
+</p>
+<p>Otherwise <code>B</code> is returned as a <code class="reqn">q</code> x <code class="reqn">p</code> matrix.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The <code>Z</code> input can also be a list of length <code class="reqn">p</code> where <code>Z[[j]]</code> contains a <code class="reqn">m</code> x <code class="reqn">q_j</code> matrix. If <code class="reqn">q_j = q</code> for all <code class="reqn">j = 1,\ldots,p</code> and <code>simplify = TRUE</code>, the output <code>B</code> will be a matrix. Otherwise <code>B</code> will be a list of length <code class="reqn">p</code> where <code>B[[j]]</code> contains a <code class="reqn">q_j</code> x 1 vector.
+</p>
+<p>The <code>A</code> and <code>b</code> inputs can also be lists of length <code class="reqn">p</code> where <code>t(A[[j]]) %*% B[,j] &gt;= b[[j]]</code> for all <code class="reqn">j = 1,\ldots,p</code>. If <code>A</code> and <code>b</code> are lists of length <code class="reqn">p</code>, the <code>meq</code> input should be a vector of length <code class="reqn">p</code> indicating the number of equality constraints for each element of <code>A</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Nathaniel E. Helwig &lt;helwig@umn.edu&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Goldfarb, D., &amp; Idnani, A. (1983). A numerically stable dual method for solving strictly convex quadratic programs. Mathematical Programming, 27, 1-33. <a href="https://doi.org/10.1007/BF02591962">doi:10.1007/BF02591962</a>
+</p>
+<p>Helwig, N. E. (in prep). Constrained multivariate least squares in R.
+</p>
+<p>Ten Berge, J. M. F. (1993). Least Squares Optimization in Multivariate Analysis. Volume 25 of M &amp; T Series. DSWO Press, Leiden University. ISBN: 9789066950832
+</p>
+<p>Turlach, B. A., &amp; Weingessel, A. (2019). quadprog: Functions to solve Quadratic Programming Problems. R package version 1.5-8. https://CRAN.R-project.org/package=quadprog
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cmls</code> calls this function for the unimodality constraints.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">######***######   GENERATE DATA   ######***######
+
+# make X
+set.seed(2)
+n &lt;- 50
+m &lt;- 20
+p &lt;- 2
+Xmat &lt;- matrix(rnorm(n*p), nrow = n, ncol = p)
+
+# make B (which satisfies all constraints except monotonicity)
+x &lt;- seq(0, 1, length.out = m)
+Bmat &lt;- rbind(sin(2*pi*x), sin(2*pi*x+pi)) / sqrt(4.75)
+struc &lt;- rbind(rep(c(TRUE, FALSE), each = m / 2),
+               rep(c(FALSE, TRUE), each = m / 2))
+Bmat &lt;- Bmat * struc
+
+# make noisy data
+set.seed(1)
+Ymat &lt;- Xmat %*% Bmat + rnorm(n*m, sd = 0.25)
+
+
+######***######   UNIMODALITY   ######***######
+
+# unimodal
+Bhat.cmls &lt;- cmls(X = Xmat, Y = Ymat, const = "unimod")
+Bhat.mlsun &lt;- t(mlsun(X = Xmat, Y = Ymat))
+mean((Bhat.cmls - Bhat.mlsun)^2)
+
+# unimodal and structured
+Bhat.cmls &lt;- cmls(X = Xmat, Y = Ymat, const = "unimod", struc = struc)
+Amat &lt;- vector("list", p)
+meq &lt;- rep(0, p)
+for(j in 1:p){
+   meq[j] &lt;- sum(!struc[j,])
+   if(meq[j] &gt; 0){
+      A &lt;- matrix(0, nrow = m, ncol = meq[j])
+      A[!struc[j,],] &lt;- diag(meq[j])
+      Amat[[j]] &lt;- A
+   } else {
+      Amat[[j]] &lt;- matrix(0, nrow = m, ncol = 1)
+   }
+}
+Bhat.mlsun &lt;- t(mlsun(X = Xmat, Y = Ymat, A = Amat, meq = meq))
+mean((Bhat.cmls - Bhat.mlsun)^2)
+
+# unimodal and non-negative
+Bhat.cmls &lt;- cmls(X = Xmat, Y = Ymat, const = "uninon")
+Bhat.mlsun &lt;- t(mlsun(X = Xmat, Y = Ymat, A = diag(m)))
+mean((Bhat.cmls - Bhat.mlsun)^2)
+
+# unimodal and non-negative and structured
+Bhat.cmls &lt;- cmls(X = Xmat, Y = Ymat, const = "uninon", struc = struc)
+eye &lt;- diag(m)
+meq &lt;- rep(0, p)
+for(j in 1:p){
+   meq[j] &lt;- sum(!struc[j,])
+   Amat[[j]] &lt;- eye[,sort(struc[j,], index.return = TRUE)$ix]
+}
+Bhat.mlsun &lt;- t(mlsun(X = Xmat, Y = Ymat, A = Amat, meq = meq))
+mean((Bhat.cmls - Bhat.mlsun)^2)
+
+
+# see internals of cmls.R for further examples
+
+</code></pre>
+
+
+</div>

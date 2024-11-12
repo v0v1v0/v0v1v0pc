@@ -1,0 +1,277 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CKT.estimate</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimation of conditional Kendall's tau
+between two variables X1 and X2 given Z = z</h2>
+
+<h3>Description</h3>
+
+<p>Let <code class="reqn">X_1</code> and <code class="reqn">X_2</code> be two random variables.
+The goal of this function is to estimate the conditional Kendall's tau
+(a dependence measure) between <code class="reqn">X_1</code> and <code class="reqn">X_2</code> given <code class="reqn">Z=z</code>
+for a conditioning variable <code class="reqn">Z</code>.
+Conditional Kendall's tau between <code class="reqn">X_1</code> and <code class="reqn">X_2</code> given <code class="reqn">Z=z</code>
+is defined as:
+</p>
+<p style="text-align: center;"><code class="reqn">P( (X_{1,1} - X_{2,1})(X_{1,2} - X_{2,2}) &gt; 0 | Z_1 = Z_2 = z)</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">- P( (X_{1,1} - X_{2,1})(X_{1,2} - X_{2,2}) &lt; 0 | Z_1 = Z_2 = z),</code>
+</p>
+
+<p>where <code class="reqn">(X_{1,1}, X_{1,2}, Z_1)</code> and <code class="reqn">(X_{2,1}, X_{2,2}, Z_2)</code>
+are two independent and identically distributed copies of <code class="reqn">(X_1, X_2, Z)</code>.
+In other words, conditional Kendall's tau is the difference
+between the probabilities of observing concordant and discordant pairs
+from the conditional law of </p>
+<p style="text-align: center;"><code class="reqn">(X_1, X_2) | Z=z.</code>
+</p>
+
+<p>This function can use different estimators for conditional Kendall's tau,
+see the description of the parameter <code>methodEstimation</code>
+for a complete list of possibilities.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CKT.estimate(
+  X1 = NULL, X2 = NULL, Z = NULL,
+  newZ = Z, methodEstimation, h,
+  listPhi = if(methodEstimation == "kendallReg")
+               {list( function(x){return(x)}   ,
+                      function(x){return(x^2)} ,
+                      function(x){return(x^3)} )
+               } else {list(identity)} ,
+  ... ,
+  observedX1 = NULL, observedX2 = NULL, observedZ = NULL )
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X1</code></td>
+<td>
+<p>a vector of <code class="reqn">n</code> observations of the first variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X2</code></td>
+<td>
+<p>a vector of <code class="reqn">n</code> observations of the second variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Z</code></td>
+<td>
+<p>a vector of <code class="reqn">n</code> observations of the conditioning variable,
+or a matrix with <code class="reqn">n</code> rows of observations of the conditioning vector
+(if <code class="reqn">Z</code> is multivariate).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newZ</code></td>
+<td>
+<p>the new values for the conditioning variable <code class="reqn">Z</code>
+at which the conditional Kendall's tau should be estimated.
+</p>
+
+<ul>
+<li>
+<p> If <code>observedZ</code> is a vector,
+then <code>newZ</code> must be a vector as well.
+</p>
+</li>
+<li>
+<p> If <code>observedZ</code> is a matrix,
+then <code>newZ</code> must be a matrix as well, with the same number of columns
+( = the dimension of <code class="reqn">Z</code>).
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>methodEstimation</code></td>
+<td>
+<p>method for estimating the conditional Kendall's tau.
+Possible estimation methods are:
+</p>
+
+<ul>
+<li> <p><code>"kernel"</code>: kernel smoothing,
+as described in (Derumigny, &amp; Fermanian (2019a))
+</p>
+</li>
+<li> <p><code>"kendallReg"</code>: regression-type model,
+as described in (Derumigny, &amp; Fermanian (2020))
+</p>
+</li>
+<li> <p><code>"tree"</code>, <code>"randomForest"</code>,
+<code>"logit"</code>, and <code>"neuralNetwork"</code>:
+use the relationship between conditional Kendall's tau
+and classification problems to use the respective classification algorithms
+for the estimation of conditional Kendall's tau,
+as described in (Derumigny, &amp; Fermanian (2019b))
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>h</code></td>
+<td>
+<p>the bandwidth</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>listPhi</code></td>
+<td>
+<p>the list of transformations to be applied
+to the conditioning variable <code class="reqn">Z</code>
+(in case of regression-type models).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>other parameters passed to the estimating functions
+<code>CKT.fit.tree</code>, <code>CKT.fit.randomForest</code>,
+<code>CKT.fit.GLM</code>, <code>CKT.fit.nNets</code>,
+<code>CKT.predict.kNN</code>, <code>CKT.kernel</code>
+and <code>CKT.kendallReg.fit</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>observedX1, observedX2, observedZ</code></td>
+<td>
+<p>old parameter names for <code>X1</code>,
+<code>X2</code>, <code>Z</code>. Support for this will be removed at a later version.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>the vector of estimated conditional Kendall's tau
+at each of the observations of <code>newZ</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Derumigny, A., &amp; Fermanian, J. D. (2019a).
+A classification point-of-view about conditional Kendall’s tau.
+Computational Statistics &amp; Data Analysis, 135, 70-94.
+<a href="https://doi.org/10.1016/j.csda.2019.01.013">doi:10.1016/j.csda.2019.01.013</a>
+</p>
+<p>Derumigny, A., &amp; Fermanian, J. D. (2019b).
+On kernel-based estimation of conditional Kendall’s tau:
+finite-distance bounds and asymptotic behavior.
+Dependence Modeling, 7(1), 292-321.
+<a href="https://doi.org/10.1515/demo-2019-0016">doi:10.1515/demo-2019-0016</a>
+</p>
+<p>Derumigny, A., &amp; Fermanian, J. D. (2020).
+On Kendall’s regression.
+Journal of Multivariate Analysis, 178, 104610.
+<a href="https://doi.org/10.1016/j.jmva.2020.104610">doi:10.1016/j.jmva.2020.104610</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>the specialized functions for estimating
+conditional Kendall's tau for each method:
+<code>CKT.fit.tree</code>, <code>CKT.fit.randomForest</code>,
+<code>CKT.fit.GLM</code>, <code>CKT.fit.nNets</code>,
+<code>CKT.predict.kNN</code>, <code>CKT.fit.randomForest</code>,
+<code>CKT.kernel</code> and <code>CKT.kendallReg.fit</code>.
+</p>
+<p>See also the nonparametric estimator of conditional copula models
+<code>estimateNPCondCopula</code>,
+and the parametric estimators of conditional copula models
+<code>estimateParCondCopula</code>.
+</p>
+<p>In the case where <code class="reqn">Z</code> is discrete
+or in the case of discrete conditioning events, see
+<code>bCond.treeCKT</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># We simulate from a conditional copula
+set.seed(1)
+N = 300
+Z = rnorm(n = N, mean = 5, sd = 2)
+conditionalTau = -0.9 + 1.8 * pnorm(Z, mean = 5, sd = 2)
+simCopula = VineCopula::BiCopSim(N=N , family = 1,
+    par = VineCopula::BiCopTau2Par(1 , conditionalTau ))
+X1 = qnorm(simCopula[,1])
+X2 = qnorm(simCopula[,2])
+
+newZ = seq(2,10,by = 0.1)
+h = 0.1
+estimatedCKT_tree &lt;- CKT.estimate(
+  X1 = X1, X2 = X2, Z = Z,
+  newZ = newZ,
+  methodEstimation = "tree", h = h)
+
+estimatedCKT_rf &lt;- CKT.estimate(
+  X1 = X1, X2 = X2, Z = Z,
+  newZ = newZ,
+  methodEstimation = "randomForest", h = h)
+
+estimatedCKT_GLM &lt;- CKT.estimate(
+  X1 = X1, X2 = X2, Z = Z,
+  newZ = newZ,
+  methodEstimation = "logit", h = h,
+  listPhi = list(function(x){return(x)}, function(x){return(x^2)},
+                 function(x){return(x^3)}) )
+
+estimatedCKT_kNN &lt;- CKT.estimate(
+  X1 = X1, X2 = X2, Z = Z,
+  newZ = newZ,
+  methodEstimation = "nearestNeighbors", h = h,
+  number_nn = c(50,80, 100, 120,200),
+  partition = 4
+  )
+
+estimatedCKT_nNet &lt;- CKT.estimate(
+  X1 = X1, X2 = X2, Z = Z,
+  newZ = newZ,
+  methodEstimation = "neuralNetwork", h = h,
+  )
+
+estimatedCKT_kernel &lt;- CKT.estimate(
+  X1 = X1, X2 = X2, Z = Z,
+  newZ = newZ,
+  methodEstimation = "kernel", h = h,
+  )
+
+estimatedCKT_kendallReg &lt;- CKT.estimate(
+   X1 = X1, X2 = X2, Z = Z,
+   newZ = newZ,
+   methodEstimation = "kendallReg", h = h)
+
+# Comparison between true Kendall's tau (in black)
+# and estimated Kendall's tau (in other colors)
+trueConditionalTau = -0.9 + 1.8 * pnorm(newZ, mean = 5, sd = 2)
+plot(newZ, trueConditionalTau , col="black",
+   type = "l", ylim = c(-1, 1))
+lines(newZ, estimatedCKT_tree, col = "red")
+lines(newZ, estimatedCKT_rf, col = "blue")
+lines(newZ, estimatedCKT_GLM, col = "green")
+lines(newZ, estimatedCKT_kNN, col = "purple")
+lines(newZ, estimatedCKT_nNet, col = "coral")
+lines(newZ, estimatedCKT_kernel, col = "skyblue")
+lines(newZ, estimatedCKT_kendallReg, col = "darkgreen")
+
+</code></pre>
+
+
+</div>

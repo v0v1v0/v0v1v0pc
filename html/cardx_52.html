@@ -1,0 +1,152 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ard_stats_anova</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>ARD ANOVA</h2>
+
+<h3>Description</h3>
+
+<p>Prepare ANOVA results from the <code>stats::anova()</code> function.
+Users may pass a pre-calculated <code>stats::anova()</code> object or a list of
+formulas. In the latter case, the models will be constructed using the
+information passed and models will be passed to <code>stats::anova()</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ard_stats_anova(x, ...)
+
+## S3 method for class 'anova'
+ard_stats_anova(x, method_text = "ANOVA results from `stats::anova()`", ...)
+
+## S3 method for class 'data.frame'
+ard_stats_anova(
+  x,
+  formulas,
+  method,
+  method.args = list(),
+  package = "base",
+  method_text = "ANOVA results from `stats::anova()`",
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>(<code>anova</code> or <code>data.frame</code>)<br>
+an object of class <code>'anova'</code> created with <code>stats::anova()</code> or
+a data frame</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>These dots are for future extensions and must be empty.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method_text</code></td>
+<td>
+<p>(<code>string</code>)<br>
+string of the method used. Default is <code style="white-space: pre;">⁠"ANOVA results from ⁠</code>stats::anova()<code style="white-space: pre;">⁠"⁠</code>.
+We provide the option to change this as <code>stats::anova()</code> can produce
+results from many types of models that may warrant a more precise
+description.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formulas</code></td>
+<td>
+<p>(<code>list</code>)<br>
+a list of formulas</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>(<code>string</code>)<br>
+string of function naming the function to be called, e.g. <code>"glm"</code>.
+If function belongs to a library that is not attached, the package name
+must be specified in the <code>package</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method.args</code></td>
+<td>
+<p>(named <code>list</code>)<br>
+named list of arguments that will be passed to <code>method</code>.
+</p>
+<p>Note that this list may contain non-standard evaluation components.
+If you are wrapping this function in other functions, the argument
+must be passed in a way that does not evaluate the list, e.g.
+using rlang's  embrace operator <code>{{ . }}</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>package</code></td>
+<td>
+<p>(<code>string</code>)<br>
+string of package name that will be temporarily loaded when function
+specified in <code>method</code> is executed.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>When a list of formulas is supplied to <code>ard_stats_anova()</code>, these formulas
+along with information from other arguments, are used to construct models
+and pass those models to <code>stats::anova()</code>.
+</p>
+<p>The models are constructed using <code>rlang::exec()</code>, which is similar to <code>do.call()</code>.
+</p>
+<div class="sourceCode r"><pre>rlang::exec(.fn = method, formula = formula, data = data, !!!method.args)
+</pre></div>
+<p>The above function is executed in <code>withr::with_namespace(package)</code>, which
+allows for the use of <code>ard_stats_anova(method)</code> from packages,
+e.g. <code>package = 'lme4'</code> must be specified when <code>method = 'glmer'</code>.
+See example below.
+</p>
+
+
+<h3>Value</h3>
+
+<p>ARD data frame
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+anova(
+  lm(mpg ~ am, mtcars),
+  lm(mpg ~ am + hp, mtcars)
+) |&gt;
+  ard_stats_anova()
+
+ard_stats_anova(
+  x = mtcars,
+  formulas = list(am ~ mpg, am ~ mpg + hp),
+  method = "glm",
+  method.args = list(family = binomial)
+)
+
+ard_stats_anova(
+  x = mtcars,
+  formulas = list(am ~ 1 + (1 | vs), am ~ mpg + (1 | vs)),
+  method = "glmer",
+  method.args = list(family = binomial),
+  package = "lme4"
+)
+
+</code></pre>
+
+
+</div>

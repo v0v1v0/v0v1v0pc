@@ -1,0 +1,137 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>increment</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Posterior density of an increment</h2>
+
+<h3>Description</h3>
+
+<p>Compute the posterior density of a branch increment under a fitted Cauchy process on a phylogenetic tree.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">increment(x, ...)
+
+## S3 method for class 'cauphylm'
+increment(x, node, values, n_values = 100, n_cores = 1, ...)
+
+## S3 method for class 'cauphyfit'
+increment(x, node, values, n_values = 100, n_cores = 1, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>an object of class <code>fitCauchy</code> or <code>cauphylm</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>other arguments to be passed to the method.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>node</code></td>
+<td>
+<p>vector of nodes ending the branches for which to compute the posterior density of the increment. If not specified, the reconstruction is done on all the possible edges.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>values</code></td>
+<td>
+<p>the vector of values where the density should be computed. If not specified, the reconstruction is done for a grid of <code>n_values</code> values between <code>-1.5 * maxdiff</code> and <code>1.5 * maxdiff</code>, where <code>maxdiff</code> is the difference between the larger and smaller tip value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_values</code></td>
+<td>
+<p>the number of point for the grid of values. Default to <code>100</code>. Ignored if <code>values</code> is provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_cores</code></td>
+<td>
+<p>number of cores for the parallelization. Default to 1.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function assumes a Cauchy Process on the tree with fitted parameters 
+(see <code>fitCauchy</code>),
+and computes the posterior ancestral density of trait increments at branches
+(ie, the difference between the traits value at the end and beginning of the branch),
+conditionally on the vector of tip values.
+</p>
+<p>It computes the posterior density on all the points in <code>values</code>,
+that should be refined enough to get a good idea of the density curve.
+</p>
+
+
+<h3>Value</h3>
+
+<p>an object of S3 class <code>ancestralCauchy</code>,
+which is a matrix of posterior increment values, with nodes in rows and values in columns.
+</p>
+
+
+<h3>Methods (by class)</h3>
+
+
+<ul>
+<li> <p><code>increment(cauphylm)</code>: <code>cauphylm</code> object
+</p>
+</li>
+<li> <p><code>increment(cauphyfit)</code>: <code>fitCauchy</code> object
+</p>
+</li>
+</ul>
+<h3>References</h3>
+
+<p>Bastide, P. and Didier, G. 2023. The Cauchy Process on Phylogenies: a Tractable Model for Pulsed Evolution. Systematic Biology. doi:10.1093/sysbio/syad053.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fitCauchy</code>, <code>cauphylm</code>,
+<code>plot.ancestralCauchy</code>, <code>plot_asr</code>, <code>ancestral</code>,
+<code>hdi.ancestralCauchy</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(1289)
+# Simulate tree and data
+phy &lt;- ape::rphylo(10, 0.1, 0)
+dat &lt;- rTraitCauchy(n = 1, phy = phy, model = "cauchy",
+                    parameters = list(root.value = 10, disp = 0.1))
+# Fit the data
+fit &lt;- fitCauchy(phy, dat, model = "cauchy", method = "reml")
+# Reconstruct the ancestral increments
+inc &lt;- increment(fit)
+plot_asr(fit, inc = inc, offset = 3)
+plot(inc, node = c(3, 8), type = "l")
+# Refine grid for edges ending at tips 3 and 8
+inc2 &lt;- increment(fit, node = c(3, 8), values = seq(-3, 3, 0.01))
+plot(inc2, type = "l")
+# Find HDI
+library(HDInterval)
+hdi_inc &lt;- hdi(inc2)
+hdi_inc
+plot(inc2, interval = hdi_inc, type = "l")
+
+</code></pre>
+
+
+</div>

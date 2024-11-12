@@ -1,0 +1,132 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>impute</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Imputation of Missing and Censored Values</h2>
+
+<h3>Description</h3>
+
+<p>Imputes multivariate missing and censored values.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">impute(object, type = c("mar", "censored", "both"), lambda.new, rho.new)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>an <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> object inheriting class ‘<code>cglasso</code>’, that is, the output of the model-fitting functions <code>cglasso</code> and <code>cggm</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>a description of the imputation required (see section ‘Description’). By default only the missing-at-random values are imputed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.new</code></td>
+<td>
+<p>value of the tuning parameter <code class="reqn">\lambda</code> at which the imputations are required.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rho.new</code></td>
+<td>
+<p>value of the tuning parameter <code class="reqn">\rho</code> at which the imputations are required.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>impute</code> function returns the response matrix with the imputed missing-at-random values (‘<code>type = "mar"</code>’), the imputed censored values (‘<code>type = "censored"</code>’), or both (‘<code>type = "both"</code>’).
+</p>
+<p>If ‘<code>type = "mar"</code>’ then, for each row, the missing response values are replaced with the expected values of a multivariate normal distribution conditioned on the observed response values.
+</p>
+<p>If ‘<code>type = "censored"</code>’ then, for each row, the censored response values are imputed using the expected values of a multivariate truncated normal distribution conditioned on the observed response values.
+</p>
+<p>If ‘<code>type = "both"</code>’ then missing-at-random and censored values are imputed. In this case the returned matrix corresponds to the working response matrix computed during the E-Step.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The <code>impute</code> function returns a response matrix with the required imputed data.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Luigi Augugliaro (<a href="mailto:luigi.augugliaro@unipa.it">luigi.augugliaro@unipa.it</a>)</p>
+
+
+<h3>See Also</h3>
+
+<p>Model-fitting functions <code>cglasso</code>, <code>cggm</code> and the accessor functions <code>coef.cglasso</code>, <code>fitted.cglasso</code>, <code>residuals.cglasso</code> and <code>predict.cglasso</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(123)
+# Y ~ N(0, Sigma) and 
+# 1. probability of left/right censored values equal to 0.05
+# 2. probability of missing-at-random values equal to 0.05
+n &lt;- 100L
+p &lt;- 3L
+rho &lt;- 0.3
+Sigma &lt;- outer(1L:p, 1L:p, function(i, j) rho^abs(i - j))
+Z &lt;- rcggm(n = n, Sigma = Sigma, probl = 0.05, probr = 0.05, probna = 0.05)
+
+out &lt;- cglasso(. ~ ., data = Z)
+rho.new &lt;- mean(out$rho)
+
+# imputing missing values
+Y.impute &lt;- impute(out, type = "mar", rho.new = rho.new)
+
+# imputing censored values
+Y.impute &lt;- impute(out, type = "censored", rho.new = rho.new)
+
+# imputing missing and censored values
+Y.impute &lt;- impute(out, type = "both", rho.new = rho.new)
+
+
+# Y ~ N(XB, Sigma) and 
+# 1. probability of left/right censored values equal to 0.05
+# 2. probability of missing-at-random values equal to 0.05
+n &lt;- 100L
+p &lt;- 3L
+q &lt;- 2
+b0 &lt;- runif(p)
+B &lt;- matrix(runif(q * p), nrow = q, ncol = p)
+X &lt;- matrix(rnorm(n * q), nrow = n, ncol = q)
+rho &lt;- 0.3
+Sigma &lt;- outer(1L:p, 1L:p, function(i, j) rho^abs(i - j))
+Z &lt;- rcggm(n = n, b0 = b0, X = X, B = B, Sigma = Sigma, probl = 0.05, probr = 0.05, 
+           probna = 0.05)
+
+out &lt;- cglasso(. ~ ., data = Z)
+lambda.new &lt;- mean(out$lambda)
+rho.new &lt;- mean(out$rho)
+
+# imputing missing values
+Y.impute &lt;- impute(out, type = "mar", lambda.new = lambda.new, rho.new = rho.new)
+
+# imputing censored values
+Y.impute &lt;- impute(out, type = "censored", lambda.new = lambda.new, rho.new = rho.new)
+
+# imputing missing and censored values
+Y.impute &lt;- impute(out, type = "both", lambda.new = lambda.new, rho.new = rho.new)
+</code></pre>
+
+
+</div>

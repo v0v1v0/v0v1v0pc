@@ -1,0 +1,186 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>target_encoding_lab</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Target encoding of non-numeric variables</h2>
+
+<h3>Description</h3>
+
+<p>Target encoding involves replacing the values of categorical variables with numeric ones from a "target variable", usually a model's response. Target encoding can be useful for improving the performance of machine learning models.
+</p>
+<p>This function identifies categorical variables in the input data frame, and transforms them using a set of target-encoding methods selected by the user, and returns the input data frame with the newly encoded variables.
+</p>
+<p>The target encoding methods implemented in this function are:
+</p>
+
+<ul>
+<li>
+<p> "rank": Returns the rank of the group as a integer, starting with 1 as the rank of the group with the lower mean of the response variable. The variables returned by this method are named with the suffix "__encoded_rank". This method is implemented in the function <code>target_encoding_rank()</code>.
+</p>
+</li>
+<li>
+<p> "mean": Replaces each value of the categorical variable with the mean of the response across the category the given value belongs to. This option accepts the argument "white_noise" to limit potential overfitting. The variables returned by this method are named with the suffix "__encoded_mean". This method is implemented in the function <code>target_encoding_mean()</code>.
+</p>
+</li>
+<li>
+<p> "rnorm": Computes the mean and standard deviation of the response for each group of the categorical variable, and uses <code>rnorm()</code> to generate random values from a normal distribution with these parameters. The argument <code>rnorm_sd_multiplier</code> is used as a multiplier of the standard deviation to control the range of values produced by <code>rnorm()</code> for each group of the categorical predictor. The variables returned by this method are named with the suffix "__encoded_rnorm".  This method is implemented in the function <code>target_encoding_rnorm()</code>.
+</p>
+</li>
+<li>
+<p> "loo": This is the leave-one-out method, that replaces each categorical value with the mean of the response variable across the other cases within the same group. This method supports the <code>white_noise</code> argument to increase limit potential overfitting. The variables returned by this method are named with the suffix "__encoded_loo". This method is implemented in the function <code>target_encoding_loo()</code>.
+</p>
+</li>
+</ul>
+<p>The methods "mean" and "rank" support the <code>white_noise</code> argument, which is a fraction of the range of the <code>response</code> variable, and the maximum possible value of white noise to be added. For example, if <code>response</code> is within 0 and 1, a <code>white_noise</code> of 0.25 will add to every value of the encoded variable a random number selected from a normal distribution between -0.25 and 0.25. This argument helps control potential overfitting induced by the encoded variable.
+</p>
+<p>The method "rnorm" has the argument <code>rnorm_sd_multiplier</code>, which multiplies the standard deviation argument of the <code style="white-space: pre;">⁠\link[stats]{rnorm}⁠</code> function to control the spread of the encoded values between groups. Values smaller than 1 reduce the spread in the results, while values larger than 1 have the opposite effect.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">target_encoding_lab(
+  df = NULL,
+  response = NULL,
+  predictors = NULL,
+  encoding_methods = c("mean", "rank", "loo", "rnorm"),
+  smoothing = 0,
+  rnorm_sd_multiplier = 0,
+  seed = 1,
+  white_noise = 0,
+  replace = FALSE,
+  verbose = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>(required; data frame, tibble, or sf) A training data frame. Default: NULL</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>response</code></td>
+<td>
+<p>(required; character string) Name of the response. Must be a column name of <code>df</code>. Default: NULL</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predictors</code></td>
+<td>
+<p>(required; character vector) Names of all the predictors in <code>df</code>. Only character and factor predictors are processed, but all are returned in the "df" slot of the function's output.  Default: NULL</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>encoding_methods</code></td>
+<td>
+<p>(optional; character string or vector). Name of the target encoding methods. Default: c("mean", "mean_smoothing, "rank", "loo", "rnorm")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smoothing</code></td>
+<td>
+<p>(optional; numeric) Argument of <code>target_encoding_mean()</code> (method "mean_smoothing"). Minimum group size that keeps the mean of the group. Groups smaller than this have their means pulled towards the global mean of the response. Default: 0</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rnorm_sd_multiplier</code></td>
+<td>
+<p>(optional; numeric) Numeric with multiplier of the standard deviation of each group in the categorical variable, in the range 0-1. Controls the variability in the encoded variables to mitigate potential overfitting. Default: <code>1</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>(optional; integer) Random seed to facilitate reproducibility when <code>white_noise</code> is not 0. Default: 1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>white_noise</code></td>
+<td>
+<p>(optional; numeric) Numeric with white noise values in the range 0-1, representing a fraction of the range of the response to be added as noise to the encoded variable. Controls the variability in the encoded variables to mitigate potential overfitting. Default: <code>0</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>replace</code></td>
+<td>
+<p>(optional; logical) If <code>TRUE</code>, the function replaces each categorical variable with its encoded version, and returns the input data frame with the encoded variables instead of the original ones. Default: FALSE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>(optional; logical) If TRUE, messages generated during the execution of the function are printed to the console Default: TRUE</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The input data frame with newly encoded columns if <code>replace</code> is <code>FALSE</code>, or the input data frame with encoded columns if <code>TRUE</code>
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Blas M. Benito
+</p>
+
+
+<h3>References</h3>
+
+
+<ul><li>
+<p> Micci-Barreca, D. (2001) A Preprocessing Scheme for High-Cardinality Categorical Attributes in Classification and Prediction Problems. SIGKDD Explor. Newsl. 3, 1, 27-32 <a href="https://doi.org/10.1145/507533.507538">doi:10.1145/507533.507538</a>
+</p>
+</li></ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data(
+  vi,
+  vi_predictors
+  )
+
+#subset to limit example run time
+vi &lt;- vi[1:1000, ]
+
+#applying all methods for a continuous response
+df &lt;- target_encoding_lab(
+  df = vi,
+  response = "vi_mean",
+  predictors = "koppen_zone",
+  encoding_methods = c(
+    "mean",
+    "rank",
+    "rnorm",
+    "loo"
+  ),
+  rnorm_sd_multiplier = c(0, 0.1, 0.2),
+  white_noise = c(0, 0.1, 0.2)
+)
+
+#identify encoded predictors
+predictors.encoded &lt;- grep(
+  pattern = "*__encoded*",
+  x = colnames(df),
+  value = TRUE
+)
+
+#correlation between encoded predictors and the response
+stats::cor(
+  x = df[["vi_mean"]],
+  y = df[, predictors.encoded],
+  use = "pairwise.complete.obs"
+)
+
+
+</code></pre>
+
+
+</div>

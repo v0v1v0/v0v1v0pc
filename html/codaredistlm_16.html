@@ -1,0 +1,187 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>predict_delta_comps</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Get predictions from compositional ilr multiple linear regression model</h2>
+
+<h3>Description</h3>
+
+<p>Provided the data (containing outcome, compositional components and covariates), fit a ilr multiple linear regression model and provide predictions from reallocating compositional values pairwise amunsnst the components model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">predict_delta_comps(
+  dataf,
+  y,
+  comps,
+  covars = NULL,
+  deltas = c(0, 10, 20)/(24 * 60),
+  comparisons = c("prop-realloc", "one-v-one")[1],
+  alpha = 0.05
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>dataf</code></td>
+<td>
+<p>A <code>data.frame</code> containing data</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Name (as string/character vector of length 1) of outcome variable in <code>dataf</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>comps</code></td>
+<td>
+<p>Character vector of names of compositions in <code>dataf</code>. See details for more information.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covars</code></td>
+<td>
+<p>Optional. Character vector of covariates names  (non-comp variables) in <code>dataf</code>. Defaults to NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deltas</code></td>
+<td>
+<p>A vector of time-component changes (as proportions of compositions , i.e., values between -1 and 1). Optional.
+Changes in compositions to be computed pairwise. Defaults to 0, 10 and 20 minutes as a proportion of the 1440 minutes
+in a day (i.e., approximately <code>0.000</code>, <code>0.007</code> and <code>0.014</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>comparisons</code></td>
+<td>
+<p>Currently two choices:  <code>"one-v-one"</code> or <code>"prop-realloc"</code> (default). Please see details for explanation of these methods.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>Optional. Level of significance. Defaults to 0.05.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Values in the <code>comps</code> columns must be strictly greater than zero. These compositional values are NOT assumed to be constrained to (0, 1)
+values as the function normalises the compositions row-wise to sum to 1 in part of it's processing of the dataset before analysis.
+</p>
+<p>Please see the <code>deltacomp</code> package <code>README.md</code> file for examples and explanation of the <code>comparisons = "prop-realloc"</code> and <code>comparisons = "one-v-one"</code> options.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Messages are printed to the console as the function tests the inputs, produces the isometric log ratios (ilrs), fits the linear model and produces the redistributed time-use predictions (with confidence intervals).
+</p>
+<p>Returns a <code>data.frame</code> of the time-use redistribution predictions (and 95% confidence intervals) with the following columns:
+</p>
+
+<ul>
+<li>  <p><code>comp+</code>: the compositional variable with the addition of the <code>delta</code> value
+</p>
+</li>
+<li>  <p><code>comp-</code>: the compositional variable with the subtraction of the <code>delta</code> value
+</p>
+</li>
+<li>  <p><code>delta</code>: the time-use redistribution value
+</p>
+</li>
+<li>  <p><code>alpha</code>: significance level for the 100(1-alpha)% confidence interval
+</p>
+</li>
+<li>  <p><code>delta_pred</code>: the predicted mean change in the outcome variable
+</p>
+</li>
+<li>  <p><code>ci_lo</code>: the lower limit of 100(1-alpha)% confidence interval corresponding to <code>delta_pred</code>
+</p>
+</li>
+<li>  <p><code>ci_up</code>: the upper limit of 100(1-alpha)% confidence interval corresponding to <code>delta_pred</code>
+</p>
+</li>
+<li>  <p><code>sig</code>: <code>"*"</code> if the <code>delta_pred</code> is significantly different from 0 at the <code>alpha</code> level (empty string otherwise)
+</p>
+</li>
+</ul>
+<p>The data.frame has a class of <code>deltacomp_obj</code> which denotes there are additional attributes of the returned object accessible using <code>attr(*, "attribute_name")</code>.
+</p>
+<p>The possible values for <code>"attribute_name"</code> are:
+</p>
+
+<ul>
+<li>  <p><code>dataf</code>: a data.frame of the predictors (covariates and ilrs)
+</p>
+</li>
+<li>  <p><code>y</code>: a vector of the outcome variable
+</p>
+</li>
+<li>  <p><code>comps</code>: a character vector of the time-use composition names
+</p>
+</li>
+<li>  <p><code>lm</code>: the <code>lm</code> object of the multiple linear regression fit (using <code>y</code> and <code>dataf</code> from above)
+</p>
+</li>
+<li>  <p><code>deltas</code>: the redistributed time-use values used in the predictions
+</p>
+</li>
+<li>  <p><code>comparisons</code>:  <code>"one-v-one"</code> or  <code>"prop-realloc"</code> provided as the <code>comparisons</code> argument
+</p>
+</li>
+<li>  <p><code>alpha</code>: significance level for the 100(1-alpha)% confidence intervals
+</p>
+</li>
+<li>  <p><code>ilr_basis</code>: the ilr change of basis matrix <code>V</code>
+</p>
+</li>
+<li>  <p><code>mean_pred</code>: a single row data.frame with the predicted mean outcome (<code>fit</code> column) value from the "average" set of predictors
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Ty Stanford &lt;tystan@gmail.com&gt;
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">predict_delta_comps(
+  dataf = fat_data,
+  y = "fat",
+  comps = c("sl", "sb", "lpa", "mvpa"),
+  covars = c("sibs", "parents", "ed"),
+  deltas = seq(-60, 60, by = 5) / (24 * 60),
+  comparisons = "one-v-one",
+  alpha = 0.05
+)
+
+delta_comp_out &lt;- predict_delta_comps(
+  dataf = fat_data,
+  y = "fat",
+  comps = c("sl", "sb", "lpa", "mvpa"),
+  covars = NULL,
+  deltas = seq(-60, 60, by = 5) / (24 * 60),
+  comparisons = "prop-realloc",
+  alpha = 0.05
+)
+
+# get the mean prediction from the returned object
+attr(delta_comp_out, "mean_pred")
+
+</code></pre>
+
+
+</div>

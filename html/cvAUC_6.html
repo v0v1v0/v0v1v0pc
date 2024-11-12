@@ -1,0 +1,212 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ci.pooled.cvAUC</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Confidence Intervals for Cross-validated Area Under the ROC Curve (AUC) Estimates for Pooled Repeated Measures Data 
+</h2>
+
+<h3>Description</h3>
+
+<p>This function calculates influence curve based confidence intervals for cross-validated area under the curve (AUC) estimates, for a pooled repeated measures data set.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ci.pooled.cvAUC(predictions, labels, label.ordering = NULL, 
+  folds = NULL, ids, confidence = 0.95)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>predictions</code></td>
+<td>
+
+<p>A vector, matrix, list, or data frame containing the predictions.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>labels</code></td>
+<td>
+
+<p>A vector, matrix, list, or data frame containing the true class labels. Must have the same dimensions as <code>predictions</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>label.ordering</code></td>
+<td>
+
+<p>The default ordering of the classes can be changed by supplying a vector containing the negative and the positive class label (negative label first, positive label second).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>folds</code></td>
+<td>
+
+<p>If specified, this must be a vector of fold ids equal in length to <code>predictions</code> and <code>labels</code>, or a list of length V (for V-fold cross-validation) of vectors of indexes for the observations contained in each fold.  The <code>folds</code> argument must only be specified if the <code>predictions</code> and <code>labels</code> arguments are vectors.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ids</code></td>
+<td>
+
+<p>A vector, matrix, list, or data frame containing cluster or entity ids.  All observations from the same entity (i.e. patient) that have been pooled must have the same id.  Must have the same dimensions as 'predictions'. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>confidence</code></td>
+<td>
+
+<p>A number between 0 and 1 that represents confidence level.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>See the documentation for the <code>prediction</code> function in the ROCR package for details on the <code>predictions</code>, <code>labels</code> and <code>label.ordering</code> arguments. 
+</p>
+<p>In pooled repeated measures data, the clusters (not the individual observations) are the independent units.  Each observation has a corresponding binary outcome.  This data structure arises often in clinical studies where each patient is measured, and an outcome is recorded, at various time points.  Then the observations from all patients are pooled together.  See the Examples section below for more information. 
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list containing the following named elements:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>cvAUC</code></td>
+<td>
+<p>Cross-validated area under the curve estimate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>se</code></td>
+<td>
+<p>Standard error.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ci</code></td>
+<td>
+<p>A vector of length two containing the upper and lower bounds for the confidence interval.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>confidence</code></td>
+<td>
+<p>A number between 0 and 1 representing the confidence.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Erin LeDell <a href="mailto:oss@ledell.org">oss@ledell.org</a>
+</p>
+<p>Maya Petersen <a href="mailto:mayaliv@berkeley.edu">mayaliv@berkeley.edu</a>
+</p>
+<p>Mark van der Laan <a href="mailto:laan@berkeley.edu">laan@berkeley.edu</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>LeDell, Erin; Petersen, Maya; van der Laan, Mark. Computationally efficient confidence intervals for cross-validated area under the ROC curve estimates. Electron. J. Statist. 9 (2015), no. 1, 1583–1607. doi:10.1214/15-EJS1035. <a href="http://projecteuclid.org/euclid.ejs/1437742107">http://projecteuclid.org/euclid.ejs/1437742107</a>.
+</p>
+<p>M. J. van der Laan and S. Rose. Targeted Learning: Causal Inference for Observational and Experimental Data. Springer Series in Statistics. Springer, first edition, 2011.
+</p>
+<p>Tobias Sing, Oliver Sander, Niko Beerenwinkel, and Thomas Lengauer. ROCR: Visualizing classifier performance in R. Bioinformatics, 21(20):3940-3941, 2005.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>prediction</code>, <code>performance</code>,
+<code>cvAUC</code>, <code>ci.cvAUC</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># This example is similar to the ci.cvAUC example, with the excpection that
+# this is a pooled repeated measures data set.  The example uses simulated
+# data that contains multiple time point observations for 500 patients, 
+# each observation having a binary outcome.
+# 
+# The cross-validation folds are stratified by ids that have at least one 
+# positive outcome.  All observations belonging to one patient are
+# contained within the save CV fold.
+
+
+pooled_example &lt;- function(data, ids, V = 10){
+
+  .cvFolds &lt;- function(Y, V, ids){
+    #Stratify by outcome &amp; id
+    classes &lt;- tapply(1:length(Y), INDEX = Y, FUN = split, 1)
+    ids.Y1 &lt;- unique(ids[classes$`1`])  #ids that contain an observation with Y==1
+    ids.noY1 &lt;- setdiff(unique(ids), ids.Y1)  #ids that have no Y==1 obvervations
+    ids.Y1.split &lt;- split(sample(length(ids.Y1)), rep(1:V, length = length(ids.Y1)))
+    ids.noY1.split &lt;- split(sample(length(ids.noY1)), rep(1:V, length = length(ids.noY1)))  
+    folds &lt;- vector("list", V)
+    for (v in seq(V)){
+      idx.Y1 &lt;- which(ids %in% ids.Y1[ids.Y1.split[[v]]])
+      idx.noY1 &lt;- which(ids %in% ids.noY1[ids.noY1.split[[v]]])
+      folds[[v]] &lt;- c(idx.Y1, idx.noY1)
+    }
+    return(folds)
+  }
+  .doFit &lt;- function(v, folds, data){  #Train/test glm for each fold
+    fit &lt;- glm(Y~., data = data[-folds[[v]],], family = binomial)
+    pred &lt;- predict(fit, newdata = data[folds[[v]],], type = "response")
+    return(pred)
+  }
+  folds &lt;- .cvFolds(Y = data$Y, ids = ids, V = V)  #Create folds
+  predictions &lt;- unlist(sapply(seq(V), .doFit, folds = folds, data = data))  #CV train/predict
+  predictions[unlist(folds)] &lt;- predictions  #Re-order fold indices
+  out &lt;- ci.pooled.cvAUC(predictions = predictions, labels = data$Y, 
+                         folds = folds, ids = ids, confidence = 0.95)
+  return(out)
+}
+
+
+# Load data
+library(cvAUC)
+data(adherence)
+
+
+# Get performance
+set.seed(1)
+out &lt;- pooled_example(data = subset(adherence, select=-c(id)), 
+                      ids = adherence$id, V = 10)
+
+
+# The output is given as follows:
+# &gt; out
+# $cvAUC
+# [1] 0.8648046
+#
+# $se
+# [1] 0.01551888
+#
+# $ci
+# [1] 0.8343882 0.8952211
+#
+# $confidence
+# [1] 0.95
+
+
+</code></pre>
+
+
+</div>

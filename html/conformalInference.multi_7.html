@@ -1,0 +1,230 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>conformal.multidim.split</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Split conformal prediction intervals with Multivariate Response</h2>
+
+<h3>Description</h3>
+
+<p>Compute prediction intervals using split conformal inference with multivariate
+response.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">conformal.multidim.split(
+  x,
+  y,
+  x0,
+  train.fun,
+  predict.fun,
+  alpha = 0.1,
+  split = NULL,
+  seed = FALSE,
+  randomized = FALSE,
+  seed.rand = FALSE,
+  verbose = FALSE,
+  rho = 0.5,
+  score = "l2",
+  s.type = "st-dev",
+  mad.train.fun = NULL,
+  mad.predict.fun = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>The feature variables, a matrix n x p.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>The matrix of multivariate responses (dimension n x q)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x0</code></td>
+<td>
+<p>The new points to evaluate, a matrix of dimension n0 x p.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>train.fun</code></td>
+<td>
+<p>A function to perform model training, i.e., to produce an
+estimator of E(Y|X), the conditional expectation of the response variable
+Y given features X. Its input arguments should be x: matrix of features,
+and y: matrix of responses.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predict.fun</code></td>
+<td>
+<p>A function to perform prediction for the (mean of the)
+responses at new feature values. Its input arguments should be out: output
+produced by train.fun, and newx: feature values at which we want to make
+predictions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>Miscoverage level for the prediction intervals, i.e., intervals
+with coverage 1-alpha are formed. Default for alpha is 0.1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>split</code></td>
+<td>
+<p>Indices that define the data-split to be used (i.e., the indices
+define the first half of the data-split, on which the model is trained).
+Default is NULL, in which case the split is chosen randomly.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>Integer to be passed to set.seed before defining the random
+data-split to be used. Default is FALSE, which effectively sets no seed.
+If both split and seed are passed, the former takes priority and the latter
+is ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>randomized</code></td>
+<td>
+<p>Should the randomized approach be used? Default is FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed.rand</code></td>
+<td>
+<p>The seed for the randomized version. Default is FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Should intermediate progress be printed out? Default is FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rho</code></td>
+<td>
+<p>Split proportion between training and calibration set.
+Default is 0.5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>score</code></td>
+<td>
+<p>The non-conformity measure. It can either be "max", "l2", "mahalanobis".
+The default is "l2".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>s.type</code></td>
+<td>
+<p>The type of modulation function.
+Currently we have 3 options: "identity","st-dev","alpha-max". Default is "st-dev"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mad.train.fun</code></td>
+<td>
+<p>A function to perform training on the absolute residuals
+i.e., to produce an estimator of E(R|X) where R is the absolute residual
+R = |Y - m(X)|, and m denotes the estimator produced by train.fun.
+This is used to scale the conformal score, to produce a prediction interval
+with varying local width. The input arguments to mad.train.fun should be
+x: matrix of features, y: vector of absolute residuals, and out: the output
+produced by a previous call to mad.train.fun, at the <em>same</em> features
+x. The function mad.train.fun may (optionally) leverage this returned
+output for efficiency purposes. See details below. The default for
+mad.train.fun is NULL, which means that no training is done on the absolute
+residuals, and the usual (unscaled) conformal score is used. Note that if
+mad.train.fun is non-NULL, then so must be mad.predict.fun (next).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mad.predict.fun</code></td>
+<td>
+<p>A function to perform prediction for the (mean of the)
+absolute residuals at new feature values. Its input arguments should be
+out: output produced by mad.train.fun, and newx: feature values at which we
+want to make predictions. The default for mad.predict.fun is NULL, which
+means that no local scaling is done for the conformal score, i.e., the
+usual (unscaled) conformal score is used.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If the two mad functions are provided they take precedence over the
+s.type parameter,
+and they force a local scoring via the mad function predicted values.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with the following components: x0,pred,k_s,s.type,s,alpha,randomized,tau,
+average_width,lo,up. In particular pred, lo, up are the matrices of
+dimension n0 x q, k_s is a scalar, s.type is a string, s is a vector of length q,
+alpha is a scalar between 0 and 1, randomized is a logical value,
+tau is a scalar between 0 and 1,and average_width is a positive scalar.
+</p>
+
+
+<h3>References</h3>
+
+<p>The s_regression and the "max" score are taken from
+"Conformal Prediction Bands
+for Multivariate Functional Data" by Diquigiovanni, Fontana, Vantini (2021).
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>conformal.multidim.full</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">n=50
+p=4
+q=2
+
+mu=rep(0,p)
+x = mvtnorm::rmvnorm(n, mu)
+beta&lt;-sapply(1:q, function(k) c(mvtnorm::rmvnorm(1,mu)))
+y = x%*%beta + t(mvtnorm::rmvnorm(q,1:n))
+x0=x[ceiling(0.9*n):n,]
+y0=y[ceiling(0.9*n):n,]
+
+n0&lt;-nrow(y0)
+q&lt;-ncol(y)
+
+fun=mean_multi()
+
+final.point = conformal.multidim.split(x,y,x0, fun$train.fun, fun$predict.fun,
+                             alpha=0.1,
+                                split=NULL, seed=FALSE, randomized=FALSE,seed.rand=FALSE,
+                                verbose=FALSE, rho=0.5,score ="l2",s.type="st-dev")
+
+ppp2&lt;-plot_multidim(final.point)
+
+</code></pre>
+
+
+</div>

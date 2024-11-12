@@ -1,0 +1,111 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>chocolates_svm_pred</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Chocolate svm model predictions and shap values</h2>
+
+<h3>Description</h3>
+
+<p>Predictions and DALEX shap attribution of an svm model of Chocolate data
+classifying type of chocolate (light/dark).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">chocolates_svm_pred
+
+chocolates_svm_shap
+</code></pre>
+
+
+<h3>Format</h3>
+
+<p><code>chocolate_svm_pred</code> is a n=88 length vector of the prediction of an
+svm model predicting the number of the factor level of the species of penguin.
+<code>chocolate_svm_shap</code> is a (88 x 10) data frame of the DALEX SHAP attribution
+of the svm model for each observation.
+</p>
+<p><strong>Replicating</strong>
+</p>
+<div class="sourceCode"><pre>library(cheem)
+library(e1071)
+library(DALEX)
+set.seed(135)
+
+## Classification setup
+X    &lt;- chocolates[, 5:14]
+Y    &lt;- chocolates$Type
+clas &lt;- chocolates$Type
+
+## Model and predict
+choc_svm_fit &lt;- svm(
+  formula = Y ~ ., data = data.frame(Y, X),
+  type = 'C-classification', kernel = 'linear', probability = TRUE)
+chocolates_svm_pred &lt;- predict(choc_svm_fit, data.frame(Y, X))
+
+## SHAP via DALEX, versatile but slow
+choc_svm_exp &lt;- explain(choc_svm_fit, data = X, y = Y,
+                        label = "Chocolates, svm")
+## Note that cheem expects a full [n, p] attribution space
+## Shap takes about ~30-40 sec for me
+chocolates_svm_shap &lt;- matrix(NA, nrow(X), ncol(X)) ## init a df of the same structure
+sapply(1:nrow(X), function(i){
+  pps &lt;- predict_parts_shap(choc_svm_exp, new_observation = X[i, ])
+  ## Keep just the [n, p] local explanations
+  chocolates_svm_shap[i, ] &lt;&lt;- tapply(
+    pps$contribution, pps$variable, mean, na.rm = TRUE) %&gt;% as.vector()
+})
+chocolates_svm_shap &lt;- as.data.frame(chocolates_svm_shap)
+
+if(F){ ## Don't accidentally save
+  save(chocolates_svm_pred, file = "./data/chocolates_svm_pred.rda")
+  save(chocolates_svm_shap, file = "./data/chocolates_svm_shap.rda")
+  #usethis::use_data(chocolates_svm_pred)
+  #usethis::use_data(chocolates_svm_shap)
+}
+</pre></div>
+<p>An object of class <code>data.frame</code> with 88 rows and 10 columns.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(cheem)
+
+## Classification setup
+X    &lt;- chocolates[, 5:14]
+Y    &lt;- chocolates$Type
+clas &lt;- chocolates$Type
+
+## Precomputed predictions and shap attribution
+str(chocolates_svm_pred)
+str(chocolates_svm_shap)
+
+## Cheem
+choc_chm &lt;- cheem_ls(X, Y, chocolates_svm_shap,
+                     chocolates_svm_pred, clas,
+                     label = "Chocolates, SVM, shap")
+
+## Save for use with shiny app (expects an rds file)
+if(FALSE){ ## Don't accidentally save.
+  saveRDS(choc_chm, "./cmh_chocolates_svm_shap.rds")
+  run_app() ## Select the saved rds file from the data dropdown.
+}
+
+## Cheem visuals
+if(interactive()){
+  prim &lt;- 1
+  comp &lt;- 2
+  global_view(choc_chm, primary_obs = prim, comparison_obs = comp)
+  bas &lt;- sug_basis(chocolates_svm_shap, prim, comp)
+  mv  &lt;- sug_manip_var(chocolates_svm_shap, primary_obs = prim, comp)
+  ggt &lt;- radial_cheem_tour(choc_chm, basis = bas, manip_var = mv)
+  animate_plotly(ggt)
+}
+</code></pre>
+
+
+</div>

@@ -1,0 +1,324 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>render_clinDataReviewReport</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Render a clinical data review report.</h2>
+
+<h3>Description</h3>
+
+<p>Render a clinical data review report.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">render_clinDataReviewReport(
+  configFiles = NULL,
+  configDir = file.path(inputDir, "config"),
+  logFile = NULL,
+  indexPath = file.path(inputDir, "index.Rmd"),
+  inputDir = ".",
+  outputDir = "./report",
+  intermediateDir = "./interim",
+  extraDirs = getExtraDirs(inputDir = inputDir, configDir = configDir),
+  quiet = FALSE,
+  verbose = TRUE,
+  nCores = 1
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>configFiles</code></td>
+<td>
+<p>(optional) Character vector with specific config files
+to be converted from Rmarkdown to Markdown. If
+</p>
+
+<ul>
+<li>
+<p> not specified (by default): all config files
+specified in the general 'config.yml' will be run (Rmd -&gt; md)
+</p>
+</li>
+<li>
+<p> specified (<strong>expert use only</strong>): only the specified files will 
+be run (Rmd -&gt; md). Other config files mentioned in the general 
+'config.yml' file won't be rerun, so the associated 'md' file
+should be already available in the <code>intermediateDir</code> folder.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>configDir</code></td>
+<td>
+<p>String with directory with config files,
+by default a 'config' folder in <code>inputDir</code>.<br>
+It should contain a general 'config.yml' file and dedicated
+'config-[X].yml' for each chapter.
+The order of each chapter is specified in the 'config' slot in the general 
+general 'config.yml'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logFile</code></td>
+<td>
+<p>(optional) String with path to a log file,
+where output (also error/messages/warnings) should be stored.
+If specified, the entire output is re-directed to this file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>indexPath</code></td>
+<td>
+<p>String with path to the index file,
+by default 'index.Rmd' in <code>inputDir</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inputDir</code></td>
+<td>
+<p>String with input directory,
+working directory by default.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outputDir</code></td>
+<td>
+<p>String with output directory,
+('report' by default).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>intermediateDir</code></td>
+<td>
+<p>String with intermediate directory ('interim'
+by default), where
+markdown files and rds file specifying Js libraries (with <code>knit_meta</code>) for
+each sub report are stored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extraDirs</code></td>
+<td>
+<p>Character vector with extra directories required by
+the report, directory with external images.
+By default, the directories: 'figures', 'tables' and mentioned in the 
+'patientProfilePath' parameter of the
+general config file are included.
+All these folders should be available in <code>inputDir</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quiet</code></td>
+<td>
+<p>Logical, if TRUE (FALSE by default)
+messages during the execution of each report are not displayed
+in the console (see <code>render</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Logical, if TRUE (FALSE by default) progress messages are printed
+during the report execution.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nCores</code></td>
+<td>
+<p>Integer containing the number of cores used to render the report
+(1 by default). If more than 1, two steps of the report creation are 
+run in parallel across chapters: 
+</p>
+
+<ul>
+<li>
+<p> the rendering of the Rmarkdown file to Markdown
+</p>
+</li>
+<li>
+<p> the conversion from Markdown to HTML
+</p>
+</li>
+</ul>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>String with path to the front page of the 
+report.
+</p>
+
+
+<h3>Process</h3>
+
+<p>This function is based on the render_book
+function, with the extra functionalities:
+</p>
+
+<ul>
+<li>
+<p> specification of chapter-specific input parameters, 
+specified in YAML configuration files
+</p>
+</li>
+<li>
+<p> (optional) creation of each chapter in parallel if <code>nCores</code> 
+&gt; 1. In that case, all chapters are run in parallel, excepted the 
+chapter(s) run internally in parallel (config file with <code>parallel</code> set 
+to 'TRUE').
+</p>
+</li>
+<li>
+<p> (optional) split of each chapter into html file specific 
+for each chapter, by specifying the <code>split_by</code> parameter in the 
+chapter-specific config file
+</p>
+</li>
+</ul>
+<p>This consists of:
+</p>
+
+<ol>
+<li>
+<p> importing the general config file ('config'.yml) to identify
+each report of interest ('config' tag)
+</p>
+</li>
+<li>
+<p> for each report of interest:
+</p>
+
+<ul>
+<li>
+<p> loading the report specific parameters from the associated 'config' file
+(see the <code>getParamsFromConfig</code> function)
+</p>
+</li>
+<li>
+<p> if the template should be extracted from a specified package
+(<code>templatePackage</code> tag), this template is copied to the
+current directory.
+Please note that if a file with same name is available in
+the working directory, this file will be overwritten.
+</p>
+</li>
+<li>
+<p> running the report ('template' tag) with the associated
+parameters in a <strong>new R session for reproducibility</strong>, 
+to obtain the associated Markdown file.<br>
+This step is parallelized across the different config files, if the 
+<code>nCores</code> parameter is specified.
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p> checking if the associated <code>Markdown</code> and <code>rds</code> file
+(list of Js dependencies) are available in <code>intermediateDir</code>
+</p>
+</li>
+<li>
+<p> split each chapter into separated Markdown documents, 
+based on the <code>split_by</code> parameter 
+(specified at the report or config level)
+</p>
+</li>
+<li>
+<p> conversion of each Markdown document to an HTML document. <br>
+This step is parallelized across the different Markdown documents, if the 
+<code>nCores</code> parameter is specified.
+</p>
+</li>
+<li>
+<p> build the book: 
+</p>
+
+<ol>
+<li>
+<p> creation of a common TOC for the book
+</p>
+</li>
+<li>
+<p> inclusion of the TOC in each Markdown file
+</p>
+</li>
+<li>
+<p> update of the section number in each chapter
+</p>
+</li>
+<li>
+<p> inclusion of the section number in each HTML file name
+</p>
+</li>
+</ol>
+</li>
+</ol>
+<p>If the execution of a specific report fails with error, 
+a warning message is triggered. A report containing
+only the specified title is created, to ensure
+output consistency (especially html file numbering)
+in case the report succeeds.
+</p>
+
+
+<h3>Available template report</h3>
+
+<p>see <strong><code>? `clinDataReview-templates`</code></strong> for a list of 
+clinical data template report available in the package.
+</p>
+
+
+<h3>Extension to chapter-specific split</h3>
+
+<p>The bookdown 'split_by' parameter is extended, to support:
+</p>
+
+<ul>
+<li>
+<p> chapter-specific split, specified in the configuration file
+of the specific chapter, via the <code>split_by</code> parameter
+</p>
+</li>
+<li>
+<p> specification as a number (if specified within a config file), 
+e.g. '0' for no split, 1' for chapter, '2' for
+section, '3' for subsection, ...
+</p>
+</li>
+<li>
+<p> split at section level higher than 2 (until 7)  
+(if specified within a config file)
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Laure Cougnaud
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other clinical data reporting: 
+<code>checkReportTitles()</code>,
+<code>forceParams()</code>,
+<code>getMdHeader()</code>,
+<code>getParamsFromConfig()</code>,
+<code>gitbook_clinDataReview_report()</code>,
+<code>html_clinDataReview_report()</code>,
+<code>knitPrintClinDataReview()</code>,
+<code>postProcessReport()</code>
+</p>
+
+
+</div>

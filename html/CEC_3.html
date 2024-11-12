@@ -1,0 +1,359 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cec</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Cross-Entropy Clustering</h2>
+
+<h3>Description</h3>
+
+<p><code>cec</code> performs Cross-Entropy Clustering on a data matrix. 
+See <code>Details</code> for an explanation of Cross-Entropy Clustering.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cec(
+  x,
+  centers,
+  type = c("covariance", "fixedr", "spherical", "diagonal", "eigenvalues", "mean", "all"),
+  iter.max = 25,
+  nstart = 1,
+  param,
+  centers.init = c("kmeans++", "random"),
+  card.min = "5%",
+  keep.removed = FALSE,
+  interactive = FALSE,
+  threads = 1,
+  split = FALSE,
+  split.depth = 8,
+  split.tries = 5,
+  split.limit = 100,
+  split.initial.starts = 1,
+  readline = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A numeric matrix of data. Each row corresponds to a distinct
+observation; each column corresponds to a distinct variable/dimension. It
+must not contain <code>NA</code> values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>centers</code></td>
+<td>
+<p>Either a matrix of initial centers or the number of initial
+centers (<code>k</code>, single number <code>cec(data, 4, ...)</code>) or a vector for
+variable number of centers (<code>cec(data, 3:10, ...)</code>). It must not
+contain <code>NA</code> values.
+</p>
+<p>If <code>centers</code> is a vector, <code>length(centers)</code> clusterings will be
+performed for each start (<code>nstart</code> argument) and the total number of
+clusterings will be <code>length(centers) * nstart</code>.
+</p>
+<p>If <code>centers</code> is a number or a vector, initial centers will be generated
+using a method depending on the <code>centers.init</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>The type (or types) of clustering (density family). This can be
+either a single value or a vector of length equal to the number of centers.
+Possible values are: "covariance", "fixedr", "spherical", "diagonal",
+"eigenvalues", "all" (default).
+</p>
+<p>Currently, if the <code>centers</code> argument is a vector, only a single type 
+can be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iter.max</code></td>
+<td>
+<p>The maximum number of iterations of the clustering algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nstart</code></td>
+<td>
+<p>The number of clusterings to perform (with different initial
+centers). Only the best clustering (with the lowest cost) will be returned.
+A value grater than 1 is valid only if the <code>centers</code> argument is a
+number or a vector.
+</p>
+<p>If the <code>centers</code> argument is a vector, <code>length(centers)</code>
+clusterings will be performed for each start and the total number of
+clusterings will be <code>length(centers) * nstart</code>.
+</p>
+<p>If the split mode is on (<code>split = TRUE</code>), the whole procedure (initial
+clustering + split) will be performed <code>nstart</code> times, which may take
+some time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>param</code></td>
+<td>
+<p>The parameter (or parameters) specific to a particular type of
+clustering. Not all types of clustering require parameters. The types that
+require parameter are: "covariance" (matrix parameter), "fixedr" (numeric
+parameter), "eigenvalues" (vector parameter). This can be a vector or a list
+(when one of the parameters is a matrix or a vector).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>centers.init</code></td>
+<td>
+<p>The method used to automatically initialize the centers.
+Possible values are: "kmeans++" (default) and "random".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>card.min</code></td>
+<td>
+<p>The minimal cluster cardinality. If the number of
+observations in a cluster becomes lower than card.min, the cluster is
+removed. This argument can be either an integer number or a string ending
+with a percent sign (e.g. "5%").</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.removed</code></td>
+<td>
+<p>If this parameter is TRUE, the removed clusters will be
+visible in the results as NA in the "centers" matrix (as well as the
+corresponding values in the list of covariances).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interactive</code></td>
+<td>
+<p>If <code>TRUE</code>, the result of clustering will be plotted 
+after every iteration.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threads</code></td>
+<td>
+<p>The number of threads to use or "auto" to use the default
+number of threads (usually the number of available processing units/cores)
+when performing multiple starts (<code>nstart</code> parameter).
+</p>
+<p>The execution of a single start is always performed by a single thread, thus
+for <code>nstart = 1</code> only one thread will be used regardless of the value
+of this parameter.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>split</code></td>
+<td>
+<p>If <code>TRUE</code>, the function will attempt to discover new
+clusters after the initial clustering, by trying to split single clusters
+into two and check whether it lowers the cost function.
+</p>
+<p>For each start (<code>nstart</code>), the initial clustering will be performed and
+then splitting will be applied to the results. The number of starts in the
+initial clustering before splitting is driven by the
+<code>split.initial.starts</code> parameter.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>split.depth</code></td>
+<td>
+<p>The cluster subdivision depth used in split mode. Usually,
+a value lower than 10 is sufficient (when after each splitting, new clusters
+have similar sizes). For some data, splitting may often produce clusters
+that will not be split further, in that case a higher value of
+<code>split.depth</code> is required.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>split.tries</code></td>
+<td>
+<p>The number of attempts that are made when trying to split
+a cluster in split mode.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>split.limit</code></td>
+<td>
+<p>The maximum number of centers to be discovered in split
+mode.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>split.initial.starts</code></td>
+<td>
+<p>The number of 'standard' starts performed before
+starting the splitting process.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>readline</code></td>
+<td>
+<p>Used only in the interactive mode. If <code>readline</code> is
+TRUE, at each iteration, before plotting it will wait for the user to press
+&lt;Return&gt; instead of the standard 'before plotting' waiting
+(<code>graphics::par(ask = TRUE)</code>).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Cross-Entropy Clustering (CEC) aims to partition <em>m</em> points
+into <em>k</em> clusters so as to minimize the cost function (energy
+<em><strong>E</strong></em> of the clustering) by switching the points between
+clusters. The presented method is based on the Hartigan approach, where we
+remove clusters which cardinalities decreased below some small prefixed
+level.
+</p>
+<p>The energy function <em><strong>E</strong></em> is given by:
+</p>
+<p style="text-align: center;"><code class="reqn">E(Y_1,\mathcal{F}_1;...;Y_k,\mathcal{F}_k) = \sum\limits_{i=1}^{k}
+ p(Y_i) \cdot (-ln(p(Y_i)) + H^{\times}(Y_i\|\mathcal{F}_i))</code>
+</p>
+
+<p>where <em>Yi</em> denotes the <em>i</em>-th cluster, <em>p(Yi)</em> is the ratio
+of the number of points in <em>i</em>-th cluster to the total number points,
+<em><strong>H</strong>(Yi|Fi)</em> is the value of cross-entropy, which represents the
+internal cluster energy function of data <em>Yi</em> defined with respect to a
+certain Gaussian density family <em>Fi</em>, which encodes the type of
+clustering we consider.
+</p>
+<p>The value of the internal energy function <em><strong>H</strong></em> depends on the
+covariance matrix (computed using maximum-likelihood) and the mean (in case
+of the <em>mean</em> model) of the points in the cluster. Seven
+implementations of <em><strong>H</strong></em> have been proposed (expressed as a type
+- model - of the clustering):
+</p>
+
+<dl>
+<dt>"all": </dt>
+<dd>
+<p>All Gaussian densities. Data will form ellipsoids with
+arbitrary radiuses.</p>
+</dd>
+<dt>"covariance": </dt>
+<dd>
+<p>Gaussian densities with a fixed given covariance. The
+shapes of clusters depend on the given covariance matrix (additional
+parameter).</p>
+</dd>
+<dt>"fixedr": </dt>
+<dd>
+<p>Special case of 'covariance', where the covariance matrix
+equals <em>rI</em> for the given <em>r</em> (additional parameter). The
+clustering will have a tendency to divide data into balls with approximate
+radius proportional to the square root of <em>r</em>.</p>
+</dd>
+<dt>"spherical": </dt>
+<dd>
+<p>Spherical (radial) Gaussian densities (covariance
+proportional to the identity). Clusters will have a tendency to form balls
+of arbitrary sizes.</p>
+</dd>
+<dt>"diagonal": </dt>
+<dd>
+<p>Gaussian densities with diagonal covariane. Data will
+form ellipsoids with radiuses parallel to the coordinate axes.</p>
+</dd>
+<dt>"eigenvalues": </dt>
+<dd>
+<p>Gaussian densities with covariance matrix having
+fixed eigenvalues (additional parameter). The clustering will try to divide
+the data into fixed-shaped ellipsoids rotated by an arbitrary angle.</p>
+</dd>
+<dt>"mean": </dt>
+<dd>
+<p>Gaussian densities with a fixed mean. Data will be covered
+with ellipsoids with fixed centers.</p>
+</dd>
+</dl>
+<p>The implementation of <code>cec</code> function allows mixing of clustering types.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>cec</code> with the following attributes:
+<code>data</code>, <code>cluster</code>, <code>probability</code>, <code>centers</code>,
+<code>cost.function</code>, <code>nclusters</code>, <code>iterations</code>, <code>cost</code>,
+<code>covariances</code>, <code>covariances.model</code>, <code>time</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Spurek, P. and Tabor, J. (2014) Cross-Entropy Clustering
+<em>Pattern Recognition</em> <b>47, 9</b> 3046–3059
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>CEC-package</code>, <code>plot.cec</code>, 
+<code>print.cec</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Example of clustering a random data set of 3 Gaussians, with 10 random
+## initial centers and a minimal cluster size of 7% of the total data set.
+
+m1 &lt;- matrix(rnorm(2000, sd = 1), ncol = 2)
+m2 &lt;- matrix(rnorm(2000, mean = 3, sd = 1.5), ncol = 2)
+m3 &lt;- matrix(rnorm(2000, mean = 3, sd = 1), ncol = 2)
+m3[,2] &lt;- m3[, 2] - 5
+m &lt;- rbind(m1, m2, m3)
+
+plot(m, cex = 0.5, pch = 19)
+
+## Clustering result:
+Z &lt;- cec(m, 10, iter.max = 100, card.min = "7%")
+plot(Z)
+
+# Result:
+Z
+
+## Example of clustering mouse-like set using spherical Gaussian densities.
+m &lt;- mouseset(n = 7000, r.head = 2, r.left.ear = 1.1, r.right.ear = 1.1,
+left.ear.dist = 2.5, right.ear.dist = 2.5, dim = 2)
+plot(m, cex = 0.5, pch = 19)
+## Clustering result:
+Z &lt;- cec(m, 3, type = 'sp', iter.max = 100, nstart = 4, card.min = '5%')
+plot(Z)
+# Result:
+Z
+
+## Example of clustering data set 'Tset' using 'eigenvalues' clustering type.
+data(Tset)
+plot(Tset, cex = 0.5, pch = 19)
+centers &lt;- init.centers(Tset, 2)
+## Clustering result:
+Z &lt;- cec(Tset, 5, 'eigenvalues', param = c(0.02, 0.002), nstart = 4)
+plot(Z)
+# Result:
+Z
+
+## Example of using cec split method starting with a single cluster.
+data(mixShapes)
+plot(mixShapes, cex = 0.5, pch = 19)
+## Clustering result:
+Z &lt;- cec(mixShapes, 1, split = TRUE)
+plot(Z)
+# Result:
+Z
+
+</code></pre>
+
+
+</div>

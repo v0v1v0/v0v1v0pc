@@ -1,0 +1,165 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Regression with compositional data using the alpha-transformation</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Regression with compositional data using the <code class="reqn">\alpha</code>-transformation
+</h2>
+
+<h3>Description</h3>
+
+<p>Regression with compositional data using the <code class="reqn">\alpha</code>-transformation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">alfa.reg(y, x, a, xnew = NULL, yb = NULL)
+alfa.reg2(y, x, a, xnew = NULL)
+alfa.reg3(y, x, a = c(-1, 1), xnew = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+
+<p>A matrix with the compositional data.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+
+<p>A matrix with the continuous predictor variables or a data frame including categorical predictor variables.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>a</code></td>
+<td>
+
+<p>The value of the power transformation, it has to be between -1 and 1. If zero values are present it has to be greater than 0. If <code class="reqn">\alpha=0</code> the isometric log-ratio transformation is applied and the solution exists in a closed form, since it the classical mutivariate regression. For the alfa.reg2() this should be a vector of <code class="reqn">\alpha</code> values and the function call repeatedly the alfa.reg() function. For the alfa.reg3() function it should be a vector with two values, the endpoints of the interval of <code class="reqn">\alpha</code>. This function searches for the optimal vaue of <code class="reqn">\alpha</code> that minimizes the sum of squares of the errors. Using the <code>optimize</code> function it searches for the optimal value of <code class="reqn">\alpha</code>. Instead of choosing the value of <code class="reqn">\alpha</code> using <code>alfareg.tune</code> (that uses cross-validation) one can select it this way.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xnew</code></td>
+<td>
+
+<p>If you have new data use it, otherwise leave it NULL.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>yb</code></td>
+<td>
+
+<p>If you have already transformed the data using the <code class="reqn">\alpha</code>-transformation with the same <code class="reqn">\alpha</code> as given in the argument "a", put it here. Othewrise leave it NULL.
+</p>
+<p>This is intended to be used in the function <code>alfareg.tune</code> in order to speed up the process. The time difference in that function is small for small samples.
+But, if you have a few thousands and or a few more components, there will be bigger differences.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code class="reqn">\alpha</code>-transformation is applied to the compositional data first and then multivariate regression is applied. This involves numerical optimisation. The alfa.reg2() function accepts a vector with many values of <code class="reqn">\alpha</code>, while the the alfa.reg3() function searches for the value of <code class="reqn">\alpha</code> that minimizes the Kulback-Leibler divergence between the observed and the fitted compositional values. The functions are highly optimized.
+</p>
+
+
+<h3>Value</h3>
+
+<p>For the alfa.reg() function a list including:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>runtime</code></td>
+<td>
+
+<p>The time required by the regression.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>be</code></td>
+<td>
+
+<p>The beta coefficients.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seb</code></td>
+<td>
+
+<p>The standard error of the beta coefficients.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>est</code></td>
+<td>
+
+<p>The fitted values for xnew if xnew is not NULL.
+</p>
+</td>
+</tr>
+</table>
+<p>For the alfa.reg2() function a list with as many sublists as the number of values of <code class="reqn">\alpha</code>. Each element (sublist) of the list contains the above outcomes of the alfa.reg() function.
+</p>
+<p>For the alfa.reg3() function a list with all previous elements plus an output "alfa", the optimal value of <code class="reqn">\alpha</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Michail Tsagris.
+</p>
+<p>R implementation and documentation: Michail Tsagris <a href="mailto:mtsagris@uoc.gr">mtsagris@uoc.gr</a>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Tsagris M. (2015). Regression analysis with compositional data containing zero values.
+Chilean Journal of Statistics, 6(2): 47-57.
+https://arxiv.org/pdf/1508.01913v1.pdf
+</p>
+<p>Tsagris M.T., Preston S. and Wood A.T.A. (2011). A data-based power transformation for
+compositional data.
+In Proceedings of the 4th Compositional Data Analysis Workshop, Girona, Spain.
+https://arxiv.org/pdf/1106.1451.pdf
+</p>
+<p>Mardia K.V., Kent J.T., and Bibby J.M. (1979). Multivariate analysis. Academic press.
+</p>
+<p>Aitchison J. (1986). The statistical analysis of compositional data. Chapman &amp; Hall.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>alfareg.tune, diri.reg, js.compreg, kl.compreg,
+ols.compreg, comp.reg
+</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(MASS)
+x &lt;- as.vector(fgl[1:40, 1])
+y &lt;- as.matrix(fgl[1:40, 2:9])
+y &lt;- y / rowSums(y)
+mod &lt;- alfa.reg(y, x, 0.2)
+</code></pre>
+
+
+</div>

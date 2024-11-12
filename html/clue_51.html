@@ -1,0 +1,115 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fit_ultrametric_target</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fit Dissimilarities to a Hierarchy</h2>
+
+<h3>Description</h3>
+
+<p>Find the ultrametric from a target equivalence class of hierarchies
+which minimizes weighted Euclidean or Manhattan dissimilarity to a
+given dissimilarity object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ls_fit_ultrametric_target(x, y, weights = 1)
+l1_fit_ultrametric_target(x, y, weights = 1)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a dissimilarity object inheriting from class
+<code>"dist"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>a target hierarchy.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>a numeric vector or matrix with non-negative weights
+for obtaining a weighted fit.  If a matrix, its numbers of rows and
+columns must be the same as the number of objects in <code>x</code>.
+Otherwise, it is recycled to the number of elements in <code>x</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The target equivalence class consists of all dendrograms for which the
+corresponding <code class="reqn">n</code>-trees are the same as the one corresponding to
+<code>y</code>.  I.e., all splits are the same as for <code>y</code>, and
+optimization is over the height of the splits.
+</p>
+<p>The criterion function to be optimized over all ultrametrics from the
+equivalence class is <code class="reqn">\sum w_{ij} |x_{ij} - u_{ij}|^p</code>, where
+<code class="reqn">p = 2</code> in the Euclidean and <code class="reqn">p = 1</code> in the Manhattan case,
+respectively.
+</p>
+<p>The optimum can be computed as follows.  Suppose split <code class="reqn">s</code> joins
+object classes <code class="reqn">A</code> and <code class="reqn">B</code>.  As the ultrametric
+dissimilarities of all objects in <code class="reqn">A</code> to all objects in <code class="reqn">B</code>
+must be the same value, say, <code class="reqn">u_{A,B} = u_s</code>, the contribution
+from the split to the criterion function is of the form
+<code class="reqn">f_s(u_s) = \sum_{i \in A, j \in B} w_{ij} |x_{ij} - u_s|^p</code>.
+We need to minimize <code class="reqn">\sum_s f_s(u_s)</code> under the constraint that
+the <code class="reqn">u_s</code> form a non-decreasing sequence, which is accomplished by
+using the Pool Adjacent Violator Algorithm (<abbr><span class="acronym">PAVA</span></abbr>) using the
+weighted mean (<code class="reqn">p = 2</code>) or weighted median (<code class="reqn">p = 1</code>) for
+solving the blockwise optimization problems.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>"cl_ultrametric"</code> containing the
+optimal ultrametric distances.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>ls_fit_ultrametric</code> for finding the ultrametric
+minimizing Euclidean dissimilarity (without fixing the splits).
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data("Phonemes")
+## Note that the Phonemes data set has the consonant misclassification
+## probabilities, i.e., the similarities between the phonemes.
+d &lt;- as.dist(1 - Phonemes)
+## Find the maximal dominated and miminal dominating ultrametrics by
+## hclust() with single and complete linkage:
+y1 &lt;- hclust(d, "single")
+y2 &lt;- hclust(d, "complete")
+## Note that these are quite different:
+cl_dissimilarity(y1, y2, "gamma")
+## Now find the L2 optimal members of the respective dendrogram
+## equivalence classes.
+u1 &lt;- ls_fit_ultrametric_target(d, y1)
+u2 &lt;- ls_fit_ultrametric_target(d, y2)
+## Compute the L2 optimal ultrametric approximation to d.
+u &lt;- ls_fit_ultrametric(d)
+## And compare ...
+cl_dissimilarity(cl_ensemble(Opt = u, Single = u1, Complete = u2), d)
+## The solution obtained via complete linkage is quite close:
+cl_agreement(u2, u, "cophenetic")
+</code></pre>
+
+
+</div>

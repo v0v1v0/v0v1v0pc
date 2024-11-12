@@ -1,0 +1,163 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>computeADL</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>compute ADL coordinates by ray tracing</h2>
+
+<h3>Description</h3>
+
+<p>Consider a <b>colorSpec</b> object <code>x</code> with <code>type</code> equal to <code>responsivity.material</code>.
+The set of all possible material reflectance functions (or transmittance functions) 
+is convex, closed, and bounded (in any reasonable function space),
+and this implies that the set of all possible output responses 
+from <code>x</code> is also convex, closed, and bounded.
+The latter set is called the <em>object-color solid</em> or <em>Rösch Farbkörper</em> for <code>x</code>.
+A color on the boundary of the <em>object-color solid</em> is called an <em>optimal color</em>.
+The special points <b>W</b> (the response to the perfect reflecting diffuser)
+and <b>0</b> are on the boundary of this set.
+The interior of the line segment of neutrals joining <b>0</b> to <b>W</b> is in the interior of the
+<em>object-color solid</em>.
+It is natural to parameterize this segment from 0 to 1 (from <b>0</b> to <b>W</b>).
+The solid is symmetrical about the neutral gray midpoint <b>G</b>=<b>W/2</b>.
+</p>
+<p>Now suppose that <code>x</code> has 3 spectra (3 responses)
+and consider a color response <b>R</b> not equal to <b>G</b>.
+There is a ray based at <b>G</b> and passing through <b>R</b>
+that intersects the boundary of the 
+<em>object-color solid</em> at an <em>optimal color</em> <b>B</b> on the boundary
+with Logvinenko coordinates <code class="reqn">(\delta,\omega)</code>.
+If these 2 coordinates are combined with <code class="reqn">\alpha</code>, where
+<b>R</b> = <code class="reqn">(1-\alpha)</code><b>G</b> + <code class="reqn">\alpha</code><b>B</b>, 
+it yields the <em>Logvinenko coordinates</em>
+<code class="reqn">(\alpha,\delta,\omega)</code> of <b>R</b>.
+These coordinates are also denoted by ADL; see <b>References</b>.
+A response is in the <em>object-color solid</em> iff <code class="reqn">\alpha \le 1</code>.
+A response is  <em>optimal</em> iff <code class="reqn">\alpha=1</code>.
+</p>
+<p>The coordinates of <b>0</b> are <code class="reqn">(\alpha,\delta,\omega)</code>=(1,0,0).
+The coordinates of <b>W</b> are <code class="reqn">(\alpha,\delta,\omega)</code>=(1,1,0).
+The coordinates of <b>G</b> are undefined.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'colorSpec'
+computeADL( x, response )
+
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a <b>colorSpec</b> object with <code>type</code> equal to <code>responsivity.material</code> and 3 spectra </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>response</code></td>
+<td>
+<p>a numeric Nx3 matrix with responses in the rows, or a numeric vector
+that can be converted to such a matrix, by row.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For each response, a ray is computed and the ray tracing is
+done by <code>probeOptimalColors()</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>computeADL()</code> returns a <code>data.frame</code> with a row for each response.
+The columns in the data frame are:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>response</code></td>
+<td>
+<p>the input response vector</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ADL</code></td>
+<td>
+<p>the computed ADL coordinates of the response vector</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>omega</code></td>
+<td>
+<p>the reparameterized <code class="reqn">\lambda</code> in the interval [0,1];  see <b>References</b></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>lambda.1 and lambda.2 at the 2 transitions, in nm.
+lambda.1 &lt; lambda.2  =&gt; bandpass,
+and lambda.1 &gt; lambda.2 =&gt; bandstop.</p>
+</td>
+</tr>
+</table>
+<p>If an individual ray could not be traced,
+or if the optimal spectrum has more than 2 transitions,
+the row contains <code>NA</code> in appropriate columns.
+<br>
+In case of global error, the function returns <code>NULL</code>.
+</p>
+
+
+<h3>WARNING</h3>
+
+<p>Since this function is really a simple wrapper around 
+<code>probeOptimalColors()</code>,
+please see the performance warnings there.
+</p>
+
+
+<h3>References</h3>
+
+<p>Logvinenko, A. D.
+An object-color space. 
+<b>Journal of Vision</b>.
+9(11):5, 1-23, (2009).<br><code>https://jov.arvojournals.org/article.aspx?articleid=2203976</code>.
+doi:10.1167/9.11.5.
+</p>
+<p>Godau, Christoph and Brian Funt.
+XYZ to ADL: Calculating Logvinenko's Object Color Coordinates.
+Proceedings Eighteenth IS&amp;T Color Imaging Conference.
+San Antonio. Nov 2009.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>type()</code>,
+<code>probeOptimalColors()</code>,
+vignette <a href="../doc/optimals.pdf"><b>Plotting Chromaticity Loci of Optimal Colors</b></a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">D50.eye = product( D50.5nm, 'varmat', xyz1931.1nm, wave=seq(360,830,by=5) )
+computeADL( D50.eye, c(30,50,70) )
+##    response.X response.Y response.Z   ADL.alpha   ADL.delta  ADL.lambda     omega 
+##  1         30         50         70   0.7371475   0.5384104 473.3594572 0.3008817
+
+##  lambda.1 lambda.2
+##  427.2011 555.5261
+
+## since alpha &lt; 1, XYZ=c(30,50,70) is *inside* the object-color solid of D50.eye
+</code></pre>
+
+
+</div>

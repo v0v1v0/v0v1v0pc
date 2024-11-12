@@ -1,0 +1,113 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cocoPredict</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Prediction routines for nonstationary spatial models</h2>
+
+<h3>Description</h3>
+
+<p>Computes the point predictions and standard errors based on conditional Gaussian distributions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cocoPredict(coco.object, newdataset, newlocs, type = 'mean', ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>coco.object</code></td>
+<td>
+<p>(<code>S4</code>) a fitted coco object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdataset</code></td>
+<td>
+<p>(<code>data.frame</code>) a data.frame containing covariates present in model.list at prediction locations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newlocs</code></td>
+<td>
+<p>(<code>matrix</code>) a matrix with locations related to prediction locations, matching indexing of <code>newdataset</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>(<code>character</code>) whether <code>"mean"</code> or <code>"pred"</code>, which gives a point prediction for the former,
+as well as of point prediction and standard errors for the latter.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>(<code>character</code>) when coco.object has multiple realizations, specifying <code>"index.pred"</code> specifying which column of
+<code>coco.object@z</code> should be used to perform predictions.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>(<code>list</code>) a list with the conditional mean, splitted into the systematic large-scale variability <code>trend</code>,
+and due to stochastic <code>mean</code>, as well as standard errors <code>"sd.pred"</code> if <code>"pred"</code> is specified.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Federico Blasi
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+ 
+model.list &lt;- list('mean' = 0,
+'std.dev' = formula( ~ 1 + cov_x + cov_y),
+'scale' = formula( ~ 1 + cov_x + cov_y),
+'aniso' = 0,
+'tilt' = 0,
+'smooth' = 3/2,
+'nugget' = -Inf)
+
+coco_object &lt;- coco(type = 'dense',
+data = holes[[1]][1:100, ],
+locs = as.matrix(holes[[1]][1:100, 1:2]),
+z = holes[[1]][1:100, ]$z,
+model.list = model.list)
+
+optim_coco &lt;- cocoOptim(coco_object,
+boundaries = getBoundaries(coco_object,
+lower.value = -3, 3))
+
+coco_preds &lt;- cocoPredict(optim_coco, newdataset = holes[[2]],
+newlocs = as.matrix(holes[[2]][, 1:2]),
+type = "pred")
+
+coco_preds
+
+par(mfrow = c(1, 2))
+
+fields::quilt.plot(main = "mean", holes[[2]][, 1:2], 
+coco_preds$mean, xlim = c(-1, 1), ylim = c(-1, 1))
+fields::quilt.plot(main = "se", holes[[2]][, 1:2], 
+coco_preds$sd.pred, xlim = c(-1, 1), ylim = c(-1, 1))
+
+# Re-do it without considering cov_x and cov_y in the std.dev and scale and compare. 
+
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,166 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>%~==%</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Relative comparison of double-precision floating point numbers</h2>
+
+<h3>Description</h3>
+
+<p>Fast and efficient methods for comparing floating point numbers
+using relative differences.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">x %~==% y
+
+x %~&gt;=% y
+
+x %~&gt;% y
+
+x %~&lt;=% y
+
+x %~&lt;% y
+
+double_equal(
+  x,
+  y,
+  tol = getOption("cppdoubles.tolerance", sqrt(.Machine$double.eps))
+)
+
+double_gte(
+  x,
+  y,
+  tol = getOption("cppdoubles.tolerance", sqrt(.Machine$double.eps))
+)
+
+double_gt(
+  x,
+  y,
+  tol = getOption("cppdoubles.tolerance", sqrt(.Machine$double.eps))
+)
+
+double_lte(
+  x,
+  y,
+  tol = getOption("cppdoubles.tolerance", sqrt(.Machine$double.eps))
+)
+
+double_lt(
+  x,
+  y,
+  tol = getOption("cppdoubles.tolerance", sqrt(.Machine$double.eps))
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A double vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>A double vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol</code></td>
+<td>
+<p>A double vector of tolerances.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>When either <code>x[i]</code> or <code>y[i]</code> contain a number very close to zero,
+absolute differences are used, otherwise relative differences are used.
+</p>
+<p>The output of <code>double_equal()</code> is commutative,
+which means the order of arguments don't matter
+whereas this is not the case for <code>all.equal.numeric()</code>.
+</p>
+<p>The calculation is done in C++ and is quite efficient.
+Recycling follows the usual R rules and is done without allocating
+additional memory.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A logical vector.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(cppdoubles)
+
+### Basic usage ###
+
+# Standard equality operator
+sqrt(2)^2 == 2
+
+# approximate equality operator
+sqrt(2)^2 %~==% 2
+
+sqrt(2)^2 %~&gt;=% 2
+sqrt(2)^2 %~&lt;=% 2
+sqrt(2)^2 %~&gt;% 2
+sqrt(2)^2 %~&lt;% 2
+
+# Alternatively
+double_equal(2, sqrt(2)^2)
+double_gte(2, sqrt(2)^2)
+double_lte(2, sqrt(2)^2)
+double_gt(2, sqrt(2)^2)
+double_lt(2, sqrt(2)^2)
+
+rel_diff(1, 1 + 2e-10)
+double_equal(1, 1 + 2e-10, tol = sqrt(.Machine$double.eps))
+double_equal(1, 1 + 2e-10, tol = 1e-10)
+
+# Optionally set a threshold for all comparison
+options(cppdoubles.tolerance = 1e-10)
+double_equal(1, 1 + 2e-10)
+
+# Floating point errors magnified example
+
+x1 &lt;- 1.1 * 100 * 10^200
+x2 &lt;- 110 * 10^200
+
+abs_diff(x1, x2) # Large absolute difference
+rel_diff(x1, x2) # Very small relative difference as expected
+
+double_equal(x1, x2)
+
+# all.equal is not commutative but double_equal is
+all.equal(10^-8, 2 * 10^-8)
+all.equal(2 * 10^-8, 10^-8)
+
+double_equal(10^-8, 2 * 10^-8)
+double_equal(2 * 10^-8, 10^-8)
+
+# All comparisons are vectorised and recycled
+
+double_equal(sqrt(1:10),
+             sqrt(1:5),
+             tol = c(-Inf, 1e-10, Inf))
+
+# One can check for whole numbers like so
+whole_number &lt;- function(x, tol = getOption("cppdoubles.tolerance", sqrt(.Machine$double.eps))){
+  double_equal(x, round(x))
+}
+whole_number(seq(-5, 5, 0.25))
+</code></pre>
+
+
+</div>

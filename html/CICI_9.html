@@ -1,0 +1,155 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>model.formulas.update</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Update model formulas based on variable screening</h2>
+
+<h3>Description</h3>
+
+<p>Wrapper function to facilitate variable screening on all models generated through <code>make.model.formulas</code> and return updated formulas in the appropriate format for <code>gformula</code>. </p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">model.formulas.update(formulas, X, screening = screen.glmnet.cramer,
+                      with.s = FALSE, by= NA, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formulas</code></td>
+<td>
+
+<p>A named list of length 4 containing model formulas for all Y-/L-/A- and Cnodes. These are likely formulas returned from <code>make.model.formulas</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+
+<p>A data frame on which the model formulas are to be evaluated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>screening</code></td>
+<td>
+
+<p>A screening function. Default is <code>screen.glmnet.cramer</code>, see Details below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>with.s</code></td>
+<td>
+
+<p>Logical. If TRUE, a spline, i.e. s(), will be added to <em>all</em> continuous variables.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by</code></td>
+<td>
+
+<p>A character vector specifying the variables with which to multiply the smooth (if <code>with.s=TRUE</code>). 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+
+<p>optional arguments to be passed to the screening algorithm
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The default screening algorithm uses LASSO for variable screening (and Cramer's V for the categorized version of all variables if LASSO fails). It is possible to provide user-specific screening algorithms. 
+User-specific algorithms should take the data as first argument, <em>one</em> model formula (i.e. one entry of the list in <code>model.formulas</code>) as second argument and return a vector of strings, containing the variable names that remain after screening. Another screening algorithm available in the package is <code>screen.cramersv</code>, which categorizes all variables, calculates their association with the outcome based on Cramer's <em>V</em> and selects the 4 variables with strongest associations (can be changed with option <code>nscreen</code>).
+The manual provides more information.
+</p>
+<p>The fitted models of the updated models can be evaluated with <code>fit.updated.formulas</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of length 4 containing the updated model formulas:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>Lnames</code></td>
+<td>
+<p>A vector of strings containing updated model formulas for all L nodes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Ynames</code></td>
+<td>
+<p>A vector of strings containing updated model formulas for all Y nodes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Anames</code></td>
+<td>
+<p>A vector of strings containing updated model formulas for all A nodes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Cnames</code></td>
+<td>
+<p>A vector of strings containing updated model formulas for all C nodes.</p>
+</td>
+</tr>
+</table>
+<h3>See Also</h3>
+
+<p><code>make.model.formulas</code>, <code>model.update</code>, <code>fit.updated.formulas</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data(EFV)
+
+# first: generate generic model formulas
+m &lt;- make.model.formulas(X=EFV,
+                         Lnodes  = c("adherence.1","weight.1",
+                                     "adherence.2","weight.2",
+                                     "adherence.3","weight.3",
+                                     "adherence.4","weight.4"
+                                    ),
+                         Ynodes  = c("VL.0","VL.1","VL.2","VL.3","VL.4"),
+                         Anodes  = c("efv.0","efv.1","efv.2","efv.3","efv.4"),
+                         evaluate=FALSE) 
+                         
+# second: update these model formulas based on variable screening with LASSO
+glmnet.formulas &lt;-  model.formulas.update(m$model.names, EFV)
+glmnet.formulas 
+
+
+# third: use these models for estimation
+est &lt;- gformula(X=EFV,
+                Lnodes  = c("adherence.1","weight.1",
+                            "adherence.2","weight.2",
+                            "adherence.3","weight.3",
+                            "adherence.4","weight.4"
+                ),
+                Ynodes  = c("VL.0","VL.1","VL.2","VL.3","VL.4"),
+                Anodes  = c("efv.0","efv.1","efv.2","efv.3","efv.4"),
+                Yform=glmnet.formulas$Ynames, Lform=glmnet.formulas$Lnames,
+                abar=seq(0,2,1)
+)
+est
+
+</code></pre>
+
+
+</div>

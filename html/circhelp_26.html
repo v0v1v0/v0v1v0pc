@@ -1,0 +1,247 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>remove_cardinal_biases</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Remove cardinal biases</h2>
+
+<h3>Description</h3>
+
+<p>Remove cardinal biases
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">remove_cardinal_biases(
+  err,
+  x,
+  space = "180",
+  bias_type = "fit",
+  plots = "hide",
+  poly_deg = 4,
+  var_sigma = TRUE,
+  var_sigma_poly_deg = 4,
+  reassign_at_boundaries = TRUE,
+  reassign_range = 2,
+  break_points = NULL,
+  init_outliers = NULL,
+  debug = FALSE,
+  do_plots = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>err</code></td>
+<td>
+<p>a vector of errors, deviations of response from the true stimuli</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a vector of true stimuli in degrees (see space)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>space</code></td>
+<td>
+<p>circular space to use (a string: <code>180</code> or <code>360</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bias_type</code></td>
+<td>
+<p>bias type to use (<code>fit</code>, <code>card</code>, <code>obl</code>, or <code>custom</code>, see details)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plots</code></td>
+<td>
+<p>a string <code>hide</code>, <code>show</code>, or <code>return</code> to hide, show, or return plots (default: <code>hide</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>poly_deg</code></td>
+<td>
+<p>degree of the fitted polynomials for each bin (default: 4)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var_sigma</code></td>
+<td>
+<p>allow standard deviation (width) of the fitted response distribution to vary as a function of distance to the nearest cardinal (default: True)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var_sigma_poly_deg</code></td>
+<td>
+<p>degree of the fitted polynomials for each bin for the first approximation for the response distribution to select the best fitting model (default: 4)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reassign_at_boundaries</code></td>
+<td>
+<p>select the bin for the observations at the boundaries between bins based on the best-fitting polynomial (default: True)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reassign_range</code></td>
+<td>
+<p>maximum distance to the boundary at which reassignment can occur (default: 2 degrees)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>break_points</code></td>
+<td>
+<p>can be used to assign custom break points instead of cardinal/oblique ones with <code>bias_type</code> set to <code>custom</code> (default: NULL)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>init_outliers</code></td>
+<td>
+<p>a vector determining which errors are initially assumed to be outliers (default: NULL)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>debug</code></td>
+<td>
+<p>print some extra info (default: False)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>do_plots</code></td>
+<td>
+<p>deprecated, use the parameter <code>plots</code> instead</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If the <code>bias_type</code> is set to <code>fit</code>, the function computes the cardinal biases in the following way:
+</p>
+
+<ol>
+<li>
+<p> Create two sets of bins, splitting the stimuli vector into bins centered at cardinal and at oblique directions.
+</p>
+</li>
+<li>
+<p> For each set of bins, fit a nth-degree polynomial for the responses in each bin, optionally allowing the distribution of responses to vary in width as a function of distance to the nearest cardinal (regardless of whether the bins are centered at the cardinal or at the oblique, the width of the response distribution usually increases as the distance to cardinals increase).
+</p>
+</li>
+<li>
+<p> Choose the best-fitting model between the one using cardinal and the one using oblique bins.
+</p>
+</li>
+<li>
+<p> Compute the residuals of the best-fitting model - that's your bias-corrected error - and the biases (see below).
+</p>
+</li>
+</ol>
+<p>The bias is computed by flipping the sign of errors when the average predicted error is negative, so, that, for example, if on average the responses are shifted clockwise relative to the true values, the trial-by-trial error would count as bias when it is also shifted clockwise.
+</p>
+<p>If <code>bias_type</code> is set to <code>obl</code> or <code>card</code>, only one set of bins is used, centred at cardinal or oblique angles, respectively.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If <code>plots=='return'</code>, returns the three plots showing the biases
+(combined together with <code>patchwork::wrap_plots()</code>). Otherwise, returns a list with the following elements:
+</p>
+
+<ul>
+<li>
+<p> is_outlier - 0 for outliers (defined as <code style="white-space: pre;">⁠±3*pred_sigma⁠</code> for the model with varying sigma or as <code style="white-space: pre;">⁠±3\*SD⁠</code> for the simple model)
+</p>
+</li>
+<li>
+<p> pred predicted error
+</p>
+</li>
+<li>
+<p> be_c error corrected for biases (<code style="white-space: pre;">⁠be_c = observed error - pred⁠</code>)
+</p>
+</li>
+<li>
+<p> which_bin the numeric ID of the bin that the stimulus belong to
+</p>
+</li>
+<li>
+<p> bias the bias computed as described above
+</p>
+</li>
+<li>
+<p> bias_typ bias type (cardinal or oblique)
+</p>
+</li>
+<li>
+<p> pred_lin predicted error for a simple linear model for comparison
+</p>
+</li>
+<li>
+<p> pred_sigma predicted SD of the error distribution
+</p>
+</li>
+<li>
+<p> coef_sigma_int, coef_sigma_slope intercept and slope for the sigma prediction
+</p>
+</li>
+</ul>
+<h3>References</h3>
+
+
+
+<ul>
+<li>
+<p> Chetverikov, A., &amp; Jehee, J. F. M. (2023). Motion direction is represented as a bimodal probability distribution in the human visual cortex. Nature Communications, 14(7634). <a href="https://doi.org/10.1038/s41467-023-43251-w">doi:10.1038/s41467-023-43251-w</a>
+</p>
+</li>
+<li>
+<p> van Bergen, R. S., Ma, W. J., Pratte, M. S., &amp; Jehee, J. F. M. (2015). Sensory uncertainty decoded from visual cortex predicts behavior. Nature Neuroscience, 18(12), 1728–1730. <a href="https://doi.org/10.1038/nn.4150">doi:10.1038/nn.4150</a>
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Data in orientation domain from Pascucci et al. (2019, PLOS Bio),
+# https://doi.org/10.5281/zenodo.2544946
+
+ex_data &lt;- Pascucci_et_al_2019_data[observer == 4, ]
+remove_cardinal_biases(ex_data$err, ex_data$orientation, plots = "show")
+
+# Data in motion domain from Bae &amp; Luck (2018, Neuroimage),
+# https://osf.io/2h6w9/
+ex_data_bae &lt;- Bae_Luck_2018_data[subject_Num == unique(subject_Num)[5], ]
+remove_cardinal_biases(ex_data_bae$err, ex_data_bae$TargetDirection,
+  space = "360", plots = "show"
+)
+
+# Using a stricter initial outlier boundary
+
+remove_cardinal_biases(ex_data_bae$err, ex_data_bae$TargetDirection,
+  space = "360", plots = "show",
+  init_outliers = abs(ex_data_bae$err) &gt; 60
+)
+
+# We can also use just one bin by setting `bias_type` to custom
+# and setting the `break_points` at the ends of the range for x
+
+remove_cardinal_biases(ex_data_bae$err, ex_data_bae$TargetDirection,
+  space = "360", bias_type = "custom",
+  break_points = c(-180, 180), plots = "show",
+  reassign_at_boundaries = FALSE, poly_deg = 8,
+  init_outliers = abs(ex_data_bae$err) &gt; 60
+)
+
+</code></pre>
+
+
+</div>

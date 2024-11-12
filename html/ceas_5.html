@@ -1,0 +1,118 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>get_energetics</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate ATP Production from OXPHOS and Glycolysis</h2>
+
+<h3>Description</h3>
+
+<p>Calculates ATP production from glycolysis and OXPHOS at points defined in patitioned_data
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">get_energetics(partitioned_data, ph, pka, buffer)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>partitioned_data</code></td>
+<td>
+<p>a data.table of organized Seahorse OCR and ECAR
+rates based on timepoints from the assay cycle. Returned by <code>partition_data</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ph</code></td>
+<td>
+<p>pH value for energetics calculation (for XF Media, 7.5)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pka</code></td>
+<td>
+<p>pKa value for energetics calculation (for XF Media, 6.063)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>buffer</code></td>
+<td>
+<p>buffer for energetics calculation (for XF Media, 0.1 mpH/pmol H+)</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>TODO: check that all symbols are defined
+</p>
+<p>Proton production rate (PPR):
+</p>
+<p style="text-align: center;"><code class="reqn">\text{PPR} = \frac{\text{ECAR value}}{\text{buffer}}</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">
+  \text{PPR}_{\text{mito}} = \frac{10^{\text{pH}-\text{pK}_a}}{1+10^{\text{pH}-\text{pK}_a}} \cdot \frac{\text{H}^+}{\text{O}_2} \cdot \text{OCR}
+</code>
+</p>
+
+<p>calculates the proton production from glucose during its conversion to bicarbonate and <code class="reqn">\text{H}^+</code> assuming max <code class="reqn">\frac{\text{H}^+}{\text{O}_2}</code> of 1
+</p>
+<p style="text-align: center;"><code class="reqn">
+ \text{PPR}_\text{glyc} = \text{PPR} - \text{PPR}_\text{resp}
+</code>
+</p>
+
+<p>calculates the proton production from glucose during its conversion to lactate + <code class="reqn">\text{H}^+</code>
+</p>
+<p>Joules of ATP (JATP) production:
+</p>
+<p style="text-align: center;"><code class="reqn">
+  \text{ATP}_{\text{glyc}} =
+   \Bigl(\text{PPR}_\text{glyc} \cdot \frac{\text{ATP}}{\text{lactate}}\Bigl) +
+   \Bigl(\text{MITO}_\text{resp} \cdot 2 \cdot \frac{\text{P}}{\text{O}_\text{glyc}}\Bigl)
+</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">
+ \frac{\text{ATP}}{\text{lactate}} = 1
+</code>
+</p>
+
+<p>with
+<code class="reqn">\frac{\text{P}}{{\text{O}_\text{glyc}}}</code> = 0.167 for glucose (0.242 for glycogen).
+</p>
+<p style="text-align: center;"><code class="reqn">
+ \text{ATP}_\text{resp} =
+  \Bigl(\text{coupled MITO}_\text{resp} \cdot 2 \cdot \frac{\text{P}}{\text{O}_\text{oxphos}}\Bigl) +
+  \Bigl(\text{MITO}_\text{resp} \cdot 2 \cdot \frac{\text{P}}{\text{O}_\text{TCA}}\Bigl)
+</code>
+</p>
+
+<p>with <code class="reqn">\frac{\text{P}}{{\text{O}_\text{oxphos}}}</code>  = 2.486 and <code class="reqn">\frac{\text{P}}{{\text{O}_\text{TCA}}}</code> = 0.167.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a <code>data.table</code> of glycolysis and OXPHOS rates
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">rep_list &lt;- system.file("extdata", package = "ceas") |&gt;
+  list.files(pattern = "*.xlsx", full.names = TRUE)
+seahorse_rates &lt;- read_data(rep_list, sheet = 2)
+partitioned_data &lt;- partition_data(seahorse_rates)
+energetics &lt;- get_energetics(partitioned_data, ph = 7.4, pka = 6.093, buffer = 0.1)
+head(energetics, n = 10)
+</code></pre>
+
+
+</div>

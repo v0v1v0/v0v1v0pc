@@ -1,0 +1,337 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>make_decision_trial</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Checks whether decision criteria are met and updates trial results accordingly.</h2>
+
+<h3>Description</h3>
+
+<p>Given a res_list object, checks the supplied decision criteria and saves the results in the res_list file.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">make_decision_trial(
+  res_list,
+  which_cohort,
+  test_strat = 3,
+  sharing_type = "all",
+  Bayes_Sup = NULL,
+  Bayes_Fut = NULL,
+  Bayes_SA_Sup = NULL,
+  Bayes_SA_Fut = NULL,
+  w = 0.5,
+  P_Sup = NULL,
+  P_Fut = NULL,
+  Est_Sup_Fut = NULL,
+  CI_Sup_Fut = NULL,
+  interim,
+  beta_prior = 0.5,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>res_list</code></td>
+<td>
+<p>List item containing individual cohort trial results so far in a format used by the
+other functions in this package</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>which_cohort</code></td>
+<td>
+<p>Current cohort that should be evaluated</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test_strat</code></td>
+<td>
+<p>Testing strategy used; 1 = Combo vs. both monos, 2 = 1 + Add-on Mono vs. Placebo, 3 = 2 + Backbone mono vs. placebo</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sharing_type</code></td>
+<td>
+<p>What backbone and placebo data should be used for comparisons; Default is "all". Other options are "concurrent" or "dynamic" or "cohort".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Bayes_Sup</code></td>
+<td>
+<p>List of matrices with rows corresponding to number of multiple Bayesian posterior two-arm combination criteria for superiority</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Bayes_Fut</code></td>
+<td>
+<p>List of matrices with rows corresponding to number of multiple Bayesian posterior two-arm combination criteria for futility</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Bayes_SA_Sup</code></td>
+<td>
+<p>List of matrices with rows corresponding to number of multiple Bayesian posterior single-arm combination criteria for superiority</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Bayes_SA_Fut</code></td>
+<td>
+<p>List of matrices with rows corresponding to number of multiple Bayesian posterior single-arm combination criteria for futility</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>If dynamic borrowing, what is the prior choice for w. Default is 0.5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>P_Sup</code></td>
+<td>
+<p>List with sublists corresponding to number of multiple frequentist test-based combination criteria for superiority</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>P_Fut</code></td>
+<td>
+<p>List with sublists corresponding to number of multiple frequentist test-based combination criteria for futility</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Est_Sup_Fut</code></td>
+<td>
+<p>List with sublists corresponding to number of multiple point estimate based combination criteria for superiority and futility</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CI_Sup_Fut</code></td>
+<td>
+<p>List with sublists corresponding to number of multiple confidence interval based combination criteria for superiority and futility</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interim</code></td>
+<td>
+<p>Is the analysis conducted an interim or a final analysis?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta_prior</code></td>
+<td>
+<p>Prior parameter for all Beta Distributions. Default is 0.5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments inherited from upper layer functions</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>List containing original res_list and results of decision rules
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Example 1
+
+res_list &lt;- list(c(list(decision = rep("none", 2), alloc_ratio = c(1,1,1,1),
+                   n_thresh = c(Inf, 210)),
+           rep(list(list(rr = NULL, resp_bio = NULL, resp_hist = NULL, n = NULL)), 4)))
+
+names(res_list)[1] &lt;- paste0("Cohort", 1)
+names(res_list[[1]])[4:7] &lt;- c("Comb", "Mono", "Back", "Plac")
+res_list[[1]][[4]]$rr &lt;- 0.2
+res_list[[1]][[5]]$rr &lt;- 0.15
+res_list[[1]][[6]]$rr &lt;- 0.15
+res_list[[1]][[7]]$rr &lt;- 0.10
+
+r141 &lt;- rbinom(1, 70, prob = res_list[[1]][[4]]$rr)
+res_list[[1]][[4]]$resp_bio &lt;- gtools::permute(c(rep(1, r141), rep(0, 70 - r141)))
+r151 &lt;- rbinom(1, 70, prob = res_list[[1]][[5]]$rr)
+res_list[[1]][[5]]$resp_bio &lt;- gtools::permute(c(rep(1, r151), rep(0, 70 - r151)))
+r161 &lt;- rbinom(1, 70, prob = res_list[[1]][[6]]$rr)
+res_list[[1]][[6]]$resp_bio &lt;- gtools::permute(c(rep(1, r161), rep(0, 70 - r161)))
+r171 &lt;- rbinom(1, 70, prob = res_list[[1]][[7]]$rr)
+res_list[[1]][[7]]$resp_bio &lt;- gtools::permute(c(rep(1, r171), rep(0, 70 - r171)))
+r142 &lt;- rbinom(1, 70, prob = res_list[[1]][[4]]$rr)
+res_list[[1]][[4]]$resp_hist &lt;- gtools::permute(c(rep(1, r142), rep(0, 70 - r142)))
+r152 &lt;- rbinom(1, 70, prob = res_list[[1]][[5]]$rr)
+res_list[[1]][[5]]$resp_hist &lt;- gtools::permute(c(rep(1, r152), rep(0, 70 - r152)))
+r162 &lt;- rbinom(1, 70, prob = res_list[[1]][[6]]$rr)
+res_list[[1]][[6]]$resp_hist &lt;- gtools::permute(c(rep(1, r162), rep(0, 70 - r162)))
+r172 &lt;- rbinom(1, 70, prob = res_list[[1]][[7]]$rr)
+res_list[[1]][[7]]$resp_hist &lt;- gtools::permute(c(rep(1, r172), rep(0, 70 - r172)))
+
+res_list[[1]][[4]]$n &lt;- rep(1, 70)
+res_list[[1]][[5]]$n &lt;- rep(1, 70)
+res_list[[1]][[6]]$n &lt;- rep(1, 70)
+res_list[[1]][[7]]$n &lt;- rep(1, 70)
+
+# Comparison Combo vs Mono
+Bayes_Sup1 &lt;- matrix(nrow = 3, ncol = 3)
+Bayes_Sup1[1,] &lt;- c(0.00, 0.95, 0.90)
+Bayes_Sup1[2,] &lt;- c(0.10, 0.80, 0.75)
+Bayes_Sup1[3,] &lt;- c(0.15, 0.50, 1.00)
+# Comparison Combo vs Backbone
+Bayes_Sup2 &lt;- matrix(nrow = 3, ncol = 3)
+Bayes_Sup2[1,] &lt;- c(0.00, 0.95, 0.90)
+Bayes_Sup2[2,] &lt;- c(NA, NA, NA)
+Bayes_Sup2[3,] &lt;- c(NA, NA, NA)
+# Comparison Mono vs Placebo
+Bayes_Sup3 &lt;- matrix(nrow = 3, ncol = 3)
+Bayes_Sup3[1,] &lt;- c(0.00, 0.95, 0.90)
+Bayes_Sup3[2,] &lt;- c(0.10, 0.80, 0.75)
+Bayes_Sup3[3,] &lt;- c(NA, NA, NA)
+#' # Comparison Backbone vs Placebo
+Bayes_Sup4 &lt;- matrix(nrow = 3, ncol = 3)
+Bayes_Sup4[1,] &lt;- c(0.00, 0.95, 0.90)
+Bayes_Sup4[2,] &lt;- c(0.10, 0.80, 0.75)
+Bayes_Sup4[3,] &lt;- c(NA, NA, NA)
+Bayes_Sup &lt;- list(list(Bayes_Sup1, Bayes_Sup2, Bayes_Sup3, Bayes_Sup4),
+                  list(Bayes_Sup1, Bayes_Sup2, Bayes_Sup3, Bayes_Sup4))
+
+sharing_type &lt;- "all"
+interim &lt;- TRUE
+which_cohort &lt;- 1
+missing_prob &lt;- 0.5
+seed_missing &lt;- 100
+
+make_decision_trial(
+res_list = res_list, which_cohort = which_cohort,
+interim = interim, missing_prob = missing_prob,
+Bayes_Sup = Bayes_Sup, sharing_type = sharing_type,
+seed_missing = seed_missing,
+)
+
+# Multiple decision rules
+
+# Vergleich Combo vs Mono
+Bayes_Fut1 &lt;- matrix(nrow = 1, ncol = 2)
+Bayes_Fut1[1,] &lt;- c(NA, NA)
+# Vergleich Combo vs Backbone
+Bayes_Fut2 &lt;- matrix(nrow = 1, ncol = 2)
+Bayes_Fut2[1,] &lt;- c(NA, NA)
+# Vergleich Mono vs Placebo
+Bayes_Fut3 &lt;- matrix(nrow = 1, ncol = 2)
+Bayes_Fut3[1,] &lt;- c(0.00, 0.60)
+Bayes_Fut4 &lt;- matrix(nrow = 1, ncol = 2)
+Bayes_Fut4[1,] &lt;- c(0.00, 0.60)
+Bayes_Fut &lt;- list(list(Bayes_Fut1, Bayes_Fut2, Bayes_Fut3, Bayes_Fut4),
+                  list(Bayes_Fut1, Bayes_Fut2, Bayes_Fut3, Bayes_Fut4))
+
+# Combo
+Bayes_SA_Sup1 &lt;- matrix(nrow = 1, ncol = 3)
+Bayes_SA_Sup1[1,] &lt;- c(0.20, 0.95, 0.90)
+# Mono
+Bayes_SA_Sup2 &lt;- matrix(nrow = 1, ncol = 3)
+Bayes_SA_Sup2[1,] &lt;- c(0.15, 0.80, 0.75)
+# Backbone
+Bayes_SA_Sup3 &lt;- matrix(nrow = 1, ncol = 3)
+Bayes_SA_Sup3[1,] &lt;- c(0.15, 0.80, 0.75)
+# Placebo
+Bayes_SA_Sup4 &lt;- matrix(nrow = 1, ncol = 3)
+Bayes_SA_Sup4[1,] &lt;- c(0.15, 0.80, 0.75)
+
+Bayes_SA_Sup &lt;- list(list(Bayes_SA_Sup1, Bayes_SA_Sup2, Bayes_SA_Sup3, Bayes_SA_Sup4),
+                     list(Bayes_SA_Sup1, Bayes_SA_Sup2, Bayes_SA_Sup3, Bayes_SA_Sup4))
+
+## Combo
+Bayes_SA_Fut1 &lt;- matrix(nrow = 1, ncol = 2)
+Bayes_SA_Fut1[1,] &lt;- c(0.20, 0.50)
+# Mono
+Bayes_SA_Fut2 &lt;- matrix(nrow = 1, ncol = 2)
+Bayes_SA_Fut2[1,] &lt;- c(0.15, 0.50)
+# Backbone
+Bayes_SA_Fut3 &lt;- matrix(nrow = 1, ncol = 2)
+Bayes_SA_Fut3[1,] &lt;- c(0.15, 0.50)
+# Placebo
+Bayes_SA_Fut4 &lt;- matrix(nrow = 1, ncol = 2)
+Bayes_SA_Fut4[1,] &lt;- c(0.15, 0.50)
+
+Bayes_SA_Fut &lt;- list(list(Bayes_SA_Fut1, Bayes_SA_Fut2, Bayes_SA_Fut3, Bayes_SA_Fut4),
+                     list(Bayes_SA_Fut1, Bayes_SA_Fut2, Bayes_SA_Fut3, Bayes_SA_Fut4))
+
+# Comparison Combo vs Mono
+P_Sup1 &lt;- list(list(
+testfun = function(x) stats::prop.test(x, alternative = "less", correct = FALSE),
+p_sup = 0.025, p_prom = 0.10, p_adj = "B"))
+# Comparison Combo vs Backbone
+P_Sup2 &lt;- list(list(
+testfun = function(x) stats::prop.test(x, alternative = "less", correct = FALSE),
+p_sup = 0.025, p_prom = 0.10, p_adj = "B"))
+# Comparison Mono vs Placebo
+P_Sup3 &lt;- list(list(
+testfun = function(x) stats::prop.test(x, alternative = "less", correct = FALSE),
+p_sup = 0.050, p_prom = 0.10, p_adj = "B"))
+P_Sup4 &lt;- list(list(
+testfun = function(x) stats::prop.test(x, alternative = "less", correct = FALSE),
+p_sup = 0.050, p_prom = 0.10, p_adj = "B"))
+P_Sup &lt;- list(list(P_Sup1, P_Sup2, P_Sup3, P_Sup4),
+              list(P_Sup1, P_Sup2, P_Sup3, P_Sup4))
+
+# Comparison Combo vs Mono
+P_Fut1 &lt;- list(list(
+testfun = function(x) stats::prop.test(x, alternative = "less", correct = FALSE),
+p_fut = 0.5, p_adj = "none"))
+# Comparison Combo vs Backbone
+P_Fut2 &lt;- list(list(
+testfun = function(x) stats::prop.test(x, alternative = "less", correct = FALSE),
+p_fut = 0.5, p_adj = "none"))
+# Comparison Mono vs Placebo
+P_Fut3 &lt;- list(list(
+testfun = function(x) stats::prop.test(x, alternative = "less", correct = FALSE),
+p_fut = 0.5, p_adj = "none"))
+# Comparison Backbone Placebo
+P_Fut4 &lt;- list(list(
+testfun = function(x) stats::prop.test(x, alternative = "less", correct = FALSE),
+p_fut = 0.5, p_adj = "none"))
+P_Fut &lt;- list(list(P_Fut1, P_Fut2, P_Fut3, P_Fut4),
+              list(P_Fut1, P_Fut2, P_Fut3, P_Fut4))
+
+# Comparison Combo vs Mono
+Est_Sup_Fut1 &lt;- list(list(est = "AR", p_hat_sup = 0.6, p_hat_fut = 0.1, p_hat_prom = 0.5))
+# Comparison Combo vs Backbone
+Est_Sup_Fut2 &lt;- list(list(est = "RR", p_hat_sup = 1.25, p_hat_fut = 0.75, p_hat_prom = 1.5))
+# Comparison Mono vs Placebo
+Est_Sup_Fut3 &lt;- list(list(est = "OR", p_hat_sup = 1.50, p_hat_fut = 0.75, p_hat_prom = 2))
+Est_Sup_Fut4 &lt;- list(list(est = "OR", p_hat_sup = 1.50, p_hat_fut = 0.75, p_hat_prom = 2))
+Est_Sup_Fut &lt;- list(list(Est_Sup_Fut1, Est_Sup_Fut2, Est_Sup_Fut3, Est_Sup_Fut4),
+                    list(Est_Sup_Fut1, Est_Sup_Fut2, Est_Sup_Fut3, Est_Sup_Fut4))
+
+# Comparison Combo vs Mono
+CI_Sup_Fut1 &lt;- list(list(est = "AR", ci = 0.95, p_hat_lower_sup = 0.35,
+                   p_hat_upper_fut = 0.25, p_hat_lower_prom = 0.3))
+# Comparison Combo vs Backbone
+CI_Sup_Fut2 &lt;- list(list(est = "RR", ci = 0.95, p_hat_lower_sup = 1.10,
+                   p_hat_upper_fut = 1.10, p_hat_lower_prom = 1.05))
+# Comparison Mono vs Placebo
+CI_Sup_Fut3 &lt;- list(list(est = "OR", ci = 0.95, p_hat_lower_sup = 1.20,
+                   p_hat_upper_fut = 1.20, p_hat_lower_prom = 1.10))
+CI_Sup_Fut4 &lt;- list(list(est = "OR", ci = 0.95, p_hat_lower_sup = 1.20,
+                   p_hat_upper_fut = 1.20, p_hat_lower_prom = 1.10))
+CI_Sup_Fut &lt;- list(list(CI_Sup_Fut1, CI_Sup_Fut2, CI_Sup_Fut3, CI_Sup_Fut4),
+                   list(CI_Sup_Fut1, CI_Sup_Fut2, CI_Sup_Fut3, CI_Sup_Fut4))
+
+make_decision_trial(res_list = res_list, which_cohort = which_cohort, interim = interim,
+Bayes_Sup = Bayes_Sup, sharing_type = sharing_type,
+Bayes_Fut = Bayes_Fut, Bayes_SA_Sup = Bayes_SA_Sup, Bayes_SA_Fut = Bayes_SA_Fut, P_Sup = P_Sup,
+P_Fut = P_Fut, Est_Sup_Fut = Est_Sup_Fut, CI_Sup_Fut = CI_Sup_Fut
+)
+
+</code></pre>
+
+
+</div>

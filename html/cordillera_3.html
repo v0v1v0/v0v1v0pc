@@ -1,0 +1,218 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cordillera</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>The OPTICS Cordillera</h2>
+
+<h3>Description</h3>
+
+<p>Calculates the OPTICS Cordillera as described in Rusch et al. (2017). Based on optics in dbscan package.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cordillera(
+  X,
+  q = 2,
+  minpts = 2,
+  epsilon,
+  distmeth = "euclidean",
+  dmax = NULL,
+  rang,
+  digits = 10,
+  scale = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>numeric matrix or data frame representing coordinates of points, or a symmetric matrix of distance of points or an object of class dist. Passed to <code>optics</code>, see also there.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>q</code></td>
+<td>
+<p>The norm used for the Cordillera. Defaults to 2.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minpts</code></td>
+<td>
+<p>The minimum number of points that must make up a cluster in OPTICS (corresponds to k in the paper). It is passed to <code>optics</code> where it is called minPts. Defaults to 2.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>epsilon</code></td>
+<td>
+<p>The epsilon parameter for OPTICS (called epsilon_max in the paper). Defaults to 2 times the maximum distance between any two points.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>distmeth</code></td>
+<td>
+<p>The distance to be computed if X is not a symmetric matrix (those from <code>dist</code> are available) or a dist object (otherwise ignored). Defaults to Euclidean distance.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dmax</code></td>
+<td>
+<p>The winsorization value for the highest allowed reachability. If used for comparisons this should be supplied. If no value is supplied, it is NULL (default), then dmax is taken from the data as minimum of epsilon or the largest reachability.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rang</code></td>
+<td>
+<p>A range of values for making up dmax. If supplied it overrules the dmax parameter and rang[2]-rang[1] is returned as dmax in the object. If no value is supplied rang is taken to be (0, dmax) taken from the data. Only use this when you know what you're doing, which would mean you're me (and even then we should be cautious).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>digits</code></td>
+<td>
+<p>The precision to round the raw Cordillera and the norm factor. Defaults to 10.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scale</code></td>
+<td>
+<p>Should X be scaled if it is an asymmetric matrix or data frame? Can take values TRUE or FALSE or a numeric value. If TRUE or 1, standardisation is to mean=0 and sd=1. If 2, no centering is applied and scaling of each column is done with the root mean square of each column. If 3, no centering is applied and scaling of all columns is done as X/max(standard deviation(allcolumns)). If 4, no centering is applied and scaling of all columns is done as X/max(rmsq(allcolumns)). If FALSE, 0 or any other numeric value, no standardisation is applied. Defaults to FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to be passed to <code>optics</code></p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list with the elements
+</p>
+
+<ul>
+<li>
+<p> $raw... The raw cordillera
+</p>
+</li>
+<li>
+<p> $norm... The normalization constant
+</p>
+</li>
+<li>
+<p> $normfac... The normalization factor (the number of times that dmax is taken)
+</p>
+</li>
+<li>
+<p> $dmaxe... The effective maximum distance used for maximum structure (either dmax or epsilon or rang[2]-rang[1]). 
+</p>
+</li>
+<li>
+<p> $normed... The normed cordillera (raw/norm)
+</p>
+</li>
+<li>
+<p> $optics... The optics object
+</p>
+</li>
+</ul>
+<h3>Warning</h3>
+
+<p>It may happen that the (normed) cordillera cannot be calculated properly (e.g. division by zero, infinite raw cordillera, q value to high etc.). A warning will be printed and the normed Cordillera is either 0, 1 (if infinity is involved) or NA. In that case one needs to check one or more of the following: reachability values returned from optics, minpts, eps, the raw cordillera, dmax and the normalization factor normfac.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(iris)
+res&lt;-princomp(iris[,1:4])
+#2 dim goodness-of-clusteredness with clusters of at least 2 points
+#With a matrix of points
+cres2&lt;-cordillera(res$scores[,1:2])
+cres2
+summary(cres2)
+plot(cres2)
+
+#with a dist object 
+dl0 &lt;- dist(res$scores[,1:2],"maximum") #maximum distance
+cres0&lt;-cordillera(dl0)
+cres0
+summary(cres0)
+plot(cres0)
+
+#with any symmetric distance/dissimilarity matrix 
+dl1 &lt;- cluster::daisy(res$scores[,1:2],"manhattan") 
+cres1&lt;-cordillera(dl1)
+cres1
+summary(cres1)
+plot(cres1)
+
+#4 dim goodness-of-clusteredness with clusters of at least 20
+#points for PCA
+cres4&lt;-cordillera(res$scores[,1:4],minpts=20,epsilon=13,scale=3) 
+#4 dim goodness-of-clusteredness with clusters of at least 20 points for original
+#data
+cres&lt;-cordillera(iris[,1:4],minpts=20,epsilon=13,dmax=cres4$dmaxe,scale=3)
+#There is more clusteredness for the original result
+summary(cres4) 
+summary(cres) 
+plot(cres4) #cluster structure only a bit intelligible
+plot(cres) #clearly two well separated clusters
+
+###############################################################################
+# Example from Rusch et al. (2018) with original data, PCA and Sammon mapping #
+###############################################################################
+
+#data preparation
+data(CAClimateIndicatorsCountyMedian)
+sovisel &lt;- CAClimateIndicatorsCountyMedian[,-c(1,2,4,9)]
+#normalize to [0,1]
+sovisel &lt;- apply(sovisel,2,function(x) (x-min(x))/(max(x)-min(x))) 
+rownames(sovisel)  &lt;- CAClimateIndicatorsCountyMedian[,1]
+dis &lt;- dist(sovisel)
+
+#hyper parameters
+dmax=1.22
+q=2
+minpts=3
+
+#original data directly
+cdat &lt;- cordillera(sovisel,distmeth="euclidean",minpts=minpts,epsilon=10,q=q,
+                   scale=0)
+#equivalently
+#dis2=dist(sovisel)
+#cdat2 &lt;- cordillera(dis2,minpts=minpts,epsilon=10,q=q,scale=FALSE) 
+
+#PCA in 2-dim
+pca1 &lt;- princomp(sovisel)
+pcas &lt;- scale(pca1$scores[,1:2])
+cpca &lt;- cordillera(pcas,minpts=minpts,epsilon=10,q=q,dmax=dmax,scale=FALSE)
+
+#Sammon mapping in 2-dim
+sam &lt;- MASS::sammon(dis)
+samp &lt;- scale(sam$points)
+csam &lt;- cordillera(samp,epsilon=10,minpts=minpts,q=q,dmax=dmax,scale=FALSE)
+
+#results
+cdat
+cpca
+csam
+
+par(mfrow=c(3,1))
+plot(cdat)
+plot(cpca)
+plot(csam)
+par(mfrow=c(1,1))
+
+</code></pre>
+
+
+</div>

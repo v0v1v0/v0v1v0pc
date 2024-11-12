@@ -1,0 +1,527 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>clsd</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Categorical Logspline Density</h2>
+
+<h3>Description</h3>
+
+ <p><code>clsd</code> computes the logspline density, density
+derivative, distribution, and smoothed quantiles for a one (1)
+dimensional continuous variable using the approach of Racine
+(2013).</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">clsd(x = NULL,
+     beta = NULL,
+     xeval = NULL,
+     degree = NULL,
+     segments = NULL,
+     degree.min = 2,
+     degree.max = 25,
+     segments.min = 1,
+     segments.max = 100,
+     lbound = NULL,
+     ubound = NULL,
+     basis = "tensor",
+     knots = "quantiles",
+     penalty = NULL,
+     deriv.index = 1,
+     deriv = 1,
+     elastic.max = TRUE,
+     elastic.diff = 3,
+     do.gradient = TRUE,
+     er = NULL,
+     monotone = TRUE,
+     monotone.lb = -250,
+     n.integrate = 500,
+     nmulti = 1,
+     method = c("L-BFGS-B", "Nelder-Mead", "BFGS", "CG", "SANN"),
+     verbose = FALSE,
+     quantile.seq = seq(.01,.99,by=.01),
+     random.seed = 42,
+     maxit = 10^5,
+     max.attempts = 25,
+     NOMAD = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p> a numeric vector of training data </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta</code></td>
+<td>
+<p> a numeric vector of coefficients (default <code>NULL</code>) </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xeval</code></td>
+<td>
+<p> a numeric vector of evaluation data </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>degree</code></td>
+<td>
+<p> integer/vector specifying the polynomial degree of the
+B-spline basis for each dimension of the continuous <code>x</code> (default
+<code>degree=2</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>segments</code></td>
+<td>
+<p> integer/vector specifying the number of segments of the
+B-spline basis for each dimension of the continuous <code>x</code>
+(i.e. number of knots minus one) (default <code>segments=1</code>, i.e. Bezier
+curve)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>segments.min,segments.max</code></td>
+<td>
+<p> when <code>elastic.max=FALSE</code>, the
+minimum/maximum segments of the B-spline basis for each of the
+continuous predictors (default
+<code>segments.min=1</code>,<code>segments.max=100</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>degree.min,degree.max</code></td>
+<td>
+<p> when <code>elastic.max=FALSE</code> the
+minimum/maximum degree of the B-spline basis for each of the
+continuous predictors (default <code>degree.min=2</code>,
+<code>degree.max=25</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lbound,ubound</code></td>
+<td>
+
+<p>lower/upper bound for the support of the density. For example, if
+there is a priori knowledge that the density equals zero to the left
+of 0, and has a discontinuity at 0, the user could specify lbound =
+0. However, if the density is essentially zero near 0, one does not
+need to specify lbound </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>basis</code></td>
+<td>
+<p> a character string (default <code>basis="tensor"</code>)
+indicating whether the additive or tensor product B-spline basis
+matrix for a multivariate polynomial spline or generalized B-spline
+polynomial basis should be used </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>knots</code></td>
+<td>
+<p> a character string (default <code>knots="quantiles"</code>)
+specifying where knots are to be placed. ‘quantiles’ specifies
+knots placed at equally spaced quantiles (equal number of observations
+lie in each segment) and ‘uniform’ specifies knots placed at
+equally spaced intervals </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deriv</code></td>
+<td>
+<p> an integer <code>l</code> (default <code>deriv=1</code>) specifying
+whether to compute the univariate <code>l</code>th partial derivative for
+each continuous predictor (and difference in levels for each
+categorical predictor) or not and if so what order. Note that if
+<code>deriv</code> is higher than the spline degree of the associated
+continuous predictor then the derivative will be zero and a warning
+issued to this effect </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deriv.index</code></td>
+<td>
+<p> an integer <code>l</code> (default <code>deriv.index=1</code>)
+specifying the index (currently only supports 1) of the variable whose
+derivative is requested  </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nmulti</code></td>
+<td>
+
+<p>integer number of times to restart the process of finding extrema of
+the cross-validation function from different (random) initial
+points (default <code>nmulti=1</code>)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>penalty</code></td>
+<td>
+<p> the parameter to be used in the AIC criterion. The
+method chooses the number of degrees plus number of segments
+(knots-1) that maximizes <code>2*logl-penalty*(degree+segments)</code>. The
+default is to use the penalty parameter of <code>log(n)/2</code> (<code>2</code>
+would deliver standard AIC, <code>log(n)</code> standard BIC)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>elastic.max,elastic.diff</code></td>
+<td>
+<p> a logical value/integer indicating
+whether to use ‘elastic’ search bounds such that the optimal
+degree/segment must lie <code>elastic.diff</code> units from the
+respective search bounds </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>do.gradient</code></td>
+<td>
+<p> a logical value indicating whether or not to use
+the analytical gradient during optimization (defaults to <code>TRUE</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>er</code></td>
+<td>
+
+<p>a scalar indicating the fraction of data range to extend
+the tails (default <code>1/log(n)</code>, see <code>extendrange</code> for
+further details)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>monotone</code></td>
+<td>
+<p> a logical value indicating whether modify
+the standard B-spline basis function so that it is tailored for
+density estimation (default <code>TRUE</code>)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>monotone.lb</code></td>
+<td>
+<p> a negative bound specifying the lower bound on
+the linear segment coefficients used when (<code>monotone=FALSE</code>)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.integrate</code></td>
+<td>
+
+<p>the number of evenly spaced integration points on the extended range specified by <code>er</code> (defaults to <code>500</code>)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+
+<p>see <code>optim</code> for details
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+
+<p>a logical value which when <code>TRUE</code> produces verbose output
+during optimization
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quantile.seq</code></td>
+<td>
+
+<p>a sequence of numbers lying in <code class="reqn">[0,1]</code> on which quantiles from
+the logspline distribution are obtained
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>random.seed</code></td>
+<td>
+<p> seeds the random number generator for initial
+parameter values when <code>optim</code> is called </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxit</code></td>
+<td>
+
+<p>maximum number of iterations used by <code>optim</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.attempts</code></td>
+<td>
+
+<p>maximum number of attempts to undertake if <code>optim</code>
+fails for any set of initial parameters for each value of
+<code>nmulti</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>NOMAD</code></td>
+<td>
+
+<p>a logical value which when <code>TRUE</code> calls <code>snomadr</code>
+to determine the optimal <code>degree</code> and <code>segments</code>
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Typical usages are (see below for a  list of options and also
+the examples at the end of this help file)
+</p>
+<pre>
+    
+    model &lt;- clsd(x)
+
+    </pre>
+<p><code>clsd</code> computes a logspline density estimate of a one (1)
+dimensional continuous variable.
+</p>
+<p>The spline model employs the tensor product B-spline basis matrix for
+a multivariate polynomial spline via the B-spline routines in the GNU
+Scientific Library (<a href="https://www.gnu.org/software/gsl/">https://www.gnu.org/software/gsl/</a>) and the
+<code>tensor.prod.model.matrix</code> function.
+</p>
+<p>When <code>basis="additive"</code> the model becomes additive in nature
+(i.e. no interaction/tensor terms thus semiparametric not fully
+nonparametric).
+</p>
+<p>When <code>basis="tensor"</code> the model uses the multivariate tensor
+product basis.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>clsd</code> returns a <code>clsd</code> object.  The generic functions
+<code>coef</code>, <code>fitted</code>, <code>plot</code> and
+<code>summary</code> support objects of this type (<code>er=FALSE</code>
+plots the density on the sample realizations (default is ‘extended
+range’ data), see <code>er</code> above, <code>distribution=TRUE</code> plots
+the distribution). The returned object has the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>density</code></td>
+<td>
+<p> estimates of the density function
+at the sample points</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>density.er</code></td>
+<td>
+<p> the density evaluated on the ‘extended range’
+of the data </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>density.deriv</code></td>
+<td>
+<p> estimates of the derivative of the density function
+at the sample points</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>density.deriv.er</code></td>
+<td>
+<p> estimates of the derivative of the density
+function evaluated on the ‘extended range’ of the data </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>distribution</code></td>
+<td>
+<p> estimates of the distribution function
+at the sample points</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>distribution.er</code></td>
+<td>
+<p> the distribution evaluated on the ‘extended range’
+of the data </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xer</code></td>
+<td>
+<p> the ‘extended range’ of the data </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>degree</code></td>
+<td>
+<p> integer/vector specifying the degree of the B-spline
+basis for each dimension of the continuous <code>x</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>segments</code></td>
+<td>
+<p> integer/vector specifying the number of segments of
+the B-spline basis for each dimension of the continuous <code>x</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xq</code></td>
+<td>
+<p> vector of quantiles </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau</code></td>
+<td>
+<p> vector generated by <code>quantile.seq</code> or input by the
+user (lying in <code>[0,1]</code>) from which the quantiles <code>xq</code> are
+obtained</p>
+</td>
+</tr>
+</table>
+<h3>Usage Issues</h3>
+
+<p>This function should be considered to be in ‘beta’ status until
+further notice.
+</p>
+<p>If smoother estimates are desired and <code>degree=degree.min</code>, increase
+<code>degree.min</code> to, say, <code>degree.min=3</code>.
+</p>
+<p>The use of ‘regression’ B-splines can lead to undesirable behavior at
+the endpoints of the data (i.e. when <code>monotone=FALSE</code>). The
+default ‘density’ B-splines ought to be well-behaved in these regions.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jeffrey S. Racine <a href="mailto:racinej@mcmaster.ca">racinej@mcmaster.ca</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Racine, J.S. (2013), “Logspline Mixed Data Density Estimation,”
+manuscript.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>logspline</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+## Old Faithful eruptions data histogram and clsd density
+
+library(MASS)
+data(faithful)
+attach(faithful)
+
+model &lt;- clsd(eruptions)
+
+ylim &lt;- c(0,max(model$density,hist(eruptions,breaks=20,plot=FALSE)$density))
+
+plot(model,ylim=ylim)
+
+hist(eruptions,breaks=20,freq=FALSE,add=TRUE,lty=2)
+
+rug(eruptions)
+
+summary(model)
+
+coef(model)
+
+## Simulated data
+
+set.seed(42)
+require(logspline)
+
+## Example - simulated data
+
+n &lt;- 250
+x &lt;- sort(rnorm(n))
+f.dgp &lt;- dnorm(x)
+
+model &lt;- clsd(x)
+
+## Standard (cubic) estimate taken from the logspline package
+## Compute MSEs
+
+mse.clsd &lt;- mean((fitted(model)-f.dgp)^2)
+
+model.logspline &lt;- logspline(x)
+
+mse.logspline &lt;- mean((dlogspline(x,model.logspline)-f.dgp)^2)
+
+ylim &lt;- c(0,max(fitted(model),dlogspline(x,model.logspline),f.dgp))
+
+plot(model,
+     ylim=ylim,
+     sub=paste("MSE: logspline = ",format(mse.logspline),", clsd = ",
+     format(mse.clsd)),
+     lty=3,
+     col=3)
+
+xer &lt;- model$xer
+
+lines(xer,dlogspline(xer,model.logspline),col=2,lty=2)
+lines(xer,dnorm(xer),col=1,lty=1)
+
+rug(x)
+
+legend("topright",c("DGP",
+                    paste("Cubic Logspline Density (package 'logspline', knots = ",
+                          model.logspline$nknots,")",sep=""),
+                    paste("clsd Density (degree = ", model$degree, ", segments = ",
+                          model$segments,", penalty = ",round(model$penalty,2),")",sep="")),
+       lty=1:3,
+       col=1:3,
+       bty="n",
+       cex=0.75)
+
+summary(model)
+
+coef(model)
+
+## Simulate data with known bounds
+
+set.seed(42)
+n &lt;- 10000
+x &lt;- runif(n,0,1)
+
+model &lt;- clsd(x,lbound=0,ubound=1)
+
+plot(model)
+
+## End(Not run) 
+</code></pre>
+
+
+</div>

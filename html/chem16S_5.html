@@ -1,0 +1,149 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>get_metrics</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate chemical metrics of community reference proteomes</h2>
+
+<h3>Description</h3>
+
+<p>Combines taxonomic classifications with reference proteomes for taxa to get amino acid compositions of community reference proteomes.
+Amino acid compositions are used to calculate chemical metrics.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">  get_metrics(RDP, map, refdb = "GTDB_214", taxon_AA = NULL, groups = NULL,
+    return_AA = FALSE, zero_AA = NULL, metrics = c("Zc", "nO2", "nH2O"))
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>RDP</code></td>
+<td>
+<p>data frame, taxonomic abundances produced by <code>read_RDP</code> or <code>ps_taxacounts</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>map</code></td>
+<td>
+<p>data frame, taxonomic mapping produced by <code>map_taxa</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>refdb</code></td>
+<td>
+<p>character, name of reference database (‘<span class="samp">⁠GTDB_214⁠</span>’ or ‘<span class="samp">⁠RefSeq_206⁠</span>’)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>taxon_AA</code></td>
+<td>
+<p>data frame, amino acid compositions of taxa, used to bypass <code>refdb</code> specification</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>groups</code></td>
+<td>
+<p>list of indexing vectors, samples to be aggregated into groups</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return_AA</code></td>
+<td>
+<p>logical, return the amino acid composition for each sample instead of the chemical metrics?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>zero_AA</code></td>
+<td>
+<p>character, three-letter abbreviation(s) of amino acid(s) to assign zero counts for calculating chemical metrics</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metrics</code></td>
+<td>
+<p>character, the chemical metrics to calculate</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>get_metrics</code> calculates selected chemical metrics for the community reference proteome in each sample.
+The community reference proteome is computed from the amino acid compositions of reference proteomes for taxa (obtained from the reference database in <code>refdb</code>), multiplied by taxonomic abundances given in <code>RDP</code>.
+<code>RDP</code> may include results from the RDP Classifier (read using <code>read_RDP</code>) or derived from the OTU table of a <code>phyloseq-class</code> object (see <code>ps_taxacounts</code>).
+<code>map</code> defines the taxonomic mapping between <code>RDP</code> and <code>refdb</code>.
+Then, chemical metrics are calculated from the amino acid composition of the community reference proteome.
+The default chemical metrics are carbon oxidation state (<i>Z</i><sub>C</sub>), stoichiometric oxidation state (<i>n</i><sub>O<sub>2</sub></sub>), and stoichiometric hydration state (<i>n</i><sub>H<sub>2</sub>O</sub>).
+See <code>calc_metrics</code> for other available metrics.
+</p>
+<p><code>groups</code>, if given, is a list of one or more indexing vectors (with logical or numeric values) corresponding to samples whose taxonomic classifications are aggregated into groups before calculating amino acid compositions and chemical metrics.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame with one row for each sample, corresponding to columns 5 and above of <code>RDP</code>.
+The sample names are in the first column, which is named <code>Run</code> by default, or <code>group</code> if the <code>groups</code> argument is provided.
+The remaining columns have numeric values and are named for each of the calculated <code>metrics</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>calc_metrics</code>, <code>plot_metrics</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## First two examples are for RDP Classifier with default training set
+## and mapping to NCBI taxonomy with RefSeq reference proteomes
+
+# Get chemical metrics for all samples in a dataset
+RDPfile &lt;- system.file("extdata/RDP/BGPF13.tab.xz", package = "chem16S")
+RDP &lt;- read_RDP(RDPfile)
+map &lt;- map_taxa(RDP, refdb = "RefSeq_206")
+# This is a data frame with 14 rows and Run, Zc, nO2, and nH2O columns
+(metrics &lt;- get_metrics(RDP, map, refdb = "RefSeq_206"))
+
+# Read the metadata file
+mdatfile &lt;- system.file("extdata/metadata/BGPF13.csv", package = "chem16S")
+# Create list with metadata and metrics in same sample order
+mdat &lt;- get_metadata(mdatfile, metrics)
+# Calculate metrics for aggregated samples of Archaea and Bacteria
+groups &lt;- list(A = mdat$metadata$domain == "Archaea",
+  B = mdat$metadata$domain == "Bacteria")
+# This is a data frame with 2 rows and group, Zc, nO2, and nH2O columns
+get_metrics(RDP, map, refdb = "RefSeq_206", groups = groups)
+
+## For the next example, classifications were made using the RDP Classifer
+## with 16S rRNA sequences from GTDB r207, but
+## reference proteomes are based on GTDB r214
+## (this uses the default option of refdb = "GTDB_214").
+RDPfile.GTDB &lt;- system.file("extdata/RDP-GTDB_207/BGPF13.tab.xz", package = "chem16S")
+RDP.GTDB &lt;- read_RDP(RDPfile.GTDB)
+map.GTDB &lt;- map_taxa(RDP.GTDB)
+metrics.GTDB &lt;- get_metrics(RDP.GTDB, map.GTDB)
+
+# Plot Zc from GTDB vs RefSeq
+xylim &lt;- range(metrics$Zc, metrics.GTDB$Zc)
+plot(metrics$Zc, metrics.GTDB$Zc, xlim = xylim, ylim = xylim, type = "n")
+lines(xylim, xylim, lty = 2, col = 8)
+points(metrics$Zc, metrics.GTDB$Zc, pch = mdat$metadata$pch, bg = mdat$metadata$col)
+md.leg &lt;- mdat$metadata[1:2, ]
+legend("bottomright", md.leg$domain, pch = md.leg$pch, pt.bg = md.leg$col)
+title(quote(italic(Z)[C]~"from GTDB vs RefSeq"))
+
+# To exclude tryptophan, tyrosine, and phenylalanine
+# from the calculation of chemical metrics
+get_metrics(RDP.GTDB, map.GTDB, zero_AA = c("Trp", "Tyr", "Phe"))
+</code></pre>
+
+
+</div>

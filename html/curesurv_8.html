@@ -1,0 +1,672 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>curesurv</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fitting cure models using curesurv</h2>
+
+<h3>Description</h3>
+
+<p>Fits the non-mixture cure model proposed by Boussari et <em>al</em>. (2020),
+or mixture cure model such as proposed by De Angelis et <em>al</em>. (1999) with
+the possibility to correct the background mortality as proposed by Phillips et <em>al</em>. (2002)
+in the net survival framework.
+</p>
+
+
+<h4>Non-mixture cure model</h4>
+
+
+
+<h5>The Boussari model</h5>
+
+<p>This model allows for direct estimation of time-to-null-excess-hazard which can be interpreted as time-to-cure.
+The parametrization offers various link functions for the covariates effects on the time-to-null-excess-hazard:
+τ(z<sub>k</sub>) = g(τ<sub>0</sub> + z<sub>k</sub> τ<sub>k</sub>).
+If <code>link_tau=linear</code>, then g is the identity function. If <code>link_tau=loglinear</code> then g is the exponential function.
+In this model, the cure proportion is expressed as:
+π(z;θ) = exp(−g(τ<sub>0</sub> + z<sub>k</sub> τ<sub>k</sub>) \text{Beta}((\alpha_{0} + Z_{k} \alpha_{k}), \beta)).
+</p>
+
+
+
+
+<h4>Mixture cure model</h4>
+
+<p>The user can choose the survival function modeling the uncured patients net
+survival among Weibull (default) and exponentiated Weibull. The parametrization
+for weibull distribution is S<sub>u</sub>(t) = exp(−λt<sup>γ</sup>)<sup>exp(δZ)</sup>.
+The related hazard function is expressed as: λ<sub>u</sub>(t) = γλt<sup>γ− 1</sup> exp(δz)
+The net survival and the excess hazard functions can be respectively expressed
+as S<sub>E</sub>(t) = π(z;β) + (1 − π(z;β)) * S<sub>u</sub>(t).
+and λ<sub>E</sub>(t)=[((1−π(z;β))fu(t))/(π(z;β) + (1 − π(z;β))S<sub>u</sub>(t))],
+with π(z;β) = [1/((1 + exp(−[β<sub>0</sub> + Zβ])))].
+</p>
+
+
+
+<h4>Correction of background mortality</h4>
+
+<p>Usually, in the net survival framework the expected hazard is directly obtained from life tables.
+However some patients in cancer registries can have some factors impacting their expected mortality rates (such as comorbidities, deprivation)
+that are not always accounted #'  for in the available life tables, and there is a need to account for this problem.
+The correction proposed by Phillips et <em>al</em> (2002) assumes that λ<sub>exp</sub>(t,z)=αλ<sub>pop</sub>(t,z<sub>k</sub>)
+with λ<sub>exp</sub>(t,z) the patient expected hazard and λ<sub>pop</sub>(t,z<sub>k</sub>) the population hazard obtained from life table.
+</p>
+
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">curesurv(
+  formula,
+  data,
+  pophaz = NULL,
+  cumpophaz = NULL,
+  pophaz.alpha = FALSE,
+  model = "nmixture",
+  dist = "weib",
+  link_tau = "linear",
+  ncoor_des = NULL,
+  init = NULL,
+  maxit_opt = 10000,
+  gradient = FALSE,
+  hessian_varcov = TRUE,
+  optim_func = "optim",
+  optimizer = "optim",
+  method_opt = "L-BFGS-B",
+  trace = 0,
+  nvalues = 10,
+  iter_eps = 1e-08,
+  optim_fixed = NULL,
+  clustertype = NULL,
+  nproc = 1,
+  subset,
+  na.action,
+  sign_delta,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>a formula object of the <code>Surv</code> function with the
+response on the left of a <code>~</code> operator and the terms on the right. The
+response must be a survival object as returned by the <code>Surv</code>
+function (<code>time</code> in first and <code>status</code> in second).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a data frame in which to interpret the variables named in the
+formula</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pophaz</code></td>
+<td>
+<p>corresponds to the name of the column in the data representing
+the values of the population instantaneous mortality rates. If the
+<code>pophaz</code> argument is not specified, overall survival is fitted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cumpophaz</code></td>
+<td>
+<p>corresponds to the name of the column in the data
+representing the values of the instantaneous population cumulative mortality
+rates. If not specified, the model cannot be compared with model with
+<code>pophaz.alpha = TRUE</code> using AIC.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pophaz.alpha</code></td>
+<td>
+<p>to be specified if user want an excess hazard model
+with correction of mortality rates by a scale parameter</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>To fit a mixture model, specify <code>model = "mixture"</code>.
+To fit Time-To-Null Excess Hazard model the argument is <code>model = "tneh"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist</code></td>
+<td>
+<p>For mixture model, it corresponds to the function used to fit
+the uncured patients survival. By default, <code>("weib")</code> is used. Another
+option is the exponentiated Weibull function <code>("eweib")</code>. For
+non-mixture models, this argument corresponds to the name of the model. By
+default, <code>("tneh")</code> is used to fit the time to null excess hazard model
+proposed by Boussari et al..</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link_tau</code></td>
+<td>
+<p>must be specified only for <code>model ="tneh"</code>.
+Default is linear link <code>("linear")</code>. Another link is loglinear
+<code>("loglinear")</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncoor_des</code></td>
+<td>
+<p>if null, the initial parameters are defaults. If else,
+the initials parameters are obtained via coordinates descent algorithms</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>init</code></td>
+<td>
+<p>a list containing the vector of initial values <code>theta_init</code>,
+the vector of upper bounds <code>theta_upper</code> and the vector of the
+lower bounds <code>theta_lower</code> for the parameters to estimate.
+For each elements of the list, give the name of the covariate followed by
+the vector of the fixed initials values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxit_opt</code></td>
+<td>
+<p>option for maximum of iteration in optimization function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gradient</code></td>
+<td>
+<p>True if optimization process requires gradient to be provided</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hessian_varcov</code></td>
+<td>
+<p>TRUE if user wants variance covariance matrix using
+hessian function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optim_func</code></td>
+<td>
+<p>specify which function to be used for optimization purposes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimizer</code></td>
+<td>
+<p>only use this argument when <code>optim_func="bbmle"</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method_opt</code></td>
+<td>
+<p>optimization method used in <code>optim</code> function. The default
+algorithm is "L-BFGS-B".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>Non-negative integer corresponding to the <code>trace</code> argument
+as in <code>optim</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nvalues</code></td>
+<td>
+<p>number of set of initial values when using multiple
+initials values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iter_eps</code></td>
+<td>
+<p>this parameter only works when <code>ncoor_des = "iter"</code>; It
+allows to run coordinates descent algorithm until the stooping criteria
+equal at least to the specified value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optim_fixed</code></td>
+<td>
+<p>to specify with parameter to not estimated in the
+estimation process</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clustertype</code></td>
+<td>
+<p>related to cluster type in <code>marqLevAlg</code> package</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nproc</code></td>
+<td>
+<p>number of processors for parallel computing as in <code>marqLevAlg</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subset</code></td>
+<td>
+<p>an expression indicating which subset of the data should be used
+in the modeling. All observations are included by default</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.action</code></td>
+<td>
+<p>as in the coxph function, a missing-data filter function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sign_delta</code></td>
+<td>
+<p>only used for mixture cure rate models to specify if the
+effects or minus the effects of covariates acting on uncured survival to be
+considered. Default will be sign_delta = "1". The alternative is
+sign_delta = "-1".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional parameters such <code>z_alpha</code>,
+and <code>z_tau</code>. For more details, use the help function.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An object of class <code>curesurv</code>.
+This object is a list containing the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>iter_coords</code></td>
+<td>
+<p>number of iterations performed to obtain initial values
+of the parameters in tneh model only</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coefficients</code></td>
+<td>
+<p>estimates found for the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estimates</code></td>
+<td>
+<p>estimates in the appropriate scale for the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>loglik</code></td>
+<td>
+<p>corresponds to the log-likelihood computed; if only the
+pophaz is provided, the log-likelihood doesn't correspond to the total
+log-likelihood. The part of the cumulative population hazard is a constant
+and is dropped for the computation as presented in Esteve et <em>al.</em> (1990);
+The total log-likekihood is calculed if the user specifies a column name equal
+expected cumulative mortality (cumpophaz)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iteractions</code></td>
+<td>
+<p>the number iterations attained to estimate the parameters of the related model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>evaluations</code></td>
+<td>
+<p>the number of times the log-likelihood function was evaluated until to reach the convergence</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>convergence</code></td>
+<td>
+<p>an integer code as in optim when <code>L-BFGS-B</code> method
+is used in optim.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>message</code></td>
+<td>
+<p>a character string returned by the optimizer</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>varcov</code></td>
+<td>
+<p>the variance covariance matrix of the parameters estimated</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>varcov_star</code></td>
+<td>
+<p>the variance covariance matrix of the coefficients of the model of interest</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>std_err</code></td>
+<td>
+<p>the standard errors of the estimated parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>std_err_star</code></td>
+<td>
+<p>the standard errors of the coefficients of the model of interest</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>AIC</code></td>
+<td>
+<p>the Akaike information criteria from the model of interest</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.events</code></td>
+<td>
+<p>the number of events in the dataset. Events are considered</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.obs</code></td>
+<td>
+<p>the number of observations in the dataset.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>if fitted model is a mixture model, it returns "mixture".
+If fitted model is Time-To-Null Excess Hazard model, it returns "nmixture".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Terms</code></td>
+<td>
+<p>the representation of the terms in the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pophaz.alpha</code></td>
+<td>
+<p>logical value to indicate if fitted cure model requires
+correction of mortality rates by a scale parameter</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pophaz</code></td>
+<td>
+<p>corresponds to the the population instantaneous mortality rates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cumpophaz</code></td>
+<td>
+<p>corresponds to the population cumulative mortality rates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>frailtyhp</code></td>
+<td>
+<p>a booleen to be specified if a frailty correction is needed for the population hazard.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist</code></td>
+<td>
+<p>For mixture model, it corresponds to the function used to fit
+the uncured patients survival. By default, ("weib") is used. Another option
+is the exponentiated Weibull function ("eweib"). For non-mixture models,
+this argument corresponds to the name of the model. By default, ("tneh")
+is used to fit the time to null excess hazard model proposed by Boussari
+et al.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xmax</code></td>
+<td>
+<p>maximum follow-up time to evaluate the TTC</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z_tau</code></td>
+<td>
+<p>Covariates acting on parameter tau in non mixture cure model tneh</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link_tau</code></td>
+<td>
+<p>returned  only for model ="tneh"; returned by default is
+"linear" or "loglinear" for linear or loglinear link function of covariates
+acting on tau parameter.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z_alpha</code></td>
+<td>
+<p>Covariates acting on parameter alpha in non mixture cure model tneh</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z_c</code></td>
+<td>
+<p>Covariates acting on cure fraction in mixture cure model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z_ucured</code></td>
+<td>
+<p>covariates acting on survival of uncured in mixture cure model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z_pcured</code></td>
+<td>
+<p>Covariates acting on cure fraction in mixture cure model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z_ucured</code></td>
+<td>
+<p>covariates acting on survival of uncured in mixture cure model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>the dataset used to run the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the function call based on model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>the formula as a formula object</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>Note that all these models can be fitted in the overall survival
+setting.
+</p>
+<p><code>time</code> is OBLIGATORY in years
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Juste Goungounga, Judith Breaud, Olayide Boussari, Valerie Jooste
+</p>
+
+
+<h3>References</h3>
+
+<p>Boussari O, Bordes L, Romain G, Colonna M, Bossard N, Remontet L,
+Jooste V. Modeling excess hazard with time-to-cure as a parameter.
+Biometrics. 2021 Dec;77(4):1289-1302. doi: 10.1111/biom.13361.
+Epub 2020 Sep 12. PMID: 32869288.
+(<a href="https://pubmed.ncbi.nlm.nih.gov/32869288/">pubmed</a>)
+</p>
+<p>Boussari O, Romain G, Remontet L, Bossard N, Mounier M, Bouvier AM,
+Binquet C, Colonna M, Jooste V. A new approach to estimate time-to-cure from
+cancer registries data. Cancer Epidemiol. 2018 Apr;53:72-80.
+doi: 10.1016/j.canep.2018.01.013. Epub 2018 Feb 4. PMID: 29414635.
+(<a href="https://pubmed.ncbi.nlm.nih.gov/29414635/">pubmed</a>)
+</p>
+<p>Phillips N, Coldman A, McBride ML. Estimating cancer prevalence using
+mixture models for cancer survival. Stat Med. 2002 May 15;21(9):1257-70.
+doi: 10.1002/sim.1101. PMID: 12111877.
+(<a href="https://pubmed.ncbi.nlm.nih.gov/12111877/">pubmed</a>)
+</p>
+<p>De Angelis R, Capocaccia R, Hakulinen T, Soderman B, Verdecchia A. Mixture
+models for cancer survival analysis: application to population-based data
+with covariates. Stat Med. 1999 Feb 28;18(4):441-54.
+doi: 10.1002/(sici)1097-0258(19990228)18:4&lt;441::aid-sim23&gt;3.0.co;2-m.
+PMID: 10070685.
+(<a href="https://pubmed.ncbi.nlm.nih.gov/10070685/">pubmed</a>)
+</p>
+<p>Botta L, Caffo O, Dreassi E, Pizzoli S, Quaglio F, Rugge M, Valsecchi MG.
+A new cure model that corrects for increased risk of non-cancer death:
+analysis of reliability and robustness, and application to real-life data.
+BMC Med Res Methodol. 2023 Mar 25;23(1):70.
+doi: 10.1186/s12874-023-01876-x. PMID: N/A.
+(<a href="https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/s12874-023-01876-x">pubmed</a>)
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>predict.curesurv()</code>, <code>print.curesurv()</code>, <code>browseVignettes("curesurv")</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+library("curesurv")
+library("survival")
+
+
+
+# Net survival setting
+# Mixture cure model with Weibull function for the uncured patients survival:
+# no covariate
+
+theta_init2 &lt;- rep(0, 3)
+theta_lower2 &lt;- c(-Inf,-Inf,-Inf)
+theta_upper2 &lt;- c(Inf, Inf, Inf)
+
+
+fit_m0_ml &lt;- curesurv(Surv(time_obs, event) ~ 1 | 1,
+             pophaz = "ehazard",
+             cumpophaz = "cumehazard",
+             model = "mixture", dist = "weib",
+             data = testiscancer,
+             init = list(theta_init = theta_init2,
+             theta_lower = theta_lower2,
+             theta_upper = theta_upper2),
+             method_opt = "L-BFGS-B")
+fit_m0_ml
+
+
+
+# Mixture cure model with Weibull function for the uncured patients survival:
+#standardized age as covariate
+
+
+fit_m2_ml &lt;- curesurv(Surv(time_obs, event) ~ age_cr | age_cr,
+                   pophaz = "ehazard",
+                   cumpophaz = "cumehazard",
+                   model = "mixture", dist = "weib",
+                   data = testiscancer,
+                   method_opt = "L-BFGS-B")
+
+ fit_m2_ml
+
+
+
+## Non mixture cure model
+### TNEH Null model
+#### loglinear effect of covariates on time-to-null excess hazard
+
+theta_init2 &lt;- rep(0, 3)
+theta_lower2 &lt;- c(-Inf,-Inf,-Inf)
+theta_upper2 &lt;- c(Inf, Inf, Inf)
+
+fit_m0_mult_tneh &lt;- curesurv(Surv(time_obs, event) ~ 1,
+                          pophaz = "ehazard",
+                          cumpophaz = "cumehazard",
+                          model = "nmixture",
+                          dist = "tneh", link_tau = "loglinear",
+                          data = testiscancer,
+                          init = list(theta_init = theta_init2,
+                                      theta_lower = theta_lower2,
+                                      theta_upper = theta_upper2),
+                          method_opt = "L-BFGS-B")
+
+
+fit_m0_mult_tneh
+
+#### Additive parametrization
+theta_init2 &lt;- c(1, 6, 6)
+theta_lower2 &lt;- c(0,1,0)
+theta_upper2 &lt;- c(Inf, Inf, Inf)
+
+fit_m0_ad_tneh &lt;- curesurv(Surv(time_obs, event) ~ 1,
+                          pophaz = "ehazard",
+                          cumpophaz = "cumehazard",
+                          model = "nmixture",
+                          dist = "tneh", link_tau = "linear",
+                          data = testiscancer,
+                          init = list(theta_init = theta_init2,
+                                      theta_lower = theta_lower2,
+                                      theta_upper = theta_upper2),
+                          method_opt = "L-BFGS-B")
+
+
+
+ fit_m0_ad_tneh
+
+#### Additive parametrization, with covariates
+fit_m1_ad_tneh &lt;- curesurv(Surv(time_obs, event) ~ z_alpha(age_cr) +
+                          z_tau(age_cr),
+                          pophaz = "ehazard",
+                          cumpophaz = "cumehazard",
+                          model = "nmixture",
+                          dist = "tneh", link_tau = "linear",
+                          data = testiscancer,
+                          method_opt = "L-BFGS-B")
+
+
+
+ fit_m1_ad_tneh
+
+
+
+
+</code></pre>
+
+
+</div>

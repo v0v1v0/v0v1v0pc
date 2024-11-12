@@ -1,0 +1,177 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fitLambda</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Non-parametric Estimators of the Matrix of Tail-Dependence Coefficients</h2>
+
+<h3>Description</h3>
+
+<p>Computing non-parametric estimators of the (matrix of) tail-dependence coefficients.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fitLambda(u, method = c("Schmid.Schmidt", "Schmidt.Stadtmueller", "t"),
+          p = 1/sqrt(nrow(u)), lower.tail = TRUE, verbose = FALSE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p><code class="reqn">n\times d</code>-<code>matrix</code> of (pseudo-)observations in
+<code class="reqn">[0,1]^d</code> for estimating the (matrix of) tail-dependence coefficients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>the method with which the tail-dependence coefficients
+are computed:
+</p>
+
+<dl>
+<dt>
+<code>method = "Schmid.Schmidt"</code>:</dt>
+<dd>
+<p>nonparametric estimator
+of Schmid and Schmidt (2007) (see also Jaworksi et al. (2009, p. 231))
+computed for all pairs (pairwise conditional Spearman's rho
+for <code>u &lt;= p</code>).</p>
+</dd>
+<dt>
+<code>method = "Schmidt.Stadtmueller"</code>:</dt>
+<dd>
+<p>nonparametric
+estimator of Schmidt and Stadtmueller (2006)
+computed for all pairs (pairwise empirical tail copula
+for <code>u &lt;= p</code>).</p>
+</dd>
+<dt>
+<code>method = "t"</code>:</dt>
+<dd>
+<p>fits pairwise <code class="reqn">t</code> copulas and
+returns the implied tail-dependence coefficient.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p>(small) cut-off parameter in <code class="reqn">[0,1]</code> below (for
+<code>tail = "lower"</code>) or above (for <code>tail = "upper"</code>) which
+the estimation takes place.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lower.tail</code></td>
+<td>
+<p><code>logical</code> indicating whether the lower
+(the default) or upper tail-dependence coefficient is computed; in
+case of the latter, the lower tail dependence coefficient of
+the flipped data <code>1-u</code> is computed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>a <code>logical</code> indicating whether a progress
+bar is displayed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments passed to the underlying functions
+(at the moment only to <code>optimize()</code> in case <code>method
+    = "t"</code>).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>As seen in the examples, be careful using nonparametric estimators,
+they might not perform too well (depending on <code>p</code> and in
+general). After all, the notion of tail dependence is a limit,
+finite sample sizes may not be able to capture limits well.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The matrix of pairwise coefficients of tail dependence; for
+<code>method = "t"</code> a <code>list</code> with components
+<code>Lambda</code>,
+the matrix of pairwise estimated correlation coefficients <code>P</code>
+and the matrix of pairwise estimated degrees of freedom <code>Nu</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Jaworski, P., Durante, F., Härdle, W. K., Rychlik, T. (2010).
+<em>Copula Theory and Its Applications</em>
+Springer, Lecture Notes in Statistics – Proceedings.
+</p>
+<p>Schmid, F., Schmidt, R. (2007). Multivariate conditional versions of
+Spearman's rho and related measures of tail dependence.
+<em>Journal of Multivariate Analysis</em> <b>98</b>, 1123–1140.
+<a href="https://doi.org/10.1016/j.jmva.2006.05.005">doi:10.1016/j.jmva.2006.05.005</a>
+</p>
+<p>Schmidt, R., Stadtmueller, U. (2006). Non-parametric Estimation of
+Tail Dependence.
+<em>Scandinavian Journal of Statistics</em> <b>33</b>(2), 307–335.
+<a href="https://doi.org/10.1111/j.1467-9469.2005.00483.x">doi:10.1111/j.1467-9469.2005.00483.x</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>lambda()</code> computes the true (lower and upper) tail
+coefficients for a given copula.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">n &lt;- 10000 # sample size
+p &lt;- 0.01 # cut-off
+
+## Bivariate case
+d &lt;- 2
+cop &lt;- claytonCopula(2, dim = d)
+set.seed(271)
+U &lt;- rCopula(n, copula = cop) # generate observations (unrealistic)
+(lam.true &lt;- lambda(cop)) # true tail-dependence coefficients lambda
+(lam.C &lt;- c(lower = fitLambda(U, p = p)[2,1],
+            upper = fitLambda(U, p = p, lower.tail = FALSE)[2,1])) # estimate lambdas
+## =&gt; pretty good
+U. &lt;- pobs(U) # pseudo-observations (realistic)
+(lam.C. &lt;- c(lower = fitLambda(U., p = p)[2,1],
+             upper = fitLambda(U., p = p, lower.tail = FALSE)[2,1])) # estimate lambdas
+## =&gt; The pseudo-observations do have an effect...
+
+## Higher-dimensional case
+d &lt;- 5
+cop &lt;- claytonCopula(2, dim = d)
+set.seed(271)
+U &lt;- rCopula(n, copula = cop) # generate observations (unrealistic)
+(lam.true &lt;- lambda(cop)) # true tail-dependence coefficients lambda
+(Lam.C &lt;- list(lower = fitLambda(U, p = p),
+               upper = fitLambda(U, p = p, lower.tail = FALSE))) # estimate Lambdas
+## =&gt; Not too good
+U. &lt;- pobs(U) # pseudo-observations (realistic)
+(Lam.C. &lt;- list(lower = fitLambda(U., p = p),
+                upper = fitLambda(U., p = p, lower.tail = FALSE))) # estimate Lambdas
+## =&gt; Performance not too great here in either case
+</code></pre>
+
+
+</div>

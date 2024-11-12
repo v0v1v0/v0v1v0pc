@@ -1,0 +1,153 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>online.univar.multi</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Online change point detection with potentially multiple change points.</h2>
+
+<h3>Description</h3>
+
+<p>Perform Online change point detection with potentially multiple change points.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">online.univar.multi(
+  y_vec,
+  b_vec = NULL,
+  train_vec = NULL,
+  alpha = NULL,
+  gamma = NULL,
+  permu_num = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y_vec</code></td>
+<td>
+<p>A <code>numeric</code> vector of observations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>b_vec</code></td>
+<td>
+<p>A <code>numeric</code> vector of thresholds b_t with t &gt;= 2.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>train_vec</code></td>
+<td>
+<p>A <code>numeric</code> vector of training data from a pre-change distribution (no change point), which is only needed to when b_vec is NULL in order to calibrate b_t.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>A <code>numeric</code> scalar of desired false alarm rate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gamma</code></td>
+<td>
+<p>An <code>integer</code> scalar of desired average run length.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>permu_num</code></td>
+<td>
+<p>An <code>integer</code> scalar of number of random permutation for calibration.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>#' @title Online change point detection with controlled average run length.
+#' @description  Perform online change point detection via CUSUM (single change point, type 2).
+#' @param y_vec       A <code>numeric</code> vector of observations.
+#' @param gamma       A <code>integer</code> scalar of interval length (&gt;= 2).
+#' @param tau_gamma   A <code>numeric</code> scalar of threshold.
+#' @param ...         Additional arguments.
+#' @return  An <code>integer</code> scalar of estimated change points location.
+#' @export
+#' @author Haotian Xu
+#' @examples
+#' TO DO
+online.univar.one2 = function(y_vec, gamma, tau_gamma, ...)
+t = 1
+FLAG = 0
+while(FLAG == 0 &amp; t &lt;= length(y_vec))
+t = t + 1
+e = max(t-gamma, 0)
+cusum_vec = sapply((e+1):(t-1), function(s) sqrt((t-s)*(s-e)/(t-e)) * abs(mean(y_vec[(e+1):s]) - mean(y_vec[(s+1):t])))
+FLAG = 1 - prod(cusum_vec &lt;= tau_gamma)
+
+return(t)
+
+</p>
+<p>#' @title Online change point detection via CUSUM (single change point, type 3).
+#' @description Perform online change point detection via CUSUM (single change point, type 3).
+#' @param y_vec       A <code>numeric</code> vector of observations.
+#' @param tau_vec     A <code>numeric</code> vector of thresholds at time t&gt;= 1.
+#' @param ...         Additional arguments.
+#' @return  An <code>integer</code> scalar of estimated change point location.
+#' @export
+#' @author Haotian Xu
+#' @examples
+#' TO DO
+online.univar.one3 = function(y_vec, tau_vec, ...)
+if(length(y_vec) != length(tau_vec))
+stop("y_vec and tau_vec should have the same length.")
+
+t = 1
+FLAG = 0
+while(FLAG == 0 &amp; t &lt;= length(y_vec))
+t = t + 1
+J = floor(log2(t))
+j = 0
+while(j &lt; J &amp; FLAG == 0)
+j = j + 1
+s_j = t - 2^(j-1)
+cusum = sqrt((t-s_j)*s_j/t) * abs(mean(y_vec[1:s_j]) - mean(y_vec[(s_j+1):t]))
+FLAG = (cusum &gt; tau_vec[t])
+
+
+return(t)
+
+</p>
+
+
+<h3>Value</h3>
+
+<p>An <code>integer</code> vector of estimated change points.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Haotian Xu
+</p>
+
+
+<h3>References</h3>
+
+<p>Yu, Padilla, Wang and Rinaldo (2020) &lt;arxiv:2006.03283&gt;
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">y_vec = rnorm(200) + c(rep(0, 50), rep(1, 100), rep(0, 50))
+train_vec = rnorm(150)
+# control the false alarm rate
+temp1 = online.univar.multi(y_vec = y_vec, train_vec = train_vec, alpha = 0.05, permu_num = 20)
+temp1
+</code></pre>
+
+
+</div>

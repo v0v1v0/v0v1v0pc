@@ -1,0 +1,196 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>longcr</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Long format of competition results</h2>
+
+<h3>Description</h3>
+
+<p>Functions for dealing with competition results in long format.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">is_longcr(cr_data)
+
+as_longcr(cr_data, repair = TRUE, ...)
+
+## S3 method for class 'longcr'
+as_tibble(x, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cr_data</code></td>
+<td>
+<p>Data of competition results (convertible to tabular).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>repair</code></td>
+<td>
+<p>Whether to repair input.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to be passed to or from methods.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Object to be converted to tibble.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>as_longcr()</code> is S3 method for converting data to <code>longcr</code>. When
+using <strong>default</strong> method if <code>repair</code> is <code>TRUE</code> it also tries to fix possible
+problems (see "Repairing"). If <code>repair</code> is <code>FALSE</code> it converts <code>cr_data</code> to
+tibble and adds <code>longcr</code> class to it.
+</p>
+<p>When applying <code>as_longcr()</code> to proper (check via <code>is_widecr()</code> is made)
+<strong><code>widecr</code></strong> object, conversion is made:
+</p>
+
+<ul>
+<li>
+<p> If there is column <code>game</code> then it is used as game identifier. Else
+treat every row as separate game data.
+</p>
+</li>
+<li>
+<p> Every "player"-"score" pair for every game is converted to separate row
+with adding the appropriate extra columns.
+</p>
+</li>
+<li>
+<p> Result is arranged by <code>game</code> and identifier of a "player"-"score" pair
+(extra symbols after "player" and "score" strings in input column names) in
+increasing order.
+</p>
+</li>
+<li>
+<p> If <code>repair</code> is <code>TRUE</code> then repair is done.
+</p>
+</li>
+</ul>
+<p>For appropriate <strong><code>longcr</code></strong> objects <code>as_longcr()</code> returns its input and
+throws error otherwise.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>is_longcr()</code> returns <code>TRUE</code> if its argument is appropriate object of
+class <code>longcr</code>: it should inherit classes <code>longcr</code>, <code>tbl_df</code> (in other
+words, to be tibble) and have "game", "player", "score"
+among column names.
+</p>
+<p><code>as_longcr()</code> returns an object of class <code>longcr</code>.
+</p>
+<p>as_tibble() applied to <code>longcr</code> object drops <code>longcr</code>
+class.
+</p>
+
+
+<h3>Long format of competition results</h3>
+
+<p>It is assumed that competition consists from multiple games (matches,
+comparisons, etc.). One game can consist from <strong>variable</strong> number of
+players. Inside a game all players are treated equally.
+In every game every player has some score: the value of arbitrary nature
+that fully characterizes player's performance in particular game (in most
+cases it is some numeric value).
+</p>
+<p><code>longcr</code> inherits from <code>tibble</code>. Data should have at least three columns with
+the following names:
+</p>
+
+<ul>
+<li> <p><code>game</code> - game identifier.
+</p>
+</li>
+<li> <p><code>player</code> - player identifier.
+</p>
+</li>
+<li> <p><code>score</code> - score of particular player in particular game.
+</p>
+</li>
+</ul>
+<p>Extra columns are allowed. <strong>Note</strong> that if object is converted to
+widecr, they will be dropped. So it is better to store
+extra information about "game"-"player" pair as list-column "score" which
+will stay untouched.
+</p>
+
+
+<h3>Repairing</h3>
+
+<p>Option <code>repair = TRUE</code> (default) in <code>as_longcr()</code> means that its result is
+going to be repaired with following actions:
+</p>
+
+<ul>
+<li>
+<p> Detect columns exactly matching "game", "player" or "score". Those are used
+in the output. If all are detected matched columns are put in the beginning.
+Other columns are preserved.
+</p>
+</li>
+<li>
+<p> If not all columns were exactly matched, detect first columns with names
+containing "game", "player" or "score" (ignoring case). If there are many
+matching names for one output name then the first one is used. In case of
+imperfect match, message is given. All other columns are treated as "extra".
+</p>
+</li>
+<li>
+<p> If some legitimate names aren't detected, respective columns are created
+and filled with <code>NA_integer_</code>. Also a message is given.
+</p>
+</li>
+<li>
+<p> If in one game some player listed more than once, the first record is
+taken.
+</p>
+</li>
+<li>
+<p> Return the tibble with at least 3 appropriate for <code>longcr</code> columns and
+column names.
+</p>
+</li>
+</ul>
+<h3>See Also</h3>
+
+<p>Wide format
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Repairing example
+cr_data &lt;- data.frame(
+  playerscoregame_ID = rep(1:5, times = 2),
+  gameId = rep(1:5, each = 2),
+  scoreS = 31:40,
+  scoreSS = 41:50
+)
+cr_data_long &lt;- as_longcr(cr_data, repair = TRUE)
+
+is_longcr(cr_data_long)
+
+as_tibble(cr_data_long)
+</code></pre>
+
+
+</div>

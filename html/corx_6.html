@@ -1,0 +1,178 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>corx</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>corx</h2>
+
+<h3>Description</h3>
+
+<p>Calculates correlations matrices. Relevant values are stored in a list with methods for easy retrieval and formatting in publication ready tables.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">corx(
+  data,
+  x = NULL,
+  y = NULL,
+  z = NULL,
+  method = c("pearson", "spearman", "kendall"),
+  stars = c(0.05, 0.01, 0.001),
+  p_adjust = c("none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr"),
+  round = 2,
+  remove_lead = TRUE,
+  triangle = NULL,
+  caption = NULL,
+  note = NULL,
+  describe = FALSE,
+  grey_nonsig = TRUE,
+  call_only = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>data.frame or matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a vector of rownames. Defaults to all</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>a vector of colnames. If not supplied, y is set to x.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>a vector of variable names. Control variables to be used in partial correlations - defaults to NULL</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>character. One of "pearson", "spearman", or "kendall"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stars</code></td>
+<td>
+<p>a numeric vector. This argument defines cut-offs for p-value stars.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p_adjust</code></td>
+<td>
+<p>character. What adjustment for multiple tests should be used? One of "none" (default), "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", or "fdr"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>round</code></td>
+<td>
+<p>numeric. Number of digits in printing</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>remove_lead</code></td>
+<td>
+<p>logical. if TRUE (the default), leading zeros are removed in summaries</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>triangle</code></td>
+<td>
+<p>character. one of "lower", "upper" or NULL (the default)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>caption</code></td>
+<td>
+<p>character. table caption. Passed to plots</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>note</code></td>
+<td>
+<p>character. Text for a table note</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>describe</code></td>
+<td>
+<p>list of named functions. If functions are supplied to describe, new columns will be bound to the 'APA matrix' for each function in the list. Describe also accepts a variety of shortcuts. If describe is set to TRUE, mean and standard deviation are returned for all row variables. Describe can accept a character vector to call the following descriptive functions: c('mean','sd','var','median','iqr','skewness','kurtosis'). These shortcuts are powered by 'tidyselect'. Skewness and kurtosis are calculated using the 'moments' package. All functions retrieved with shortcuts remove missing values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grey_nonsig</code></td>
+<td>
+<p>logical. Should non-significant values be grey in output? This argument does nothing if describe is not set to FALSE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call_only</code></td>
+<td>
+<p>logical. For debugging, if TRUE only the call is returned</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Constructs correlation matrices using 'stats::cor.test' unless z is specified. When z is specified ppcor::ppcor.test is used instead. Character and factor variables are not accepted. To prevent errors, users must first convert all variables to numeric.
+</p>
+<p>## Partial correlations:
+</p>
+<p>Supplying the argument z will call ppcor::pcor.test the correlation pair are supplied to arguments x and y. The vector of z given to corx is passed to argument z in pcor.test.
+</p>
+<p>##  Missing data:
+</p>
+<p>Observations containing missing data required to complete a correlation or partial correlation are automatically removed.
+</p>
+<p>## P-adjust:
+</p>
+<p>P-values attained can be adjusted for multiple comparisons by using the 'p_adjust' argument. This calls the function stats::p.adjust. When a matrix is symmetrical, p-values are only adjusted for unique comparisons. When a correlation matrix is not symmetrical, all comparisons are assumed to be unique.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of class 'corx' which includes:
+* "call" The call which if evaluated reproduces the object
+* "apa" An 'APA' formatted correlation matrix with significance stars
+* "r" Raw correlation coefficients
+* "p" p-values
+* "n" Pairwise observations
+* "caption" Object caption
+* "note" Object note
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">cor_mat &lt;- corx(mtcars, x = c(mpg,cyl,disp), y = c(wt,drat,disp,qsec),
+           z = wt, round = 2, stars = c(0.05),
+           caption = "Controlling for weight" ,
+           describe = list("mean" = function(x) mean(x,na.rm=TRUE)))
+cor_mat
+coef(cor_mat)
+cor_mat$p
+plot(cor_mat)
+cor_2 &lt;- corx(iris[,-5], describe = c(median, IQR = iqr, kurt = kurtosis),
+         note = "Using shortcuts to select describe functions", triangle = "lower")
+cor_2
+</code></pre>
+
+
+</div>

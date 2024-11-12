@@ -1,0 +1,475 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>networkMA</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Contrast-Based Bayesian Network Meta-Analysis Model</h2>
+
+<h3>Description</h3>
+
+<p>Fits a contrast-based Bayesian network meta-anlaysis model to data that contains a binary reponse.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">networkMA(data,
+          model="gaussian",
+          niter=1100, nburn=100, nthin=1,
+          mb=0, sb=1,
+          md=0, sd=1,
+          tau_prior = "uniform", tau_max=5,
+          tau_lm = -2.34, tau_lsd = 1.62,
+          alpha=1,
+          aw=1, bw=1,
+          v0=0.1, scale=1, nu=1,
+          mh=c(0.5, 0.5, 0.1, 0.5),
+          H=20,
+          verbose=FALSE)
+
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>Data frame that must consist of the following four columns
+</p>
+
+<ul>
+<li>
+<p>  sid - study id (must be contiguous integers beginning with 1).
+</p>
+</li>
+<li>
+<p> tid - treatment id (must be contiguous integers beginning with 1).
+</p>
+</li>
+<li>
+<p> r - number of "successes" recorded for each treatment by study combination.
+</p>
+</li>
+<li>
+<p> n - number of "trials" recorded for each treatment by study combination.
+</p>
+</li>
+</ul>
+<p>Note that the reference treatment must be labeled using 1 and treatment labels must be contiguous integers.  The colnames of the data fram must also be “sid”,“tid”,“r”, and “n”.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>Specifies the model that will be fit.  The options are
+</p>
+
+<ul>
+<li>
+<p> gaussian - treatment effects are modeled with a Gaussian.
+</p>
+</li>
+<li>
+<p> dp_gaussian - treatment effects are modeled with a DPM with a Gaussian base measure.
+</p>
+</li>
+<li>
+<p> dp_spike_slab - treatment effects are modeled with a DPM with a spike &amp; slab base measure.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>niter</code></td>
+<td>
+<p>number of MCMC iterates to be collected. default is 1100.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nburn</code></td>
+<td>
+<p>number of MCMC iterates discared as burn-in. default is 100.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nthin</code></td>
+<td>
+<p>number by which the MCMC chain is thinned. default is 1.  Thin must be selected so that it is a multilple of (draws - thin).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mb</code></td>
+<td>
+<p>prior mean for baseline treatment.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sb</code></td>
+<td>
+<p>prior standard deviation for baseline treatment.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>md</code></td>
+<td>
+<p>prior mean for d1k.  Only used for gaussian and dp_gaussian models.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sd</code></td>
+<td>
+<p>prior standard deviation for d1k.  Only used for gaussian and dp_gaussian models.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau_prior</code></td>
+<td>
+<p>prior distribution for <code class="reqn">\tau</code>.  Options are
+</p>
+
+<ul>
+<li>
+<p> "uniform" which implies that <code class="reqn">\tau \sim UN(0, tau\_max)</code>.
+</p>
+</li>
+<li>
+<p> "lognormal" which implies that <code class="reqn">\tau \sim LogNormal(tau\_lm, tau\_lsd)</code>.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau_max</code></td>
+<td>
+<p>Upper bound on <code class="reqn">\tau</code>.  Only used when tau_prior = “uniform”.  Default is 5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau_lm</code></td>
+<td>
+<p>mean of <code class="reqn">log(\tau)</code>.  Only used if tau_prior = “lognormal”.  Default is -2.34.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau_lsd</code></td>
+<td>
+<p>standard deviation of <code class="reqn">log(\tau)</code>.  Only used if tau_prior = lognormal.  Default is 1.62.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>Precision parameter of the DP. Only used if model is dp_gaussian or dp_spike_slab. Default value is 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aw</code></td>
+<td>
+<p>first shape parameter of omega's beta prior.  only used if model is dp_spike_slab.  Default value is 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bw</code></td>
+<td>
+<p>second shape parameter of omega's beta prior.  only used if model is dp_spike_slab.  Default value is 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>v0</code></td>
+<td>
+<p>Parameter that. Default is 0.1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scale</code></td>
+<td>
+<p>Parameter that. Default is 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nu</code></td>
+<td>
+<p>Parameter that. Default is 2.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mh</code></td>
+<td>
+<p>4-dimensional vector containing values for the standard deviation of the Gaussian proposal associated with the MH update for <code class="reqn">\mu</code>, <code class="reqn">\delta</code>, <code class="reqn">\tau</code>, <code class="reqn">d_{1k}</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>H</code></td>
+<td>
+<p>Truncated upper bound of the stick-breaking representation of the DP.  Only used for the dp_gaussian or dp_spike_slab models.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Logical indicating if information regarding data and MCMC iterate should be printed to screen.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function permits the user to fit three different types of binomial models for contrast-based Bayesian network meta-analysis.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The function returns a list containing arrays filled with MCMC iterates that correspond to model parameters. In order to provide more detail, in what follows let
+</p>
+<p>"T" - be the number of MCMC iterates collected,
+</p>
+<p>"N" - be the number of studies,
+</p>
+<p>"K" - be the total number of treatments.
+</p>
+<p>The output list contains the following
+</p>
+
+<ul>
+<li>
+<p> mu - a matrix  of dimension (T, N) containing MCMC iterates associated with each study's baseline treatment (<code class="reqn">mu_{i, b_i}</code>).
+</p>
+</li>
+<li>
+<p> delta - a matrix of dimension (T, N*K(K-1)/2+1) containing MCMC iterates associated <code class="reqn">\delta_{i, b_{i}k}</code>.  For ease of storage, each study is alloted enough columns to contain all pairwise comparisons (i.e., deltas).  If a comparison is not included in a study the column associated with it is set to -99.  By default the first column for each study is a vector of zeros (corresponding to <code class="reqn">d_{11}</code>)
+</p>
+</li>
+<li>
+<p> tau2 -  a matrix of dimension (T,1) containing MCMC iterates associated with the variance of delta (common across studies)
+</p>
+</li>
+<li>
+<p> d1 - a matrix of dimension (T, K) containing MCMC iterates assocated with <code class="reqn">d_{1k}</code>.  Note that <code class="reqn">d_{11} = 0</code> so the first column contains zeros.
+</p>
+</li>
+<li>
+<p> ci - a matrix of dimension (T, K) containing MCMC iterates associated with cluster labels of the K treatments.  The first column corresponds to <code class="reqn">d_{11}</code> which is always allocated to “cluster 1”.  The last K-1 columns are cluster labels for the remaining <code class="reqn">d_{1k}</code> treatments.  This object is provided only if model is "dp_gaussian" or "dp_spike_slab".
+</p>
+</li>
+<li>
+<p> omega - a matrix of dimension (T,1) containing MCMC iterates for omega0 the weight associated with spike-and-slabe mixture. This object is provided only if model is "dp_spike_slab".
+</p>
+</li>
+<li>
+<p> sh - a matrix of dimension (T, K) containing MCMC iterates for binary indicator of being allocated to spike (labeled using “0.1”) or slab (labeled using “1”). The first column corresponds to <code class="reqn">d_{11}</code> which is always allocated to spike.  The last K-1 columns correspond to the remaining <code class="reqn">d_{1k}</code> treatments.  This is object is provided only if model is "dp_spike_slab".
+</p>
+</li>
+<li>
+<p> ordmat - a list of size T with each entry being a KxK pairwise treatment comparison matrix.
+</p>
+</li>
+<li>
+<p> prior_values - a vector returning the priors values used.
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+
+# This number of MCMC samples is for illustrative purposes only, it may
+# be necessary to increase the total
+ni &lt;- 10000
+nb &lt;- 5000
+nt &lt;- 5
+
+dat &lt;- smoking # Use the smoking cessation dataset.
+
+# total number of treatments
+K &lt;- length(unique(dat$tid))
+
+# Fit model 1
+set.seed(101)
+# Fit the Guassian Effects model.
+m1 &lt;- networkMA(dat, model="gaussian", niter=ni, nburn=nb, nthin=nt,
+                mb=0, sb=10, md=0, sd=1,
+                tau_prior = "lognormal", tau_lm = -2.34, tau_lsd = 2,
+                mh=c(0.5, 0.5, 0.05, 0.5))
+
+mean(m1$d1[,2])
+quantile(m1$d1[,2], c(0.025, 0.975))
+
+# Fit the DP Gaussian base measure model.
+m2 &lt;- networkMA(dat, model="dp_gaussian", niter=ni, nburn=nb, nthin=nt,
+                mb=0, sb=10, md=0, sd=1,
+                tau_prior = "lognormal", tau_lm = -2.34, tau_lsd = 2,
+                alpha=1,
+                mh=c(0.5, 0.5, 0.05, 0.5))
+
+mean(m2$d1[,2])
+quantile(m2$d1[,2], c(0.025, 0.975))
+
+
+# Fit the DP spike and slab base measure model.
+m3 &lt;- networkMA(dat, model="dp_spike_slab", niter=ni, nburn=nb, nthin=nt,
+                mb=0, sb=10, md=0, sd=1,
+                tau_prior = "lognormal", tau_lm = -2.34, tau_lsd = 2,
+                alpha=1, aw=1, bw=1, v0=0.1, scale=1, nu=1,
+                mh=c(0.5, 0.5, 0.05, 0.5))
+
+mean(m3$d1[,2])
+quantile(m3$d1[,2], c(0.025, 0.975))
+
+# Function that finds the graph corresponding to the posterior samples, and
+# graphs for a sequence of threshold probabilities (denoted as gamma in
+# the article)
+
+gamma_vec &lt;- c(0.5, 0.75, 0.9, 0.95, 0.99)
+networks &lt;- network_graphs(m3[["ordmat"]], gamma=gamma_vec)
+
+
+# One way of plotting the directed graph based on the output of the function
+# above is the following.  The "igraph" package can be used to facilitate
+# producing pair-wise graphical model display
+
+
+oldpar &lt;- par(no.readonly = TRUE)
+
+
+# Plot network that corresponds to posterior mode
+Network = networks[[1]]
+out = cbind(from=1:ncol(Network),to=1:ncol(Network),color=0)
+for(i in 1:(ncol(Network)-1)){
+  for(j in (i+1):ncol(Network)){
+    if(Network[i,j]==1) out = rbind(out,c(i,j,2))
+    if(Network[i,j]==-1)out = rbind(out,c(j,i,2))
+    if(Network[i,j]==0) out = rbind(out,c(i,j,1),c(j,i,1))
+  }
+}
+
+
+mynet &lt;- igraph::graph_from_data_frame(out,directed = TRUE)
+igraph::V(mynet)$label.cex &lt;- 0.5
+igraph::V(mynet)$label.cex &lt;- 1
+names &lt;- igraph::V(mynet)$name
+
+igraph::E(mynet)$lty &lt;- igraph::E(mynet)$color
+igraph::E(mynet)$arrow.mode &lt;- ifelse(out[,"color"]==0,0,2)
+igraph::E(mynet)$color &lt;- 'black'
+
+plot(mynet,margin=c(0.05, 0.05, 0.05, 0.05),
+     vertex.shape = "circle",
+     vertex.color = "white",
+     vertex.label.family = "Helvetica",
+     edge.arrow.size = 0.3,
+     vertex.label.color = "black",
+     vertex.frame.color = "black",
+     layout = igraph::layout_with_kk,
+     asp = 0, ylim=c(-0.9,0.9), xlim=c(-0.9,0.9),
+     main = paste("P[mode Graph|Data] =",networks[[2]]),
+     sub = paste("Number of edges = ",nrow(out)-ncol(Network)))
+
+
+# Or alternatively
+coords &lt;- igraph::layout_as_star(mynet, center = igraph::V(mynet)[1])
+
+plot(mynet,margin=c(0.05, 0.05, 0.05, 0.05),
+     vertex.shape = "circle",
+     vertex.color = "white",
+     layout = coords,
+     vertex.label.family = "Helvetica",
+     edge.arrow.size = 0.3,
+     vertex.label.color = "black",
+     vertex.frame.color = "black",
+     layout = igraph::layout_with_kk,
+     asp = 0, ylim=c(-0.9,0.9), xlim=c(-0.9,0.9),
+     main = paste("P[mode Graph|Data] =",networks[[2]]),
+     sub = paste("Number of edges = ",nrow(out)-ncol(Network)))
+
+
+
+
+# Plot the sequence of graphs based on gamma
+network_seq &lt;- networks[[3]]
+
+for(i in 1:length(network_seq)){
+  Probpair &lt;- gamma_vec[i]
+  Network &lt;- network_seq[[i]]
+  # Plot network
+  out = cbind(from=1:ncol(Network),to=1:ncol(Network),color=0)
+  for(i in 1:(ncol(Network)-1)){
+    for(j in (i+1):ncol(Network)){
+      if(Network[i,j]==1) out = rbind(out,c(i,j,2))
+      if(Network[i,j]==-1)out = rbind(out,c(j,i,2))
+      if(Network[i,j]==0) out = rbind(out,c(i,j,1),c(j,i,1))
+    }
+  }
+  # out
+
+  # Compute joint probability
+  PointEst = (Network + 10)*(upper.tri(Network) &amp; Network!=-1111)
+  prob = mean(sapply(m3[["ordmat"]],
+         function(aux){
+           sum(abs((aux+10)*(upper.tri(Network)&amp;Network!=-1111)-PointEst))}
+           ==0))
+
+
+  mynet &lt;- igraph::graph_from_data_frame(out,directed = TRUE)
+  igraph::V(mynet)$label.cex &lt;- 0.5
+  igraph::V(mynet)$label.cex &lt;- 1
+  names &lt;- igraph::V(mynet)$name
+
+  igraph::E(mynet)$lty &lt;- igraph::E(mynet)$color
+  igraph::E(mynet)$arrow.mode &lt;- ifelse(out[,"color"]==0,0,2)
+  igraph::E(mynet)$color &lt;- 'black'
+
+
+  plot(mynet,margin=c(0.05, 0.05, 0.05, 0.05),
+         vertex.shape = "circle",
+         vertex.color = "white",
+         layout = coords,
+         vertex.label.family = "Helvetica",
+         edge.arrow.size = 0.3,
+         vertex.label.color = "black",
+         vertex.frame.color = "black",
+         layout = igraph::layout_with_kk,
+         asp = 0, ylim=c(-0.9,0.9), xlim=c(-0.9,0.9),
+         main = paste("max P[di - dj|Data] &gt;=",Probpair,"and P[Graph|Data] =",prob),
+         sub = paste("Number of edges = ",nrow(out)-ncol(Network)))
+}
+
+
+
+
+# Extract cliques
+
+ordmat &lt;- m3[["ordmat"]]
+
+clique_extract(ordmat,
+               type="Highest_Post_Prob")
+
+
+clique_extract(ordmat,
+               type="Highest_Pairwise_Post_Prob",
+               gamma=0.9)
+
+clique_extract(ordmat,
+               type="Highest_Pairwise_Post_Prob",
+               clique_size=5,
+               gamma=0.95)
+
+
+par(oldpar)
+
+
+
+
+
+
+
+</code></pre>
+
+
+</div>

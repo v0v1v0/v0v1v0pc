@@ -1,0 +1,214 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CorrectBatches</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>CorrectBatches</h2>
+
+<h3>Description</h3>
+
+<p>Batch-effect correction over a list of single cell batches
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CorrectBatches(
+  lsBatches,
+  hierarchical = TRUE,
+  queNumCelltypes = NULL,
+  maxMem = 5,
+  sampling = FALSE,
+  numSamples = NULL,
+  kNN = 30,
+  pcaDim = 50,
+  pairsFilter = FALSE,
+  perCellMNN = 0.08,
+  fuzzy = TRUE,
+  fuzzyPCA = 10,
+  estMethod = "Median",
+  clusterMethod = "louvain",
+  doCosNorm = FALSE,
+  fracSampling = NULL,
+  debug = FALSE,
+  verbose = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>lsBatches</code></td>
+<td>
+<p>List of batches to integrate. Batches should contain the same number of genes as rows.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hierarchical</code></td>
+<td>
+<p>Use hierarchical integration scheme when correcting more than two batches.
+If set to FALSE, the input batches are sorted by number of cells and integrated on descending order.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>queNumCelltypes</code></td>
+<td>
+<p>Number of cell types in the query batch. By default Canek searches the number of
+cell types using an heuristic algorithm. Change this parameter if you know the number of cell types in advanced.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxMem</code></td>
+<td>
+<p>Maximum number of memberships from the query batch. This parameter is used on the heuristic algorithm to find the number of cell types.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sampling</code></td>
+<td>
+<p>Use MNNs pairs sampling when using a Kalman filter to estimate the correction vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>numSamples</code></td>
+<td>
+<p>If sampling. Number of MNNs pairs samples to use on the estimation process.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kNN</code></td>
+<td>
+<p>Number of k-nearest-neighbors used to define the MNNs pairs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pcaDim</code></td>
+<td>
+<p>Number of PCA dimensions to use.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pairsFilter</code></td>
+<td>
+<p>Filter MNNs pairs before estimating the correction vectors. If TRUE,
+the pairs are filtered from outliers using an interquartile range method.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>perCellMNN</code></td>
+<td>
+<p>Threshold value to decide if a membership's correction value is calculated.
+As a rough interpretation, this values can be thought as the proportion of cells from a membership
+with an associated MNN pair. If the proportion is low, an specific correction vectors is
+not calculated for this membership.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fuzzy</code></td>
+<td>
+<p>Use fuzzy logic to join the local correction vectors.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fuzzyPCA</code></td>
+<td>
+<p>Number of PCs to use in the fuzzy process.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estMethod</code></td>
+<td>
+<p>Method to use when estimating the correction vectors:
+</p>
+
+<ul>
+<li>
+<p>Median. Use the cells median distance
+</p>
+</li>
+<li>
+<p>EKF. Use an extended Kalman filter
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clusterMethod</code></td>
+<td>
+<p>Method used to identify memberships.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>doCosNorm</code></td>
+<td>
+<p>Whether to do cosine normalization.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fracSampling</code></td>
+<td>
+<p>Fraction of cells to sample in the hierarchical selection (default is NULL, no sampling).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>debug</code></td>
+<td>
+<p>Return correction's information</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Print output.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Pass down methods from RunCanek().</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>CorrectBatches is a method to correct batch-effect from two or more single-cell batches.
+Batch-effects observations are defined using mutual nearest neighbors (MNNs) pairs and cell
+groups from the query batch are distinguished using clustering. We estimate a correction vector
+for each cluster using its MNNs pairs and use these vectors to remove the batch effect from the query batch in two ways:
+</p>
+
+<ul>
+<li>
+<p>A linear correction is performed by equally correcting the cells from the same cluster.
+</p>
+</li>
+<li>
+<p>A non-linear correction is performed by differently correcting each cell using fuzzy logic.
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p>A list containing the integrated datasets as matrix and the correction data .
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">Batches &lt;- SimBatches$batches
+z &lt;- CorrectBatches(Batches)
+
+Uncorrected_PCA &lt;- prcomp(t(cbind(Batches[[1]], Batches[[2]])))
+plot(Uncorrected_PCA$x[,1:2])
+Corrected_PCA &lt;- prcomp(t(z))
+plot(Corrected_PCA$x[,1:2])
+
+</code></pre>
+
+
+</div>

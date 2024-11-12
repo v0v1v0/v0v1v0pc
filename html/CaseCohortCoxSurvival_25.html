@@ -1,0 +1,188 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>influences.RH.missingdata</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>influences.RH.missingdata</h2>
+
+<h3>Description</h3>
+
+<p>Computes the influences on the log-relative hazard, when covariate data is
+missing for certain individuals in the phase-two data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">influences.RH.missingdata(mod, riskmat.phase2, dNt.phase2 = NULL,
+status.phase2 = NULL, estimated.weights = FALSE, B.phase2 = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>mod</code></td>
+<td>
+<p>a cox model object, result of function coxph.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>riskmat.phase2</code></td>
+<td>
+<p>at risk matrix for the phase-two data at all of the cases
+event times, even those with missing covariate data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dNt.phase2</code></td>
+<td>
+<p>counting process matrix for failures in the phase-two data.
+Needs to be provided if <code>status.phase2 = NULL</code>. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>status.phase2</code></td>
+<td>
+<p>vector indicating the case status in the phase-two data.
+Needs to be provided if <code>dNt.phase2 = NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estimated.weights</code></td>
+<td>
+<p>are the weights for the third phase of sampling (due to
+missingness) estimated? If <code>estimated.weights = TRUE</code>, the argument below
+needs to beprovided. Default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B.phase2</code></td>
+<td>
+<p>matrix for the phase-two data, with phase-three sampling strata
+indicators. It should have as many columns as phase-three strata (<code class="reqn">J^{(3)}</code>),
+with one 1 per row, to indicate the phase-three stratum position. Needs to be
+provided if <code>estimated.weights = TRUE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>influences.RH.missingdata</code> works for estimation from a case-cohort with design
+weights and when covariate data was missing for certain individuals in the
+phase-two data (i.e., case-cohort obtained from three phases of sampling and
+consisting of individuals in the phase-two data without missing covariate information).
+</p>
+<p>If there are no missing covariates in the phase- two sample, use <code>influences.RH</code>
+with either design weights or calibrated weights.
+</p>
+<p><code>influences.RH.missingdata</code> uses the influence formulas provided in Etievant
+and Gail (2024).
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>infl.beta</code>: matrix with the overall influences on the log-relative hazard estimates.
+</p>
+<p><code>infl2.beta</code>: matrix with the phase-two influences on the log-relative hazard estimates.
+</p>
+<p><code>infl3.beta</code>: matrix with the phase-three influences on the log-relative hazard estimates.
+</p>
+<p><code>beta.hat</code>: vector of length <code class="reqn">p</code> with log-relative hazard estimates.
+</p>
+
+
+<h3>References</h3>
+
+<p>Etievant, L., Gail, M. H. (2024). Cox model inference for relative hazard and pure risk from stratified weight-calibrated case-cohort data. Lifetime Data Analysis, 30, 572-599.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>estimation</code>, <code>estimation.CumBH</code>, <code>estimation.PR</code>,
+<code>influences.missingdata</code>, <code>influences.CumBH.missingdata</code>,
+<code>influences.PR.missingdata</code>, <code>influences</code>, <code>influences.RH</code>, <code>influences.CumBH</code>,
+<code>influences.PR</code>, <code>robustvariance</code> and <code>variance</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+  data(dataexample.missingdata.stratified, package="CaseCohortCoxSurvival")
+
+  cohort &lt;- dataexample.missingdata.stratified$cohort
+  phase2 &lt;- cohort[which(cohort$phase2 == 1),] # the phase-two sample
+  casecohort &lt;- cohort[which(cohort$phase3 == 1),] # the stratified case-cohort
+
+  B.phase2 &lt;- cbind(1 * (phase2$W3 == 0), 1 * (phase2$W3 == 1))
+  rownames(B.phase2)  &lt;- cohort[cohort$phase2 == 1, "id"]
+  B.phase3 &lt;- cbind(1 * (casecohort$W3 == 0), 1 * (casecohort$W3 == 1))
+  rownames(B.phase3)  &lt;- cohort[cohort$phase3 == 1, "id"]
+  total.B.phase2 &lt;- colSums(B.phase2)
+  J3 &lt;- ncol(B.phase3)
+  n &lt;- nrow(cohort)
+
+  # Quantities needed for estimation of the cumulative baseline hazard when
+  # covariate data is missing
+  mod.cohort &lt;- coxph(Surv(event.time, status) ~ X2, data = cohort,
+                      robust = TRUE) # X2 is available on all cohort members
+  mod.cohort.detail &lt;- coxph.detail(mod.cohort, riskmat = TRUE)
+
+  riskmat.phase2 &lt;- with(cohort, mod.cohort.detail$riskmat[phase2 == 1,])
+  rownames(riskmat.phase2) &lt;- cohort[cohort$phase2 == 1, "id"]
+  observed.times.phase2 &lt;- apply(riskmat.phase2, 1,
+                                 function(v) {which.max(cumsum(v))})
+  dNt.phase2 &lt;- matrix(0, nrow(riskmat.phase2), ncol(riskmat.phase2))
+  dNt.phase2[cbind(1:nrow(riskmat.phase2), observed.times.phase2)] &lt;- 1
+  dNt.phase2 &lt;- sweep(dNt.phase2, 1, phase2$status, "*")
+  colnames(dNt.phase2) &lt;- colnames(riskmat.phase2)
+  rownames(dNt.phase2) &lt;- rownames(riskmat.phase2)
+
+  Tau1 &lt;- 0 # given time interval for the pure risk
+  Tau2 &lt;- 8
+  x &lt;- c(-1, 1, -0.6) # given covariate profile for the pure risk
+
+  # Estimation using the stratified case cohort with true known design weights
+  mod.true &lt;- coxph(Surv(event.time, status) ~ X1 + X2 + X3, data = casecohort,
+                    weight = weight.true, id = id, robust = TRUE)
+
+  est.true &lt;- influences.missingdata(mod = mod.true, riskmat.phase2 = riskmat.phase2,
+                                     dNt.phase2 = dNt.phase2, Tau1 = Tau1,
+                                     Tau2 = Tau2, x = x)
+
+  # print the influences on the log-relative hazard estimates
+  # est.true$infl.beta
+  # print the phase-two influences on the log-relative hazard estimates
+  # est.true$infl2.beta
+  # print the phase-three influences on the log-relative hazard estimates
+  # est.true$infl3.beta
+
+  # Estimation using the stratified case cohort with estimated weights, and
+  # accounting for the estimation through the influences
+  mod.estimated &lt;- coxph(Surv(event.time, status) ~ X1 + X2 + X3,
+                         data = casecohort, weight = weight.est, id = id,
+                         robust = TRUE)
+
+  est.estimated  &lt;- influences.missingdata(mod.estimated,
+                                           riskmat.phase2 = riskmat.phase2,
+                                           dNt.phase2 = dNt.phase2,
+                                           estimated.weights = TRUE,
+                                           B.phase2 = B.phase2, Tau1 = Tau1,
+                                           Tau2 = Tau2, x = x)
+
+  # print the influences on the log-relative hazard estimates
+  # est.estimated$infl.beta
+  # print the phase-two influences on the log-relative hazard estimates
+  # est.estimated$infl2.beta
+  # print the phase-three influences on the log-relative hazard estimates
+  # est.estimated$infl3.beta
+
+</code></pre>
+
+
+</div>

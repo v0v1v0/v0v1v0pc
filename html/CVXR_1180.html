@@ -1,0 +1,62 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>logistic</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Logistic Function</h2>
+
+<h3>Description</h3>
+
+<p>The elementwise logistic function, <code class="reqn">\log(1 + e^x)</code>.
+This is a special case of log(sum(exp)) that evaluates to a vector rather than to a scalar, which is useful for logistic regression.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">logistic(x)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table><tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>An Expression, vector, or matrix.</p>
+</td>
+</tr></table>
+<h3>Value</h3>
+
+<p>An Expression representing the logistic function evaluated at the input.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(92)
+n &lt;- 20
+m &lt;- 1000
+sigma &lt;- 45
+
+beta_true &lt;- stats::rnorm(n)
+idxs &lt;- sample(n, size = 0.8*n, replace = FALSE)
+beta_true[idxs] &lt;- 0
+X &lt;- matrix(stats::rnorm(m*n, 0, 5), nrow = m, ncol = n)
+y &lt;- sign(X %*% beta_true + stats::rnorm(m, 0, sigma))
+
+beta &lt;- Variable(n)
+X_sign &lt;- apply(X, 2, function(x) { ifelse(y &lt;= 0, -1, 1) * x })
+obj &lt;- -sum(logistic(-X[y &lt;= 0,] %*% beta)) - sum(logistic(X[y == 1,] %*% beta))
+prob &lt;- Problem(Maximize(obj))
+result &lt;- solve(prob)
+
+log_odds &lt;- result$getValue(X %*% beta)
+beta_res &lt;- result$getValue(beta)
+y_probs &lt;- 1/(1 + exp(-X %*% beta_res))
+log(y_probs/(1 - y_probs))
+</code></pre>
+
+
+</div>

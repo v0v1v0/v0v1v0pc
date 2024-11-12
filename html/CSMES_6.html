@@ -1,0 +1,115 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CSMES.predictPareto</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate predictions for all Pareto-optimal ensemble classifier candidates selected through CSMES</h2>
+
+<h3>Description</h3>
+
+<p>This function generates predictions for all pareto-optimal ensemble classifier candidates as identified through the first training stage of CSMES (<code>CSMES.ensSel</code>).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CSMES.predictPareto(ensSelModel, newdata)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>ensSelModel</code></td>
+<td>
+<p>ensemble selection model (output of <code>CSMES.ensSel</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdata</code></td>
+<td>
+<p>data.frame or matrix containing data to be scored</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An object of the class <code>CSMES.predictPareto</code> which is a list with the following two components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>Pareto_predictions_c</code></td>
+<td>
+<p>A vector with class predictions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Paret_predictions_p</code></td>
+<td>
+<p>A vector with probability predictions.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Koen W. De Bock, <a href="mailto:kdebock@audencia.com">kdebock@audencia.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>De Bock, K.W., Lessmann, S. And Coussement, K., Cost-sensitive business failure prediction
+when misclassification costs are uncertain: A heterogeneous ensemble selection approach,
+European Journal of Operational Research (2020), doi: 10.1016/j.ejor.2020.01.052.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>CSMES.ensSel</code>, <code>CSMES.predict</code>, <code>CSMES.ensNomCurve</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">##load data
+library(rpart)
+library(zoo)
+library(ROCR)
+library(mco)
+data(BFP)
+##generate random order vector
+BFP_r&lt;-BFP[sample(nrow(BFP),nrow(BFP)),]
+size&lt;-nrow(BFP_r)
+##size&lt;-300
+train&lt;-BFP_r[1:floor(size/3),]
+val&lt;-BFP_r[ceiling(size/3):floor(2*size/3),]
+test&lt;-BFP_r[ceiling(2*size/3):size,]
+##generate a list containing model specifications for 100 CART decisions trees varying in the cp
+##and minsplit parameters, and trained on bootstrap samples (bagging)
+rpartSpecs&lt;-list()
+for (i in 1:100){
+  data&lt;-train[sample(1:ncol(train),size=ncol(train),replace=TRUE),]
+  str&lt;-paste("rpartSpecs$rpart",i,"=rpart(as.formula(Class~.),data,method=\"class\",
+  control=rpart.control(minsplit=",round(runif(1, min = 1, max = 20)),",cp=",runif(1,
+  min = 0.05, max = 0.4),"))",sep="")
+  eval(parse(text=str))
+}
+##generate predictions for these models
+hillclimb&lt;-mat.or.vec(nrow(val),100)
+for (i in 1:100){
+  str&lt;-paste("hillclimb[,",i,"]=predict(rpartSpecs[[i]],newdata=val)[,2]",sep="")
+  eval(parse(text=str))
+}
+##score the validation set used for ensemble selection, to be used for ensemble selection
+ESmodel&lt;-CSMES.ensSel(hillclimb,val$Class,obj1="FNR",obj2="FPR",selType="selection",
+generations=10,popsize=12,plot=TRUE)
+## Create Ensemble nomination curve
+enc&lt;-CSMES.ensNomCurve(ESmodel,hillclimb,val$Class,curveType="costCurve",method="classPreds",
+plot=FALSE)
+</code></pre>
+
+
+</div>

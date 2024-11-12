@@ -1,0 +1,165 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>daily_mean</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Mean of daily weather variable values between two dates</h2>
+
+<h3>Description</h3>
+
+<p>Calculates the average of daily values of the variable between two
+dates from a tibble or data frame of daily weather
+data. Alternatively, a number of days before or after a specific
+date may be specified. Typically this would be used for
+temperature, rainfall or solar radiation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">daily_mean(
+  data,
+  var = NULL,
+  datevar = NULL,
+  ndays = 5,
+  na.rm = FALSE,
+  startdate = NULL,
+  enddate = NULL,
+  monitor = FALSE,
+  warn.consecutive = TRUE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>Tibble or dataframe of daily weather data</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var</code></td>
+<td>
+<p>Variable(s) to be extracted (Default: radn). Several columns
+may be specified using column names <code>c(variable1, variable2, ...)</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>datevar</code></td>
+<td>
+<p>Date variable specifying day (Default: date_met)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ndays</code></td>
+<td>
+<p>Number of days after/before the start or end date,
+respectively. Ignored of both the start and end dates are
+specified (Default: 5)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.rm</code></td>
+<td>
+<p>Used for calculations (Default: FALSE)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>startdate</code></td>
+<td>
+<p>Start date of data to be extracted</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>enddate</code></td>
+<td>
+<p>Final date of data to be extracted</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>monitor</code></td>
+<td>
+<p>For debugging. Prints data and dates. (Default:
+FALSE)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>warn.consecutive</code></td>
+<td>
+<p>A logical indicating whether to check that
+dates are consecutive, that none are missing and provide a warning if
+not (Default:TRUE)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>options to be passed to <code>mean</code> calculation</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The mean is returned but if there are any missing values, then the
+mean is set to <code>NA</code> since the default <code>na.rm</code> is
+<code>TRUE</code>. Note that if there are any missing dates, then a
+warning is issued but the mean of non-missing values is returned.
+</p>
+<p>If any values are missing, while the calculated mean may prove
+useful, it will not include all the data and so may lead to biased
+estimates. Hence, in these cases, the appropriateness of the
+estimate will depend on the exact circumstances of the missing
+data and so this decision is left to the user.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Numeric variable containing the daily mean of the weather
+variable <code>var</code> during the specified period.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>mean</code>, <code>cumulative</code>,
+<code>growing_degree_days</code>,
+<code>stress_days_over</code>, and
+<code>weather_extract</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">##  Selected calculations
+## library(tidyverse)   # only purrr used here for crop2 example
+library(dplyr)
+library(purrr)
+daily_mean(boonah, enddate = crop$flower_date[4], ndays = 3,
+                    monitor = TRUE)
+daily_mean(boonah, enddate = crop$harvest_date[4], ndays = 3,
+                    monitor = TRUE)
+daily_mean(boonah, startdate = crop$flower_date[4],
+                    enddate = crop$harvest_date[4], monitor = TRUE)
+
+## Add selected daily means of weather variables in 'boonah' to 'crop'
+## tibble using 'map2_dbl' from the 'purrr' package
+## Note: using equivalent 'furrr' functions can speed up calculations 
+crop2 &lt;- crop |&gt;
+  mutate(mean_maxtemp_post_sow_7d =
+          purrr::map_dbl(sowing_date, function(x)
+            daily_mean(boonah, var = maxt, startdate = x, ndays = 7)),
+          mean_rad_flower_harvest =
+            purrr::map2_dbl(flower_date, harvest_date, function(x, y)
+              daily_mean(boonah, var = radn, startdate = x, enddate = y)))
+crop2
+
+</code></pre>
+
+
+</div>

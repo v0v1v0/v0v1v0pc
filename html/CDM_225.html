@@ -1,0 +1,189 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>sequential.items</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Constructing a Dataset with Sequential Pseudo Items for Ordered
+Item Responses
+</h2>
+
+<h3>Description</h3>
+
+<p>This function constructs dichotomous pseudo items from polytomous ordered
+items (Tutz, 1997). Using this method, developed test models for dichotomous
+data can be applied for polytomous item responses after transforming them
+into dichotomous data. See Details for the construction.
+</p>
+<p>Ma and de la Torre (2016) proposed a sequential GDINA model.
+Interestingly, the proposed model can be fitted with the
+<code>gdina</code> function in this <span class="pkg">CDM</span> package while item responses
+has to be transformed with the <code>sequential.items</code> function for
+obtaining dichotomous pseudoitems. The Q-matrix for the sequential model of Ma and
+de la Torre (2016) can be used in the GDINA model for the
+dichotomous pseudoitems. This approach is implemented for automatic
+use in <code>gdina</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">sequential.items(data)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table><tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+
+<p>A data frame with item responses
+</p>
+</td>
+</tr></table>
+<h3>Details</h3>
+
+<p>Assume that item <code class="reqn">j</code> possesses <code class="reqn">K \geq 3</code> categories. We label these
+categories as <code class="reqn">k=0,1,\ldots,K-1</code>. The original item responses <code class="reqn">X_{nj}</code>
+for person <code class="reqn">n</code> at item <code class="reqn">j</code> is then transformed into <code class="reqn">K-1</code> pseudo
+items <code class="reqn">Y_{j1}, \ldots, Y_{j,K-1}</code>.
+</p>
+<p>The first pseudo item response <code class="reqn">Y_{nj1}</code> is defined as 1 iff
+<code class="reqn">X_{nj} \geq 1</code>. The second item responses <code class="reqn">Y_{nj2}</code> is 1 iff
+<code class="reqn">X_{nj} \geq 2</code>, it is 0 iff <code class="reqn">X_{nj}=1</code> and it is missing
+(<code>NA</code> in the dataset) iff <code class="reqn">X_{nj}=0</code>. The construction proceeds
+in the same manner for other categories (see Tutz, 1997). The pseudo items can be
+recognized as 'hurdles' a participant has to master to get a score of <code class="reqn">k</code>
+for the original item.
+</p>
+<p>The pseudo items are treated as conditionally independent which implies that
+IRT models or CDMs which assume local independence can be employed for estimation.
+</p>
+<p>For deriving  item response probabilities of the original items from response
+probabilities of the pseudo items see Tutz (1997, p. 141ff.).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with following entries
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>dat.expand</code></td>
+<td>
+<p>A data frame with dichotomous pseudo items</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iteminfo</code></td>
+<td>
+<p>A data frame containing some item information</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxK</code></td>
+<td>
+<p>Vector with maximum number of categories per item</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Ma, W., &amp; de la Torre, J. (2016).
+A sequential cognitive diagnosis model for polytomous responses.
+<em>British Journal of Mathematical and Statistical Psychology, 69</em>(3),
+253-275.
+</p>
+<p>Tutz, G. (1997). Sequential models for ordered responses.
+In W. van der Linden &amp; R. K. Hambleton.
+<em>Handbook of modern item response theory</em> (pp. 139-152).
+New York: Springer.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#############################################################################
+# EXAMPLE 1: Constructing sequential pseudo items for data.mg
+#############################################################################
+
+data(data.mg, package="CDM")
+dat &lt;- data.mg
+items &lt;- colnames(dat)[ which( substring( colnames(dat),1,1)=="I" ) ]
+##    [1] "I1"  "I2"  "I3"  "I4"  "I5"  "I6"  "I7"  "I8"  "I9"  "I10" "I11"
+data &lt;- dat[,items]
+
+# construct sequential dichotomous pseudo items
+res &lt;- CDM::sequential.items(data)
+
+# item information table
+res$iteminfo
+  ##      item itemindex category pseudoitem
+  ##   1    I1         1        1         I1
+  ##   2    I2         2        1         I2
+  ##   3    I3         3        1         I3
+  ##   4    I4         4        1    I4_Cat1
+  ##   5    I4         4        2    I4_Cat2
+  ##   6    I5         5        1    I5_Cat1
+  ##   7    I5         5        2    I5_Cat2
+  ##     [...]
+
+# extract dataset with pseudo items
+dat.expand &lt;- res$dat.expand
+colnames(dat.expand)
+  ##    [1] "I1"       "I2"       "I3"       "I4_Cat1"  "I4_Cat2"  "I5_Cat1"
+  ##    [7] "I5_Cat2"  "I6_Cat1"  "I6_Cat2"  "I7_Cat1"  "I7_Cat2"  "I7_Cat3"
+  ##   [13] "I8"       "I9"       "I10"      "I11_Cat1" "I11_Cat2" "I11_Cat3"
+
+# compare original items and pseudoitems
+
+#**** Item I1
+stats::xtabs( ~ paste(data$I1) + paste(dat.expand$I1) )
+  ##                 paste(dat.expand$I1)
+  ##   paste(data$I1)     0     1    NA
+  ##               0   4339     0     0
+  ##               1      0 33326     0
+  ##               NA     0     0   578
+
+#**** Item I7
+
+stats::xtabs( ~ paste(data$I7) + paste(dat.expand$I7_Cat1) )
+  ##                 paste(dat.expand$I7_Cat1)
+  ##   paste(data$I7)     0     1    NA
+  ##               0   3825     0     0
+  ##               1      0 14241     0
+  ##               2      0 14341     0
+  ##               3      0  5169     0
+  ##               NA     0     0   667
+
+stats::xtabs( ~ paste(data$I7) + paste(dat.expand$I7_Cat2) )
+  ##                 paste(dat.expand$I7_Cat2)
+  ##   paste(data$I7)     0     1    NA
+  ##               0      0     0  3825
+  ##               1  14241     0     0
+  ##               2      0 14341     0
+  ##               3      0  5169     0
+  ##               NA     0     0   667
+
+stats::xtabs( ~ paste(data$I7) + paste(dat.expand$I7_Cat3) )
+  ##                 paste(dat.expand$I7_Cat3)
+  ##   paste(data$I7)     0     1    NA
+  ##               0      0     0  3825
+  ##               1      0     0 14241
+  ##               2  14341     0     0
+  ##               3      0  5169     0
+  ##               NA     0     0   667
+
+## Not run: 
+#*** Model 1: Rasch model for sequentially created pseudo items
+mod &lt;- CDM::gdm( dat.expand, irtmodel="1PL", theta.k=seq(-5,5,len=21),
+             skillspace="normal", decrease.increments=TRUE)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

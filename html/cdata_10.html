@@ -1,0 +1,162 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>build_pivot_control</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Build a blocks_to_rowrecs()/rowrecs_to_blocks() control table that specifies a pivot from a <code>data.frame</code>.</h2>
+
+<h3>Description</h3>
+
+<p>Some discussion and examples can be found here: <a href="https://winvector.github.io/FluidData/FluidData.html">https://winvector.github.io/FluidData/FluidData.html</a>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">build_pivot_control(
+  table,
+  columnToTakeKeysFrom,
+  columnToTakeValuesFrom,
+  ...,
+  prefix = columnToTakeKeysFrom,
+  sep = NULL,
+  tmp_name_source = wrapr::mk_tmp_name_source("bpc"),
+  temporary = FALSE
+)
+
+## Default S3 method:
+build_pivot_control(
+  table,
+  columnToTakeKeysFrom,
+  columnToTakeValuesFrom,
+  ...,
+  prefix = columnToTakeKeysFrom,
+  sep = NULL,
+  tmp_name_source = wrapr::mk_tmp_name_source("bpcd"),
+  temporary = TRUE
+)
+
+## S3 method for class 'relop'
+build_pivot_control(
+  table,
+  columnToTakeKeysFrom,
+  columnToTakeValuesFrom,
+  ...,
+  prefix = columnToTakeKeysFrom,
+  sep = NULL,
+  tmp_name_source = wrapr::mk_tmp_name_source("bpc"),
+  temporary = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>table</code></td>
+<td>
+<p>data.frame to scan for new column names (in-memory data.frame).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>columnToTakeKeysFrom</code></td>
+<td>
+<p>character name of column build new column names from.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>columnToTakeValuesFrom</code></td>
+<td>
+<p>character name of column to get values from.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>not used, force later args to be by name</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prefix</code></td>
+<td>
+<p>column name prefix (only used when sep is not NULL)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sep</code></td>
+<td>
+<p>separator to build complex column names.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tmp_name_source</code></td>
+<td>
+<p>a tempNameGenerator from cdata::mk_tmp_name_source()</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>temporary</code></td>
+<td>
+<p>logical, if TRUE use temporary tables</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>control table
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>blocks_to_rowrecs</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+  d &lt;- data.frame(measType = c("wt", "ht"),
+                  measValue = c(150, 6),
+                  stringsAsFactors = FALSE)
+  build_pivot_control(d,
+                      'measType', 'measValue',
+                      sep = '_')
+
+
+d &lt;- data.frame(measType = c("wt", "ht"),
+                measValue = c(150, 6),
+                stringsAsFactors = FALSE)
+
+ops &lt;- rquery::local_td(d) %.&gt;%
+  build_pivot_control(.,
+                      'measType', 'measValue',
+                      sep = '_')
+cat(format(ops))
+
+if(requireNamespace("rqdatatable", quietly = TRUE)) {
+  library("rqdatatable")
+  d %.&gt;%
+    ops %.&gt;%
+    print(.)
+}
+
+if(requireNamespace("RSQLite", quietly = TRUE)) {
+  db &lt;- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  DBI::dbWriteTable(db,
+                    'd',
+                    d,
+                    overwrite = TRUE,
+                    temporary = TRUE)
+  db %.&gt;%
+    ops %.&gt;%
+    print(.)
+  DBI::dbDisconnect(db)
+}
+
+</code></pre>
+
+
+</div>

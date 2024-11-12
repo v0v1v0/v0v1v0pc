@@ -1,0 +1,208 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fsum</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fast (Grouped, Weighted) Sum for Matrix-Like Objects</h2>
+
+<h3>Description</h3>
+
+<p><code>fsum</code> is a generic function that computes the (column-wise) sum of all values in <code>x</code>, (optionally) grouped by <code>g</code> and/or weighted by <code>w</code> (e.g. to calculate survey totals). The <code>TRA</code> argument can further be used to transform <code>x</code> using its (grouped, weighted) sum.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fsum(x, ...)
+
+## Default S3 method:
+fsum(x, g = NULL, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+     use.g.names = TRUE, fill = FALSE, nthreads = .op[["nthreads"]], ...)
+
+## S3 method for class 'matrix'
+fsum(x, g = NULL, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+     use.g.names = TRUE, drop = TRUE, fill = FALSE, nthreads = .op[["nthreads"]], ...)
+
+## S3 method for class 'data.frame'
+fsum(x, g = NULL, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+     use.g.names = TRUE, drop = TRUE, fill = FALSE, nthreads = .op[["nthreads"]], ...)
+
+## S3 method for class 'grouped_df'
+fsum(x, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+     use.g.names = FALSE, keep.group_vars = TRUE, keep.w = TRUE, stub = .op[["stub"]],
+     fill = FALSE, nthreads = .op[["nthreads"]], ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a numeric vector, matrix, data frame or grouped data frame (class 'grouped_df').</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>g</code></td>
+<td>
+<p>a factor, <code>GRP</code> object, atomic vector (internally converted to factor) or a list of vectors / factors (internally converted to a <code>GRP</code> object) used to group <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>a numeric vector of (non-negative) weights, may contain missing values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>TRA</code></td>
+<td>
+<p>an integer or quoted operator indicating the transformation to perform:
+0 - "na"     |     1 - "fill"     |     2 - "replace"     |     3 - "-"     |     4 - "-+"     |     5 - "/"     |     6 - "%"     |     7 - "+"     |     8 - "*"     |     9 - "%%"     |     10 - "-%%". See <code>TRA</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.rm</code></td>
+<td>
+<p>logical. Skip missing values in <code>x</code>. Defaults to <code>TRUE</code> and implemented at very little computational cost. If <code>na.rm = FALSE</code> a <code>NA</code> is returned when encountered.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use.g.names</code></td>
+<td>
+<p>logical. Make group-names and add to the result as names (default method) or row-names (matrix and data frame methods). No row-names are generated for <em>data.table</em>'s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fill</code></td>
+<td>
+<p>logical. Initialize result with <code>0</code> instead of <code>NA</code> when <code>na.rm = TRUE</code> e.g. <code>fsum(NA, fill = TRUE)</code> returns <code>0</code> instead of <code>NA</code>. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nthreads</code></td>
+<td>
+<p>integer. The number of threads to utilize. See Details. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop</code></td>
+<td>
+<p><em>matrix and data.frame method:</em> Logical. <code>TRUE</code> drops dimensions and returns an atomic vector if <code>g = NULL</code> and <code>TRA = NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.group_vars</code></td>
+<td>
+<p><em>grouped_df method:</em> Logical. <code>FALSE</code> removes grouping variables after computation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.w</code></td>
+<td>
+<p><em>grouped_df method:</em> Logical. Retain summed weighting variable after computation (if contained in <code>grouped_df</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stub</code></td>
+<td>
+<p>character. If <code>keep.w = TRUE</code> and <code>stub = TRUE</code> (default), the summed weights column is prefixed by <code>"sum."</code>. Users can specify a different prefix through this argument, or set it to <code>FALSE</code> to avoid prefixing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments to be passed to or from other methods. If <code>TRA</code> is used, passing <code>set = TRUE</code> will transform data by reference and return the result invisibly.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+
+
+<p>The weighted sum (e.g. survey total) is computed as <code>sum(x * w)</code>, but in one pass and about twice as efficient. If <code>na.rm = TRUE</code>, missing values will be removed from both <code>x</code> and <code>w</code> i.e. utilizing only <code>x[complete.cases(x,w)]</code> and <code>w[complete.cases(x,w)]</code>.
+</p>
+<p>This all seamlessly generalizes to grouped computations, which are performed in a single pass (without splitting the data) and are therefore extremely fast. See Benchmark and Examples below.
+</p>
+<p>When applied to data frames with groups or <code>drop = FALSE</code>, <code>fsum</code> preserves all column attributes. The attributes of the data frame itself are also preserved.
+</p>
+<p>Since v1.6.0 <code>fsum</code> explicitly supports integers. Integers are summed using the long long type in C which is bounded at +-9,223,372,036,854,775,807 (so ~4.3 billion times greater than the minimum/maximum R integer bounded at +-2,147,483,647). If the value of the sum is outside +-2,147,483,647, a double containing the result is returned, otherwise an integer is returned. With groups, an integer results vector is initialized, and an integer overflow error is provided if the sum in any group is outside +-2,147,483,647. Data needs to be coerced to double beforehand in such cases.
+</p>
+<p>Multithreading, added in v1.8.0, applies at the column-level unless <code>g = NULL</code> and <code>nthreads &gt; NCOL(x)</code>. Parallelism over groups is not available because sums are computed simultaneously within each group. <code>nthreads = 1L</code> uses a serial version of the code, not parallel code running on one thread. This serial code is always used with less than 100,000 obs (<code>length(x) &lt; 100000</code> for vectors and matrices), because parallel execution itself has some overhead.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The (<code>w</code> weighted) sum of <code>x</code>, grouped by <code>g</code>, or (if <code>TRA</code> is used) <code>x</code> transformed by its (grouped, weighted) sum.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fprod</code>, <code>fmean</code>, Fast Statistical Functions, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## default vector method
+mpg &lt;- mtcars$mpg
+fsum(mpg)                         # Simple sum
+fsum(mpg, w = mtcars$hp)          # Weighted sum (total): Weighted by hp
+fsum(mpg, TRA = "%")              # Simple transformation: obtain percentages of mpg
+fsum(mpg, mtcars$cyl)             # Grouped sum
+fsum(mpg, mtcars$cyl, mtcars$hp)  # Weighted grouped sum (total)
+fsum(mpg, mtcars[c(2,8:9)])       # More groups..
+g &lt;- GRP(mtcars, ~ cyl + vs + am) # Precomputing groups gives more speed !
+fsum(mpg, g)
+fmean(mpg, g) == fsum(mpg, g) / fnobs(mpg, g)
+fsum(mpg, g, TRA = "%")           # Percentages by group
+
+## data.frame method
+fsum(mtcars)
+fsum(mtcars, TRA = "%")
+fsum(mtcars, g)
+fsum(mtcars, g, TRA = "%")
+
+## matrix method
+m &lt;- qM(mtcars)
+fsum(m)
+fsum(m, TRA = "%")
+fsum(m, g)
+fsum(m, g, TRA = "%")
+
+## method for grouped data frames - created with dplyr::group_by or fgroup_by
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fsum(hp)  # Weighted grouped sum (total)
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fsum(TRA = "%")
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fselect(mpg) |&gt; fsum()
+
+ 
+## This compares fsum with data.table and base::rowsum
+# Starting with small data
+library(data.table)
+opts &lt;- set_collapse(nthreads = getDTthreads())
+mtcDT &lt;- qDT(mtcars)
+f &lt;- qF(mtcars$cyl)
+
+library(microbenchmark)
+microbenchmark(mtcDT[, lapply(.SD, sum), by = f],
+               rowsum(mtcDT, f, reorder = FALSE),
+               fsum(mtcDT, f, na.rm = FALSE), unit = "relative")
+
+# Now larger data
+tdata &lt;- qDT(replicate(100, rnorm(1e5), simplify = FALSE)) # 100 columns with 100.000 obs
+f &lt;- qF(sample.int(1e4, 1e5, TRUE))                        # A factor with 10.000 groups
+
+microbenchmark(tdata[, lapply(.SD, sum), by = f],
+               rowsum(tdata, f, reorder = FALSE),
+               fsum(tdata, f, na.rm = FALSE), unit = "relative")
+# Reset options
+set_collapse(opts)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,197 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>partition_data</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Organize Seahorse Data</h2>
+
+<h3>Description</h3>
+
+<p>Organizes Seahorse OCR and ECAR rates based on defined time points (i.e. the
+Measurement column) during the experiment. This time point can be specified
+if you are modifying the Mito and Glyco Stress Test (i.e. from 3 measurements
+per cycle to X measurements)
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">partition_data(
+  seahorse_rates,
+  assay_types = list(basal = "MITO", uncoupled = "MITO", maxresp = "MITO", nonmito =
+    "MITO", no_glucose_glyc = "GLYCO", glucose_glyc = "GLYCO", max_glyc = "GLYCO"),
+  basal_tp = 3,
+  uncoupled_tp = 6,
+  maxresp_tp = 8,
+  nonmito_tp = 12,
+  no_glucose_glyc_tp = 3,
+  glucose_glyc_tp = 6,
+  max_glyc_tp = 8
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>seahorse_rates</code></td>
+<td>
+<p>A data.table of OCR and ECAR rates returned by <code>read_data</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>assay_types</code></td>
+<td>
+<p>A list that configures data partitioning based on the type of assay. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>basal_tp</code></td>
+<td>
+<p>Basal respiration time point. Must be less than <code>uncoupled_tp</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>uncoupled_tp</code></td>
+<td>
+<p>ATP-coupled respiration time point. Must be less than <code>maxresp_tp</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxresp_tp</code></td>
+<td>
+<p>Maximal uncoupled respiration time point. Must be less than <code>nonmito_tp</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nonmito_tp</code></td>
+<td>
+<p>Non-mitochondrial respiration time point. Must be larger than <code>maxresp_tp</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>no_glucose_glyc_tp</code></td>
+<td>
+<p>No glucose added acidification time point. Must be less than <code>glucose_glyc_tp</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>glucose_glyc_tp</code></td>
+<td>
+<p>Glucose-associated acidification time point. Must be less than <code>max_glyc_tp</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_glyc_tp</code></td>
+<td>
+<p>Maximal acidification time point. Must be less than <code>twodg_glyc_tp</code></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><strong>Note:</strong>
+When we use the term 'max' in the package documentation we mean the maximal
+experimental OCR and ECAR values rather than absolute biological maximums.
+</p>
+<p><code>partition_data</code> sets up the rates data for ATP calculations by the
+<code>get_energetics</code> function. To do this, it takes a list <code>assay_types</code> with
+the named values <code>basal</code>, <code>uncoupled</code>, <code>maxresp</code>, <code>nonmito</code>,
+<code>no_glucose_glyc</code>, <code>glucose_glyc</code>, and <code>max_glyc</code>. In the default setting,
+it is configured for an experiment with both Mito and Glyco assays. However,
+partitioning can be configured for other experimental conditions.
+</p>
+
+<ul><li>
+<p> Only MITO data:
+</p>
+</li></ul>
+<pre>partitioned_data &lt;- partition_data(
+  seahorse_rates,
+  assay_types = list(
+    basal = "MITO",
+    uncoupled = "MITO",
+    maxresp = "MITO",
+    nonmito = "MITO",
+    no_glucose_glyc = NA,
+    glucose_glyc = "MITO",
+    max_glyc = NA
+  ),
+  basal_tp = 3,
+  uncoupled_tp = 6,
+  maxresp_tp = 8,
+  nonmito_tp = 12,
+  no_glucose_glyc_tp = NA,
+  glucose_glyc_tp = 3,
+  max_glyc_tp = NA
+)
+</pre>
+<p>Respiratory control ratio (RCR) and glycolytic capacity (GC) assay:
+</p>
+<pre>partitioned_data &lt;- partition_data(
+  seahorse_rates,
+  assay_types = list(
+    basal = "RCR",
+    uncoupled = "RCR",
+    maxresp = "RCR,"
+    nonmito = "RCR",
+    no_glucose_glyc = NA,
+    glucose_glyc = "GC",
+    max_glyc = "GC"
+  ),
+  basal_tp = 3,
+  uncoupled_tp = 6,
+  maxresp_tp = 8,
+  nonmito_tp = 12,
+  no_glucose_glyc = NA,
+  glucose_glyc_tp = 3,
+  max_glyc_tp = 9
+)
+</pre>
+
+<ul><li>
+<p> Data according to Mookerjee <em>et al.</em> 2017 <em>J Biol Chem</em>;<em>292</em>:7189-207.
+</p>
+</li></ul>
+<pre>partitioned_data &lt;- partition_data(
+  seahorse_rates,
+  assay_types = list(
+    basal = "RefAssay",
+    uncoupled = "RefAssay",
+    maxresp = NA,
+    nonmito = "RefAssay",
+    no_glucose_glyc = "RefAssay",
+    glucose_glyc = "RefAssay",
+    max_glyc = NA
+  ),
+  basal_tp = 5,
+  uncoupled_tp = 10,
+  nonmito_tp = 12,
+  maxresp = NA,
+  no_glucose_glyc_tp = 1,
+  glucose_glyc_tp = 5,
+  max_glyc = NA
+)
+</pre>
+<p>Also see the vignette.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a list of named time points from each assay cycle
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">rep_list &lt;- system.file("extdata", package = "ceas") |&gt;
+  list.files(pattern = "*.xlsx", full.names = TRUE)
+seahorse_rates &lt;- read_data(rep_list, sheet = 2)
+partitioned_data &lt;- partition_data(seahorse_rates)
+</code></pre>
+
+
+</div>

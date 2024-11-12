@@ -1,0 +1,179 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cfr_static</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate a static disease severity measure</h2>
+
+<h3>Description</h3>
+
+<p>Calculates the severity of a disease, while optionally
+correcting for reporting delays using an epidemiological delay distribution
+of the time between symptom onset and death (onset-to-death).
+</p>
+<p>Other delay distributions may be passed to calculate different disease
+severity measures such as the hospitalisation fatality risk.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cfr_static(data, delay_density = NULL, poisson_threshold = 100)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A <code style="white-space: pre;">⁠&lt;data.frame&gt;⁠</code> containing the outbreak data. A daily time
+series with dates or some other absolute indicator of time (e.g. epiday or
+epiweek) and the numbers of new cases and new deaths at each time point.
+Note that the required columns are "date" (for the date), "cases" (for the
+number of reported cases), and "deaths" (for the number of reported deaths)
+on each day of the outbreak.
+</p>
+<p>Note that the <code style="white-space: pre;">⁠&lt;data.frame&gt;⁠</code> is required to have an unbroken sequence of
+dates with no missing dates in between. The "date" column must be of class
+<code>Date</code> (see <code>as.Date()</code>).
+</p>
+<p>Note also that the total number of cases must be greater than the total
+number of reported deaths.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delay_density</code></td>
+<td>
+<p>An optional argument that controls whether delay
+correction is applied in the severity estimation.
+May be <code>NULL</code>, for no delay correction, or a function that returns the
+density function of a distribution to evaluate
+density at user-specified values, e.g.
+<code>function(x) stats::dgamma(x = x, shape = 5, scale = 1)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>poisson_threshold</code></td>
+<td>
+<p>The case count above which to use Poisson
+approximation. Set to 100 by default. Must be &gt; 0.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A <code style="white-space: pre;">⁠&lt;data.frame&gt;⁠</code> with the maximum likelihood estimate and 95%
+confidence interval of the severity estimates, named "severity_estimate",
+"severity_low", and "severity_high".
+</p>
+
+
+<h3>Details: Adjusting for delays between two time series</h3>
+
+<p>The method used in <code>cfr_static()</code> follows Nishiura et al.
+(2009).
+The function calculates a quantity <code class="reqn">u_t</code> for each day within the input
+data, which represents the proportion of cases estimated to have
+a known outcome on day <code class="reqn">t</code>.
+Following Nishiura et al., <code class="reqn">u_t</code> is calculated as:
+</p>
+<p style="text-align: center;"><code class="reqn">u_t = \dfrac{\sum_{i = 0}^t
+        \sum_{j = 0}^\infty c_i f_{j - i}}{\sum_{i = 0} c_i}</code>
+</p>
+
+<p>where <code class="reqn">f_t</code> is the value of the probability mass function at time <code class="reqn">t</code>
+and <code class="reqn">c_t</code>, <code class="reqn">d_t</code> are the number of new cases and new deaths at time
+<code class="reqn">t</code>, (respectively).
+We then use <code class="reqn">u_t</code> at the end of the outbreak in the following likelihood
+function to estimate the severity of the disease in question.
+</p>
+<p style="text-align: center;"><code class="reqn">{\sf L}({\theta \mid y}) = \log{\dbinom{u_tC}{D}} + D \log{\theta} +
+  (u_tC - D)\log{(1.0 - \theta)}</code>
+</p>
+
+<p><code class="reqn">C</code> and <code class="reqn">D</code> are the cumulative number of cases and deaths
+(respectively) up until time <code class="reqn">t</code>.
+<code class="reqn">\theta</code> is the parameter we wish to estimate, the severity of the
+disease. We estimate <code class="reqn">\theta</code> using simple maximum-likelihood methods,
+allowing the functions within this package to be quick and easy tools to use.
+</p>
+<p>The precise severity measure — CFR, IFR, HFR, etc — that <code class="reqn">\theta</code>
+represents depends upon the input data given by the user.
+</p>
+<p>The epidemiological delay-distribution density function passed to
+<code>delay_density</code> is used to evaluate the probability mass function
+parameterised by time; i.e. <code class="reqn">f(t)</code> which
+gives the probability that a case has a known outcome (usually death) at time
+<code class="reqn">t</code>, parameterised with disease-specific parameters before it is supplied
+here.
+</p>
+
+
+<h4>Profile likelihood methods</h4>
+
+<p>The naive CFR estimate (without delay correction) is the outcome of a
+Binomial test on deaths and cases using <code>stats::binom.test()</code>.
+The confidence intervals around the estimate are also taken from the test.
+</p>
+<p>The delay-corrected CFR estimates are however obtained by generating a
+profile likelihood over the sequence <code>seq(1e-4, 1.0, 1e-4)</code>. The method used
+depends on the outbreak size and the initial expectation of disease severity.
+This is implemented in the internal function <code>.estimate_severity()</code>.
+</p>
+
+<ul>
+<li> <p><strong>Delay correction, small outbreaks</strong>: For outbreaks where the total cases
+are below the user-specified 'Poisson threshold' (<code>poisson_threshold</code>,
+default = 100), the CFR and uncertainty around it is taken from a profile
+likelihood generated from a Binomial model of deaths (successes) and
+estimated known outcomes (trials).
+</p>
+
+<ul><li> <p><strong>Delay correction, large outbreaks with low severity</strong>: For outbreaks
+with total cases greater than the Poisson threshold (default = 100) and with
+initial severity estimates &lt; 0.05, the CFR and uncertainty are taken from a
+Poisson approximation of the Binomial profile likelihood (taking
+<code class="reqn">\lambda = np</code> for <code class="reqn">n</code> estimated outcomes and <code class="reqn">p</code> as the severity
+estimate).
+</p>
+</li></ul>
+</li>
+<li> <p><strong>Delay correction, large outbreaks with higher severity</strong>: For outbreaks
+with total cases greater than the Poisson threshold (default = 100) and with
+initial severity estimates <code class="reqn">\geq</code> 0.05, the CFR and uncertainty are taken
+from a Normal approximation of the Binomial profile likelihood.
+</p>
+</li>
+</ul>
+<h3>References</h3>
+
+<p>Nishiura, H., Klinkenberg, D., Roberts, M., &amp; Heesterbeek, J. A. P. (2009).
+Early Epidemiological Assessment of the Virulence of Emerging Infectious
+Diseases: A Case Study of an Influenza Pandemic. PLOS ONE, 4(8), e6852.
+<a href="https://doi.org/10.1371/journal.pone.0006852">doi:10.1371/journal.pone.0006852</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># load package data
+data("ebola1976")
+
+# estimate severity without correcting for delays
+cfr_static(ebola1976)
+
+# estimate severity for each day while correcting for delays
+# obtain onset-to-death delay distribution parameters from Barry et al. 2018
+# The Lancet. &lt;https://doi.org/10.1016/S0140-6736(18)31387-4&gt;
+cfr_static(
+  ebola1976,
+  delay_density = function(x) dgamma(x, shape = 2.40, scale = 3.33)
+)
+
+</code></pre>
+
+
+</div>

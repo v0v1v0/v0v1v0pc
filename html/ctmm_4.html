@@ -1,0 +1,228 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>akde</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate an autocorrelated kernel density estimate</h2>
+
+<h3>Description</h3>
+
+<p>These functions calculate individual and population-level autocorrelated kernel density home-range estimates from <code>telemetry</code> data and a corresponding continuous-time movement models.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">akde(data,CTMM,VMM=NULL,R=list(),SP=NULL,SP.in=TRUE,variable="utilization",debias=TRUE,
+     weights=FALSE,smooth=TRUE,error=0.001,res=10,grid=NULL,...)
+
+pkde(data,UD,kernel="individual",weights=FALSE,ref="Gaussian",...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p> 2D timeseries telemetry data represented as a <code>telemetry</code> object or list of objects. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CTMM</code></td>
+<td>
+<p>A <code>ctmm</code> movement model from the output of <code>ctmm.fit</code> or list of objects.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>VMM</code></td>
+<td>
+<p>An optional vertical <code>ctmm</code> object for 3D home-range calculation.</p>
+</td>
+</tr>
+</table>
+<table>
+<tr style="vertical-align: top;">
+<td><code>R</code></td>
+<td>
+<p>A named list of raster covariates if <code>CTMM</code> contains an RSF model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SP</code></td>
+<td>
+<p>SpatialPolygonsDataFrame object for enforcing hard boundaries.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SP.in</code></td>
+<td>
+<p>Locations are assumed to be inside the <code>SP</code> polygons if <code>SP.in=TRUE</code> and outside of <code>SP</code> if <code>SP.in=FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>variable</code></td>
+<td>
+<p>Not yet supported.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>debias</code></td>
+<td>
+<p>Debias the distribution for area estimation (AKDEc).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smooth</code></td>
+<td>
+<p>"Smooth" out errors from the data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>Optimally weight the data to account for sampling bias (See <code>bandwidth</code> for <code>akde</code> details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>error</code></td>
+<td>
+<p>Target probability error.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>res</code></td>
+<td>
+<p>Number of grid points along each axis, relative to the bandwidth.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grid</code></td>
+<td>
+<p>Optional grid specification via <code>raster</code>, <code>UD</code>, or list of arguments (See ‘Details’ below).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Arguments passed to <code>akde</code>, <code>bandwidth</code>, and <code>mean.ctmm</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>UD</code></td>
+<td>
+<p>A list of individual <code>UD</code> objects corresponding to <code>data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kernel</code></td>
+<td>
+<p>Bandwidths are proportional to the individual covariances if <code>kernel="individual"</code> or to the population covariance if <code>kernel="population"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ref</code></td>
+<td>
+<p>Include non-Gaussian overlap corrections if <code>ref="AKDE"</code> and <code>weights=TRUE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For weighted AKDE, please note additional <code>...</code> arguments passed to <code>bandwidth</code>, which can have a large impact on computation time in certain cases.
+</p>
+<p>When feeding in lists of <code>telemetry</code> and <code>ctmm</code> objects, all UDs will be calculated on the same grid. These UDs can be averaged with the <code>mean.UD</code> command.
+</p>
+<p>If a <code>UD</code> or <code>raster</code> object is supplied in the <code>grid</code> argument, then the estimate will be calculated on the same grid. Alternatively, a list of grid arguments can be supplied, with any of the following components:
+</p>
+
+<dl>
+<dt><code>r</code></dt>
+<dd>
+<p>A list with vectors <code>x</code> and <code>y</code> that define the grid-cell midpoints.</p>
+</dd>
+<dt><code>dr</code></dt>
+<dd>
+<p>A vector setting the <code>x</code> and <code>y</code> cell widths in meters. Equivalent to <code>res</code> for <code>raster</code> objects.</p>
+</dd>
+<dt><code>extent</code></dt>
+<dd>
+<p>The <code class="reqn">x</code>-<code class="reqn">y</code> extent of the grid cells, formatted as from the output of <code>extent</code>.</p>
+</dd>
+<dt><code>align.to.origin</code></dt>
+<dd>
+<p>Logical value indicating that cell midpoint locations are aligned to be an integer number of <code>dr</code> steps from the projection origin.</p>
+</dd>
+</dl>
+<h3>Value</h3>
+
+<p>Returns a <code>UD</code> object: a list with the sampled grid line locations <code>r$x</code> and <code>r$y</code>, the extent of each grid cell <code>dr</code>, the probability density and cumulative distribution functions evaluated on the sampled grid locations <code>PDF</code> &amp; <code>CDF</code>, the optimal bandwidth matrix <code>H</code>, and the effective sample size of the data in <code>DOF.H</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p> In the case of coarse grids, the value of <code>PDF</code> in a grid cell corresponds to the average probability density over the entire rectangular cell.
+</p>
+<p>The <code>PDF</code> estimate is not re-normalized to 1, and may fall short of this by the target numerical <code>error</code>. If inspecting quantiles that are very far from the data, the quantiles may hit the grid boundary or become erratic, making it necessary to reduce the numerical <code>error</code> target. However, default arguments should be able to render any quantiles of reasonable accuracy.
+</p>
+<p>Prior to <code>ctmm</code> v0.3.2, the default AKDE method was the autocorrelated Gaussian reference function bandwidth.
+Starting in v0.3.2, the default AKDE method is the autocorrelated Gaussian reference function bandwidth with debiased area.
+</p>
+<p>Prior to <code>ctmm</code> v0.3.1, AKDEs included only errors due to autocorrelation uncertainty, which are insignificant in cases such as IID data.
+Starting in v0.3.1, <code>akde</code> calculated an effective sample size <code>DOF.H</code> and used this to estimate area uncertainty under a Gaussian reference function approxmation.
+In v0.3.2, this method was further improved to use <code>DOF.area</code> from the Gaussian reference function approximation.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> C. H. Fleming and K. Winner. </p>
+
+
+<h3>References</h3>
+
+<p>C. H. Fleming, W. F. Fagan, T. Mueller, K. A. Olson, P. Leimgruber, J. M. Calabrese,
+“Rigorous home-range estimation with movement data: A new autocorrelated kernel-density estimator”,
+Ecology, 96:5, 1182-1188 (2015) <a href="https://doi.org/10.1890/14-2010.1">doi:10.1890/14-2010.1</a>.
+</p>
+<p>C. H. Fleming, J. M. Calabrese,
+“A new kernel-density estimator for accurate home-range and species-range area estimation”,
+Methods in Ecology and Evolution, 8:5, 571-579 (2017) <a href="https://doi.org/10.1111/2041-210X.12673">doi:10.1111/2041-210X.12673</a>.
+</p>
+<p>C. H. Fleming, D. Sheldon, W. F. Fagan, P. Leimgruber, T. Mueller, D. Nandintsetseg, M. J. Noonan, K. A. Olson, E. Setyawan, A. Sianipar, J. M. Calabrese,
+“Correcting for missing and irregular data in home-range estimation”,
+Ecological Applications, 28:4, 1003-1010 (2018) <a href="https://doi.org/10.1002/eap.1704">doi:10.1002/eap.1704</a>.
+</p>
+
+
+
+<h3>See Also</h3>
+
+ <p><code>bandwidth</code>, <code>mean.UD</code>, <code>raster,UD-method</code>, <code>revisitation</code> </p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Load package and data
+library(ctmm)
+data(buffalo)
+DATA &lt;- buffalo$Cilla
+
+# calculate fit guess object
+GUESS &lt;- ctmm.guess(DATA,interactive=FALSE)
+# in general, you should be running ctmm.select here instead of ctmm.fit
+FIT &lt;- ctmm.fit(DATA,GUESS)
+
+# Compute akde object
+UD &lt;- akde(DATA,FIT)
+
+# Plot data with AKDE
+plot(DATA,UD=UD)
+</code></pre>
+
+
+</div>

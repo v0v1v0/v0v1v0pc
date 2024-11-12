@@ -1,0 +1,178 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ancRECON</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Ancestral state reconstruction</h2>
+
+<h3>Description</h3>
+
+<p>Infers ancestral states based on a set of model parameters</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ancRECON(phy,data, p, method=c("joint", "marginal", "scaled"),
+rate.cat, ntraits=NULL, rate.mat=NULL,
+model="ARD", root.p=NULL, get.likelihood=FALSE, get.tip.states = FALSE, collapse = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>phy</code></td>
+<td>
+<p>a phylogenetic tree, in <code>ape</code> “phylo” format.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a data matrix containing species information (see Details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p>a vector of transition rates to be used to estimate ancestral states.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>method used to calculate ancestral states at internal nodes. Can be one of: "joint", "marginal", or "scaled" (see Details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rate.cat</code></td>
+<td>
+<p>specifies the number of rate categories in the HRM.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ntraits</code></td>
+<td>
+<p>currently, this is automaticall detected and can always be set to NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rate.mat</code></td>
+<td>
+<p>a user-supplied rate matrix index of parameters to be optimized.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>specifies the underlying model if a rate.mat is not provided ("ER", SYM", or "ARD").</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>root.p</code></td>
+<td>
+<p>a vector used to fix the probabilities at the root, but “yang” and “maddfitz” can also be supplied to use the method of Yang (2006) and FitzJohn et al (2009) respectively (see details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>get.likelihood</code></td>
+<td>
+<p>a logical indicating whether to obtain the likelihood of the rates and states. The default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>get.tip.states</code></td>
+<td>
+<p>a logical indicating whether just tip reconstructions should be output. The default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>collapse</code></td>
+<td>
+<p>a boolean indicating whether to collapse multiple character combinations into only the observed states. For example, if true a two character dataset contained (0,0), (1,0), and (1,1), this would be collapsed into 1,2,3. However, if set to false it would 1,2,4. In combination with a custom rate matrix this allows for the estimation of transitions between the unobserved character combination. The default is <code>TRUE</code></p>
+</td>
+</tr>
+</table>
+<p>.
+</p>
+
+
+<h3>Details</h3>
+
+<p>This is a stand alone function for computing the marginal, joint, or scaled likelihoods of internal nodes for a given set of transition rates. Like all other functions contained in corHMM, the tree does not have to be bifurcating in order for analyses to be carried out. IMPORTANT: If the corDISC, corHMM, and rayDISC functions are used they automatically provide a tree with the likeliest states as internal node labels. This function is intended for circumstances where the user would like to reconstruct states based on rates estimated elsewhere (e.g. BayesTraits, Mesquite, <code>ape</code>).
+</p>
+<p>The algorithm based on Pupko et al. (2000, 2002) is used to calculate the <code>joint</code> estimates of ancestral states. The <code>marginal</code> method was originally implemented based on a description of an algorithm by Yang (2006). The basic idea is that the tree is rerooted on each internal node, with the marginal likelihood being the probabilities of observing the tips states given that the focal node is the root. However, this takes a ton of time as the number of nodes increase. But, importantly, this does not work easily when the model contains asymmetric rates. Here, we use the same dynamic programming algorithm as Mesquite (Maddison and Maddison, 2011), which is time linear with the number of species and calculates the marginal probability at a node using an additional up and down pass of the tree.  If <code>scaled</code>, the function uses the same algorithm from ace(). Note that the <code>scaled</code> method of ace() is simply the conditional likelihoods of observing everything at or above the focal node and these should NOT be used for ancestral state estimation.
+</p>
+<p>The user can fix the root state probabilities by supplying a vector to <code>root.p</code>. For example, in the two trait case, if the hypothesis is that the root is 00, then the root vector would be <code>root.p=c(1,0,0,0)</code> for state combinations 00, 01, 10, and 11, respectively. If analyzing a binary or multistate character, the order of root.p is the same order as the traits – e.g., for states 1, 2, 3, a <code>root.p=c(0,1,0)</code> would fix the root to be in state 2. If the user supplies the flag <code>root.p</code>=“yang”, then the estimated transition rates are used to set the weights at the root (see pg. 124 Yang 2006), whereas specifying <code>root.p</code>=“maddfitz” employs the same procedure described by Maddison et al. (2007) and FitzJohn et al. (2009). Note that the default <code>root.p=NULL</code> assumes equal weighting among all possible states. 
+</p>
+<p>Setting get.likelihood=TRUE will provide the user the joint likelihood of the rates and states.
+</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>$lik.tip.states</code></td>
+<td>
+<p>A matrix of the reconstructed tip values. If the number of rate.cats is greater than 2 then the probability that each observed state is in a particular hidden state is given.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>$lik.anc.states</code></td>
+<td>
+<p>For <code>joint</code>, a vector of likeliest states at internal nodes and tips. For either <code>marginal</code> or <code>$scaled</code>, a matrix of the probabilities of each state for each internal node are returned.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>$info.anc.states</code></td>
+<td>
+<p>A vector containing the amount of information (in bits) that the tip states and model gives to each node. See Boyko and Beaulieu (2021).</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Jeremy M. Beaulieu and Jeffrey C. Oliver</p>
+
+
+<h3>References</h3>
+
+<p>FitzJohn, R.G., W.P. Maddison, and S.P. Otto. 2009. Estimating trait-dependent speciation and extinction rates from incompletely resolved phylogenies. Systematic Biology 58:595-611.
+</p>
+<p>Maddison, W.P. and D.R. Maddison. 2011. Mesquite: a modular system for evolutionary analysis. Version 2.75 http://mesquiteproject.org
+</p>
+<p>Pupko, T., I. Pe'er, R. Shamir, and D. Graur. 2000. A fast algorithm for joint reconstruction of ancestral amino-acid sequences. Molecular Biology and Evolution 17:890-896.
+</p>
+<p>Pupko, T., I. Pe'er, D. Graur, M. Hasegawa, and N Friedman N. 2002. A branch-and-bound algorithm for the inference of ancestral amino-acid sequences when the replacement rate varies among sites: application to the evolution of five gene families. Bioinformatics 18:1116-1123.
+</p>
+<p>Yang, Z. 2006. Computational Molecular Evolution. London:Oxford.
+</p>
+<p>Boyko, J. D., and J. M. Beaulieu. 2021. Generalized hidden Markov models for phylogenetic comparative datasets. Methods in Ecology and Evolution 12:468-478.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data(primates)
+phy &lt;- multi2di(primates[[1]])
+data &lt;- primates[[2]]
+MK_3state &lt;- corHMM(phy = phy, data = data, rate.cat = 1)
+
+# # one way to get the parameters from your corHMM object in the correct order
+p &lt;- sapply(1:max(MK_3state$index.mat, na.rm = TRUE), function(x) 
+	na.omit(c(MK_3state$solution))[na.omit(c(MK_3state$index.mat) == x)][1])
+
+# using custom params
+states_1 &lt;- ancRECON(phy = phy, data = MK_3state$data, p = p, method = "marginal", 
+	rate.cat &lt;- MK_3state$rate.cat, ntraits = NULL, rate.mat = MK_3state$index.mat, 
+	root.p = MK_3state$root.p)
+
+
+</code></pre>
+
+
+</div>

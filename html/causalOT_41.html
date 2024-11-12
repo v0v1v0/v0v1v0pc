@@ -1,0 +1,215 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ot_distance</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Optimal Transport Distance</h2>
+
+<h3>Description</h3>
+
+<p>Optimal Transport Distance
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ot_distance(
+  x1,
+  x2 = NULL,
+  a = NULL,
+  b = NULL,
+  penalty,
+  p = 2,
+  cost = NULL,
+  debias = TRUE,
+  online.cost = "auto",
+  diameter = NULL,
+  niter = 1000,
+  tol = 1e-07
+)
+
+## S3 method for class 'causalWeights'
+ot_distance(
+  x1,
+  x2 = NULL,
+  a = NULL,
+  b = NULL,
+  penalty,
+  p = 2,
+  cost = NULL,
+  debias = TRUE,
+  online.cost = "auto",
+  diameter = NULL,
+  niter = 1000,
+  tol = 1e-07
+)
+
+## S3 method for class 'matrix'
+ot_distance(
+  x1,
+  x2,
+  a = NULL,
+  b = NULL,
+  penalty,
+  p = 2,
+  cost = NULL,
+  debias = TRUE,
+  online.cost = "auto",
+  diameter = NULL,
+  niter = 1000,
+  tol = 1e-07
+)
+
+## S3 method for class 'array'
+ot_distance(
+  x1,
+  x2,
+  a = NULL,
+  b = NULL,
+  penalty,
+  p = 2,
+  cost = NULL,
+  debias = TRUE,
+  online.cost = "auto",
+  diameter = NULL,
+  niter = 1000,
+  tol = 1e-07
+)
+
+## S3 method for class 'torch_tensor'
+ot_distance(
+  x1,
+  x2,
+  a = NULL,
+  b = NULL,
+  penalty,
+  p = 2,
+  cost = NULL,
+  debias = TRUE,
+  online.cost = "auto",
+  diameter = NULL,
+  niter = 1000,
+  tol = 1e-07
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x1</code></td>
+<td>
+<p>Either an object of class causalWeights or a matrix of the covariates in the first sample</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x2</code></td>
+<td>
+<p><code>NULL</code> or a matrix of the covariates in the second sample.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>a</code></td>
+<td>
+<p>Empirical measure of the first sample. If NULL, assumes each observation gets equal mass. Ignored for objects of class causalWeights.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>b</code></td>
+<td>
+<p>Empirical measure of the second sample. If NULL, assumes each observation gets equal mass. Ignored for objects of class causalWeights.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>penalty</code></td>
+<td>
+<p>The penalty of the optimal transport distance to use. If missing or NULL, the function will try to guess a suitable value depending if debias is TRUE or FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p><code class="reqn">L_p</code> distance metric power</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cost</code></td>
+<td>
+<p>Supply your own cost function. Should take arguments <code>x1</code>, <code>x2</code>, and <code>p</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>debias</code></td>
+<td>
+<p>TRUE or FALSE. Should the debiased optimal transport distances be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>online.cost</code></td>
+<td>
+<p>How to calculate the distance matrix. One of "auto", "tensorized", or "online".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>diameter</code></td>
+<td>
+<p>The diameter of the metric space, if known. Default is NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>niter</code></td>
+<td>
+<p>The maximum number of iterations for the Sinkhorn updates</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol</code></td>
+<td>
+<p>The tolerance for convergence</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>For objects of class matrix, numeric value giving the optimal transport distance. For objects of class causalWeights, results are returned as a list for before ('pre') and after adjustment ('post').
+</p>
+
+
+<h3>Methods (by class)</h3>
+
+
+<ul>
+<li> <p><code>ot_distance(causalWeights)</code>: method for causalWeights class
+</p>
+</li>
+<li> <p><code>ot_distance(matrix)</code>: method for matrices
+</p>
+</li>
+<li> <p><code>ot_distance(array)</code>: method for arrays
+</p>
+</li>
+<li> <p><code>ot_distance(torch_tensor)</code>: method for torch_tensors
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">if ( torch::torch_is_installed()) {
+x &lt;- matrix(stats::rnorm(10*5), 10, 5)
+z &lt;- stats::rbinom(10, 1, 0.5)
+weights &lt;- calc_weight(x = x, z = z, method = "Logistic", estimand = "ATT")
+ot1 &lt;- ot_distance(x1 = weights, penalty = 100, 
+p = 2, debias = TRUE, online.cost = "auto", 
+diameter = NULL)
+ot2&lt;- ot_distance(x1 = x[z==0, ], x2 = x[z == 1,], 
+a= weights@w0/sum(weights@w0), b = weights@w1,
+ penalty = 100, p = 2, debias = TRUE, online.cost = "auto", diameter = NULL)
+
+ all.equal(ot1$post, ot2) 
+}
+</code></pre>
+
+
+</div>

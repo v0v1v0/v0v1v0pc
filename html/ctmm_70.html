@@ -1,0 +1,134 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>optimizer</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Minimize a function</h2>
+
+<h3>Description</h3>
+
+<p>This function serves as a wrapper around <code>optimize</code>, <code>optim</code>, and <code>ctmm</code>'s partial-Newton optimization routine, with standardized arguments and return values. It finds the optimal parameters that minimize a function, whether it be a cost, loss, risk, or negative log-likelihood function.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">optimizer(par,fn,...,method="pNewton",lower=-Inf,upper=Inf,period=FALSE,reset=identity,
+          control=list())
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>par</code></td>
+<td>
+<p>Initial parameter guess.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fn</code></td>
+<td>
+<p>Function to be minimized with first argument <code>par</code> and optional argument <code>zero</code> (see 'Details' below).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Optional arguments fed to <code>fn</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Optimization algorithm (see 'Details' below).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lower</code></td>
+<td>
+<p>Lower bound for parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>upper</code></td>
+<td>
+<p>Upper bound for parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>period</code></td>
+<td>
+<p>Period of circular parameters if not <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reset</code></td>
+<td>
+<p>Optional function to re-center parameters, if symmetry permits, to prevent numerical underflow.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>Argument list for the optimization routine (see 'Details' below).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Only <code>method='pNewton'</code> will work in both one dimension and multiple dimensions. Any other <code>method</code> argument will be ignored in one dimension, in favor of <code>optimize</code> with a backup evaluation of <code>nlm</code> (under a log-link) for cases where <code>optimize</code> is known to fail. In multiple dimensions, methods other than <code>pNewton</code> include those detailed in <code>optim</code>.
+</p>
+<p><code>method='pNewton'</code> is <code>ctmm</code>'s partial-Newton optimizer, which is a quasi-Newton method that is more accurate than BFGS-based methods when the gradient of <code>fn</code> must be calculated numerically. In short, while BFGS-based methods provide a single rank-1 update to the Hessian matrix per iteration, the partial-Newton algorithm provides <code>length(par)+1</code> rank-1 updates to the Hessian matrix per iteration, at the same computational cost. Furthermore, <code>length(par)</code> of those updates have better numerical precision than the BFGS update, meaning that they can be used at smaller step sizes to obtain better numerical precision. The <code>pNewton</code> optimizer also supports several features not found in other <code>R</code> optimizers: the <code>zero</code> argument, the <code>period</code> argument, and parallelization.
+</p>
+<p>The <code>zero</code> argument is an optional argument in <code>fn</code> supported by <code>method='pNewton'</code>. Briefly, if you rewrite a negative log-likelihood of the form <code class="reqn">fn = \sum_{i=1}^n fn_i</code> as <code class="reqn">fn = \sum_{i=1}^n ( fn_i - zero/n ) + zero</code>, where <code>zero</code> is the current estimate of the minimum value of <code>fn</code>, then the sum becomes approximately "zeroed" and so the variance in numerical errors caused by the difference in magnitude between <code>fn</code> and <code>fn_i</code> is mitigated. In practice, without the <code>zero</code> argument, log-likelihood functions grow in magnitude with increasing data and then require increasing numerical precision to resolve the same differences in log-likelihood. But absolute differences in log-likelihoods (on the order of 1) are always important, even though most optimization routines more naturally consider relative differences as being important.
+</p>
+<p>The <code>period</code> argument informs <code>method='pNewton'</code> if parameters is circular, such as with angles, and what their periods are.
+</p>
+<p>The <code>control</code> list can take the folowing arguments, with defaults shown:
+</p>
+
+<dl>
+<dt><code>precision=1/2</code></dt>
+<dd>
+<p>Fraction of machine numerical precision to target in the maximized likelihood value. The optimal <code>par</code> will have half this precision. On most computers, <code>precision=1</code> is approximately 16 decimal digits of precision for the objective function and 8 for the optimal <code>par</code>.</p>
+</dd>
+<dt><code>maxit=.Machine$integer.max</code></dt>
+<dd>
+<p>Maximum number of iterations allowed for optimization.</p>
+</dd>
+<dt><code>parscale=pmin(abs(par),abs(par-lower),abs(upper-par))</code></dt>
+<dd>
+<p>The natural scale of the parameters such that variations in <code>par</code> on the order of <code>parscale</code> produce variations in <code>fn</code> on the order of one.</p>
+</dd>
+<dt><code>trace=FALSE</code></dt>
+<dd>
+<p>Return step-by-step progress on optimization.</p>
+</dd>
+<dt><code>cores=1</code></dt>
+<dd>
+<p>Perform <code>cores</code> evaluations of <code>fn</code> in parallel, if running in UNIX. <code>cores&lt;=0</code> will use all available cores, save <code>abs(cores)</code>. This feature is only supported by <code>method='pNewton'</code> and is only useful if <code>fn</code> is slow to evaluate, <code>length(par)&gt;1</code>, and the total number of parallel evaluations required does not trigger fork-bomb detection by the OS.</p>
+</dd>
+</dl>
+<h3>Value</h3>
+
+<p>Returns a list with components <code>par</code> for the optimal parameters, <code>value</code> for the minimum value of <code>fn</code>, and possibly other components depending on the optimization routine employed.</p>
+
+
+<h3>Note</h3>
+
+<p><code>method='pNewton'</code> is very stringent about achieving its <code>precision</code> target and assumes that <code>fn</code> has small enough numerical errors (permitting the use of argument <code>zero</code>) to achieve that <code>precision</code> target. If the numerical errors in <code>fn</code> are too large, then the optimizer can fail to converge. <code>ctmm.fit</code> standardizes its input data before optimization, and back-transforms afterwards, as one method to minimize numerical errors in <code>fn</code>.</p>
+
+
+<h3>Author(s)</h3>
+
+<p> C. H. Fleming. </p>
+
+
+<h3>See Also</h3>
+
+ <p><code>optim</code>, <code>optimize</code>, <code>nlm</code> </p>
+
+
+</div>

@@ -1,0 +1,167 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>onacopula</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Constructing (Outer) Nested Archimedean Copulas</h2>
+
+<h3>Description</h3>
+
+<p>Constructing (outer) nested Archimedean copulas (class
+<code>outer_nacopula</code>) is most conveniently done via
+<code>onacopula()</code>, using a nested <code class="reqn">C(...)</code> notation.
+</p>
+<p>Slightly less conveniently, but with the option to pass a <code>list</code>
+structure, <code>onacopulaL()</code> can be used, typically from inside
+another function programmatically.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">
+onacopula (family, nacStructure)
+onacopulaL(family, nacList)
+nac2list(x)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>either a <code>character</code> string, the short
+or longer form of the Archimedean family name (for example,
+"Clayton" or simply "C"); see the <code>acopula-families</code>
+documentation, or an <code>acopula</code> family object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nacStructure</code></td>
+<td>
+<p>a “formula” of the form
+</p>
+<p style="text-align: center;"><code class="reqn">C(\theta, c(i_1,\dots,i_c),\mathrm{list}(C(..), ..., C(..))).</code>
+</p>
+
+<p>Note that <code class="reqn">C()</code> has (maximally) three arguments: the first is
+the copula parameter (vector) <code class="reqn">\theta</code>, the second a
+(possibly empty) vector of integer indices of components (for the
+<code>comp</code> slot in <code>nacopula</code>s), and finally a
+(possibly empty) list of child copulas, each specified with in the
+<code class="reqn">C(..)</code> notation themselves.</p>
+</td>
+</tr>
+</table>
+<table>
+<tr style="vertical-align: top;">
+<td><code>nacList</code></td>
+<td>
+<p>a <code>list</code> of length 3 (or 2), with elements
+</p>
+
+<ol>
+<li>
+<p> theta: <code class="reqn">\theta</code>
+</p>
+</li>
+<li> <p><code>comp</code>: components <code class="reqn">c(i_1,\dots,i_c)</code>
+</p>
+</li>
+<li> <p><code>children</code>: a list which must be a
+<code>nacList</code> itself and may be missing to denote the empty
+<code>list()</code>.
+</p>
+</li>
+</ol>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>an <code>"nacopula"</code>, (typically
+<code>"outer_nacopula"</code>) object.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>onacopula[L]()</code>:
+An outer nested Archimedean copula object, that is, of class
+<code>"outer_nacopula"</code>.
+</p>
+<p><code>nac2list</code>: a <code>list</code> exactly like the <code>naclist</code>
+argument to <code>onacopulaL</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Those of the Archimedean families, for example, <code>copGumbel</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>The class definitions <code>"nacopula"</code>,
+<code>"outer_nacopula"</code>, and <code>"acopula"</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Construct a ten-dimensional Joe copula with parameter such that
+## Kendall's tau equals 0.5
+theta &lt;- copJoe@iTau(0.5)
+C10 &lt;- onacopula("J",C(theta,1:10))
+
+## Equivalent construction with onacopulaL():
+C10. &lt;- onacopulaL("J",list(theta,1:10))
+stopifnot(identical(C10, C10.),
+          identical(nac2list(C10), list(theta, 1:10)))
+
+## Construct a three-dimensional nested Gumbel copula with parameters
+## such that Kendall's tau of the respective bivariate margins are 0.2
+## and 0.5.
+theta0 &lt;- copGumbel@iTau(.2)
+theta1 &lt;- copGumbel@iTau(.5)
+C3 &lt;- onacopula("G", C(theta0, 1, C(theta1, c(2,3))))
+
+## Equivalent construction with onacopulaL():
+str(NAlis &lt;- list(theta0, 1, list(list(theta1, c(2,3)))))
+C3. &lt;- onacopulaL("Gumbel", NAlis)
+stopifnot(identical(C3, C3.))
+
+## An exercise: assume you got the copula specs as character string:
+na3spec &lt;- "C(theta0, 1, C(theta1, c(2,3)))"
+na3call &lt;- str2lang(na3spec) # == parse(text = na3spec)[[1]]
+C3.s &lt;- onacopula("Gumbel", na3call)
+stopifnot(identical(C3, C3.s))
+
+## Good error message if the component ("coordinate") indices are wrong
+## or do not match:
+err &lt;- try(onacopula("G", C(theta0, 2, C(theta1, c(3,2)))))
+
+## Compute the probability of falling in [0,.01]^3 for this copula
+pCopula(rep(.01,3), C3)
+
+## Compute the probability of falling in the cube [.99,1]^3
+prob(C3, rep(.99, 3), rep(1, 3))
+
+## Construct a 6-dimensional, partially nested Gumbel copula of the form
+## C_0(C_1(u_1, u_2), C_2(u_3, u_4), C_3(u_5, u_6))
+theta &lt;- 2:5
+copG &lt;- onacopulaL("Gumbel", list(theta[1], NULL, list(list(theta[2], c(1,2)),
+                                                       list(theta[3], c(3,4)),
+                                                       list(theta[4], c(5,6)))))
+set.seed(1)
+U &lt;- rCopula(5000, copG)
+pairs(U, pch=".", gap=0, labels = as.expression( lapply(1:dim(copG),
+                                     function(j) bquote(italic(U[.(j)]))) ))
+</code></pre>
+
+
+</div>

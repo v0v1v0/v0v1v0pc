@@ -1,0 +1,238 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>findClubs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Finds convergence clubs</h2>
+
+<h3>Description</h3>
+
+<p>Find convergence clubs by means of Phillips and Sul clustering procedure.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">findClubs(
+  X,
+  dataCols,
+  unit_names = NULL,
+  refCol,
+  time_trim = 1/3,
+  HACmethod = c("FQSB", "AQSB"),
+  cstar = 0,
+  cstar_method = c("fixed", "incremental"),
+  cstar_increment = 0.1,
+  cstar_cap = 3
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>dataframe containing data (preferably filtered data in order to remove business cycles).
+Data must not contain any NA or NaN values, otherwise the clustering procedure will be stopped with an error.
+In order for the clustering procedure to work, data must be arranged such that
+each row represents a unit and each column represents a time period (year, month, ...)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dataCols</code></td>
+<td>
+<p>integer vector with the column indices of the data</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>unit_names</code></td>
+<td>
+<p>integer scalar indicating, if present, the index of a column
+with codes of the units</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>refCol</code></td>
+<td>
+<p>integer scalar indicating the index of the column to use for ordering
+data</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_trim</code></td>
+<td>
+<p>a numeric value between 0 and 1, representing the portion of
+time periods to trim when running <em>log-t</em>  regression model.
+Phillips and Sul (2007, 2009) suggest to discard the first third of the period.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>HACmethod</code></td>
+<td>
+<p>string indicating whether a Fixed Quadratic Spectral Bandwidth (<code>HACmethod="FQSB"</code>) or
+an Adaptive Quadratic Spectral Bandwidth (<code>HACmethod="AQSB"</code>) should be used for the truncation
+of the Quadratic Spectral kernel in estimating the <em>log-t</em> regression model
+with heteroskedasticity and autocorrelation consistent standard errors.
+The default method is "FQSB".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cstar</code></td>
+<td>
+<p>numeric scalar, indicating the threshold value of the sieve criterion (<code class="reqn">c^*</code>)
+to include units in the detected core (primary) group (step 3 of Phillips and Sul (2007, 2009) clustering algorithm).
+The default value is 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cstar_method</code></td>
+<td>
+<p>a string specifying whether cstar should be mantained fixed
+(<code>cstar_method="fixed"</code>) or increased iteratively until the whole club satisfies
+the condition <code class="reqn">tvalue&gt;-1.65</code> (<code>cstar_method="incremental"</code>).
+Default is <code>cstar_method="fixed"</code> (see Details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cstar_increment</code></td>
+<td>
+<p>a positive value specifying the increment to cstar,
+only valid if <code>cstar_method="incremental"</code> (see Details); the default value is 0.1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cstar_cap</code></td>
+<td>
+<p>scalar indicating the maximum value up to which <code>cstar</code> can
+be increased; the default value is 3.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>In order to investigate the presence of convergence clubs according
+to the Phillips and Sul clustering procedure, the following steps are implemented:
+</p>
+
+<ol>
+<li>
+<p> (Cross section last observation ordering):
+Sort units in descending order according to the last panel observation of the period;
+</p>
+</li>
+<li>
+<p> (Core group formation):
+Run the <em>log-t</em>  regression for the first k units <code class="reqn">(2 &lt; k &lt; N)</code> maximizing k
+under the condition that t-value is <code class="reqn">&gt; -1.65</code>. In other words, chose the core group size k* as follows:
+</p>
+<p style="text-align: center;"><code class="reqn">k^*= argmax_k \{t_k\} </code>
+</p>
+<p>  subject to </p>
+<p style="text-align: center;"><code class="reqn"> min\{t_k \} &gt; -1.65</code>
+</p>
+
+<p>If the condition <code class="reqn">t_k &gt;-1.65</code> does not hold for <code class="reqn">k = 2</code> (the first two units),
+drop the first unit and repeat the same procedure. If <code class="reqn">t_k &gt;-1.65</code> does not hold
+for any units chosen, the whole panel diverges;
+</p>
+</li>
+<li>
+<p> (Sieve the data for club membership): After the core group  is detected,
+run the <em>log-t</em> regression for the core group adding (one by one)
+each unit that does not belong to the latter. If <code class="reqn">t_k </code> is greater than a critical value <code class="reqn">c^*</code>
+add the new unit in the convergence club.
+All these units (those included in the core group <code class="reqn">k^*</code> plus those added) form the first convergence club.
+Note that Phillips and Sul (2007) suggest to make sure <code class="reqn">t_k&gt;-1.65</code>
+for the subconvergence group obtained. Otherwise, repeat the procedure by
+increasing the value of the <code class="reqn">c^*</code> parameter until the condition
+<code class="reqn">t_k&gt;-1.65</code> is satisfied for the subconvergence group;
+</p>
+</li>
+<li>
+<p> (Recursion and stopping rule): If there are units for which the previous
+condition fails (<code class="reqn">t_k &lt;c^*</code>), gather all these units in one
+group and run the <em>log-t</em>  test to see if the condition <code class="reqn">t_k &gt;-1.65</code>
+holds. If the condition is satisfied, conclude that there are two convergence clubs.
+Otherwise, step 1 to 3 should be repeated on the same group to determine
+whether there are other subgroups that constitute convergence clubs.
+If no k in step 2 satisfies the condition <code class="reqn">t_k &gt;-1.65</code>,
+the remaining units diverge.
+</p>
+</li>
+</ol>
+<p>Note that the clustering procedure may return groups with <code class="reqn">t_k &lt;-1.65</code>,
+which are not really convergence clubs. In this case, following step 3 of
+the clustering procedure there are two options:
+(i) allow an iterative increase
+of the cstar parameter until the subconvergence club satisfies the condition
+<code class="reqn">t_k &gt;-1.65</code>. In this case it should the argument <code>cstar_method</code>
+should be set to <code>"incremental"</code> and a positive argument for the <code>cstar_increment</code>
+argument should be chosen;
+(ii) increase the value of the <code>cstar</code> in order to increase the discriminatory
+power of the <em>log-t</em> test in the formation of each club.
+</p>
+<p>Information about clubs, divergent units and the <code class="reqn">c^*</code> used for each club can be
+easily displayed by means of the <code>summary()</code> function, for which the package provides
+a specific method for the <code>convergence.clubs</code> class.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Ad object of class <code>convergence.clubs</code>, containing a list of
+Convergence Clubs, for each club a list is return with the
+following objects: <code>id</code>, a vector containing the row indices
+of the units in the club; <code>model</code>, a list containing information
+about the model used to run the t-test on the units in the club;
+<code>unit_names</code>, a vector containing the names of the units of the club (optional,
+only included if parameter <code>unit_names</code> is given)
+</p>
+
+
+<h3>References</h3>
+
+<p>Andrews, D. W., 1991. Heteroskedasticity and autocorrelation consistent covariance matrix estimation. Econometrica: Journal of the Econometric Society, 817-858.
+</p>
+<p>Phillips, P. C.; Sul, D., 2007. Transition modeling and econometric convergence tests. Econometrica 75 (6), 1771-1855.
+</p>
+<p>Phillips, P. C.; Sul, D., 2009. Economic transition and growth. Journal of Applied Econometrics 24 (7), 1153-1185.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>mergeClubs</code>, Merges a list of clubs created by <code>findClubs</code>;
+</p>
+<p><code>mergeDivergent</code>, Merges divergent units according to the algorithm proposed by von Lyncker and Thoennessen (2017)
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data("filteredGDP")
+
+
+# Cluster Countries using GDP from year 1970 to year 2003
+clubs &lt;- findClubs(filteredGDP,  dataCols=2:35, unit_names = 1, refCol=35,
+                   time_trim = 1/3, HACmethod = "FQSB",
+                   cstar = 0,
+                   cstar_method = 'incremental',
+                   cstar_increment = 0.1)
+
+
+
+## Not run: 
+# Cluster Countries using GDP from year 1970 to year 2003
+clubs &lt;- findClubs(filteredGDP,  dataCols=2:35, unit_names = 1, refCol=35,
+                   time_trim = 1/3, HACmethod = "AQSB", cstar = 0)
+
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

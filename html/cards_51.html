@@ -1,0 +1,163 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ard_complex</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Complex ARD Summaries</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt="[Experimental]"></a><br>
+Function is similar to <code>ard_continuous()</code>, but allows for more complex
+summaries. While <code>ard_continuous(statistic)</code> only allows for a univariable
+function, <code>ard_complex(statistic)</code> can handle more complex data summaries.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ard_complex(data, ...)
+
+## S3 method for class 'data.frame'
+ard_complex(
+  data,
+  variables,
+  by = dplyr::group_vars(data),
+  strata = NULL,
+  statistic,
+  fmt_fn = NULL,
+  stat_label = everything() ~ default_stat_labels(),
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>(<code>data.frame</code>)<br>
+a data frame</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Arguments passed to methods.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>variables</code></td>
+<td>
+<p>(<code>tidy-select</code>)<br>
+columns to include in summaries. Default is <code>everything()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by, strata</code></td>
+<td>
+<p>(<code>tidy-select</code>)<br>
+columns to tabulate by/stratify by for summary statistic
+calculation. Arguments are similar, but with an important distinction:
+</p>
+<p><code>by</code>: results are calculated for <strong>all combinations</strong> of the columns specified,
+including unobserved combinations and unobserved factor levels.
+</p>
+<p><code>strata</code>: results are calculated for <strong>all <em>observed</em> combinations</strong> of the
+columns specified.
+</p>
+<p>Arguments may be used in conjunction with one another.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>statistic</code></td>
+<td>
+<p>(<code>formula-list-selector</code>)<br>
+The form of the statistics argument is identical to <code>ard_continuous(statistic)</code>
+argument, except the summary function <em>must</em> accept the following arguments:
+</p>
+
+<ul>
+<li> <p><code>x</code>: a vector
+</p>
+</li>
+<li> <p><code>data</code>: the data frame that has been subset such that the <code>by</code>/<code>strata</code> columns
+and rows in which <code>"variable"</code> is <code>NA</code> have been removed.
+</p>
+</li>
+<li> <p><code>full_data</code>: the full data frame
+</p>
+</li>
+<li> <p><code>by</code>: character vector of the <code>by</code> variables
+</p>
+</li>
+<li> <p><code>strata</code>: character vector of the <code>strata</code> variables
+It is unlikely any one function will need <em>all</em> of the above elements,
+and it's recommended the function passed accepts <code>...</code> so that any unused
+arguments will be properly ignored. The <code>...</code> also allows this function
+to perhaps be updated in the future with more passed arguments. For example,
+if one needs a second variable from the data frame, the function inputs
+may look like: <code>foo(x, data, ...)</code>
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fmt_fn</code></td>
+<td>
+<p>(<code>formula-list-selector</code>)<br>
+a named list, a list of formulas,
+or a single formula where the list element is a named list of functions
+(or the RHS of a formula),
+e.g. <code style="white-space: pre;">⁠list(mpg = list(mean = \(x) round(x, digits = 2) |&gt; as.character()))⁠</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stat_label</code></td>
+<td>
+<p>(<code>formula-list-selector</code>)<br>
+a named list, a list of formulas, or a single formula where
+the list element is either a named list or a list of formulas defining the
+statistic labels, e.g. <code>everything() ~ list(mean = "Mean", sd = "SD")</code> or
+<code>everything() ~ list(mean ~ "Mean", sd ~ "SD")</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>an ARD data frame of class 'card'
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># example how to mimic behavior of `ard_continuous()`
+ard_complex(
+  ADSL,
+  by = "ARM",
+  variables = "AGE",
+  statistic = list(AGE = list(mean = \(x, ...) mean(x)))
+)
+
+# return the grand mean and the mean within the `by` group
+grand_mean &lt;- function(data, full_data, variable, ...) {
+  list(
+    mean = mean(data[[variable]], na.rm = TRUE),
+    grand_mean = mean(full_data[[variable]], na.rm = TRUE)
+  )
+}
+
+ADSL |&gt;
+  dplyr::group_by(ARM) |&gt;
+  ard_complex(
+    variables = "AGE",
+    statistic = list(AGE = list(means = grand_mean))
+  )
+</code></pre>
+
+
+</div>

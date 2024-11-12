@@ -1,0 +1,102 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ames_rf_pred</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Ames random forest model predictions and shap values</h2>
+
+<h3>Description</h3>
+
+<p>Predictions and treeshap attribution of a random forest model of North Ames
+house sales data regressing Sales Price from house and lot variables.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ames_rf_pred
+
+ames_rf_shap
+</code></pre>
+
+
+<h3>Format</h3>
+
+<p><code>ames_rf_pred</code> is a n=338 length vector of the prediction of an
+random forest model predicting the numeric House Sales in North Ames.
+<code>ames_rf_shap</code> is a (338 x 9) data frame of the treeshap SHAP attribution of
+the random forest model for each observation.
+</p>
+<p><strong>Replicating</strong>
+</p>
+<div class="sourceCode"><pre>library(cheem)
+library(randomForest)
+library(treeshap)
+set.seed(135)
+
+## Regression setup
+dat  &lt;- amesHousing2018_NorthAmes
+X    &lt;- dat[, 1:9]
+Y    &lt;- dat$SalePrice
+clas &lt;- dat$SubclassMS
+
+## Model and treeSHAP
+ames_rf_fit &lt;- randomForest::randomForest(
+  X, Y, ntree = 125,
+  mtry = ifelse(is_discrete(Y), sqrt(ncol(X)), ncol(X) / 3),
+  nodesize = max(ifelse(is_discrete(Y), 1, 5), nrow(X) / 500))
+ames_rf_pred &lt;- predict(ames_rf_fit, X)
+ames_rf_shap &lt;- treeshap::treeshap(
+  treeshap::randomForest.unify(ames_rf_fit, X), X, FALSE, FALSE)
+ames_rf_shap &lt;- ames_rf_shap$shaps
+
+if(F){ ## Don't accidentally save
+  save(ames_rf_pred, file = "./data/ames_rf_pred.rda")
+  save(ames_rf_shap, file = "./data/ames_rf_shap.rda")
+  #usethis::use_data(ames_rf_pred)
+  #usethis::use_data(ames_rf_shap)
+}
+</pre></div>
+<p>An object of class <code>data.frame</code> with 338 rows and 9 columns.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(cheem)
+
+## Regression setup
+dat  &lt;- amesHousing2018_NorthAmes
+X    &lt;- dat[, 1:9]
+Y    &lt;- dat$SalePrice
+clas &lt;- dat$SubclassMS
+
+## Precomputed predictions and shap attribution
+str(ames_rf_pred)
+str(ames_rf_shap)
+
+## Cheem
+ames_chm &lt;- cheem_ls(X, Y, ames_rf_shap, ames_rf_pred, clas,
+                     label = "Ames, random forest, treeshap")
+
+## Save for use with shiny app (expects an rds file)
+if(FALSE){ ## Don't accidentally save.
+  saveRDS(ames_chm, "./chm_ames_rf_tshap.rds")
+  run_app() ## Select the saved rds file from the data dropdown.
+}
+
+## Cheem visuals
+if(interactive()){
+  prim &lt;- 1
+  comp &lt;- 2
+  global_view(ames_chm, primary_obs = prim, comparison_obs = comp)
+  bas &lt;- sug_basis(ames_rf_shap, prim, comp)
+  mv  &lt;- sug_manip_var(ames_rf_shap, primary_obs = prim, comp)
+  ggt &lt;- radial_cheem_tour(ames_chm, basis = bas, manip_var = mv)
+  animate_plotly(ggt)
+}
+</code></pre>
+
+
+</div>

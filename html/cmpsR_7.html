@@ -1,0 +1,134 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>compute_score_metrics</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute Different Metrics Based on Scores</h2>
+
+<h3>Description</h3>
+
+<p>Compute Different Metrics Based on Scores
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">compute_score_metrics(
+  land1,
+  land2,
+  score,
+  addNA = TRUE,
+  na.rm = TRUE,
+  include = NULL,
+  out_names = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>land1</code></td>
+<td>
+<p>(numeric) vector with land ids of bullet 1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>land2</code></td>
+<td>
+<p>(numeric) vector with land ids of bullet 2</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>score</code></td>
+<td>
+<p>numeric vector of scores to be summarized into a single number</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>addNA</code></td>
+<td>
+<p>logical value. In case of missing lands, are scores set to 0 (addNA = FALSE) or set to NA (addNA = TRUE)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.rm</code></td>
+<td>
+<p>a logical value indicating whether NA values should be stripped before the computation proceeds</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include</code></td>
+<td>
+<p>a character vector specifying which metrics to be included in the result; if <code>include = NULL</code>, including
+all metrics</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>out_names</code></td>
+<td>
+<p>a character vector specifying the variable names of each metric; if <code>out_names = NULL</code>, using the default names</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>By default, this helper function computes four metrics.
+</p>
+<p><code>diff</code>: the difference between the mean score of the foreground phase and the mean score of the background phases
+<code>diff.med</code>: the difference between the median score of the foreground phase and the median score of the background phases
+<code>max</code>: the max score
+<code>maxbar</code>: the mean score of the foreground phase
+</p>
+
+
+<h3>Value</h3>
+
+<p>a data frame containing values of the metrics
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(tidyverse)
+
+data("bullets")
+
+lands &lt;- unique(bullets$bulletland)
+
+comparisons &lt;- data.frame(expand.grid(land1 = lands[1:6], land2 = lands[7:12]),
+                          stringsAsFactors = FALSE)
+
+comparisons &lt;- comparisons %&gt;%
+  left_join(bullets %&gt;% select(bulletland, sig1=sigs),
+            by = c("land1" = "bulletland")) %&gt;%
+  left_join(bullets %&gt;% select(bulletland, sig2=sigs),
+            by = c("land2" = "bulletland"))
+
+comparisons &lt;- comparisons %&gt;% mutate(
+  cmps = purrr::map2(sig1, sig2, .f = function(x, y) {
+    extract_feature_cmps(x$sig, y$sig, include = "full_result")
+  })
+)
+
+comparisons &lt;- comparisons %&gt;%
+  mutate(
+    cmps_score = sapply(comparisons$cmps, function(x) x$CMPS_score),
+    cmps_nseg = sapply(comparisons$cmps, function(x) x$nseg)
+  )
+  
+cp1 &lt;- comparisons %&gt;% select(land1, land2, cmps_score, cmps_nseg)
+cp1 &lt;- cp1 %&gt;% mutate(
+  land1idx = land1 %&gt;% str_sub(-1, -1) %&gt;% as.numeric(),
+  land2idx = land2 %&gt;% str_sub(-1, -1) %&gt;% as.numeric()
+)
+
+with(cp1, {
+  compute_score_metrics(land1idx, land2idx, cmps_score)
+})
+</code></pre>
+
+
+</div>

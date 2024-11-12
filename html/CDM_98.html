@@ -1,0 +1,164 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>equivalent.dina</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Determination of a Statistically Equivalent DINA Model
+</h2>
+
+<h3>Description</h3>
+
+<p>This function determines a statistically equivalent DINA model
+given a Q-matrix using the method of von Davier (2014).
+Thereby, the dimension of the skill space is expanded, but in the
+reparameterized version, the Q-matrix has a simple structure
+or the IRT model is no longer be conjuctive (like in DINA) due
+to a redefinition of the skill space.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">equivalent.dina(q.matrix, reparameterization="B")
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>q.matrix</code></td>
+<td>
+
+<p>The Q-matrix (see <code>din</code>)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reparameterization</code></td>
+<td>
+
+<p>The used reparameterization (see von Davier, 2014). <code>A</code> and <code>B</code>
+are possible reparameterizations.
+</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list with following entries
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>q.matrix</code></td>
+<td>
+<p>Original Q-matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>q.matrix.ast</code></td>
+<td>
+<p>Reparameterized Q-matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>Original skill space</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha.ast</code></td>
+<td>
+<p>Reparameterized skill space</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>von Davier, M. (2014). The DINA model as a constrained general
+diagnostic model: Two variants of a model equivalency.
+<em>British Journal of Mathematical and Statistical Psychology, 67</em>, 49-71.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#############################################################################
+# EXAMPLE 1: Toy example
+#############################################################################
+
+# define a Q-matrix
+Q &lt;- matrix( c( 1,0,0,  0,1,0,
+        0,0,1,   1,0,1,  1,1,1 ), byrow=TRUE, ncol=3 )
+Q &lt;- Q[ rep(1:(nrow(Q)),each=2), ]
+
+# equivalent DINA model (using the default reparameterization B)
+res1 &lt;- CDM::equivalent.dina( q.matrix=Q )
+res1
+
+# equivalent DINA model (reparametrization A)
+res2 &lt;- CDM::equivalent.dina( q.matrix=Q, reparameterization="A")
+res2
+
+## Not run: 
+#############################################################################
+# EXAMPLE 2: Estimation with two equivalent DINA models
+#############################################################################
+
+# simulate data
+set.seed(789)
+D &lt;- ncol(Q)
+mean.alpha &lt;- c( -.5, .5, 0  )
+r1 &lt;- .5
+Sigma.alpha &lt;- matrix( r1, D, D ) + diag(1-r1,D)
+dat1 &lt;- CDM::sim.din( N=2000, q.matrix=Q, mean=mean.alpha, Sigma=Sigma.alpha )
+
+# estimate DINA model
+mod1 &lt;- CDM::din( dat1$dat, q.matrix=Q )
+
+# estimate equivalent DINA model
+mod2 &lt;- CDM::din( dat1$dat, q.matrix=res1$q.matrix.ast, skillclasses=res1$alpha.ast)
+# restricted skill space must be defined by using the argument 'skillclasses'
+
+# compare model summaries
+summary(mod2)
+summary(mod1)
+
+# compare estimated item parameters
+cbind( mod2$coef, mod1$coef )
+
+# compare estimated skill class probabilities
+round( cbind( mod2$attribute.patt, mod1$attribute.patt ), 4 )
+
+
+#############################################################################
+# EXAMPLE 3: Examples from von Davier (2014)
+#############################################################################
+
+# define Q-matrix
+Q &lt;- matrix( 0, nrow=8, ncol=3 )
+Q[2, ] &lt;- c(1,0,0)
+Q[3, ] &lt;- c(0,1,0)
+Q[4, ] &lt;- c(1,1,0)
+Q[5, ] &lt;- c(0,0,1)
+# Q[6, ] &lt;- c(1,0,1)
+Q[6, ] &lt;- c(0,0,1)
+Q[7, ] &lt;- c(0,1,1)
+Q[8, ] &lt;- c(1,1,1)
+
+#- parametrization A
+res1 &lt;- CDM::equivalent.dina(q.matrix=Q, reparameterization="A")
+res1
+
+#- parametrization B
+res2 &lt;- CDM::equivalent.dina(q.matrix=Q, reparameterization="B")
+res2
+
+## End(Not run)
+</code></pre>
+
+
+</div>

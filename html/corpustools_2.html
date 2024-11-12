@@ -1,0 +1,130 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>aggregate_rsyntax</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Aggregate rsyntax annotations</h2>
+
+<h3>Description</h3>
+
+<p>A method for aggregating rsyntax annotations. The intended purpose is to compute aggregate values for a given label in an annotation column.
+</p>
+<p>For example, you used annotate_rsyntax to add a column with subject-predicate labels, and now you want to concatenate the tokens with these labels.
+With annotate_rsyntax you would first aggregate the subject tokens, then aggregate the predicate tokens. By default (txt = T) the column with concatenated tokens are added.
+</p>
+<p>You can specify any aggregation function using any column in tc$tokens. So say you want to perform a sentiment analysis on the quotes of politicians. You first used annotate_rsyntax to create an annotation column 'quote',
+that has the labels 'source', 'verb', and 'quote'. You also used code_dictionary to add a column with unique politician ID's and a column with sentiment scores.
+Now you can aggregate the source tokens  to get a single unique ID, and aggregate the quote tokens to get a single sentiment score.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">aggregate_rsyntax(
+  tc,
+  annotation,
+  ...,
+  by_col = NULL,
+  txt = F,
+  labels = NULL,
+  rm_na = T
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>tc</code></td>
+<td>
+<p>a tCorpus</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>annotation</code></td>
+<td>
+<p>The name of the rsyntax annotation column</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>To aggregate columns for specific</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by_col</code></td>
+<td>
+<p>A character vector with other column names in tc$tokens to aggregate by.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>txt</code></td>
+<td>
+<p>If TRUE, add columns with concatenated tokens for each label. Can also be a character vector specifying for which specific labels to create this column</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>labels</code></td>
+<td>
+<p>Instead of using all labels, a character vector of labels can be given</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rm_na</code></td>
+<td>
+<p>If TRUE, remove rows with only NA values</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A data.table
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+tc = tc_sotu_udpipe$copy()
+tc$udpipe_clauses()
+
+subject_verb_predicate = aggregate_rsyntax(tc, 'clause', txt=TRUE)
+head(subject_verb_predicate)
+
+## We can also add specific aggregation functions
+
+## count number of tokens in predicate
+aggregate_rsyntax(tc, 'clause',
+                  agg_label('predicate', n = length(token_id)))
+                  
+## same, but with txt for only the subject label
+aggregate_rsyntax(tc, 'clause', txt='subject',
+                  agg_label('predicate', n = length(token_id)))
+
+                                
+## example application: sentiment scores for specific subjects
+
+# first use queries to code subjects
+tc$code_features(column = 'who',
+                 query  = c('I#  I~s &lt;this president&gt;', 
+                            'we# we americans &lt;american people&gt;'))
+
+# then use dictionary to get sentiment scores
+dict = melt_quanteda_dict(quanteda::data_dictionary_LSD2015)
+dict$sentiment = ifelse(dict$code %in% c('negative','neg_positive'), -1, 1)
+tc$code_dictionary(dict)
+
+sent = aggregate_rsyntax(tc, 'clause', txt='predicate',
+                  agg_label('subject', subject = na.omit(who)[1]),
+                  agg_label('predicate', sentiment = mean(sentiment, na.rm=TRUE)))
+head(sent)
+sent[,list(sentiment=mean(sentiment, na.rm=TRUE), n=.N), by='subject']
+
+## End(Not run)
+</code></pre>
+
+
+</div>

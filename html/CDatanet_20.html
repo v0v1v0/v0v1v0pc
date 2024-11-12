@@ -1,0 +1,242 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>sart</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimating Tobit models with social interactions</h2>
+
+<h3>Description</h3>
+
+<p><code>sart</code> estimates Tobit models with social interactions (Xu and Lee, 2015).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">sart(
+  formula,
+  Glist,
+  starting = NULL,
+  Ey0 = NULL,
+  optimizer = "fastlbfgs",
+  npl.ctr = list(),
+  opt.ctr = list(),
+  cov = TRUE,
+  cinfo = TRUE,
+  data
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>a class object formula: a symbolic description of the model. <code>formula</code> must be as, for example, <code>y ~ x1 + x2 + gx1 + gx2</code>
+where <code>y</code> is the endogenous vector and <code>x1</code>, <code>x2</code>, <code>gx1</code> and <code>gx2</code> are control variables, which can include contextual variables, i.e. averages among the peers.
+Peer averages can be computed using the function <code>peer.avg</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Glist</code></td>
+<td>
+<p>The network matrix. For networks consisting of multiple subnets, <code>Glist</code> can be a list of subnets with the <code>m</code>-th element being an <code>ns*ns</code> adjacency matrix, where <code>ns</code> is the number of nodes in the <code>m</code>-th subnet.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>starting</code></td>
+<td>
+<p>(optional) a starting value for <code class="reqn">\theta = (\lambda, \Gamma, \sigma)</code> (see the model specification in details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Ey0</code></td>
+<td>
+<p>(optional) a starting value for <code class="reqn">E(y)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimizer</code></td>
+<td>
+<p>is either <code>fastlbfgs</code> (L-BFGS optimization method of the package <span class="pkg">RcppNumerical</span>), <code>nlm</code> (referring to the function nlm), or <code>optim</code> (referring to the function optim).
+Arguments for these functions such as, <code>control</code> and <code>method</code> can be set via the argument <code>opt.ctr</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>npl.ctr</code></td>
+<td>
+<p>a list of controls for the NPL method (see details of the function <code>cdnet</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>opt.ctr</code></td>
+<td>
+<p>a list of arguments to be passed in <code>optim_lbfgs</code> of the package <span class="pkg">RcppNumerical</span>, nlm or optim (the solver set in <code>optimizer</code>), such as <code>maxit</code>, <code>eps_f</code>, <code>eps_g</code>, <code>control</code>, <code>method</code>, etc.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cov</code></td>
+<td>
+<p>a Boolean indicating if the covariance must be computed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cinfo</code></td>
+<td>
+<p>a Boolean indicating whether information is complete (<code>cinfo = TRUE</code>) or incomplete (<code>cinfo = FALSE</code>). In the case of incomplete information, the model is defined under rational expectations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>an optional data frame, list or environment (or object coercible by as.data.frame to a data frame) containing the variables
+in the model. If not found in data, the variables are taken from <code>environment(formula)</code>, typically the environment from which <code>sart</code> is called.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For a complete information model, the outcome <code class="reqn">y_i</code> is defined as:
+</p>
+<p style="text-align: center;"><code class="reqn">\begin{cases}y_i^{\ast} = \lambda \bar{y}_i + \mathbf{z}_i'\Gamma + \epsilon_i, \\ y_i = \max(0, y_i^{\ast}),\end{cases}</code>
+</p>
+
+<p>where <code class="reqn">\bar{y}_i</code> is the average of <code class="reqn">y</code> among peers,
+<code class="reqn">\mathbf{z}_i</code> is a vector of control variables,
+and <code class="reqn">\epsilon_i \sim N(0, \sigma^2)</code>.
+In the case of incomplete information modelswith rational expectations, <code class="reqn">y_i</code> is defined as:
+</p>
+<p style="text-align: center;"><code class="reqn">\begin{cases}y_i^{\ast} = \lambda E(\bar{y}_i) + \mathbf{z}_i'\Gamma + \epsilon_i, \\ y_i = \max(0, y_i^{\ast}).\end{cases}</code>
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>A list consisting of:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>info</code></td>
+<td>
+<p>a list of general information on the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estimate</code></td>
+<td>
+<p>the Maximum Likelihood (ML) estimator.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Ey</code></td>
+<td>
+<p><code class="reqn">E(y)</code>, the expectation of y.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>GEy</code></td>
+<td>
+<p>the average of <code class="reqn">E(y)</code> friends.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cov</code></td>
+<td>
+<p>a list including (if <code>cov == TRUE</code>) covariance matrices.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>details</code></td>
+<td>
+<p>outputs as returned by the optimizer.</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Xu, X., &amp; Lee, L. F. (2015). Maximum likelihood estimation of a spatial autoregressive Tobit model. <em>Journal of Econometrics</em>, 188(1), 264-280, <a href="https://doi.org/10.1016/j.jeconom.2015.05.004">doi:10.1016/j.jeconom.2015.05.004</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>sar</code>, <code>cdnet</code>, <code>simsart</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Groups' size
+set.seed(123)
+M      &lt;- 5 # Number of sub-groups
+nvec   &lt;- round(runif(M, 100, 200))
+n      &lt;- sum(nvec)
+
+# Parameters
+lambda &lt;- 0.4
+Gamma  &lt;- c(2, -1.9, 0.8, 1.5, -1.2)
+sigma  &lt;- 1.5
+theta  &lt;- c(lambda, Gamma, sigma)
+
+# X
+X      &lt;- cbind(rnorm(n, 1, 1), rexp(n, 0.4))
+
+# Network
+G      &lt;- list()
+
+for (m in 1:M) {
+  nm           &lt;- nvec[m]
+  Gm           &lt;- matrix(0, nm, nm)
+  max_d        &lt;- 30
+  for (i in 1:nm) {
+    tmp        &lt;- sample((1:nm)[-i], sample(0:max_d, 1))
+    Gm[i, tmp] &lt;- 1
+  }
+  rs           &lt;- rowSums(Gm); rs[rs == 0] &lt;- 1
+  Gm           &lt;- Gm/rs
+  G[[m]]       &lt;- Gm
+}
+
+# Data
+data   &lt;- data.frame(X, peer.avg(G, cbind(x1 = X[,1], x2 =  X[,2])))
+colnames(data) &lt;- c("x1", "x2", "gx1", "gx2")
+
+## Complete information game
+ytmp    &lt;- simsart(formula = ~ x1 + x2 + gx1 + gx2, Glist = G, theta = theta, 
+                   data = data, cinfo = TRUE)
+data$yc &lt;- ytmp$y
+
+## Incomplete information game
+ytmp    &lt;- simsart(formula = ~ x1 + x2 + gx1 + gx2, Glist = G, theta = theta, 
+                   data = data, cinfo = FALSE)
+data$yi &lt;- ytmp$y
+
+# Complete information estimation for yc
+outc1   &lt;- sart(formula = yc ~ x1 + x2 + gx1 + gx2, optimizer = "nlm",
+                Glist = G, data = data, cinfo = TRUE)
+summary(outc1)
+
+# Complete information estimation for yi
+outc1   &lt;- sart(formula = yi ~ x1 + x2 + gx1 + gx2, optimizer = "nlm",
+                Glist = G, data = data, cinfo = TRUE)
+summary(outc1)
+
+# Incomplete information estimation for yc
+outi1   &lt;- sart(formula = yc ~ x1 + x2 + gx1 + gx2, optimizer = "nlm",
+                Glist = G, data = data, cinfo = FALSE)
+summary(outi1)
+
+# Incomplete information estimation for yi
+outi1   &lt;- sart(formula = yi ~ x1 + x2 + gx1 + gx2, optimizer = "nlm",
+                Glist = G, data = data, cinfo = FALSE)
+summary(outi1)
+
+</code></pre>
+
+
+</div>

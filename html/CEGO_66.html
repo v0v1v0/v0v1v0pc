@@ -1,0 +1,250 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>modelKriging</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Kriging Model</h2>
+
+<h3>Description</h3>
+
+<p>Implementation of a distance-based Kriging model, e.g., for mixed or combinatorial input spaces.
+It is based on employing suitable distance measures for the samples in input space.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">modelKriging(x, y, distanceFunction, control = list())
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>list of samples in input space</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>column vector of observations for each sample</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>distanceFunction</code></td>
+<td>
+<p>a suitable distance function of type f(x1,x2), returning a scalar distance value, preferably between 0 and 1.
+Maximum distances larger 1 are no problem, but may yield scaling bias when different measures are compared.
+Should be non-negative and symmetric.  It can also be a list of several distance functions. In this case, Maximum Likelihood Estimation (MLE) is used 
+to determine the most suited distance measure.
+The distance function may have additional parameters. For that case, see distanceParametersLower/Upper in the controls.
+If distanceFunction is missing, it can also be provided in the control list.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>(list), with the options for the model building procedure:
+</p>
+
+<dl>
+<dt><code>lower</code></dt>
+<dd>
+<p> lower boundary for theta, default is <code>1e-6</code></p>
+</dd>
+<dt><code>upper</code></dt>
+<dd>
+<p> upper boundary for theta, default is <code>100</code></p>
+</dd>
+<dt><code>corr</code></dt>
+<dd>
+<p> function to be used for correlation modelling, default is <code>fcorrGauss</code></p>
+</dd>
+<dt><code>algTheta</code></dt>
+<dd>
+<p> algorithm used to find theta (as well as p and lambda), default is <code>optimInterface</code>.</p>
+</dd>
+<dt><code>algThetaControl</code></dt>
+<dd>
+<p> list of controls passed to <code>algTheta</code>.</p>
+</dd>
+<dt><code>useLambda</code></dt>
+<dd>
+<p> whether or not to use the regularization constant lambda (nugget effect). Default is <code>FALSE</code>.</p>
+</dd>
+<dt><code>lambdaLower</code></dt>
+<dd>
+<p> lower boundary for lambda (log scale), default is <code>-6</code></p>
+</dd>
+<dt><code>lambdaUpper</code></dt>
+<dd>
+<p> upper boundary for lambda (log scale), default is <code>0</code></p>
+</dd>
+<dt><code>distanceParametersLower</code></dt>
+<dd>
+<p> lower boundary for parameters of the distance function, default is <code>NA</code> which means there are no distance function parameters. If several distance functions are supplied, this should be a list of lower boundary vectors for each function.</p>
+</dd>
+<dt><code>distanceParametersUpper</code></dt>
+<dd>
+<p> upper boundary for parameters of the distance function, default is <code>NA</code> which means there are no distance function parameters. If several distance functions are supplied, this should be a list of upper boundary vectors for each function.</p>
+</dd>
+<dt><code>distances</code></dt>
+<dd>
+<p> a distance matrix. If available, this matrix is used for model building, instead of calculating the distance matrix using the parameters <code>distanceFunction</code>. Default is <code>NULL</code>.</p>
+</dd>
+<dt><code>scaling</code></dt>
+<dd>
+<p> If TRUE: Distances values are divided by maximum distance to avoid scale bias.</p>
+</dd>
+<dt><code>reinterpolate</code></dt>
+<dd>
+<p> If TRUE: reinterpolation is used to generate better uncertainty estimates in the presence of noise. </p>
+</dd>
+<dt><code>combineDistances</code></dt>
+<dd>
+<p> By default, several distance functions or matrices are subject to a likelihood based decision, choosing one. If this parameter is TRUE, they are instead combined by determining a weighted sum. The weighting parameters are determined by MLE.</p>
+</dd>
+<dt><code>userParameters</code></dt>
+<dd>
+<p> By default: (<code>NULL</code>). Else, this vector is used instead of MLE to specify the model parameters, in the following order: kernel parameters, distance weights, lambda, distance parameters.</p>
+</dd>
+<dt><code>indefiniteMethod</code></dt>
+<dd>
+<p> The specific method used for correction: spectrum <code>"clip"</code>, spectrum <code>"flip"</code>, spectrum <code>"square"</code>, spectrum <code>"diffusion"</code>, feature embedding "feature", nearest definite matrix "near". Default is no correction: <code>"none"</code>. See Zaefferer and Bartz-Beielstein (2016).</p>
+</dd>
+<dt><code>indefiniteType</code></dt>
+<dd>
+<p>  The general type of correction for indefiniteness: <code>"NSD"</code>,<code>"CNSD"</code> or the default <code>"PSD"</code>. See Zaefferer and Bartz-Beielstein (2016). Note, that feature embedding may not work in case of multiple distance functions.</p>
+</dd>
+<dt><code>indefiniteRepair</code></dt>
+<dd>
+<p> boolean, whether conditions of the distance matrix (in case of <code>"NSD"</code>,<code>"CNSD"</code> correction type) or correlation matrix (in case of <code>"PSD"</code> correction type) are repaired.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The basic Kriging implementation is based on the work of Forrester et al. (2008). 
+For adaptation of Kriging to mixed or combinatorial spaces, as well as
+choosing distance measures with Maximum Likelihood Estimation, see the other two references (Zaefferer et al., 2014).
+</p>
+
+
+<h3>Value</h3>
+
+<p>an object of class <code>modelKriging</code> containing the options (see control parameter) and determined parameters for the model:
+</p>
+
+<dl>
+<dt><code>theta</code></dt>
+<dd>
+<p> parameters of the kernel / correlation function determined with MLE.</p>
+</dd>
+<dt><code>lambda</code></dt>
+<dd>
+<p> regularization constant (nugget) lambda</p>
+</dd>
+<dt><code>yMu</code></dt>
+<dd>
+<p> vector of observations y, minus MLE of mu</p>
+</dd>
+<dt><code>SSQ</code></dt>
+<dd>
+<p> Maximum Likelihood Estimate (MLE) of model parameter sigma^2</p>
+</dd>
+<dt><code>mu</code></dt>
+<dd>
+<p> MLE of model parameter mu</p>
+</dd>
+<dt><code>Psi</code></dt>
+<dd>
+<p> correlation matrix Psi</p>
+</dd>
+<dt><code>Psinv</code></dt>
+<dd>
+<p> inverse of Psi</p>
+</dd>
+<dt><code>nevals</code></dt>
+<dd>
+<p> number of Likelihood evaluations during MLE of theta/lambda/p</p>
+</dd>
+<dt><code>distanceFunctionIndexMLE</code></dt>
+<dd>
+<p> If a list of several distance measures (<code>distanceFunction</code>) was given, this parameter contains the index value of the measure chosen with MLE.</p>
+</dd>
+</dl>
+<h3>References</h3>
+
+<p>Forrester, Alexander I.J.; Sobester, Andras; Keane, Andy J. (2008). Engineering Design via Surrogate Modelling - A Practical Guide. John Wiley &amp; Sons.
+</p>
+<p>Zaefferer, Martin; Stork, Joerg; Friese, Martina; Fischbach, Andreas; Naujoks, Boris; Bartz-Beielstein, Thomas. (2014). Efficient global optimization for combinatorial problems. In Proceedings of the 2014 conference on Genetic and evolutionary computation (GECCO '14). ACM, New York, NY, USA, 871-878. DOI=10.1145/2576768.2598282
+</p>
+<p>Zaefferer, Martin; Stork, Joerg; Bartz-Beielstein, Thomas. (2014). Distance Measures for Permutations in Combinatorial Efficient Global Optimization. In Parallel Problem Solving from Nature - PPSN XIII (p. 373-383). Springer International Publishing.
+</p>
+<p>Zaefferer, Martin and Bartz-Beielstein, Thomas (2016). Efficient Global Optimization with Indefinite Kernels. Parallel Problem Solving from Nature-PPSN XIV. Accepted, in press. Springer.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>predict.modelKriging</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Set random number generator seed
+set.seed(1)
+# Simple test landscape
+fn &lt;- landscapeGeneratorUNI(1:5,distancePermutationHamming)
+# Generate data for training and test
+x &lt;- unique(replicate(40,sample(5),FALSE))
+xtest &lt;- x[-(1:15)]
+x &lt;- x[1:15]
+# Determin true objective function values
+y &lt;- fn(x)
+ytest &lt;- fn(xtest)
+# Build model
+fit &lt;- modelKriging(x,y,distancePermutationHamming,
+    control=list(algThetaControl=list(method="L-BFGS-B"),useLambda=FALSE))
+# Predicted obj. function values
+ypred &lt;- predict(fit,xtest)$y
+# Uncertainty estimate
+fit$predAll &lt;- TRUE
+spred &lt;- predict(fit,xtest)$s
+# Plot
+plot(ytest,ypred,xlab="true value",ylab="predicted value",
+    pch=20,xlim=c(0.3,1),ylim=c(min(ypred)-0.1,max(ypred)+0.1))
+segments(ytest, ypred-spred,ytest, ypred+spred)
+epsilon = 0.02
+segments(ytest-epsilon,ypred-spred,ytest+epsilon,ypred-spred)
+segments(ytest-epsilon,ypred+spred,ytest+epsilon,ypred+spred)
+abline(0,1,lty=2)
+# Use a different/custom optimizer (here: SANN) for maximum likelihood estimation: 
+# (Note: Bound constraints are recommended, to avoid Inf values.
+# This is really just a demonstration. SANN does not respect bound constraints.)
+optimizer1 &lt;- function(x,fun,lower=NULL,upper=NULL,control=NULL,...){
+  res &lt;- optim(x,fun,method="SANN",control=list(maxit=100),...)
+  list(xbest=res$par,ybest=res$value,count=res$counts)
+}
+fit &lt;- modelKriging(x,y,distancePermutationHamming,
+                   control=list(algTheta=optimizer1,useLambda=FALSE))
+#One-dimensional optimizer (Brent). Note, that Brent will not work when 
+#several parameters have to be set, e.g., when using nugget effect (lambda).
+#However, Brent may be quite efficient otherwise.
+optimizer2 &lt;- function(x,fun,lower,upper,control=NULL,...){
+ res &lt;- optim(x,fun,method="Brent",lower=lower,upper=upper,...)
+ list(xbest=res$par,ybest=res$value,count=res$counts)
+}
+fit &lt;- modelKriging(x,y,distancePermutationHamming,
+                    control=list(algTheta=optimizer2,useLambda=FALSE))
+</code></pre>
+
+
+</div>

@@ -1,0 +1,374 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>RandomSearchClassif</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Random Search for Classification Tasks</h2>
+
+<h3>Description</h3>
+
+<p>RandomSearch randomly samples a population of candidates and returns non-dominated candidates w.r.t to the objectives
+of MOC (Dandl et. al 2020) as counterfactuals. RandomSearch is equivalent to MOC with zero generations and the <code>random</code>
+initialization strategy.
+</p>
+<p>The four objectives of MOC (Dandl et. al 2020) to are:
+</p>
+
+<ol>
+<li> <p>Distance to <code>desired_prob</code> (classification tasks) or <code>desired_prob</code> (regression tasks).
+</p>
+</li>
+<li> <p>Dissimilarity to <code>x_interest</code> measured by Gower's dissimilarity measure (Gower 1971).
+</p>
+</li>
+<li> <p>Number of feature changes.
+</p>
+</li>
+<li> <p>(Weighted) sum of dissimilarities to the <code>k</code> nearest data points in <code>predictor$data$X</code>.
+</p>
+</li>
+</ol>
+<h3>Details</h3>
+
+<p>RandomSearch is typically used as a baseline in benchmark comparisons with MOC.
+The total number of samples drawn is <code>mu</code> * <code>n_generations</code>. Using separate parameters <code>mu</code> and <code>n_generations</code>
+is only required to make certain statistics comparable with MOC (e.g. the evolution of the dominated hypervolume).
+</p>
+
+
+<h3>Super classes</h3>
+
+<p><code>counterfactuals::CounterfactualMethod</code> -&gt; <code>counterfactuals::CounterfactualMethodClassif</code> -&gt; <code>RandomSearchClassif</code>
+</p>
+
+
+<h3>Active bindings</h3>
+
+<div class="r6-active-bindings">
+
+<dl>
+<dt><code>optimizer</code></dt>
+<dd>
+<p>(OptimInstanceBatchMultiCrit) <br>
+The object used for optimization.</p>
+</dd>
+</dl>
+</div>
+
+
+<h3>Methods</h3>
+
+
+
+<h4>Public methods</h4>
+
+
+<ul>
+<li> <p><a href="#method-RandomSearchClassif-new"><code>RandomSearchClassif$new()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-RandomSearchClassif-plot_statistics"><code>RandomSearchClassif$plot_statistics()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-RandomSearchClassif-get_dominated_hv"><code>RandomSearchClassif$get_dominated_hv()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-RandomSearchClassif-plot_search"><code>RandomSearchClassif$plot_search()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-RandomSearchClassif-clone"><code>RandomSearchClassif$clone()</code></a>
+</p>
+</li>
+</ul>
+<details open><summary>Inherited methods</summary><ul>
+<li><span class="pkg-link" data-pkg="counterfactuals" data-topic="CounterfactualMethod" data-id="print"><a href="../../counterfactuals/html/CounterfactualMethod.html#method-CounterfactualMethod-print"><code>counterfactuals::CounterfactualMethod$print()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="counterfactuals" data-topic="CounterfactualMethodClassif" data-id="find_counterfactuals"><a href="../../counterfactuals/html/CounterfactualMethodClassif.html#method-CounterfactualMethodClassif-find_counterfactuals"><code>counterfactuals::CounterfactualMethodClassif$find_counterfactuals()</code></a></span></li>
+</ul></details><hr>
+<a id="method-RandomSearchClassif-new"></a>
+
+
+
+<h4>Method <code>new()</code>
+</h4>
+
+<p>Create a new <code>RandomSearchClassif</code> object.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>RandomSearchClassif$new(
+  predictor,
+  fixed_features = NULL,
+  max_changed = NULL,
+  mu = 20L,
+  n_generations = 175L,
+  p_use_orig = 0.5,
+  k = 1L,
+  weights = NULL,
+  lower = NULL,
+  upper = NULL,
+  distance_function = "gower"
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>predictor</code></dt>
+<dd>
+<p>(Predictor)<br>
+The object (created with <code>iml::Predictor$new()</code>) holding the machine learning model and the data.</p>
+</dd>
+<dt><code>fixed_features</code></dt>
+<dd>
+<p>(<code>character()</code> | <code>NULL</code>)<br>
+Names of features that are not allowed to be changed. <code>NULL</code> (default) allows all features to be changed.</p>
+</dd>
+<dt><code>max_changed</code></dt>
+<dd>
+<p>(<code>integerish(1)</code> | <code>NULL</code>)<br>
+Maximum number of feature changes. <code>NULL</code> (default) allows any number of changes.</p>
+</dd>
+<dt><code>mu</code></dt>
+<dd>
+<p>(<code>integerish(1)</code>)<br>
+The population size. Default is <code>20L</code>. The total number of random samples is set to <code>mu * n_generations</code>.
+See the <code>Details</code> for further details.</p>
+</dd>
+<dt><code>n_generations</code></dt>
+<dd>
+<p>(<code>integerish(1)</code>)<br>
+The number of generations. Default is <code>175L</code>. The total number of random samples is set to <code>mu * n_generations</code>.
+See the <code>Details</code> section for further details.</p>
+</dd>
+<dt><code>p_use_orig</code></dt>
+<dd>
+<p>(<code>numeric(1)</code>)<br>
+Probability with which a feature/gene is reset to its original value in <code>x_interest</code> after random sampling. Default is <code>0.5</code>.</p>
+</dd>
+<dt><code>k</code></dt>
+<dd>
+<p>(<code>integerish(1)</code>)<br>
+The number of data points to use for the forth objective. Default is <code>1L</code>.</p>
+</dd>
+<dt><code>weights</code></dt>
+<dd>
+<p>(<code>numeric(1) | numeric(k)</code> | <code>NULL</code>)<br>
+The weights used to compute the weighted sum of dissimilarities for the forth objective. It is either a single value
+or a vector of length <code>k</code>. If it has length <code>k</code>, the i-th element specifies the weight of the i-th closest data point.
+The values should sum up to <code>1</code>. <code>NULL</code> (default) means all data points are weighted equally.</p>
+</dd>
+<dt><code>lower</code></dt>
+<dd>
+<p>(<code>numeric()</code> | <code>NULL</code>)<br>
+Vector of minimum values for numeric features.
+If <code>NULL</code> (default), the element for each numeric feature in <code>lower</code> is taken as its minimum value in <code>predictor$data$X</code>.
+If not <code>NULL</code>, it should be named with the corresponding feature names.</p>
+</dd>
+<dt><code>upper</code></dt>
+<dd>
+<p>(<code>numeric()</code> | <code>NULL</code>)<br>
+Vector of maximum values for numeric features.
+If <code>NULL</code> (default), the element for each numeric feature in <code>upper</code> is taken as its maximum value in <code>predictor$data$X</code>.
+If not <code>NULL</code>, it should be named with the corresponding feature names.</p>
+</dd>
+<dt><code>distance_function</code></dt>
+<dd>
+<p>(<code style="white-space: pre;">⁠function()⁠</code> | <code>'gower'</code> | <code>'gower_c'</code>)<br>
+The distance function to be used in the second and fourth objective.
+Either the name of an already implemented distance function
+('gower' or 'gower_c') or a function.
+If set to 'gower' (default), then Gower's distance (Gower 1971) is used;
+if set to 'gower_c', a C-based more efficient version of Gower's distance is used.
+A function must have three arguments  <code>x</code>, <code>y</code>, and <code>data</code> and should
+return a <code>double</code> matrix with <code>nrow(x)</code> rows and maximum <code>nrow(y)</code> columns.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-RandomSearchClassif-plot_statistics"></a>
+
+
+
+<h4>Method <code>plot_statistics()</code>
+</h4>
+
+<p>Plots the evolution of the mean and minimum objective values together with the dominated hypervolume over
+the generations. All values for a generation are computed based on all non-dominated individuals that emerged until
+that generation. The randomly drawn samples are therefore split into <code>n_generations</code> folds of size <code>mu.</code>
+This function mimics MOCs <code>plot_statistics()</code> method. See the <code>Details</code> section for further information.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>RandomSearchClassif$plot_statistics(centered_obj = TRUE)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>centered_obj</code></dt>
+<dd>
+<p>(<code>logical(1)</code>)<br>
+Should the objective values be centered? If set to <code>FALSE</code>, each objective value is visualized in a separate plot,
+since they (usually) have different scales. If set to <code>TRUE</code> (default), they are visualized in a single plot.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-RandomSearchClassif-get_dominated_hv"></a>
+
+
+
+<h4>Method <code>get_dominated_hv()</code>
+</h4>
+
+<p>Calculates the dominated hypervolume of each generation. The randomly drawn samples are therefore split
+into <code>n_generations</code> folds of size <code>mu.</code>
+This function mimics MOCs <code>get_dominated_hv()</code> method. See the <code>Details</code> section for further information.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>RandomSearchClassif$get_dominated_hv()</pre></div>
+
+
+
+<h5>Returns</h5>
+
+<p>A <code>data.table</code> with the dominated hypervolume of each generation.
+</p>
+
+
+<hr>
+<a id="method-RandomSearchClassif-plot_search"></a>
+
+
+
+<h4>Method <code>plot_search()</code>
+</h4>
+
+<p>Visualizes two selected objective values of all emerged individuals in a scatter plot.
+The randomly drawn samples are therefore split into <code>n_generations</code> folds of size <code>mu.</code>
+This function mimics MOCs <code>plot_search()</code> method. See the <code>Details</code> section for further information.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>RandomSearchClassif$plot_search(
+  objectives = c("dist_target", "dist_x_interest")
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>objectives</code></dt>
+<dd>
+<p>(<code>character(2)</code>)<br>
+The two objectives to be shown in the plot. Possible values are "dist_target", "dist_x_interest, "no_changed",
+and "dist_train".</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-RandomSearchClassif-clone"></a>
+
+
+
+<h4>Method <code>clone()</code>
+</h4>
+
+<p>The objects of this class are cloneable with this method.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>RandomSearchClassif$clone(deep = FALSE)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>deep</code></dt>
+<dd>
+<p>Whether to make a deep clone.</p>
+</dd>
+</dl>
+</div>
+
+
+
+
+<h3>References</h3>
+
+<p>Dandl, S., Molnar, C., Binder, M., and Bischl, B. (2020).
+"Multi-Objective Counterfactual Explanations". In: Parallel Problem
+Solving from Nature – PPSN XVI, edited by Thomas Bäck, Mike Preuss,
+André Deutz, Hao Wang, Carola Doerr, Michael Emmerich, and Heike Trautmann, 448–469,
+Cham, Springer International Publishing, <a href="https://doi.org/10.1007/978-3-030-58112-1_31">doi:10.1007/978-3-030-58112-1_31</a>.
+</p>
+<p>Deb, K., Pratap, A., Agarwal, S., &amp; Meyarivan, T. A. M. T. (2002).
+"A fast and elitist multiobjective genetic algorithm: NSGA-II".
+IEEE transactions on evolutionary computation, 6(2), 182-197.
+</p>
+<p>Goldstein, A., Kapelner, A., Bleich, J., and Pitkin, E. (2015).
+"Peeking Inside the Black Box: Visualizing
+Statistical Learning with Plots of Individual Conditional Expectation".
+Journal of Computational and Graphical Statistics 24 (1): 44–65.
+<a href="https://doi.org/10.1080/10618600.2014.907095">doi:10.1080/10618600.2014.907095</a>.
+</p>
+<p>Gower, J. C. (1971). A general coefficient of similarity and some of its properties. Biometrics, 27, 623–637.
+</p>
+<p>Li, Rui, L., Emmerich, M. T. M., Eggermont, J. Bäck, T., Schütz, M., Dijkstra, J., Reiber, J. H. C. (2013).
+"Mixed Integer Evolution Strategies for Parameter Optimization."
+Evolutionary Computation 21 (1): 29–64. <a href="https://doi.org/10.1162/EVCO_a_00059">doi:10.1162/EVCO_a_00059</a>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">if (require("randomForest")) {
+  # Train a model
+  rf = randomForest(Species ~ ., data = iris)
+  # Create a predictor object
+  predictor = iml::Predictor$new(rf, type = "prob")
+  # Find counterfactuals for x_interest
+  rs_classif = RandomSearchClassif$new(predictor, n_generations = 30L)
+  cfactuals = rs_classif$find_counterfactuals(
+    x_interest = iris[150L, ], desired_class = "versicolor", desired_prob = c(0.5, 1)
+  )
+  # Print the counterfactuals
+  cfactuals$data
+  # Plot evolution of hypervolume and mean and minimum objective values
+  rs_classif$plot_statistics()
+}
+
+</code></pre>
+
+
+</div>

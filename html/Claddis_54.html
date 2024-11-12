@@ -1,0 +1,390 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>make_costmatrix</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Make a costmatrix for a given set of states</h2>
+
+<h3>Description</h3>
+
+<p>Given a set of discrete states and a character type will make the approriate costmatrix for them.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">make_costmatrix(
+  min_state = 0,
+  max_state,
+  character_type,
+  include_polymorphisms = FALSE,
+  include_uncertainties = FALSE,
+  polymorphism_costs = "additive",
+  polymorphism_geometry = "simplex",
+  polymorphism_distance = "euclidean",
+  state_ages,
+  dollo_penalty = 999,
+  message = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>min_state</code></td>
+<td>
+<p>The minimum character state (defaults to <code>0</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_state</code></td>
+<td>
+<p>The maximum character state. Must be <code>1</code> or greater.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>character_type</code></td>
+<td>
+<p>The type of character desired. Must be one of: <code>"ordered"</code>, <code>"unordered"</code>, <code>"dollo"</code>, <code>"irreversible"</code>, or <code>"stratigraphy"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include_polymorphisms</code></td>
+<td>
+<p>Logical indicating whether or not to include polymorphic state combinations (defaults to <code>FALSE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include_uncertainties</code></td>
+<td>
+<p>Logical indicating whether or not to include uncertainty state combinations (defaults to <code>FALSE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>polymorphism_costs</code></td>
+<td>
+<p>Only used if <code>include_polymorphisms = TRUE</code>. See add_polymorphisms_to_costmatrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>polymorphism_geometry</code></td>
+<td>
+<p>Only used if <code>include_polymorphisms = TRUE</code>. See add_polymorphisms_to_costmatrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>polymorphism_distance</code></td>
+<td>
+<p>Only used if <code>include_polymorphisms = TRUE</code>. See add_polymorphisms_to_costmatrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>state_ages</code></td>
+<td>
+<p>A vector of ages assigned to each state. Only triggered if <code>character_type = "stratigraphy"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dollo_penalty</code></td>
+<td>
+<p>The size of the cost penalty for the acquisition of a Dollo character (defaults to <code>999</code>). Only triggered if <code>character_type = "dollo"</code>. Note: this should always be a positive real value greater than one, and never infinity (<code>Inf</code>), as at least one acquisition is expected.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>message</code></td>
+<td>
+<p>Logical indicating whether (<code>TRUE</code>, the default) or not (<code>FALSE</code>) to provide messages about the process of the function.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Costmatrices encode the parsimony cost (typically the number of evolutionary "steps") for each possible state-to-state transition. They can be used to estimate total lengths and make estimates (often also called reconstructions) for ancestral states at branching points on a given topology (tree). This function automates the generation of some common costmatrix types for use elsewhere in Claddis and hence is intended primarily as an internal function. However, as costmatrices are fundamental to various key analyses their operation is detailed extensively below.
+</p>
+<p><b>Costmatrix basics</b>
+</p>
+<p>Although their usage is rare as explicit statements (see Hooker 2014 for an example), almost any character type (e.g., ordered, unordered) can be expressed as a costmatrix. These are always square, with rows and columns representing the same set of states that will usually represent, but are not restricted to, the range of values observed in the data. Individual values in a costmatrix represent the cost of a particular transition, with the row value being the "from" state and the column value being the "to" state. By convention, the cost of going from any character to itself is zero and hence so is the diagonal of the matrix. An example costmatrix for a three state unordered character would thus look like this:
+</p>
+<pre>    -------------
+    | 0 | 1 | 2 |
+-----------------
+| 0 | 0 | 1 | 1 |
+-----------------
+| 1 | 1 | 0 | 1 |
+-----------------
+| 2 | 1 | 1 | 0 |
+-----------------</pre>
+<p>Hence going from state 2 (third row) to state 1 (second column) has a cost of 1. Indeed, as this is an unordered character, <em>any</em> off-diagonal value has the same cost of 1. By contrast an ordered matrix might look like this:
+</p>
+<pre>    -------------
+    | 0 | 1 | 2 |
+-----------------
+| 0 | 0 | 1 | 2 |
+-----------------
+| 1 | 1 | 0 | 1 |
+-----------------
+| 2 | 2 | 1 | 0 |
+-----------------</pre>
+<p>Now going from state 0 (first row) to state 2 (third column) costs two, as by implication this transition must pass through the intermediate state (1).
+</p>
+<p>So far these examples are symmetric - i.e., you can imagine the diagonal as a line of reflection, or, alternatively, that going from state X to state Y <em>always</em> costs the same as going from state Y to state X. However, asymmetric costmatrices are also possible and there are multiple such character-types that may be relevant here. (Specifically, Dollo, irreversible, also known as Camin-Sokal, and stratigraphic.)
+</p>
+<p><b>Character types</b>
+</p>
+<p>This function will generate a costmatrix for every possible transition (between <code>min_state</code> and <code>max_state</code>, inclusive) for a requested <code>character_type</code>, each of which is detailed further below.
+</p>
+<p><em>Ordered</em> - <code>character_type = "ordered"</code>
+</p>
+<p>An ordered character (really a linear ordered character), also known as a Wagner character (Wagner 1961) and formalised by Farris (1970), is one where the order of states matters. State-to-state transitions must occur through a linear series. For example, for a three state character the states must be in order of transition, 0 &lt;-&gt; 1 &lt;-&gt; 2. Additionally, all transitions are symmetric. 0 -&gt; 1 = 1 -&gt; 0.
+</p>
+<p><em>Unordered</em> - <code>character_type = "unordered"</code>
+</p>
+<p>An unordered character, also known as a Fitch character (Fitch 1971), is one where the order of states does not matter, and that state-to-state transitions are all direct and symmetric. For example, for a five-state character the transition 0 -&gt; 4 is direct and costs the same as 3 -&gt; 1, or any other transition, excepting those from any state to itself.
+</p>
+<p><em>Dollo</em> - <code>character_type = "dollo"</code>
+</p>
+<p>Under a Dollo assumption the acquisition of a <em>derived</em> character state is considered to be sufficiently complex (biologically difficult) that in all probability it only occurred once. Even if lost later in evolution, it is considered that it cannot be reacquired. An example of this is the frequent loss of teeth in dinosaurs (Brocklehurst and Field 2021). Teeth were never reacquired in this group, with tooth-like serrations forming in many birds instead. Modelling such characters with a costmatrix is challenging (indeed, it cannot truly been done with <em>just</em> a costmatrix - see below). The way it is typically done (Swofford and Olsen 1990) is to form the costmatrix like this:
+</p>
+<pre>    -------------------
+    |  0  |  1  |  2  |
+-----------------------
+| 0 |  0  |  1D |  2D |
+-----------------------
+| 1 |  1  |  0  |  1D |
+-----------------------
+| 2 |  2  |  1  |  0  |
+-----------------------</pre>
+<p>Where <code>D</code> is some arbitrary large number, set here using the <code>dollo_penalty</code> option. Note that <code>D</code> should still be finite as the purpose is to weight acquisitions such that they are sufficiently expensive that any most parsimonious reconstruction will favour only one transition, but not make them so expensive that they are not favoured at all. Furthermore, in this example there are two derived states (1 and 2) and hence logically the weighting should be similar to an ordered character. Specifically, that there should be a single acquisition of state 1 (from state 0) and that this should precede a single acquistion of state 2 (from state 1). Most of the time, though, a Dollo character will be binary (e.g., see map_dollo_changes).
+</p>
+<p>Importantly, and as stated above, a Dollo costmatrix, unlike the ordered and unordered costmatrices, cannot be used without further analytical restrictions. Specifically, because it assumes an asymmetric acquisition of <em>derived</em> states the root or "primitive" value must be 0. (It would not be logical to apply such a costmatrix where the root state is 1 or 2.) Thus use of a Dollo character requires the additional assumption that the primitive (root) state is known <em>a priori</em>. As always, it is up to the user to know that this is a valid assumption for their data, and to set a value for the <code>dollo_penalty</code> accordingly.
+</p>
+<p>Note, that another way to conceive of a Dollo character is that the assumption is being applied that any homoplasy is in the form of reversals only and hence can be though of as making the opposite assumption to an irreversible character.
+</p>
+<p><em>Irreversible (Camin-Sokal)</em> - <code>character_type = "irreversible"</code>
+</p>
+<p>Sometimes confused with a Dollo character, irreversible or Camin-Sokal (Camin and Sokal 1965) characters, do not allow for any reversals (returns to some prior state) once the derived state has been acquired. An irreversible costmatrix might look like this:
+</p>
+<pre>    -------------------
+    |  0  |  1  |  2  |
+-----------------------
+| 0 |  0  |  1  |  2  |
+-----------------------
+| 1 | Inf |  0  |  1  |
+-----------------------
+| 2 | Inf | Inf |  0  |
+-----------------------</pre>
+<p>The upper triangle (representing gains) is the same as for an ordered character, but the lower triangle (representing losses, or reversals) will always be comprised of infinite costs (<code>Inf</code>), precluding their possibility in a most parsimonious reconstruction. Thus, in practice, any number of gains is allowed, but losses never are.
+</p>
+<p>Like a Dollo character, this approach assumes the direction of evolution is known <em>a priori</em> and that 0 is always the primitive, or root, state. Although here, and unlike a Dollo character, the root state is forced by the costmatrix alone.
+</p>
+<p><em>Stratigraphic</em> - <code>character_type = "stratigraphy"</code>
+</p>
+<p>Stratigraphic characters, where states represent geologic time units in which an OTU is present, are also logically irreversible - as a younger unit cannot exist before (be "ancestral" to) an older one. Thus here, too, the lower triangle of the costmatrix is always populated by infinities to preclude their possibility. However, this time the upper triangle requires additional information to populate its' values, i.e., the gap between states in units of time (typically millions of years).
+</p>
+<p>This is best illustrated with an example. Let's assume we have three states and they represent three consecutive geologic stages: 0 (Santonian, 85.8-83.5 Ma), 1 (Campanian, 83.5-70.6 Ma), and 2 (Maastrichtian, 70.6-65.5 Ma). Now the cost of a transition between states should be expressed in some difference between the ages of each state. In this example we will use the midpoints as our point estimate: 0 (84.65 Ma), 1 (77.05 Ma), and 2 (68.05 Ma). These must also be supplied to the function using the <code>state_ages</code> option, i.e.: <code>state_ages = c(84.65, 77.05, 68.05)</code>. The resulting costmatrix would look like this:
+</p>
+<pre>    --------------------
+    |  0  |  1  |   2  |
+------------------------
+| 0 |  0  | 7.6 | 16.6 |
+------------------------
+| 1 | Inf |  0  |   9  |
+------------------------
+| 2 | Inf | Inf |   0  |
+------------------------</pre>
+<p>Note that the user needn't use the midpoint (a start or end date may be preferable). Indeeed, a simple unit count could be applied instead but this would then be identical to an irreversible character (except, perhaps, in the case of polymorphisms - see add_polymorphisms_to_costmatrix).
+</p>
+<p>The use of stratigraphy as a character is probably not generally recommended, but is offered here for those that wish to explore stratocladistic methods that aim to incorporate stratigraphic information in phylogenetic inference and identify ancestor-descendant relationships (see Fisher 1994).
+</p>
+<p>As with the other asymmetric characters it is an additional assumption that the root represent 0 (the oldest sampled value), but as with irreverisble characters, the costmatrix alone forces this assumption.
+</p>
+<p><em>Other character types</em>
+</p>
+<p>Although no other character types are offered here, other forms of costmatrix can of course exist (e.g., see those in Hooker 2014). These can still be used elsewhere in Claddis, but users must either generate them themselves or have them be specified within a NEXUS file imported into Claddis. Note that general advice is to always have the diagonal be zero and the off-diagonal values be positive, otherwise downstream use will typically be confounded.
+</p>
+<p><b>Character weights</b>
+</p>
+<p>As discusssed in Hoyal Cuthill and Lloyd (in prep), the costs in a costmatrix are more properly considered as ratios. Consider the following two costmatrices:
+</p>
+<pre>    -------------
+    | 0 | 1 | 2 |
+-----------------
+| 0 | 0 | 1 | 2 |
+-----------------
+| 1 | 1 | 0 | 1 |
+-----------------
+| 2 | 2 | 1 | 0 |
+-----------------</pre>
+<pre>    -------------
+    | 0 | 1 | 2 |
+-----------------
+| 0 | 0 | 2 | 4 |
+-----------------
+| 1 | 2 | 0 | 2 |
+-----------------
+| 2 | 4 | 2 | 0 |
+-----------------</pre>
+<p>Although the specific costs differ the ratio <em>between</em> costs within each costmatrix is identical. I.e., the cost of a 0 to 1 transition is half the cost of a 0 to 2 transition in both costmatrices. Or, to put it another way, the second costmatrix can be derived from the first by multiplying every cost by the same "weight", here two. As such, these two costmatrices can be considered identical for analytical purposes, save for this weight term. So, for example, the ancestral state estimates would be identical for a given tree and set of tip values. And the tree length (including the minimum and maximum length) would be the same save for the weight modifier.
+</p>
+<p>This observation is largely irrelevant to this function. However, it is noted here so the user understands why the costmatrx structure (outlined below) includes a weight term. Further, it is important to state why this information should be encoded "outside" the costmatrix rather than encodng "inside" the costmatrix by simply multiplying every cost by the desired character weight (e.g., as in the 2-4-2 example above). The reason is that this can lead to confounded results in some cases. For example, if weighting a character zero to exclude it from an analysis would result in a costmatrix where all off diagonal costs were zero (the same cost as no change). In practice this would mean any ancestral state estimation would become equally likely. If encoding the weight "outside" the costmatrix this situation can be handled correctly, both within Claddis and if exporting data for use elsewhere.
+</p>
+<p><b>Polymorphisms and uncertainties</b>
+</p>
+<p>Where a taxon (terminal) has two or more states (or a single state cannot be identified) it represents either a polymorphism or an uncertainty. For some kinds of analyses, such as calculating tree lengths or estimating ancesral states, there is no need to explicitly address uncertainties in a costmatrix setting (Swofford and Maddison 1992). However, the same cannot be said of polymorphisms (Maddison and Maddison 1987). In any case, this function offers the chance to include either or both polymorphic or uncertain states into the costmatrix by calling add_polymorphisms_to_costmatrix or add_uncertainties_to_costmatrix, as appropriate. Interested users should consult the helpfiles for those functions for more details.
+</p>
+<p><b>Relation to Q-matrices</b>
+</p>
+<p>Q-matrices (e.g., see Swofford and Olsen 1990) are used in likelihood and Bayesian approaches and also deal with state-to-state transitions, but are fundamentally distinct from costmatrices in multiple ways. For example, Q-matrices encode transition rates, not costs, and their values are typically parameters that are estimated from the data not prior statements about the data. However, both can be rendered as state graph or Markov chain diagrams. Put simply though, they are not directly equivalent or interchangable.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>costMatrix</code> containing the following elements:
+</p>
+
+<ul>
+<li>
+<p><code>size</code> The number of columns (or rows) in the costmatrix.
+</p>
+</li>
+<li>
+<p><code>n_states</code> The number of (single) states in the costmatrix.
+</p>
+</li>
+<li>
+<p><code>single_states</code> The labels of the (single) states in the costmatrix.
+</p>
+</li>
+<li>
+<p><code>type</code> The type of costmatrix. One of: <code>"ordered"</code>, <code>"unordered"</code>, <code>"dollo"</code>, <code>"irreversible"</code>, <code>"stratigraphy"</code>, or <code>"custom"</code>.
+</p>
+</li>
+<li>
+<p><code>costmatrix</code> The costmatrix itself.
+</p>
+</li>
+<li>
+<p><code>symmetry</code> The symmetry of the costmatrix. NB: This refers to the single states part only.
+</p>
+</li>
+<li>
+<p><code>includes_polymorphisms</code> A logical indicating whether or not polymorphic states are included in the costmatrix.
+</p>
+</li>
+<li>
+<p><code>polymorphism_costs</code> The means by which costs were assigned to polymorphisms. Must be one of: <code>"additive"</code>, <code>"geometric"</code>, <code>"maddison"</code>, or <code>"stratigraphic"</code>.
+</p>
+</li>
+<li>
+<p><code>polymorphism_geometry</code> The geometry by which costs were assigned to polymorphisms. Must be one of: <code>"hypercube"</code>, <code>"hypersphere"</code>, or <code>"simplex"</code>.
+</p>
+</li>
+<li>
+<p><code>polymorphism_distance</code> The distance metric by which costs were assigned to polymorphisms. Must be one of: <code>"euclidean"</code>, <code>"great_circle"</code>, or <code>"manhattan"</code>.
+</p>
+</li>
+<li>
+<p><code>includes_uncertainties</code> A logical indicating whether or not uncertain states are included in the costmatrix.
+</p>
+</li>
+<li>
+<p><code>pruned</code> A logical indicating whether or not the costmatrix represents a pruned version.
+</p>
+</li>
+<li>
+<p><code>dollo_penalty</code> A numeric value indicating the penalty used for a Dollo character.
+</p>
+</li>
+<li>
+<p><code>base_age</code> A numeric value indicating the base (oldest) age used for a stratigraphic character.
+</p>
+</li>
+<li>
+<p><code>weight</code> A numeric value indicating the character weight.
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Graeme T. Lloyd <a href="mailto:graemetlloyd@gmail.com">graemetlloyd@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Brocklehurst, N. and Field, D. J., 2021. Macroevolutionary dynamics of dentition in Mesozoic birds reveal no long-term selection towards tooth loss. <em>iScience</em>, <b>24</b>, 102243.
+</p>
+<p>Camin, J. H. and Sokal, R. R., 1965. A method for deducing branching sequences in phylogeny. <em>Evolution</em>, <b>19</b>, 311-26.
+</p>
+<p>Farris, J. S., 1970. Methods for computing Wagner trees. <em>Systematic Zoology</em>, <b>19</b>, 83-92.
+</p>
+<p>Fisher, D. C., 1994. Stratocladistics: morphological and temporal patterns and their relation to phylogenetic process. In L. Grande and O. Rieppel (eds.), <em>Interpreting the Hierarchy of Nature</em>. Academic Press, San Diego. pp133–171.
+</p>
+<p>Fitch, W. M., 1971. Towards defining the course of evolution: minimum change for a specified tree topology. <em>Systematic Zoology</em>, <b>20</b>, 406-416.
+</p>
+<p>Hooker, J. J., 2014. New postcranial bones of the extinct mammalian family Nyctitheriidae (Paleogene, UK): primitive euarchontans with scansorial locomotion. <em>Palaeontologia Electronica</em>, <b>17.3.47A</b>, 1-82.
+</p>
+<p>Maddison, W. P. and Maddison, D. R., 1987. MacClade 2.1, computer program and manual. Cambridge, Massachusetts.
+</p>
+<p>Swofford, D. L. and Maddison, W. P., 1992. Parsimony, character-state reconstructions, and evolutionary inferences. In R. L. Mayden (ed.), <em>Systematics, Historical Ecology, and North American Freshwater Fishes</em>. Stanford University Press, Stanford. pp187-223.
+</p>
+<p>Swofford, D. L. and Olsen, G. J., 1990. Phylogeny reconstruction. In D. M. Hillis and C. Moritz (eds.), <em>Molecular Systematics</em>. Sinauer Associates, Sunderland. pp411-501.
+</p>
+<p>Wagner, W. H., 1961. Problems in the classification of ferns. <em>Recent Advances in Botany</em>, <b>1</b>, 841-844.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>permute_all_polymorphisms
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Make an unordered three-state costmatrix:
+make_costmatrix(
+  min_state = 0,
+  max_state = 2,
+  character_type = "unordered"
+)
+
+# Make an ordered three-state costmatrix:
+make_costmatrix(
+  min_state = 0,
+  max_state = 2,
+  character_type = "ordered"
+)
+
+# Make a three-state Dollo costmatrix:
+make_costmatrix(
+  min_state = 0,
+  max_state = 2,
+  character_type = "dollo",
+  dollo_penalty = 100
+)
+
+# Make a three-state irreversible costmatrix:
+make_costmatrix(
+  min_state = 0,
+  max_state = 2,
+  character_type = "irreversible",
+)
+
+# Make a three-state stratigraphic costmatrix:
+make_costmatrix(
+  min_state = 0,
+  max_state = 2,
+  character_type = "stratigraphy",
+  state_ages = c(52, 34, 12)
+)
+
+</code></pre>
+
+
+</div>

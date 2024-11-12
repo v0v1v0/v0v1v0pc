@@ -1,0 +1,594 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Counterfactuals</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Counterfactuals Class</h2>
+
+<h3>Description</h3>
+
+<p>A <code>Counterfactuals</code> object should be created by the <code style="white-space: pre;">⁠$find_counterfactuals⁠</code> method of CounterfactualMethodRegr
+or CounterfactualMethodClassif.
+It contains the counterfactuals and has several methods for their evaluation and visualization.
+</p>
+
+
+<h3>Active bindings</h3>
+
+<div class="r6-active-bindings">
+
+<dl>
+<dt><code>desired</code></dt>
+<dd>
+<p>(<code>list(1)</code> | <code>list(2)</code>)<br>
+A <code>list</code> with the desired properties of the counterfactuals.
+For regression tasks it has one element <code>desired_outcome</code> (CounterfactualMethodRegr) and for
+classification tasks two elements <code>desired_class</code> and <code>desired_prob</code> (CounterfactualMethodClassif).</p>
+</dd>
+<dt><code>data</code></dt>
+<dd>
+<p>(<code>data.table</code>)<br>
+The counterfactuals for <code>x_interest</code>.</p>
+</dd>
+<dt><code>x_interest</code></dt>
+<dd>
+<p>(<code>data.table(1)</code>) <br>
+A single row with the observation of interest.</p>
+</dd>
+<dt><code>distance_function</code></dt>
+<dd>
+<p>(<code style="white-space: pre;">⁠function()⁠</code>) <br>
+The distance function used in the second and fourth evaluation measure.
+The function must have three arguments:
+<code>x</code>, <code>y</code>, and <code>data</code> and return a <code>numeric</code> matrix. If set to <code>NULL</code> (default), then Gower distance (Gower 1971) is used.</p>
+</dd>
+<dt><code>method</code></dt>
+<dd>
+<p>(<code>character</code>) <br>
+A single row with the observation of interest.</p>
+</dd>
+</dl>
+</div>
+
+
+<h3>Methods</h3>
+
+
+
+<h4>Public methods</h4>
+
+
+<ul>
+<li> <p><a href="#method-Counterfactuals-new"><code>Counterfactuals$new()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Counterfactuals-evaluate"><code>Counterfactuals$evaluate()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Counterfactuals-evaluate_set"><code>Counterfactuals$evaluate_set()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Counterfactuals-predict"><code>Counterfactuals$predict()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Counterfactuals-subset_to_valid"><code>Counterfactuals$subset_to_valid()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Counterfactuals-revert_subset_to_valid"><code>Counterfactuals$revert_subset_to_valid()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Counterfactuals-plot_parallel"><code>Counterfactuals$plot_parallel()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Counterfactuals-plot_freq_of_feature_changes"><code>Counterfactuals$plot_freq_of_feature_changes()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Counterfactuals-get_freq_of_feature_changes"><code>Counterfactuals$get_freq_of_feature_changes()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Counterfactuals-plot_surface"><code>Counterfactuals$plot_surface()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Counterfactuals-print"><code>Counterfactuals$print()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Counterfactuals-clone"><code>Counterfactuals$clone()</code></a>
+</p>
+</li>
+</ul>
+<hr>
+<a id="method-Counterfactuals-new"></a>
+
+
+
+<h4>Method <code>new()</code>
+</h4>
+
+<p>Creates a new <code>Counterfactuals</code> object.
+This method should only be called by the <code style="white-space: pre;">⁠$find_counterfactuals⁠</code> methods of CounterfactualMethodRegr
+and CounterfactualMethodClassif.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Counterfactuals$new(
+  cfactuals,
+  predictor,
+  x_interest,
+  param_set,
+  desired,
+  method = NULL
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>cfactuals</code></dt>
+<dd>
+<p>(<code>data.table</code>) <br>
+The counterfactuals. Must have the same column names and types as <code>predictor$data$X</code>.</p>
+</dd>
+<dt><code>predictor</code></dt>
+<dd>
+<p>(Predictor)<br>
+The object (created with <code>iml::Predictor$new()</code>) holding the machine learning model and the data.</p>
+</dd>
+<dt><code>x_interest</code></dt>
+<dd>
+<p>(<code>data.table(1)</code> | <code>data.frame(1)</code>) <br>
+A single row with the observation of interest.</p>
+</dd>
+<dt><code>param_set</code></dt>
+<dd>
+<p>(ParamSet)<br>
+A ParamSet based on the features of <code>predictor$data$X</code>.</p>
+</dd>
+<dt><code>desired</code></dt>
+<dd>
+<p>(<code>list(1)</code> | <code>list(2)</code>)<br>
+A <code>list</code> with the desired properties of the counterfactuals. It should have one element <code>desired_outcome</code> for
+regression tasks (CounterfactualMethodRegr) and two elements <code>desired_class</code> and <code>desired_prob</code>
+for classification tasks (CounterfactualMethodClassif).</p>
+</dd>
+<dt><code>method</code></dt>
+<dd>
+<p>(<code>character</code>) <br>
+Name of the method with which counterfactuals were generated. Default is
+NULL which means that no name is provided.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Counterfactuals-evaluate"></a>
+
+
+
+<h4>Method <code>evaluate()</code>
+</h4>
+
+<p>Evaluates the counterfactuals. It returns the counterfactuals together with the evaluation <code>measures</code>.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Counterfactuals$evaluate(
+  measures = c("dist_x_interest", "dist_target", "no_changed", "dist_train",
+    "minimality"),
+  show_diff = FALSE,
+  k = 1L,
+  weights = NULL
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>measures</code></dt>
+<dd>
+<p>(<code>character</code>) <br>
+The name of one or more evaluation measures.
+The following measures are available:
+</p>
+
+<ul>
+<li> <p><code>dist_x_interest</code>: The distance of a counterfactual to <code>x_interest</code> measured by Gower's
+dissimilarity measure (Gower 1971).
+</p>
+</li>
+<li> <p><code>dist_target</code>: The absolute distance of the prediction for a counterfactual to the interval <code>desired_outcome</code>
+(regression tasks) or <code>desired_prob</code> (classification tasks).
+</p>
+</li>
+<li> <p><code>no_changed</code>: The number of feature changes w.r.t. <code>x_interest</code>.
+</p>
+</li>
+<li> <p><code>dist_train</code>: The (weighted) distance to the <code>k</code> nearest training data points measured by Gower's
+dissimilarity measure (Gower 1971).
+</p>
+</li>
+<li> <p><code>minimality</code>: The number of changed features that each could be set to the
+value of <code>x_interest</code> while keeping the desired prediction value.
+</p>
+</li>
+</ul>
+</dd>
+<dt><code>show_diff</code></dt>
+<dd>
+<p>(<code>logical(1)</code>)<br>
+Should the counterfactuals be displayed as their differences to <code>x_interest</code>? Default is <code>FALSE</code>.
+If set to <code>TRUE</code>, positive values for numeric features indicate an increase compared to the feature value in
+<code>x_interest</code>, negative values indicate a decrease. For factors, the feature value is displayed if it differs
+from <code>x_interest</code>; <code>NA</code> means "no difference" in both cases.</p>
+</dd>
+<dt><code>k</code></dt>
+<dd>
+<p>(<code>integerish(1)</code>) <br>
+How many nearest training points should be considered for computing the <code>dist_train</code> measure? Default is <code>1L</code>.</p>
+</dd>
+<dt><code>weights</code></dt>
+<dd>
+<p>(<code>numeric(k)</code> | <code>NULL</code>) <br>
+How should the <code>k</code> nearest training points be weighted when computing the <code>dist_train</code> measure? If <code>NULL</code>
+(default) then all <code>k</code> points are weighted equally. If a numeric vector of length <code>k</code> is given, the i-th element
+specifies the weight of the i-th closest data point.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Counterfactuals-evaluate_set"></a>
+
+
+
+<h4>Method <code>evaluate_set()</code>
+</h4>
+
+<p>Evaluates a set of counterfactuals. It returns the evaluation <code>measures</code>.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Counterfactuals$evaluate_set(
+  measures = c("diversity", "no_nondom", "frac_nondom", "hypervolume"),
+  nadir = NULL
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>measures</code></dt>
+<dd>
+<p>(<code>character</code>) <br>
+The name of one or more evaluation measures.
+The following measures are available:
+</p>
+
+<ul>
+<li> <p><code>diversity</code>: Diversity of returned counterfactuals in the feature space
+</p>
+</li>
+<li> <p><code>no_nondom</code>: Number of counterfactuals that are not dominated by other
+counterfactuals.
+</p>
+</li>
+<li> <p><code>frac_nondom</code>: Fraction of counterfactuals that are not dominated by
+other counterfactuals
+</p>
+</li>
+<li> <p><code>hypervolume</code>: Hypervolume of the induced Pareto front
+</p>
+</li>
+</ul>
+</dd>
+<dt><code>nadir</code></dt>
+<dd>
+<p>(<code>numeric</code>) <br> Max objective values to calculate dominated hypervolume.
+Only considered, if <code>hypervolume</code> is one of the <code>measures</code>.
+May be a scalar, in which case it is used for all four objectives,
+or a vector of length 4.
+Default is NULL, meaning the nadir point by Dandl et al. (2020) is used:
+(min distance between prediction of <code>x_interest</code> to <code style="white-space: pre;">⁠desired_prob/_outcome⁠</code>,
+1, number of features, 1).</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Counterfactuals-predict"></a>
+
+
+
+<h4>Method <code>predict()</code>
+</h4>
+
+<p>Returns the predictions for the counterfactuals.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Counterfactuals$predict()</pre></div>
+
+
+<hr>
+<a id="method-Counterfactuals-subset_to_valid"></a>
+
+
+
+<h4>Method <code>subset_to_valid()</code>
+</h4>
+
+<p>Subset data to those meeting the desired prediction,
+Process could be reverted using <code>revert_subset_to_valid()</code>.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Counterfactuals$subset_to_valid()</pre></div>
+
+
+<hr>
+<a id="method-Counterfactuals-revert_subset_to_valid"></a>
+
+
+
+<h4>Method <code>revert_subset_to_valid()</code>
+</h4>
+
+<p>Subset data to those meeting the desired prediction,
+Process could be reverted using <code>revert_subset_to_valid()</code>.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Counterfactuals$revert_subset_to_valid()</pre></div>
+
+
+<hr>
+<a id="method-Counterfactuals-plot_parallel"></a>
+
+
+
+<h4>Method <code>plot_parallel()</code>
+</h4>
+
+<p>Plots a parallel plot that connects the (scaled) feature values of each counterfactual and highlights
+<code>x_interest</code> in blue.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Counterfactuals$plot_parallel(
+  feature_names = NULL,
+  row_ids = NULL,
+  digits_min_max = 2L
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>feature_names</code></dt>
+<dd>
+<p>(<code>character</code> | <code>NULL</code>)<br>
+The names of the (numeric) features to display. If <code>NULL</code> (default) all features are displayed.</p>
+</dd>
+<dt><code>row_ids</code></dt>
+<dd>
+<p>(<code>integerish</code> | <code>NULL</code>)<br>
+The row ids of the counterfactuals to display. If <code>NULL</code> (default) all counterfactuals are displayed.</p>
+</dd>
+<dt><code>digits_min_max</code></dt>
+<dd>
+<p>Maximum number of digits for the minimum and maximum features values. Default is <code>2L</code>.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Counterfactuals-plot_freq_of_feature_changes"></a>
+
+
+
+<h4>Method <code>plot_freq_of_feature_changes()</code>
+</h4>
+
+<p>Plots a bar chart with the frequency of feature changes across all counterfactuals.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Counterfactuals$plot_freq_of_feature_changes(subset_zero = FALSE)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>subset_zero</code></dt>
+<dd>
+<p>(<code>logical(1)</code>)<br>
+Should unchanged features be excluded from the plot? Default is <code>FALSE</code>.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Counterfactuals-get_freq_of_feature_changes"></a>
+
+
+
+<h4>Method <code>get_freq_of_feature_changes()</code>
+</h4>
+
+<p>Returns the frequency of feature changes across all counterfactuals.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Counterfactuals$get_freq_of_feature_changes(subset_zero = FALSE)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>subset_zero</code></dt>
+<dd>
+<p>(<code>logical(1)</code>)<br>
+Should unchanged features be excluded? Default is <code>FALSE</code>.</p>
+</dd>
+</dl>
+</div>
+
+
+
+<h5>Returns</h5>
+
+<p>A (named) <code>numeric</code> vector with the frequency of feature changes.
+</p>
+
+
+<hr>
+<a id="method-Counterfactuals-plot_surface"></a>
+
+
+
+<h4>Method <code>plot_surface()</code>
+</h4>
+
+<p>Creates a surface plot for two features. <code>x_interest</code> is represented as a white dot and
+all counterfactuals that differ from <code>x_interest</code> <strong>only</strong> in the two selected features are represented as black dots.
+The tick marks next to the axes show the marginal distribution of the observed data (<code>predictor$data$X</code>). <br>
+The exact plot type depends on the selected feature types and number of features:
+</p>
+
+<ul>
+<li>
+<p> 2 numeric features: surface plot
+</p>
+</li>
+<li>
+<p> 2 non-numeric features: heatmap
+</p>
+</li>
+<li>
+<p> 1 numeric or non-numeric feature: line graph
+</p>
+</li>
+</ul>
+<h5>Usage</h5>
+
+<div class="r"><pre>Counterfactuals$plot_surface(feature_names, grid_size = 250L)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>feature_names</code></dt>
+<dd>
+<p>(<code>character(2)</code>)<br>
+The names of the features to plot.</p>
+</dd>
+<dt><code>grid_size</code></dt>
+<dd>
+<p>(<code>integerish(1)</code>)<br>
+The grid size of the plot. It is ignored in case of two <code>non-numeric</code> features. Default is <code>250L</code>.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Counterfactuals-print"></a>
+
+
+
+<h4>Method <code>print()</code>
+</h4>
+
+<p>Prints the <code>Counterfactuals</code> object.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Counterfactuals$print()</pre></div>
+
+
+<hr>
+<a id="method-Counterfactuals-clone"></a>
+
+
+
+<h4>Method <code>clone()</code>
+</h4>
+
+<p>The objects of this class are cloneable with this method.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Counterfactuals$clone(deep = FALSE)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>deep</code></dt>
+<dd>
+<p>Whether to make a deep clone.</p>
+</dd>
+</dl>
+</div>
+
+
+
+
+<h3>References</h3>
+
+<p>Gower, J. C. (1971), "A general coefficient of similarity and some of its properties". Biometrics, 27, 623–637.
+</p>
+
+
+</div>

@@ -1,0 +1,997 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cabootcrs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate category point variances using bootstrapping</h2>
+
+<h3>Description</h3>
+
+<p><code>cabootcrs</code> performs simple or multiple correspondence analysis
+and uses bootstrap resampling to
+construct confidence ellipses for each appropriate category point,
+printing and plotting the results;
+for help on the package see <code>cabootcrs-package</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cabootcrs(
+  xobject = NULL,
+  datafile = NULL,
+  datasetname = NULL,
+  nboots = 999,
+  resampledistn = "Poisson",
+  multinomialtype = "whole",
+  printdims = 4,
+  lastaxis = 4,
+  maxrearrange = 6,
+  rearrangemethod = "lpassign",
+  usebootcrits = TRUE,
+  groupings = NULL,
+  grouplabels = NULL,
+  varnames = NULL,
+  plotsymbolscolours = c(19, "inferno", 18, "inferno"),
+  othersmonochrome = "grey",
+  crpercent = 95,
+  catype = "sca",
+  scainput = "CT",
+  mcainput = "nbyp",
+  mcatype = "Burt",
+  mcavariant = "mca",
+  mcasupplementary = "offdiag",
+  mcaadjustinertias = TRUE,
+  mcauseadjustinertiasum = FALSE,
+  mcaadjustcoords = TRUE,
+  mcaadjustmassctr = FALSE,
+  mcaoneploteach = TRUE,
+  mcashowindividuals = FALSE,
+  mcavariablecolours = FALSE,
+  mcacategorycolours = FALSE,
+  Jk = NULL,
+  varandcat = TRUE,
+  likertarrows = FALSE,
+  mcastoreindicator = TRUE,
+  mcaindividualboot = FALSE,
+  mcalikertnoise = 0.1,
+  poissonzeronewmean = 0,
+  newzeroreset = 0,
+  bootstdcoords = FALSE,
+  reflectonly = FALSE,
+  showresults = TRUE,
+  eps = 1e-15
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>xobject</code></td>
+<td>
+<p>Name of data object (data frame or similar class that can be coerced to data frame).<br>
+For simple CA (SCA) the default is contingency table format, recommended that rows &gt;= columns. <br>
+For multiple CA (MCA) the default is an n individuals by p variables matrix of category values (numbers or text).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>datafile</code></td>
+<td>
+<p>Name of a text file (in " ") containing the data, same defaults as xobject, ignored if xobject is non-null</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>datasetname</code></td>
+<td>
+<p>A string to use as the name of the data set in the plots, defaults to name of xobject or datafile</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nboots</code></td>
+<td>
+<p>Number of boostrap replicate matrices used, default and recommended minimum is 999,
+but 9999 is recommended if machine and data set size allows;
+the calculated variances will sometimes differ
+around the third decimal place, but the pictures should look the same. <br>
+If nboots=0 then correspondence analysis is performed as usual with no variances calculated</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resampledistn</code></td>
+<td>
+<p>Poisson resampling is the default for SCA,<br>
+nonparametric is the default for MCA (Poisson and multinomial will both default to nonparametric)
+</p>
+
+<dl>
+<dt>"Poisson"</dt>
+<dd>
+<p>resampled matrices constructed using Poisson resampling on each cell separately (only SCA)</p>
+</dd>
+<dt>"multinomial"</dt>
+<dd>
+<p>resampled matrices constructed using multinomial resampling, treating the
+cells as defining one or more multinomial distributions (only SCA)</p>
+</dd>
+<dt>"nonparametric"</dt>
+<dd>
+<p>non-parametric resampling of the rows of the n individuals by p variables matrix, equivalent to multinomial (only MCA)</p>
+</dd>
+<dt>"balanced"</dt>
+<dd>
+<p>multinomial resampling balanced so that each data point occurs equally often over the resamples (only MCA)</p>
+</dd>
+<dt>"myresample"</dt>
+<dd>
+<p>resampling algorithm is contained in a file called myresample.R</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>multinomialtype</code></td>
+<td>
+<p>Only relevant for multinomial sampling in SCA, otherwise ignored:
+</p>
+
+<dl>
+<dt>"whole"</dt>
+<dd>
+<p>all cells define a single multinomial distribution</p>
+</dd>
+<dt>"rowsfixed"</dt>
+<dd>
+<p>row sums fixed, each row defines a separate multinomial distribution</p>
+</dd>
+<dt>"columnsfixed"</dt>
+<dd>
+<p>column sums fixed, each column defines a separate multinomial distribution</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>printdims</code></td>
+<td>
+<p>Print full correspondence analysis coordinates, contributions, correlations etc for all output
+dimensions up to and including this one</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lastaxis</code></td>
+<td>
+<p>Calculate variances and covariances for all output axes (dimensions) up to this one
+(or the number of dimensions in the solution if smaller). <br>
+Recommended maximum is maxrearrange-1 as variances for those above this axis may be inaccurate</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxrearrange</code></td>
+<td>
+<p>The maximum number of axes to consider when rearranging</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rearrangemethod</code></td>
+<td>
+<p>The method used to rearrange the axes:
+</p>
+
+<dl>
+<dt>"lpassign"</dt>
+<dd>
+<p>The Hungarian algorithm in the lpSolve package</p>
+</dd>
+<dt>anything else</dt>
+<dd>
+<p>The embarrassingly slow direct comparison method used in version 1.0 - don't use it</p>
+</dd>
+</dl>
+<p>Option is only included in case something weird goes wrong with lpSolve.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>usebootcrits</code></td>
+<td>
+<p>To be passed to the plot routine, see <code>plotca</code> for details</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>groupings</code></td>
+<td>
+<p>To be passed to the plot routine, see <code>plotca</code> for details</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grouplabels</code></td>
+<td>
+<p>To be passed to the plot routine, see <code>plotca</code> for details</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>varnames</code></td>
+<td>
+<p>Character p-vector naming the variables, defaults to c("Rows","Columns") in sca</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plotsymbolscolours</code></td>
+<td>
+<p>To be passed to the plot routine, see <code>plotca</code> for details</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>othersmonochrome</code></td>
+<td>
+<p>To be passed to the plot routine, see <code>plotca</code> for details</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>crpercent</code></td>
+<td>
+<p>To be passed to the plot routine, see <code>plotca</code> for details</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>catype</code></td>
+<td>
+<p>Type of correspondence analysis:
+</p>
+
+<dl>
+<dt>"sca"</dt>
+<dd>
+<p>Simple (classical) correspondence analysis of a contingency table</p>
+</dd>
+<dt>"mca"</dt>
+<dd>
+<p>Multiple correspondence analysis of a Burt, indicator or doubled matrix</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scainput</code></td>
+<td>
+<p>Format of input data, only applies for SCA:
+</p>
+
+<dl>
+<dt>"CT"</dt>
+<dd>
+<p>Contingency table of counts, preferably with rows &gt;= columns</p>
+</dd>
+<dt>"nbyp"</dt>
+<dd>
+<p>An n individuals/objects/data points by p=2 categorical variables matrix,
+where each row is a different data point and each column contains the category
+for that data point on that variable, where these categories can be numbers, strings or factors</p>
+</dd>
+<dt>"nbypcounts"</dt>
+<dd>
+<p>Similar to the above, but each row represents all of the data points taking
+the same combination of categories, and the first column contains the count for this combination
+(hence the name used here is a bit of a misnomer, but it emphasises the similarities to an n by p=2)</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcainput</code></td>
+<td>
+<p>Format of input data, only applies for MCA:
+</p>
+
+<dl>
+<dt>"nbyp"</dt>
+<dd>
+<p>An n individuals/objects/data points by p categorical variables matrix,
+where each row is a different data point and each column contains the category
+for that data point on that variable, where these categories can be numbers, strings or factors</p>
+</dd>
+<dt>"nbypcounts"</dt>
+<dd>
+<p>Similar to the above, but each row represents all of the data points taking
+the same combination of categories, and the now first column contains the count for this combination,
+so that the input matrix is n by p+1
+(hence the name used here is a bit of a misnomer, but it emphasises the similarities to an n by p)</p>
+</dd>
+<dt>"indicator"</dt>
+<dd>
+<p>An n by sum-of-distinct-variable-categories (i.e. sum of elements of Jk) indicator matrix</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcatype</code></td>
+<td>
+<p>Format of data matrix analysed, only applies for MCA:
+</p>
+
+<dl>
+<dt>"Burt"</dt>
+<dd>
+<p>Analyse the Burt matrix. Output will be given for the column (variable category) points but
+not for the (identical) row points. <br>
+NOTE: it is highly recommended that this version is used</p>
+</dd>
+<dt>"indicator"</dt>
+<dd>
+<p>Analyse the indicator matrix. Output will be given for the column (variable category)
+points but not usually for the row (individual) points. <br>
+NOTE: the bootstrap method used in this case is highly experimental and very slow, see Details section part (2)</p>
+</dd>
+<dt>"doubled"</dt>
+<dd>
+<p>Analyse the doubled matrix. Output will be given for the column
+points (two points, high and low, for each variable) but not usually for the row (individual) points. <br>
+NOTE: the bootstrap method used in this case is highly experimental and very slow, see Details section part (2)</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcavariant</code></td>
+<td>
+<p>Currently must be "mca", placeholder for future updates</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcasupplementary</code></td>
+<td>
+<p>How the sample points are projected as supplementary points onto the bootstrap axes
+when calculating the variances in MCA of a Burt matrix, see Details section for full explanation
+</p>
+
+<dl>
+<dt>"offdiag"</dt>
+<dd>
+<p>Only the off-diagonal parts of the Burt matrix are used in the projection</p>
+</dd>
+<dt>"all"</dt>
+<dd>
+<p>Projection is calculated in the usual way</p>
+</dd>
+</dl>
+<p>If "offdiag" then when p=2 the variances will be very similar to those from SCA. <br><br>
+If "all" then the fact that the diagonal elements of the Burt matrix are by definition
+the same for both the sample and bootstrap matrices
+means that the projected differences between sample and population points,
+and hence the variances, will be artificially small. <br><br>
+NOTE: if mcaadjustinertias is FALSE then mcasupplementary will be set to "all",
+because adjusting the coordinates in the calculation of the variances but not adjusting
+the inertias makes no sense</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcaadjustinertias</code></td>
+<td>
+<p>Whether to adjust inertias to allow for the meaningless inertia terms
+induced by the diagonal of the Burt matrix in MCA:
+</p>
+
+<dl>
+<dt>TRUE</dt>
+<dd>
+<p>Analysing Burt matrix: subtract 1/p from all singular values, then positive singular values are
+multiplied by p/(p-1) while negative ones are ignored <br>
+Analysing indicator matrix: same applies but to the squared singular values </p>
+</dd>
+<dt>FALSE</dt>
+<dd>
+<p>No adjustment</p>
+</dd>
+</dl>
+<p>If TRUE then when p=2 the inertias will agree with those from SCA. <br><br>
+NOTE: inertias are the square (Burt) or fourth power (indicator) of the (adjusted) singular values.<br><br>
+NOTE: if mcaadjustinertias is FALSE then mcaadjustcoords will also be set to FALSE and mcasupplementary
+set to "all", as adjusting the coordinates but not the inertias makes no sense</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcauseadjustinertiasum</code></td>
+<td>
+<p>How to define the total inertia in MCA,
+whether to just use the sum of the adjusted inertias:
+</p>
+
+<dl>
+<dt>TRUE</dt>
+<dd>
+<p>The inertias are expressed as a percentage of the sum of the adjusted inertias (Benzecri)</p>
+</dd>
+<dt>FALSE</dt>
+<dd>
+<p>The inertias are expressed as a percentage of the average of off-diagonal inertias (Greenacre),
+note that this will be incorrect if Jk includes categories that are not observed in the data </p>
+</dd>
+</dl>
+<p>If TRUE then when p=2 the inertias will agree with those from SCA <br>
+If TRUE then the percentage inertias will sum to 100% <br>
+If FALSE then the percentage inertias will usually sum to less than 100%</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcaadjustcoords</code></td>
+<td>
+<p>Whether to adjust the principal coordinates in MCA using the adjusted
+inertias above, as in Greenacre and Blasius, p68:
+</p>
+
+<dl>
+<dt>TRUE</dt>
+<dd>
+<p>Adjust coordinates, but only for column points</p>
+</dd>
+<dt>FALSE</dt>
+<dd>
+<p>No adjustment</p>
+</dd>
+</dl>
+<p>If TRUE then when p=2 the coordinates will agree with those from SCA. <br><br>
+NOTE: if mcaadjustinertias is FALSE then mcaadjustcoords will also be set to FALSE, as adjusting the coordinates
+but not the inertias makes no sense</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcaadjustmassctr</code></td>
+<td>
+<p>Whether to adjust the point masses and column contributions in MCA so that the masses and contributions are
+with respect to each variable (as in SCA) rather than with respect to all variables together:
+</p>
+
+<dl>
+<dt>TRUE</dt>
+<dd>
+<p>Multiply point masses and contributions by p so that they sum to p over all variables</p>
+</dd>
+<dt>FALSE</dt>
+<dd>
+<p>No adjustment</p>
+</dd>
+</dl>
+<p>If TRUE then when p=2 the CTR will agree with those from SCA,
+though when p&gt;2 the contributions can be &gt;1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcaoneploteach</code></td>
+<td>
+<p>Parameter passed to <code>plotca</code> for MCA.<br><br>
+A flag saying whether to produce one plot for each variable,
+where confidence ellipses are shown for that variable but not others:
+</p>
+
+<dl>
+<dt>TRUE</dt>
+<dd>
+<p>p plots are produced, each showing confidence regions for the category points
+for just one variable</p>
+</dd>
+<dt>FALSE</dt>
+<dd>
+<p>only one plot produced, with confidence regions shown for each category
+point of each variable, which could be very "busy"</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcashowindividuals</code></td>
+<td>
+<p>Parameter passed to <code>plotca</code> for MCA.<br><br>
+For MCA on an indicator matrix only, a flag saying whether to plot the individuals:
+</p>
+
+<dl>
+<dt>TRUE</dt>
+<dd>
+<p>plot the individuals, which could be very "busy". <br>
+NOTE: if mcaindividualboot=TRUE this also plots the CRs constructed using the experimental method,
+see Details section part (2)</p>
+</dd>
+<dt>FALSE</dt>
+<dd>
+<p>don't plot the individuals</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcavariablecolours</code></td>
+<td>
+<p>Parameter passed to <code>plotca</code> for MCA:
+</p>
+
+<dl>
+<dt>TRUE</dt>
+<dd>
+<p>In MCA each variable has its own colour, and all category
+points and ellipses for that variable have the same colour</p>
+</dd>
+<dt>FALSE</dt>
+<dd>
+<p>Colours chosen in the default way</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcacategorycolours</code></td>
+<td>
+<p>Parameter passed to <code>plotca</code> for MCA:
+</p>
+
+<dl>
+<dt>TRUE</dt>
+<dd>
+<p>In MCA each category number has its own colour,
+and all points and ellipses for that category number have the same colour,
+for all variables (intended for Likert type data so that all category 1 points are
+the same colour etc)</p>
+</dd>
+<dt>FALSE</dt>
+<dd>
+<p>Colours chosen in the default way</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Jk</code></td>
+<td>
+<p>The number of classes for each variable in MCA, as a list or vector, which only needs
+specifying when inputting an indicator matrix, as in other cases it can be derived from the input matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>varandcat</code></td>
+<td>
+<p>Flag for how to construct variable category names:
+</p>
+
+<dl>
+<dt>TRUE</dt>
+<dd>
+<p>names are varname:catname, to be used if many variables have the same categories, e.g. Likert</p>
+</dd>
+<dt>FALSE</dt>
+<dd>
+<p>names are just category names, to be used if variables all have distinct categories</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>likertarrows</code></td>
+<td>
+<p>Parameter passed to <code>plotca</code> for MCA.<br><br>
+If TRUE then, for likert-type ordered categorical data,
+draw arrows connecting the category points for each variable,
+with the arrow drawn from a category point to the next higher category point</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcastoreindicator</code></td>
+<td>
+<p>If TRUE then store the indicator matrix created for MCA</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcaindividualboot</code></td>
+<td>
+<p>If TRUE then use the experimental method to bootstrap an indicator or doubled matrix,
+see Details section part (2) for full explanation</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcalikertnoise</code></td>
+<td>
+<p>The "noise" value to use in the experimental method (above)
+to bootstrap an indicator or doubled matrix,
+see Details section part (2) for full explanation</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>poissonzeronewmean</code></td>
+<td>
+<p>Experimental method for SCA to deal with contingency tables where zero cells
+could have been non-zero, i.e. they are not structural zeros.<br>
+Only relevant for Poisson sampling in SCA, otherwise ignored:<br>
+0 : no effect, method as described in paper <br>
+1 : cells which are zero in the data are instead resampled from a
+Poisson distribution with this mean, which should be very small (say 0.1);
+this is for situations where rare cases did not occur but could have done,
+so that it might be appropriate for zero cells in the sample to be
+occasionally non-zero in resamples</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newzeroreset</code></td>
+<td>
+<p>Experimental method for SCA to deal with sparse contingency tables.<br>
+Only relevant for SCA, otherwise ignored:<br>
+0 : no effect, method as described in paper<br>
+1 : if a cell value is non-zero in the sample but zero in the resample
+then it is reset to 1 in the resample, so that the sparsity structure
+of the sample is maintained in the resample. This can be useful with
+sparse data sets and, in effect, conditions on the sample sparsity structure</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bootstdcoords</code></td>
+<td>
+<p>If TRUE then produce bootstrap variances for points in standard coordinates
+instead of principal coordinates<br>
+Note: intended only for experiments with the methodology</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reflectonly</code></td>
+<td>
+<p>If TRUE then just allow for axis reflections and not axis reorderings<br>
+Note: intended only for experiments with the methodology</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>showresults</code></td>
+<td>
+<p>If TRUE then output the results using <code>summaryca</code>
+and <code>plotca</code>, otherwise output suppressed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eps</code></td>
+<td>
+<p>Any value less than this is treated as zero in some calculations and comparisons</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This routine performs all of the usual Correspondence Analysis calculations while also using bootstrapping
+to estimate the variance of the difference between the sample and population point when both are projected
+onto the sample axes in principal coordinates.
+This is done for each row and column category on each dimension of the solution,
+allowing for sampling variation in both the points and the axes.
+</p>
+<p>It hence constructs confidence ellipses for each category point, plots the results
+by a call to <code>plotca</code> and prints the usual Correspondence Analysis summary
+output and the calculated standard deviations through a call to <code>summaryca</code>.
+Use <code>printca</code> for more detailed numerical results.
+</p>
+<p>For further examples and help on the package as a whole see <code>cabootcrs-package</code>.
+</p>
+<p><strong>(1) Corrections for Burt diagonal</strong>
+</p>
+<p>It is well-known that in multiple CA (MCA) the results are distorted by the diagonal elements of
+the Burt matrix. As well as the standard methods to correct for this, here we propose
+and implement a new method to correct for this when bootstrapping.
+If bootstrapping is applied in a naive way then, even when the standard corrections are used,
+the estimated variances will be much too small because diagonal elements of the standardised Burt matrix are
+the same in every bootstrap replicate, thus underestimating the true variation in the data.
+</p>
+<p>All bootstrapping is performed on the indicator matrix (or equivalently the n by p matrix)
+and the resampled Burt matrix is then constructed from the resampled indicator matrix in the usual way.
+</p>
+<p>Included here are the usual corrections to the
+inertias (mcaadjustinertias=TRUE, the default)
+and the coordinates (mcaadjustcoords=TRUE, the default).
+In addition you can choose to use, as the total inertia, either
+the sum of these adjusted inertias (mcauseadjustinertiasum=TRUE) as proposed by Benzecri or
+the average of the off-diagonal inertias (mcauseadjustinertiasum=FALSE, the default)
+as proposed by Greenacre.
+You can adjust (multiply by p) the Contribution figures in MCA so that they sum to p over all variables,
+i.e. an average of 1 for each variable as in SCA (mcaadjustmassctr=TRUE),
+rather than a total of 1 over all variables, as usually in MCA (mcaadjustmassctr=FALSE, the default).
+Note that when p=2 this will be the same as in SCA, but when p&gt;3 you can get contributions
+greater than 1, so use with caution.
+This also adjusts (multiplies by p) the point masses so that they sum to
+1 for each variable, rather than over all variables, same caveat applies.
+</p>
+<p>The fundamental problem with MCA is that in a Burt matrix each diagonal element is the
+value of a variable category cross-classified with itself, so it is always equal
+to the number of times that category appears.
+Hence if a category appears k times then the row (or column) in the Burt matrix
+consists of p blocks each of which sum to k, so its row (and column) sum is kp.
+</p>
+<p>Therefore when the row (or column) profile matrix
+is calculated the diagonal elements of the Burt matrix are always all 1/p while
+the elements for the categories in the offdiagonal blocks sum to 1/p in each block.
+Hence when the projected difference between the sample and resample row (or column)
+profile matrices is calculated this is artificially small because the
+diagonals of the two matrices are always the same, no matter how different
+the off-diagonal elements are.
+</p>
+<p>The new method to correct for the diagonal elements of the Burt matrix when
+calculating variances therefore works by re-expressing the coordinates
+purely in terms of the interesting and variable off-diagonal elements,
+excluding the uninteresting and constant diagonal elements.
+</p>
+<p>First calculate the Burt principal coordinates (PC), but with the
+diagonal elements of the profile matrix ignored (or set to zero).
+It is easy to verify that the usual Burt principal coordinates can be re-expressed,
+using the singular values (SV), as
+</p>
+<p>Burt PC = ( Burt SV / (Burt SV - (1/p)) ) x Burt PC without diagonal element
+</p>
+<p>Hence in the bootstrapping the sample and resample points are re-expressed in this way
+and their differences when projected onto the bootstrap axes are calculated as usual.
+</p>
+<p>Similarly the adjusted principal coordinates are calculated as
+</p>
+<p>adj Burt PC = (p/(p-1)) x ( (Burt SV - (1/p)) / Burt SV ) x Burt PC
+</p>
+<p>So, when using the usual adjusted coordinates (and adjusted inertias),
+both of the above will be used, hence ending up with just a correction of (p/(p-1)).
+The unadjusted coordinates can be used, but this is not recommended.
+</p>
+<p>One consequence of this correction is that when mcaadjustinertias=TRUE, mcaadjustcoords=TRUE,
+mcauseadjustinertiasum=TRUE, mcaadjustmassctr=TRUE and mcasupplementary="offdiag"
+then when p=2 the bootstrap
+variances for MCA are almost the same as those for SCA, while all other results
+for MCA are the same as those for SCA. The package author regards this as a good thing,
+making MCA more of a proper generalisation of MCA, but recognises that some people
+regard MCA as a fundamentally different method to SCA, linked only by the common algebra.
+</p>
+<p>Note that if this adjustment is not made then in the p=2 case it is easy to see that the
+projected differences are half those in the SCA case and the standard deviations
+are a quarter the size.
+</p>
+<p>The new method will be written up for publication once this update to the package is finished.
+</p>
+<p><strong>(2) Experimental method for bootstrapping indicator matrices</strong>
+</p>
+<p>A highly experimental method is included for bootstrapping with an indicator or doubled matrix
+in the case of ordered categorical (e.g. Likert scale) data.
+This has not been studied or optimised extensively, and is currently very slow, so use is very
+much at the user's discretion and at user's risk. To try it, choose:<br><br>
+mcatype="indicator" or mcatype="doubled" with nboots&gt;0<br><br>
+If CRs are required for the individual points then also choose:<br><br>
+mcaindividualboot=TRUE
+</p>
+<p>The bootstrap methodology used here relies on the comparison of bootstrap to sample points when
+both are projected onto bootstrap axes. In SCA this is fine because when looking at column points
+the axes are given by the rows and vice versa, and row i and column j each represent the same
+category in all bootstrap replicates. Similarly in MCA with a Burt matrix when looking at column
+points the axes are given by the rows, which again each represent the same category in all bootstrap replicates.
+</p>
+<p>However, with an indicator or doubled matrix, row i of the matrix does not represent the same
+individual in each replicate, it just represents the i-th individual drawn in the resampling
+for that particular replicate.
+In order for this type of bootstrapping to work with an indicator or doubled matrix we would
+need a resampling method whereby the i-th row represents the i-th individual in all bootstrap replicates.
+The resampled row would need to represent the answers of the same individual "on another day".
+This might make sense with questionnaire data where an individual's answers have uncertainty
+attached, in that if asked the same questions on multiple occasions they would give different answers
+due to random variation rather than temporal change. If a believable model for the sampling,
+and hence the resampling, could be derived (CUB models perhaps) then this could lead to CRs
+for an individual point, representing the uncertainty in what that person actually thinks.
+</p>
+<p>The method here uses the same idea of treating the sample row as
+representing an individual, and bootstrap replicates of that row as representing the variability
+in how that individual might have answered the questionnaire (or similar).
+However, instead of an explicit model to represent this variability, it is generated
+by the data themselves. The bootstrap replicate indicator (or doubled) matrix is generated as usual,
+by either non-parametric (multinomial) or balanced resampling, and then its rows are "matched"
+to the rows of the sample indicator (or doubled) matrix. The rows of the resampled matrix
+are reordered so that the rows of the resampled matrix are, overall, as similar as possible
+to the same rows of the sample matrix. Hence the resampled rows can reasonably be viewed
+as representing the same individual in each bootstrap replicate, and hence variances for
+the column points (categories) and row points (individuals) can be produced.
+</p>
+<p>The matching again uses the Hungarian algorithm from lpSolve. This only makes sense if
+all variables are ordered categorical. Applying this to (ordered) categorical data results
+in a very large number of ties, so the mcalikertnoise parameter defines the standard deviation
+of white noise added to each of the sample and resample category numbers for the purpose
+of the matching (only).
+</p>
+<p>Note that this is very slow for all but small data sets, and if all of the CRs for individuals
+are shown then the plot is impossibly busy. Hence it is recommended that this experimental
+method only be used for fairly small data sets where CRs are wanted for only a few example individuals.
+A better approach might be to average the CRs of all of the individuals who give the
+same results in the sample, but this is not implemented yet.
+</p>
+<p>Note that supplementary row points in indicator matrix MCA are usually regarded as different people answering
+the same questions, whereas in this case for CRs to make any sense we need to regard them
+as the same people answering the same questions on different days.
+</p>
+<p><strong>(3) Critical values</strong>
+</p>
+<p>Bootstrap critical values are calculated by re-using the bootstrap replicates used to calculate
+the variances, with a critical value calculated for each ellipse.
+The projected differences between bootstrap and sample points are ordered and the appropriate
+percentile value picked. These are usually slightly larger than the <code class="reqn">\chi^2</code> critical values.
+Only 90%, 95% (default) and 99% critical values are calculated.
+</p>
+<p>Alternatively use <code class="reqn">\chi^2</code> critical values, usually with df=2, but with df=1 if only 2 non-zero cells in row/col.
+</p>
+<p>The experimental method to construct ellipses for individuals in MCA always uses bootstrap critical values
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>cabootcrsresults</code>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cabootcrs-package</code>, <code>cabootcrsresults</code>,
+<code>plotca</code>, <code>printca</code>, <code>summaryca</code>,
+<code>covmat</code>, <code>allvarscovs</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Simple CA (SCA) of a 5 by 4 contingency table, using all SCA defaults:
+# 999 bootstraps, Poisson resampling, variances for up to first four axes,
+# usual output for up to the first 4 axes,
+# one biplot with CRs for rows in principal coordinates and another with
+# CRs for columns in principal coordinates
+
+bd &lt;- cabootcrs(DreamData)
+
+## Not run: 
+
+# Same data set with a completely random three-category third variable added,
+# analysed with MCA but with standardisations which mimic SCA as much as possible
+
+bd3 &lt;- cabootcrs(DreamData223by3, catype="mca")
+
+Explicitly stating what the rows and columns represent, often needed for a contingency table
+
+bd &lt;- cabootcrs(DreamData, datasetname="Maxwell's dream data",
+                varnames=c("What the rows are","What the columns are"))
+
+# Multiple CA (MCA) of 3 categorical variables with all defaults:
+# non-parametric resampling, Burt matrix analysed,
+# each variable has one plot with it in colour with CRs shown, other variables in monochrome.
+# Same data set but now as 223 by 3 matrix, with random 3rd column (with 3 categories) added.
+
+bd3 &lt;- cabootcrs(DreamData223by3, catype="mca")
+
+# Comparison of SCA to MCA with p=2, by converting contingency table to 223 by 2 matrix.
+# Note that the coordinates and inertias etc are the same while the standard deviations
+# and hence the ellipses are very similar but not identical.
+
+bd &lt;- cabootcrs(DreamData)
+DreamData223by2 &lt;- convert(DreamData,input="CT",output="nbyp")$result
+bdmca &lt;- cabootcrs(DreamData223by2, catype="mca", varandcat=FALSE)
+
+# Not adjusting inertias, which means that coordinates will also not be adjusted and
+# the bootstrapping will use the Burt diagonal.
+# Note how the coordinates are larger but the inertias and ellipses are smaller.
+
+bdmcaunadj &lt;- cabootcrs(DreamData223by2, catype="mca", varandcat=FALSE, mcaadjustinertias=FALSE)
+
+# Applying the standard adjustments to inertias and coordinates, but with
+# the bootstrapping still using the Burt diagonal.
+# Note how inertias and coordinates are now the same as SCA, but ellipses are smaller.
+
+bdmcaadjbutall &lt;- cabootcrs(DreamData223by2, catype="mca", varandcat=FALSE, mcasupplementary="all")
+
+
+# Effect of sample size in SCA:
+
+bdx4 &lt;- cabootcrs(4*DreamData)
+bdx9 &lt;- cabootcrs(9*DreamData)
+
+ba &lt;- cabootcrs(AttachmentData)
+
+bs &lt;- cabootcrs(SuicideData)
+
+bas &lt;- cabootcrs(AsbestosData)
+
+
+# Options for SCA:
+
+# SCA with multinomial resampling, with the matrix treated as a single multinomial distribution
+
+bdm &lt;- cabootcrs(DreamData, resampledistn="multinomial")
+
+# Fix the row sums, i.e. keep sum of age group constant
+
+bdmrf &lt;- cabootcrs(DreamData, resampledistn="multinomial", multinomialtype="rowsfixed")
+
+# Use chi-squared critical values for the CRs
+
+bdchisq &lt;- cabootcrs(DreamData, usebootcrits=FALSE)
+
+# Just perform correspondence analysis, without bootstrapping
+
+bdnb0 &lt;- cabootcrs(DreamData, nboots=0)
+
+
+# Effect of sample size in MCA:
+
+bn &lt;- cabootcrs(NishData, catype="mca")
+
+
+# Options for MCA
+
+# Using default settings the SCA and MCA standard results are the same when p=2,
+# bootstrap standard deviations (multinomial/nonparametric) are similar but not identical
+
+bdsca &lt;- cabootcrs(DreamData,resampledistn="multinomial")
+bdmca &lt;- cabootcrs(convert(DreamData,input="CT",output="nbyp")$result, catype="mca")
+
+# Row A can be labelled A rather than R:A
+# because the three variables have all different category names
+
+bd3l &lt;- cabootcrs(DreamData223by3, catype="mca", varandcat=FALSE)
+
+# Balanced resampling, each of the 223 rows occurs 999 times in the 999 resamples
+
+bd3b &lt;- cabootcrs(DreamData223by3, catype="mca", resampledistn="balanced")
+
+# Do not adjust inertias, coordinates or contributions
+# (if inertias are not adjusted then coordinates are also not adjusted)
+
+bd3unadj &lt;- cabootcrs(DreamData223by3, catype="mca",mcaadjustinertias=FALSE)
+
+## Comparisons to ellipses from FactoMineR
+
+# Generate some completely random uniform categorical data, construct ellipses.
+# The cabootcrs ellipses are very large and overlap extensively, as you would expect
+# from completely random data.
+# The FactoMineR ellipses are much smaller, often with minimal overlaps,
+# giving a completely false impression of genuine differences between categories.
+
+library(FactoMineR)
+p &lt;- 4
+maxcat &lt;- 5
+n &lt;- 100
+Xnpr &lt;- apply( as.data.frame( matrix( round(runif(n*p,0.5,maxcat+0.5)), n, p)), 2, factor )
+fr &lt;- MCA(Xnpr, method="Burt")
+plotellipses(fr)
+br &lt;- cabootcrs(Xnpr, catype="mca", showresults=FALSE)
+plotca(br, mcacategorycolours = TRUE, showcolumnlabels=FALSE)
+
+## Comparisons to results in ca and FactoMineR
+
+Summary: If using unadjusted inertias, coordinates the packages produce identical results,
+apart from differences in presentation (rounding off, the naming of rep/cor/cos2).
+
+Summary: When using adjusted inertias and coordinates (not an option in FactoMineR::MCA)
+the correlations in ca::mjca no longer sum to 1 over all dimensions, in cabootcrs they do.
+Ratios are the same for each dimension, but not each point, they are standardised differently.
+
+# Example comparisons with random data
+library(FactoMineR)
+library(ca)
+p &lt;- 4
+maxcat &lt;- 5
+n &lt;- 100
+Xnpdf &lt;- as.data.frame( matrix( round(runif(n*p,0.5,maxcat+0.5)), n, p))
+Xnpr &lt;- apply( Xnpdf, 2, factor )
+
+# Note that ca::mjca only accepts the data as numerical,
+# FactoMineR::MCA only acccepts the data as characters
+rbun &lt;- cabootcrs(Xnpr, catype="mca", nboots=0, mcaadjustinertias = FALSE)
+rcun &lt;-  mjca(Xnpdf,lambda="Burt")
+summary(rcun)
+rfm &lt;- MCA(Xnpr,method="Burt", graph=FALSE)
+summary(rfm)
+rb &lt;- cabootcrs(Xnpr, catype="mca", nboots=0)
+rc &lt;- mjca(Xnpdf)
+summary(rc)
+realr &lt;- rb@br@realr
+rb@ColREP[,1:realr]
+rc$colcor[,1:realr]
+apply(rb@ColREP[,1:realr],1,"sum")
+apply(rc$colcor[,1:realr],1,"sum")
+
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

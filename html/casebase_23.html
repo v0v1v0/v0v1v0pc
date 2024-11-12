@@ -1,0 +1,137 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>sampleCaseBase</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create case-base dataset for use in fitting parametric hazard functions</h2>
+
+<h3>Description</h3>
+
+<p>This function implements the case-base sampling approach described in Hanley
+and Miettinen (2009). It can be used to fit smooth-in-time parametric
+functions easily via logistic regression.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">sampleCaseBase(
+  data,
+  time,
+  event,
+  ratio = 10,
+  comprisk = FALSE,
+  censored.indicator
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a data.frame or data.table containing the source dataset.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>a character string giving the name of the time variable. See
+Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>event</code></td>
+<td>
+<p>a character string giving the name of the event variable. See
+Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ratio</code></td>
+<td>
+<p>Integer, giving the ratio of the size of the base series to that
+of the case series. Defaults to 10.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>comprisk</code></td>
+<td>
+<p>Logical. Indicates whether we have multiple event types and
+that we want to consider some of them as competing risks.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>censored.indicator</code></td>
+<td>
+<p>a character string of length 1 indicating which
+value in <code>event</code> is the censored. This function will use
+<code>relevel</code> to set <code>censored.indicator</code> as the
+reference level. This argument is ignored if the <code>event</code> variable is a
+numeric</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The base series is sampled using a multinomial scheme: individuals are
+sampled proportionally to their follow-up time.
+</p>
+<p>It is assumed that <code>data</code> contains the two columns corresponding to the
+supplied time and event variables. If either the <code>time</code> or <code>event</code>
+argument is missing, the function looks for columns with appropriate-looking
+names (see <code>checkArgsTimeEvent</code>).
+</p>
+
+
+<h3>Value</h3>
+
+<p>The function returns a dataset, with the same format as the source
+dataset, and where each row corresponds to a person-moment sampled from the
+case or the base series.
+</p>
+
+
+<h3>Warning</h3>
+
+<p>The offset is calculated using the total follow-up time for
+all individuals in the study. Therefore, we need <code>time</code> to be on the
+original scale, not a transformed scale (e.g. logarithmic). Otherwise, the
+offset and the estimation will be wrong.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Simulate censored survival data for two outcome types from exponential
+library(data.table)
+set.seed(12345)
+nobs &lt;- 500
+tlim &lt;- 10
+
+# simulation parameters
+b1 &lt;- 200
+b2 &lt;- 50
+
+# event type 0-censored, 1-event of interest, 2-competing event
+# t observed time/endpoint
+# z is a binary covariate
+DT &lt;- data.table(z = rbinom(nobs, 1, 0.5))
+DT[, `:=`(
+  "t_event" = rweibull(nobs, 1, b1),
+  "t_comp" = rweibull(nobs, 1, b2)
+)]
+DT[, `:=`(
+  "event" = 1 * (t_event &lt; t_comp) + 2 * (t_event &gt;= t_comp),
+  "time" = pmin(t_event, t_comp)
+)]
+DT[time &gt;= tlim, `:=`("event" = 0, "time" = tlim)]
+
+out &lt;- sampleCaseBase(DT, time = "time", event = "event", comprisk = TRUE)
+</code></pre>
+
+
+</div>

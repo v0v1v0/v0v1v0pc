@@ -1,0 +1,156 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>statistics</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Statistic Endpoints</h2>
+
+<h3>Description</h3>
+
+<p>Interact with statistic endpoints. Gather data about event counts and general channel statistics. Create dataframes of statistics to help with visualization and downstream analysis.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S4 method for signature 'UserSession'
+statistics.event_counts(
+  UserSession,
+  experiment_id,
+  gate_version = -1,
+  compensation_id,
+  fcs_files,
+  populations = c(),
+  output = "dataframe",
+  timeout = UserSession@long_timeout
+)
+
+## S4 method for signature 'UserSession'
+statistics.general(
+  UserSession,
+  experiment_id,
+  gate_version = -1,
+  compensation_id,
+  fcs_files,
+  channels,
+  populations = c(),
+  output = "dataframe_row",
+  timeout = UserSession@long_timeout
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>UserSession</code></td>
+<td>
+<p>Cytobank UserSession object</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>experiment_id</code></td>
+<td>
+<p>integer representing an experiment ID</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gate_version</code></td>
+<td>
+<p>integer representing an experiment gate version, an integer of -1 corresponds to the state of gates and populations in the gating interface. Faster performance can be achieved by using the maximum gate version from the experiment <a href="https://support.cytobank.org/hc/en-us/articles/205399487-The-Apply-and-Apply-and-Return-buttons-and-gate-versioning">(learn more about gate versions)</a>. Maximum gate version can be seen as the <strong>gateVersion</strong> attribute returned from a call to the Show Experiment Details endpoint <strong>[optional]</strong></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>compensation_id</code></td>
+<td>
+<p>integer representing a compensation ID (use -2 for file-internal compensation, -1 for uncompensated)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fcs_files</code></td>
+<td>
+<p>vector/list of integers representing a list of FCS file IDs</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>populations</code></td>
+<td>
+<p>vector/list of integers representing a list of population IDs to calculate statistics for. This is the <strong>gateSetId</strong> attribute of a population object. Another term for a population is a "gate set". If not specified, all population statistics will be fetched <strong>[optional]</strong></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output</code></td>
+<td>
+<p>character representing the output format <strong>[optional]</strong><br><em>- statistics.event_counts: <code>("default" [default], "dataframe")</code></em><br><em>- statistics.general: <code>("default", "dataframe_col", "dataframe_row")</code></em><br><em>- <code>dataframe</code>: converts the output to a dataframe for the event count statistics</em><br><em>- <code>dataframe_col</code>: for statistics data on multiple channels, proliferate channel statistics as columns</em><br><em>- <code>dataframe_row</code>: for statistics data on multiple channels, proliferate channel statistics as rows</em></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>timeout</code></td>
+<td>
+<p>integer representing the request timeout time in seconds</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>channels</code></td>
+<td>
+<p>vector/list of integers or character representing a list of channel IDs (integers) or long channel names (character)</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>statistics.event_counts</code> Get event count statistics from an experiment. In the absence of channel information, only event count data are returned. If only event count data are needed, this approach can be faster than retrieving all statistics by avoiding unnecessary computation.<br><em>- Optional output parameter, specify one of the following: <code>("full", "dataframe" [default])</code></em><br><em>- <code>dataframe</code>: converts the output to a dataframe for the event count statistics</em><br></p>
+<p><code>statistics.general</code> Get a batch of common statistics for specific channels on populations from an experiment.<br><em>- Optional output parameter, specify one of the following: <code>("full", "dataframe_col", "dataframe_row" [default])</code></em><br><em>- <code>dataframe_col</code>: for statistics data on multiple channels, proliferate channel statistics as columns</em><br><em>- <code>dataframe_row</code>: for statistics data on multiple channels, proliferate channel statistics as rows</em>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: # Authenticate via username/password
+cyto_session &lt;- authenticate(site="premium", username="cyril_cytometry", password="cytobank_rocks!")
+# Authenticate via auth_token
+cyto_session &lt;- authenticate(site="premium", auth_token="my_secret_auth_token")
+
+## End(Not run)
+## Not run: statistics.event_counts(cyto_session, 22, compensation_id=-2,
+  fcs_files=c(12, 13, 14), channels=c(53, 54, 55), populations=c(32, 33, 34))
+
+## End(Not run)
+## Not run: # Full list with all fields present
+statistics.general(cyto_session, 22, compensation_id=-2,
+  fcs_files=c(12, 13, 14), channels=c(53, 54, 55), populations=c(32, 33, 34))
+
+# Statistics list transformed into a dataframe, proliferating channel statistics by column
+statistics.general(cyto_session, 22, compensation_id=-2,
+  fcs_files=c(12, 13, 14), channels=c(53, 54, 55), populations=c(32, 33), output="dataframe_col")
+
+# Statistics list transformed into a dataframe, proliferating channel statistics by row
+statistics.general(cyto_session, 22, compensation_id=-2,
+  fcs_files=c(12, 13, 14), channels=c(53, 54, 55), populations=c(32, 33), output="dataframe_row")
+
+# Statistics list transformed into a dataframe, using helper functions (names_to_ids)
+# Get FCS files that match 'pbmc' in their filename
+fcs_files &lt;- fcs_files.list(cyto_session, 22)
+fcs_files &lt;- fcs_files[,c("id", "filename")]
+fcs_files &lt;- unlist(fcs_files$id[grep("pbmc", fcs_files$filename)])
+
+# Get channels that match 'pp' or 'pStat' as their longName
+channels &lt;- panels.list(cyto_session, 22)$`Panel 1`$channels
+channels &lt;- channels[,c("normalizedShortNameId", "shortName", "longName")]
+channels &lt;- channels$normalizedShortNameId[grep("pp.*|pStat.*", channels$longName)]
+
+# Get populations that match 'CD' as their population name
+populations &lt;- populations.list(cyto_session, 22)
+populations &lt;- populations[,c("gateSetId", "name")]
+populations &lt;- populations$id[grep("CD.*", populations$name)]
+
+statistics.general(cyto_session, 22, compensation_id=-2,
+  fcs_files=fcs_files, channels=channels, populations=populations, output="dataframe_row")
+
+## End(Not run)
+</code></pre>
+
+
+</div>

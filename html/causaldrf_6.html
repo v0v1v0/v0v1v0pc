@@ -1,0 +1,276 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>hi_est</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>The Hirano and Imbens estimator</h2>
+
+<h3>Description</h3>
+
+<p>This function estimates the GPS function and estimates the
+ADRF. The GPS score is based on different treatment models.  The treatment is
+linearly related to Xs.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">hi_est(Y,
+       treat,
+       treat_formula,
+       outcome_formula,
+       data,
+       grid_val,
+       treat_mod,
+       link_function,
+       ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Y</code></td>
+<td>
+<p>is the the name of the outcome variable contained in <code>data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>treat</code></td>
+<td>
+<p>is the name of the treatment variable contained in
+<code>data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>treat_formula</code></td>
+<td>
+<p>an object of class "formula" (or one that can be
+coerced to that class) that regresses <code>treat</code> on a linear combination
+of <code>X</code>: a symbolic description of the model to be fitted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outcome_formula</code></td>
+<td>
+<p>is the formula used for fitting the outcome surface.
+gps is one of the independent variables to use in the outcome_formula. ie.
+</p>
+<p><code>Y ~ treat+ I(treat^2) + gps + I(gps^2) + treat * gps</code>
+</p>
+<p>or a variation
+of this.  Use <code>gps</code> as the name of the variable representing the gps
+in <code>outcome_formula</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>is a dataframe containing <code>Y</code>, <code>treat</code>, and
+<code>X</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grid_val</code></td>
+<td>
+<p>contains the treatment values to be evaluated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>treat_mod</code></td>
+<td>
+<p>a description of the error distribution to be used in the
+model for treatment. Options include: <code>"Normal"</code> for normal model,
+<code>"LogNormal"</code> for lognormal model, <code>"Sqrt"</code> for square-root transformation
+to a normal treatment, <code>"Poisson"</code> for Poisson model,
+<code>"NegBinom"</code> for negative binomial model, <code>"Gamma"</code> for gamma
+model, <code>"Binomial"</code> for binomial model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link_function</code></td>
+<td>
+<p>For <code>treat_mod = "Gamma"</code> (fitted using glm) alternatives are "log" or "inverse".
+For <code>treat_mod = "Binomial"</code> (fitted using glm) alternatives are "logit", "probit", "cauchit", "log" and "cloglog".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments to be passed to the outcome lm() function.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Hirano (2004) (HI) introduced this imputation-type method that
+includes a GPS component.  The idea is to fit a parametric observable
+(outcome) model, which includes the estimated GPS as a covariate, to impute
+missing potential outcomes.
+</p>
+<p>The method requires several steps.  First, a model is used to relate
+treatment to the recorded covariates.  For example,
+<code class="reqn">T_i|\textbf{X}_i \sim \mathcal{N}(\textbf{X}_i^T \boldsymbol{\beta}, \sigma^2)</code>
+and then estimate the <code class="reqn">\boldsymbol{\beta}</code> parameters.
+Next, the GPS for each unit is estimated
+</p>
+<p style="text-align: center;"><code class="reqn">
+\hat{R}_i(t) = \frac{1}{\sqrt{2 \pi \hat{\sigma}^2}  } e^{-\frac{(t - \textbf{X}_i^T \boldsymbol{\hat{\beta}})^2}{2 \hat{\sigma}^2}}
+</code>
+</p>
+
+<p>These GPS estimates are used in the outcome or observable model.
+The outcome is modeled as a function of <code class="reqn">T_i</code> and <code class="reqn">\hat{R}_i</code>
+parametrically.  For example,
+</p>
+<p style="text-align: center;"><code class="reqn">
+E[Y_i | T_i, R_i] = \alpha_0 + \alpha_1 T_i + \alpha_2 T_i^2 + \alpha_3 \hat{R}_i + \alpha_4 \hat{R}_i^2 + \alpha_5 \hat{R}_i\cdot T_i
+</code>
+</p>
+
+<p>After collecting the estimated parameters in the outcome and treatment
+models, plug-in the treatment values into the model to estimate the
+missing potential outcomes of each individual at that treatment level.
+For example, if we plug in <code class="reqn">T_i = t</code> into the estimated models, then
+each unit will have a potential outcome estimated at treatment level
+<code class="reqn">T_i= t</code>.
+</p>
+<p style="text-align: center;"><code class="reqn">
+\hat{Y}_i(t) = \hat{\alpha}_0 + \hat{\alpha}_1 t + \hat{\alpha}_2 t^2 + \hat{\alpha}_3 \hat{R}_i(t) + \hat{\alpha}_4 \hat{R}_i^2(t) + \hat{\alpha}_5 \hat{R}_i(t) \cdot t
+</code>
+</p>
+
+<p>The next step is to aggregate these estimated potential outcomes
+to get an average treatment effect at dose level <code class="reqn">T_i = t</code>.
+The mean outcome at dose-level <code class="reqn">T_i = t</code> is given by:
+</p>
+<p style="text-align: center;"><code class="reqn">
+\hat{\mu}(t) = \frac{1}{N}\sum_i^N \hat{\alpha}_0 + \hat{\alpha}_1 t + \hat{\alpha}_2 t^2 + \hat{\alpha}_3 \hat{R}_i(t) + \hat{\alpha}_4 \hat{R^2}_i(t) + \hat{\alpha}_5 \hat{R}_i(t) \cdot t
+</code>
+</p>
+
+<p>Different treatment levels are plugged into the previous equation
+to estimate the missing potential outcomes.  If many <code class="reqn">t</code> values
+are evaluated, then it is possible to trace out an ADRF.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>hi_est</code> returns an object of class "causaldrf",
+a list that contains the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>param</code></td>
+<td>
+<p>parameter estimates for a hi fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>t_mod</code></td>
+<td>
+<p>the result of the treatment model fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>out_mod</code></td>
+<td>
+<p>the result of the outcome model fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the matched call.</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Schafer, J.L., Galagate, D.L. (2015).  Causal inference with a
+continuous treatment and outcome: alternative estimators for parametric
+dose-response models. <em>Manuscript in preparation</em>.
+</p>
+<p>Hirano, Keisuke, Imbens, Guido W (2004).  The propensity score with
+continuous treatments.  <em>Applied Bayesian modeling and
+causal inference from incomplete-data perspectives.</em>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>nw_est</code>, <code>iw_est</code>, <code>hi_est</code>, <code>gam_est</code>,
+<code>add_spl_est</code>,
+<code>bart_est</code>, etc. for other estimates.
+</p>
+<p><code>t_mod</code>, <code>overlap_fun</code> to prepare the <code>data</code>
+for use in the different estimates.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Example from Schafer (2015).
+
+example_data &lt;- sim_data
+
+hi_list &lt;- hi_est(Y = Y,
+              treat = T,
+              treat_formula = T ~ B.1 + B.2 + B.3 + B.4 + B.5 + B.6 + B.7 + B.8,
+              outcome_formula = Y ~ T + I(T^2) + gps + I(gps^2) + T * gps,
+              data = example_data,
+              grid_val = seq(8, 16, by = 1),
+              treat_mod = "Normal")
+
+sample_index &lt;- sample(1:1000, 100)
+
+plot(example_data$T[sample_index],
+      example_data$Y[sample_index],
+      xlab = "T",
+      ylab = "Y",
+      main = "hi estimate")
+
+lines(seq(8, 16, by = 1),
+      hi_list$param,
+      lty = 2,
+      lwd = 2,
+      col = "blue")
+
+legend('bottomright',
+        "hi estimate",
+        lty=2,
+        lwd = 2,
+        col = "blue",
+        bty='Y',
+        cex=1)
+
+rm(example_data, hi_list, sample_index)
+
+
+## Example from van der Wal, Willem M., and Ronald B. Geskus. (2011)
+#Simulate data with continuous confounder and outcome, binomial exposure.
+#Marginal causal effect of exposure on outcome: 10.
+n &lt;- 1000
+simdat &lt;- data.frame(l = rnorm(n, 10, 5))
+a.lin &lt;- simdat$l - 10
+pa &lt;- exp(a.lin)/(1 + exp(a.lin))
+simdat$a &lt;- rbinom(n, 1, prob = pa)
+simdat$y &lt;- 10*simdat$a + 0.5*simdat$l + rnorm(n, -10, 5)
+simdat[1:5,]
+temp_hi &lt;- hi_est(Y = y,
+                 treat = a,
+                 treat_formula = a ~ l,
+                 outcome_formula = y ~ gps,
+                 data = simdat,
+                 grid_val = c(0, 1),
+                 treat_mod = "Binomial",
+                 link_function = "logit")
+
+temp_hi[[1]]  # estimated coefficients
+</code></pre>
+
+
+</div>

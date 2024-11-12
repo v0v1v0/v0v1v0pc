@@ -1,0 +1,95 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>scan_project_files</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Scan R files for package dependencies</h2>
+
+<h3>Description</h3>
+
+<p>This function scans the R files in your project, including scripts, Sweave documents and Rmarkdown-based files, for references to packages.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">scan_project_files(
+  project_dir = ".",
+  scan_r_only = FALSE,
+  scan_rnw_with_knitr = TRUE,
+  scan_rprofile = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>project_dir</code></td>
+<td>
+<p>A project path.  This is the path to the root of the project that references the packages to be installed from the MRAN snapshot for the date specified for <code>snapshotDate</code>. Defaults to the current working directory.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scan_r_only</code></td>
+<td>
+<p>If <code>TRUE</code>, limits the scanning of project files to R scripts only (those with the extension <code>.R</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scan_rnw_with_knitr</code></td>
+<td>
+<p>If <code>TRUE</code>, scans Sweave files with <code>knitr::knitr</code>, otherwise with <code>utils::Stangle</code>. Ignored if <code>scan_r_only=TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scan_rprofile</code></td>
+<td>
+<p>if <code>TRUE</code>, includes the <code style="white-space: pre;">⁠~/.Rprofile⁠</code> startup file in the scan. See <code>Startup</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>scan_project_files</code> recursively builds a list of all the R files in your project. This includes regular R scripts, as well as Sweave files (those with extension <code>.Rnw</code>) and Rmarkdown-based files (those with extension <code>.Rmd</code>, <code>.Rpres</code> or <code>Rhtml</code>). It then parses the code in each file and looks for calls to <code>library</code> and <code>require</code>, as well as the namespacing operators <code>::</code> and <code>:::</code>. The detected packages are assumed to be available from CRAN/MRAN.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with 2 components: <code>pkgs</code>, a vector of package names, and <code>errors</code>, a vector of files that could not be scanned. The package listing includes third-party packages, as well as those that are distributed with R and have "Recommended" priority. Base-priority packages (utils, graphics, methods and so forth) are not included.
+</p>
+<p>In addition, if any Rmarkdown files are found, the package listing will include rmarkdown. This allows you to continue rendering them in a checkpointed session.
+</p>
+
+
+<h3>Manifest</h3>
+
+<p>As an <strong>experimental feature</strong>, you can specify additional packages to include or exclude via an optional <code>checkpoint.yml</code> manifest file located in your project directory. This should be a valid YAML file with 2 components:
+</p>
+
+<ul>
+<li> <p><code>refs</code>: An array of package references to include in the checkpoint, that can be parsed by <code>pkgdepends::new_pkg_installation_proposal</code>.
+</p>
+</li>
+<li> <p><code>exclude</code>: An array of package names (without decorations) to exclude from the checkpoint, despite showing up in the scan.
+</p>
+</li>
+</ul>
+<p>A manifest file allows you to include packages from sources other than CRAN/MRAN in the checkpoint. You can include a Bioconductor package with a <code style="white-space: pre;">⁠bioc::⁠</code> reference: <code>bioc::BiocGenerics</code>. A GitHub reference begins with <code style="white-space: pre;">⁠github::⁠</code>, for example <code>github::RevolutionAnalytics/checkpoint@v1.0</code>. A <code style="white-space: pre;">⁠local::⁠</code> reference can point to a package <code>.tar.gz</code> file, or to a directory containing the package source code.
+</p>
+<p>You should use this feature with caution, as checkpoint does not check the versions of these packages. It's recommended that you include a version number, tag or commit hash in a reference, so that you always obtain the same version of the package. See <code>pkgdepends::pkg_refs</code> for a full description of the reference syntax; note that <code style="white-space: pre;">⁠installed::⁠</code> references are <em>not</em> currently supported by checkpoint.
+</p>
+<p>A use case for exclusions is if your workflow loads packages that are not on CRAN or other public repositories. For example, Microsoft Machine Learning Server (MMLS) comes with a number of proprietary packages for big data and in-database analytics. You can exclude these packages from checkpointing by listing them in the <code>exclude</code> entry in the manifest. In this case, you must ensure that your packages are still visible to the checkpointed session, for example by specifying <code>prepend=TRUE</code> in the <code>use_checkpoint</code> call. If you share your project with collaborators, they will also need to have these packages separately installed on their machines.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">scan_project_files()
+</code></pre>
+
+
+</div>

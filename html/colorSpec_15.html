@@ -1,0 +1,177 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>atmosphere</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>atmospheric transmittance along a horizontal path</h2>
+
+<h3>Description</h3>
+
+<p>Calculate transmittance along a horizontal optical path in the atmosphere,
+as a function of length (distance) and the molecular and aerosol properties.
+Because the path is horizontal, the atmospheric properties are
+assumed to be constant on the path.
+Only molecular scattering is considered.
+There is no modeling of molecular absorption;
+for visible wavelengths this is reasonable.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">atmosTransmittance( distance, wavelength=380:720, 
+                    molecules=list(N=2.547305e25,n0=1.000293),
+                    aerosols=list(metrange=25000,alpha=0.8,beta=0.0001) )
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>distance</code></td>
+<td>
+<p>the length of the optical path, in meters.
+It can also be a numeric vector of lengths.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wavelength</code></td>
+<td>
+<p>a vector of wavelengths, in nm, for the transmittance calculations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>molecules</code></td>
+<td>
+<p>a list of molecular properties, see <b>Details</b>.
+If this is <code>NULL</code>, then the molecular transmittance is identically 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aerosols</code></td>
+<td>
+<p>a list of aerosol properties, see <b>Details</b>.
+If this is <code>NULL</code>, then the aerosol transmittance is identically 1.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The list <code>molecules</code> has 2 parameters that describe the molecules in the atmosphere.
+<code>N</code> is the molecular density of the atmosphere at sea level,
+in <code class="reqn">molecules/meter^3</code>.
+The given default is the density at sea level.
+<code>n0</code> is the refractive index of pure molecular air (with no aerosols).
+For the molecular attenuation,
+the standard model for Rayleigh scattering is used,
+and there is no modeling of molecular absorption.
+</p>
+<p>The list <code>aerosols</code> has 3 parameters that describe the aerosols in the atmosphere.
+The standard Angstrom aerosol attenuation model is:
+</p>
+<p style="text-align: center;"><code class="reqn">attenuation(\lambda) = \beta * (\lambda/\lambda_0)^{-\alpha}</code>
+</p>
+
+<p><code class="reqn">\alpha</code> is the Angstrom exponent, and is dimensionless.
+<code class="reqn">attenuation</code> and <code class="reqn">\beta</code> have unit <code class="reqn">m^{-1}</code>.
+And <code class="reqn">\lambda_0</code>=550nm.
+</p>
+<p><code>metrange</code> is the <em>Meteorological Range</em> of the atmosphere in meters,
+as defined by <cite>Koschmieder</cite>.
+This is the distance at which the transmittance=0.02 at <code class="reqn">\lambda_0</code>.
+If <code>metrange</code> is not <code>NULL</code> (the default is 25000)
+then both <code class="reqn">\alpha</code> and <code class="reqn">\beta</code> are calculated to achieve
+this desired <code>metrange</code>, and the supplied <code class="reqn">\alpha</code> and <code class="reqn">\beta</code>
+are ignored.
+<code class="reqn">\alpha</code> is calculated from <code>metrange</code> using the <cite>Kruse</cite> model,
+see <b>Note</b>.
+<code class="reqn">\beta</code> is calculated so that the product of
+molecular and aerosol transmittance yields the desired <code>metrange</code>.
+In fact:
+</p>
+<p style="text-align: center;"><code class="reqn">\beta = -\mu_0 - log(0.02) / V_r</code>
+</p>
+
+<p>where <code class="reqn">\mu_0</code> is the molecular attenuation at <code class="reqn">\lambda_0</code>,
+and <code class="reqn">V_r</code> is the meteorological range.
+For a log message with the calculated values,
+execute <code>cs.options(loglevel='INFO')</code> before calling <code>atmosTransmittance()</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>atmosTransmittance()</code> returns a
+<b>colorSpec</b> object with <code>quantity</code> equal to <code>'transmittance'</code>.
+There is a spectrum in the object for each value in the vector <code>distance</code>.
+The <code>specnames</code> are set to <code>sprintf("dist=%gm",distance)</code>.<br>
+The final transmittance is the product of the molecular transmittance
+and the aerosol transmittance.
+If both <code>molecules</code> and <code>aerosols</code> are <code>NULL</code>,
+then the final transmittance is identically 1;
+the atmosphere has become a vacuum.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The Kruse model for <code class="reqn">\alpha</code> as a function of <code class="reqn">V_r</code>
+is defined in 3 pieces.
+For <code class="reqn">0 \le V_r &lt; 6000</code>, <code class="reqn">\alpha = 0.585 * (V_r/1000)^{1/3}</code>.
+For <code class="reqn">6000 \le V_r &lt; 50000</code>, <code class="reqn">\alpha = 1.3</code>.
+And for <code class="reqn">V_r \ge</code> 50000, <code class="reqn">\alpha = 1.6</code>.
+So <code class="reqn">\alpha</code> is increasing, but not strictly, and not continuously.
+<code class="reqn">V_r</code> is in meters.
+See <em>Kruse</em> and <em>Kaushal</em>.
+</p>
+<p>The built-in object <code>atmosphere2003</code> is transmittance along
+an optical path that is <b>NOT</b> horizontal,
+and extends to outer space.
+This is <em>much</em> more complicated to calculate.
+</p>
+
+
+<h3>References</h3>
+
+<p>Angstrom, Anders.
+On the atmospheric transmission of sun radiation and on dust in the air.
+<em>Geogr. Ann.</em>,
+no. 2. 1929.
+</p>
+<p>Kaushal, H. and Jain, V.K. and Kar, S.
+<b>Free Space Optical Communication</b>.
+Springer. 2017.
+</p>
+<p>Koschmieder, Harald.
+Theorie der horizontalen Sichtweite.
+<em>Beitrage zur Physik der Atmosphare</em>. 1924.
+<b>12</b>. pages 33-53.
+</p>
+<p>P. W. Kruse, L. D. McGlauchlin, and R. B. McQuistan.
+<b>Elements of Infrared Technology: Generation, Transmission, and Detection</b>.
+J. Wiley &amp; Sons, New York, 1962.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>solar.irradiance</code>,
+<code>specnames</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">trans = atmosTransmittance( c(5,10,15,20,25)*1000 ) # 5 distances with atmospheric defaults
+
+# verify that transmittance[550]=0.02 at dist=25000
+plot( trans, legend='bottomright', log='y' )
+
+# repeat, but this time assign alpha and beta explicitly
+trans = atmosTransmittance( c(5,10,15,20,25)*1000, aero=list(alpha=1,beta=0.0001) )
+</code></pre>
+
+
+</div>

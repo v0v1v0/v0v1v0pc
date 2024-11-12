@@ -1,0 +1,466 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cl_consensus</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Consensus Partitions and Hierarchies</h2>
+
+<h3>Description</h3>
+
+<p>Compute the consensus clustering of an ensemble of partitions or
+hierarchies.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cl_consensus(x, method = NULL, weights = 1, control = list())
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>an ensemble of partitions or hierarchies, or something
+coercible to that (see <code>cl_ensemble</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>a character string specifying one of the built-in
+methods for computing consensus clusterings, or a function to be
+taken as a user-defined method, or <code>NULL</code> (default value).  If
+a character string, its lower-cased version is matched against the
+lower-cased names of the available built-in methods using
+<code>pmatch</code>.  See <b>Details</b> for available built-in
+methods and defaults.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>a numeric vector with non-negative case weights.
+Recycled to the number of elements in the ensemble given by <code>x</code>
+if necessary.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>a list of control parameters.  See <b>Details</b>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Consensus clusterings “synthesize” the information in the
+elements of a cluster ensemble into a single clustering, often by
+minimizing a criterion function measuring how dissimilar consensus
+candidates are from the (elements of) the ensemble (the so-called
+“optimization approach” to consensus clustering).  
+</p>
+<p>The most popular criterion functions are of the form <code class="reqn">L(x) = \sum
+    w_b d(x_b, x)^p</code>, where <code class="reqn">d</code> is a suitable dissimilarity measure
+(see <code>cl_dissimilarity</code>), <code class="reqn">w_b</code> is the case weight
+given to element <code class="reqn">x_b</code> of the ensemble, and <code class="reqn">p \ge 1</code>.  If
+<code class="reqn">p = 1</code> and minimization is over all possible base clusterings, a
+consensus solution is called a <em>median</em> of the ensemble; if
+minimization is restricted to the elements of the ensemble, a
+consensus solution is called a <em>medoid</em> (see
+<code>cl_medoid</code>).  For <code class="reqn">p = 2</code>, we obtain <em>least
+squares</em> consensus partitions and hierarchies (generalized means).
+See also Gordon (1999) for more information.
+</p>
+<p>If all elements of the ensemble are partitions, the built-in consensus
+methods compute consensus partitions by minimizing a criterion of the
+form <code class="reqn">L(x) = \sum w_b d(x_b, x)^p</code> over all hard or soft
+partitions <code class="reqn">x</code> with a given (maximal) number <code class="reqn">k</code> of classes.
+Available built-in methods are as follows.
+</p>
+
+<dl>
+<dt><code>"SE"</code></dt>
+<dd>
+<p>a fixed-point algorithm for obtaining <em>soft</em>
+least squares Euclidean consensus partitions (i.e., for minimizing
+<code class="reqn">L</code> with Euclidean dissimilarity <code class="reqn">d</code> and <code class="reqn">p =	2</code> over
+all soft partitions with a given maximal number of classes).
+</p>
+<p>This iterates between individually matching all partitions to the
+current approximation to the consensus partition, and computing
+the next approximation as the membership matrix closest to a
+suitable weighted average of the memberships of all partitions
+after permuting their columns for the optimal matchings of class
+ids.
+</p>
+<p>The following control parameters are available for this method.
+</p>
+
+<dl>
+<dt><code>k</code></dt>
+<dd>
+<p>an integer giving the number of classes to be
+used for the least squares consensus partition.
+By default, the maximal number of classes in the ensemble is
+used.</p>
+</dd>
+<dt><code>maxiter</code></dt>
+<dd>
+<p>an integer giving the maximal number of
+iterations to be performed.
+Defaults to 100.</p>
+</dd>
+<dt><code>nruns</code></dt>
+<dd>
+<p>an integer giving the number of runs to be
+performed.  Defaults to 1.</p>
+</dd>
+<dt><code>reltol</code></dt>
+<dd>
+<p>the relative convergence tolerance.
+Defaults to <code>sqrt(.Machine$double.eps)</code>.</p>
+</dd>
+<dt><code>start</code></dt>
+<dd>
+<p>a matrix with number of rows equal to the
+number of objects of the cluster ensemble, and <code class="reqn">k</code>
+columns, to be used as a starting value, or a list of such
+matrices.  By default, suitable random membership matrices are
+used.</p>
+</dd>
+<dt><code>verbose</code></dt>
+<dd>
+<p>a logical indicating whether to provide
+some output on minimization progress.
+Defaults to <code>getOption("verbose")</code>.</p>
+</dd>
+</dl>
+<p>In the case of multiple runs, the first optimum found is returned.
+</p>
+<p>This method can also be referred to as <code>"soft/euclidean"</code>.
+</p>
+</dd>
+<dt><code>"GV1"</code></dt>
+<dd>
+<p>the fixed-point algorithm for the “first
+model” in Gordon and Vichi (2001) for minimizing <code class="reqn">L</code> with
+<code class="reqn">d</code> being GV1 dissimilarity and <code class="reqn">p = 2</code> over all soft
+partitions with a given maximal number of classes.
+</p>
+<p>This is similar to <code>"SE"</code>, but uses GV1 rather than Euclidean
+dissimilarity.
+</p>
+<p>Available control parameters are the same as for <code>"SE"</code>.
+</p>
+</dd>
+<dt><code>"DWH"</code></dt>
+<dd>
+<p>an extension of the greedy algorithm in
+Dimitriadou, Weingessel and Hornik (2002) for (approximately)
+obtaining soft least squares Euclidean consensus partitions.
+The reference provides some structure theory relating finding
+the consensus partition to an instance of the multiple assignment
+problem, which is known to be NP-hard, and suggests a simple
+heuristic based on successively matching an individual partition
+<code class="reqn">x_b</code> to the current approximation to the consensus partition,
+and compute the memberships of the next approximation as a
+weighted average of those of the current one and of <code class="reqn">x_b</code>
+after permuting its columns for the optimal matching of class
+ids.
+</p>
+<p>The following control parameters are available for this method.
+</p>
+
+<dl>
+<dt><code>k</code></dt>
+<dd>
+<p>an integer giving the number of classes to be
+used for the least squares consensus partition.  By default,
+the maximal number of classes in the ensemble is used.</p>
+</dd>
+<dt><code>order</code></dt>
+<dd>
+<p>a permutation of the integers from 1 to the
+size of the ensemble, specifying the order in which the
+partitions in the ensemble should be aggregated.  Defaults to
+using a random permutation (unlike the reference, which does
+not permute at all).</p>
+</dd>
+</dl>
+</dd>
+<dt><code>"HE"</code></dt>
+<dd>
+<p>a fixed-point algorithm for obtaining <em>hard</em>
+least squares Euclidean consensus partitions (i.e., for minimizing
+<code class="reqn">L</code> with Euclidean dissimilarity <code class="reqn">d</code> and <code class="reqn">p =	2</code> over
+all hard partitions with a given maximal number of classes.)
+</p>
+<p>Available control parameters are the same as for <code>"SE"</code>.
+</p>
+<p>This method can also be referred to as <code>"hard/euclidean"</code>.
+</p>
+</dd>
+<dt><code>"SM"</code></dt>
+<dd>
+<p>a fixed-point algorithm for obtaining <em>soft</em>
+median Manhattan consensus partitions (i.e., for minimizing
+<code class="reqn">L</code> with Manhattan dissimilarity <code class="reqn">d</code> and <code class="reqn">p =	1</code> over 
+all soft partitions with a given maximal number of classes).
+</p>
+<p>Available control parameters are the same as for <code>"SE"</code>.
+</p>
+<p>This method can also be referred to as <code>"soft/manhattan"</code>.
+</p>
+</dd>
+<dt><code>"HM"</code></dt>
+<dd>
+<p>a fixed-point algorithm for obtaining <em>hard</em>
+median Manhattan consensus partitions (i.e., for minimizing
+<code class="reqn">L</code> with Manhattan dissimilarity <code class="reqn">d</code> and <code class="reqn">p =	1</code> over 
+all hard partitions with a given maximal number of classes).
+</p>
+<p>Available control parameters are the same as for <code>"SE"</code>.
+</p>
+<p>This method can also be referred to as <code>"hard/manhattan"</code>.
+</p>
+</dd>
+<dt><code>"GV3"</code></dt>
+<dd>
+<p>a <abbr><span class="acronym">SUMT</span></abbr> algorithm for the “third
+model” in Gordon and Vichi (2001) for minimizing <code class="reqn">L</code> with
+<code class="reqn">d</code> being co-membership dissimilarity and <code class="reqn">p = 2</code>.  (See
+<code>sumt</code> for more information on the <abbr><span class="acronym">SUMT</span></abbr>
+approach.)  This optimization problem is equivalent to finding the
+membership matrix <code class="reqn">m</code> for which the sum of the squared
+differences between <code class="reqn">C(m) = m m'</code> and the weighted average
+co-membership matrix <code class="reqn">\sum_b w_b C(m_b)</code> of the partitions is
+minimal.
+</p>
+<p>Available control parameters are <code>method</code>, <code>control</code>,
+<code>eps</code>, <code>q</code>, and <code>verbose</code>, which have the same
+roles as for <code>sumt</code>, and the following.
+</p>
+
+<dl>
+<dt><code>k</code></dt>
+<dd>
+<p>an integer giving the number of classes to be
+used for the least squares consensus partition.  By default,
+the maximal number of classes in the ensemble is used.</p>
+</dd>
+<dt><code>nruns</code></dt>
+<dd>
+<p>an integer giving the number of runs to be
+performed.  Defaults to 1.</p>
+</dd>
+<dt><code>start</code></dt>
+<dd>
+<p>a matrix with number of rows equal to the
+size of the cluster ensemble, and <code class="reqn">k</code> columns, to be used
+as a starting value, or a list of such matrices.  By default,
+a membership based on a rank <code class="reqn">k</code> approximation to the
+weighted average co-membership matrix is used.</p>
+</dd>
+</dl>
+<p>In the case of multiple runs, the first optimum found is returned.
+</p>
+</dd>
+<dt><code>"soft/symdiff"</code></dt>
+<dd>
+<p>a <abbr><span class="acronym">SUMT</span></abbr> approach for
+minimizing <code class="reqn">L = \sum w_b d(x_b, x)</code> over all soft partitions
+with a given maximal number of classes, where <code class="reqn">d</code> is the
+Manhattan dissimilarity of the co-membership matrices (coinciding
+with symdiff partition dissimilarity in the case of hard
+partitions).
+</p>
+<p>Available control parameters are the same as for <code>"GV3"</code>.
+</p>
+</dd>
+<dt><code>"hard/symdiff"</code></dt>
+<dd>
+<p>an exact solver for minimizing
+<code class="reqn">L = \sum w_b d(x_b, x)</code> over all hard partitions (possibly
+with a given maximal number of classes as specified by the control
+parameter <code>k</code>), where <code class="reqn">d</code> is symdiff partition
+dissimilarity (so that soft partitions in the ensemble are
+replaced by their closest hard partitions), or equivalently, Rand
+distance or pair-bonds (Boorman-Arabie <code class="reqn">D</code>) distance.  The
+consensus solution is found via mixed linear or quadratic
+programming.
+</p>
+</dd>
+</dl>
+<p>By default, method <code>"SE"</code> is used for ensembles of partitions.
+</p>
+<p>If all elements of the ensemble are hierarchies, the following
+built-in methods for computing consensus hierarchies are available.
+</p>
+
+<dl>
+<dt><code>"euclidean"</code></dt>
+<dd>
+<p>an algorithm for minimizing
+<code class="reqn">L(x) = \sum w_b d(x_b, x) ^ 2</code> over all dendrograms, where
+<code class="reqn">d</code> is Euclidean dissimilarity.  This is equivalent to finding
+the best least squares ultrametric approximation of the weighted
+average <code class="reqn">d = \sum w_b u_b</code> of the ultrametrics <code class="reqn">u_b</code> of
+the hierarchies <code class="reqn">x_b</code>, which is attempted by calling
+<code>ls_fit_ultrametric</code> on <code class="reqn">d</code> with appropriate
+control parameters.
+</p>
+<p>This method can also be referred to as <code>"cophenetic"</code>.
+</p>
+</dd>
+<dt><code>"manhattan"</code></dt>
+<dd>
+<p>a <abbr><span class="acronym">SUMT</span></abbr> for minimizing
+<code class="reqn">L = \sum w_b d(x_b, x)</code> over all dendrograms, where <code class="reqn">d</code>
+is Manhattan dissimilarity.
+</p>
+<p>Available control parameters are the same as for
+<code>"euclidean"</code>.
+</p>
+</dd>
+<dt><code>"majority"</code></dt>
+<dd>
+<p>a hierarchy obtained from an extension of
+the majority consensus tree of Margush and McMorris (1981), which
+minimizes <code class="reqn">L(x) = \sum w_b d(x_b, x)</code> over all dendrograms,
+where <code class="reqn">d</code> is the symmetric difference dissimilarity.  The
+unweighted <code class="reqn">p</code>-majority tree is the <code class="reqn">n</code>-tree (hierarchy in
+the strict sense) consisting of all subsets of objects contained
+in more than <code class="reqn">100 p</code> percent of the <code class="reqn">n</code>-trees <code class="reqn">T_b</code>
+induced by the dendrograms, where <code class="reqn">1/2 \le p &lt; 1</code> and
+<code class="reqn">p = 1/2</code> (default) corresponds to the standard majority tree.
+In the weighted case, it consists of all subsets <code class="reqn">A</code> for which
+<code class="reqn">\sum_{b: A \in T_b} w_b &gt; W p</code>, where <code class="reqn">W = \sum_b w_b</code>.
+We also allow for <code class="reqn">p = 1</code>, which gives the <em>strict
+consensus tree</em> consisting of all subsets contained in each of
+the <code class="reqn">n</code>-trees.  The majority dendrogram returned is a
+representation of the majority tree where all splits have height
+one.
+</p>
+<p>The fraction <code class="reqn">p</code> can be specified via the control parameter
+<code>p</code>.
+</p>
+</dd>
+</dl>
+<p>By default, method <code>"euclidean"</code> is used for ensembles of
+hierarchies.
+</p>
+<p>If a user-defined consensus method is to be employed, it must be a
+function taking the cluster ensemble, the case weights, and a list of
+control parameters as its arguments, with formals named <code>x</code>,
+<code>weights</code>, and <code>control</code>, respectively.
+</p>
+<p>Most built-in methods use heuristics for solving hard optimization
+problems, and cannot be guaranteed to find a global minimum.  Standard
+practice would recommend to use the best solution found in
+“sufficiently many” replications of the methods.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The consensus partition or hierarchy.
+</p>
+
+
+<h3>References</h3>
+
+<p>E. Dimitriadou, A. Weingessel and K. Hornik (2002).
+A combination scheme for fuzzy clustering.
+<em>International Journal of Pattern Recognition and Artificial
+Intelligence</em>, <b>16</b>, 901–912. <br><a href="https://doi.org/10.1142/S0218001402002052">doi:10.1142/S0218001402002052</a>.
+</p>
+<p>A. D. Gordon and M. Vichi (2001).
+Fuzzy partition models for fitting a set of partitions.
+<em>Psychometrika</em>, <b>66</b>, 229–248.
+<a href="https://doi.org/10.1007/BF02294837">doi:10.1007/BF02294837</a>.
+</p>
+<p>A. D. Gordon (1999).
+<em>Classification</em> (2nd edition).
+Boca Raton, FL: Chapman &amp; Hall/CRC.
+</p>
+<p>T. Margush and F. R. McMorris (1981).
+Consensus <code class="reqn">n</code>-trees.
+<em>Bulletin of Mathematical Biology</em>, <b>43</b>, 239–244.
+<a href="https://doi.org/10.1007/BF02459446">doi:10.1007/BF02459446</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cl_medoid</code>,
+<code>consensus</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Consensus partition for the Rosenberg-Kim kinship terms partition
+## data based on co-membership dissimilarities.
+data("Kinship82")
+m1 &lt;- cl_consensus(Kinship82, method = "GV3",
+                   control = list(k = 3, verbose = TRUE))
+## (Note that one should really use several replicates of this.)
+## Value for criterion function to be minimized:
+sum(cl_dissimilarity(Kinship82, m1, "comem") ^ 2)
+## Compare to the consensus solution given in Gordon &amp; Vichi (2001).
+data("Kinship82_Consensus")
+m2 &lt;- Kinship82_Consensus[["JMF"]]
+sum(cl_dissimilarity(Kinship82, m2, "comem") ^ 2)
+## Seems we get a better solution ...
+## How dissimilar are these solutions?
+cl_dissimilarity(m1, m2, "comem")
+## How "fuzzy" are they?
+cl_fuzziness(cl_ensemble(m1, m2))
+## Do the "nearest" hard partitions fully agree?
+cl_dissimilarity(as.cl_hard_partition(m1),
+                 as.cl_hard_partition(m2))
+
+## Consensus partition for the Gordon and Vichi (2001) macroeconomic
+## partition data based on Euclidean dissimilarities.
+data("GVME")
+set.seed(1)
+## First, using k = 2 classes.
+m1 &lt;- cl_consensus(GVME, method = "GV1",
+                   control = list(k = 2, verbose = TRUE))
+## (Note that one should really use several replicates of this.)
+## Value of criterion function to be minimized:
+sum(cl_dissimilarity(GVME, m1, "GV1") ^ 2)
+## Compare to the consensus solution given in Gordon &amp; Vichi (2001).
+data("GVME_Consensus")
+m2 &lt;- GVME_Consensus[["MF1/2"]]
+sum(cl_dissimilarity(GVME, m2, "GV1") ^ 2)
+## Seems we get a slightly  better solution ...
+## But note that
+cl_dissimilarity(m1, m2, "GV1")
+## and that the maximal deviation of the memberships is
+max(abs(cl_membership(m1) - cl_membership(m2)))
+## so the differences seem to be due to rounding.
+## Do the "nearest" hard partitions fully agree?
+table(cl_class_ids(m1), cl_class_ids(m2))
+
+## And now for k = 3 classes.
+m1 &lt;- cl_consensus(GVME, method = "GV1",
+                   control = list(k = 3, verbose = TRUE))
+sum(cl_dissimilarity(GVME, m1, "GV1") ^ 2)
+## Compare to the consensus solution given in Gordon &amp; Vichi (2001).
+m2 &lt;- GVME_Consensus[["MF1/3"]]
+sum(cl_dissimilarity(GVME, m2, "GV1") ^ 2)
+## This time we look much better ...
+## How dissimilar are these solutions?
+cl_dissimilarity(m1, m2, "GV1")
+## Do the "nearest" hard partitions fully agree?
+table(cl_class_ids(m1), cl_class_ids(m2))
+</code></pre>
+
+
+</div>

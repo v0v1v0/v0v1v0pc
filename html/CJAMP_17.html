@@ -1,0 +1,128 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>lrt</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute likelihood ratio tests.</h2>
+
+<h3>Description</h3>
+
+<p>Functions to compute likelihood ratio tests of two nested copula models
+with the same marginal models, and of marginal parameters in the same copula
+model but with different nested marginal models where one or more parameters
+are set to 0 (Yilmaz &amp; Lawless, 2011).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">lrt_copula(minlogl_null = NULL, minlogl_altern = NULL)
+
+lrt_param(minlogl_null = NULL, minlogl_altern = NULL, df = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>minlogl_null</code></td>
+<td>
+<p>Minus log-likelihood of the null model, which is nested
+within the larger alternative model <code>minlogl_altern</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minlogl_altern</code></td>
+<td>
+<p>Minus log-likelihood of the alternative model, which
+contains the null model <code>minlogl_null</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>Degrees of freedom in the likelihood ratio test of marginal
+parameters in the same copula model, i.e. the number of
+parameters that are in the alternative model but that are not
+contained in the smaller nested null model.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>References:
+</p>
+<p>Yilmaz YE, Lawless JF (2011). Likelihood ratio procedures and tests of fit in parametric and semiparametric copula models with censored data. Lifetime Data Analysis, 17(3): 386-408.
+</p>
+
+
+<h3>Value</h3>
+
+<p>List including the <code class="reqn">\chi^2</code> value and p-value of the likelihood
+ratio test.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Example 1: Test whether 2-parameter copula model has a better
+#            model fit compared to Clayton copula (no).
+set.seed(10)
+genodata &lt;- generate_genodata(n_SNV = 20, n_ind = 100)
+phenodata &lt;- generate_phenodata_2_copula(genodata = genodata$SNV1,
+                                         MAF_cutoff = 1, prop_causal = 1,
+                                         tau = 0.2, b1 = 0.3, b2 = 0.3)
+predictors &lt;- data.frame(X1 = phenodata$X1, X2 = phenodata$X2,
+                         SNV = genodata$SNV1)
+estimates_c &lt;- get_estimates_naive(Y1 = phenodata$Y1, Y2 = phenodata$Y2,
+                                   predictors_Y1 = predictors,
+                                   predictors_Y2 = predictors,
+                                   copula_param = "phi")
+minusloglik_Clayton &lt;- minusloglik(Y1 = phenodata$Y1, Y2 = phenodata$Y2,
+                                   predictors_Y1 = predictors,
+                                   predictors_Y2 = predictors,
+                                   parameters = estimates_c, copula = "Clayton")
+estimates_2p &lt;- get_estimates_naive(Y1 = phenodata$Y1, Y2 = phenodata$Y2,
+                                    predictors_Y1 = predictors,
+                                    predictors_Y2 = predictors,
+                                    copula_param = "both")
+minusloglik_2param &lt;- minusloglik(Y1 = phenodata$Y1, Y2 = phenodata$Y2,
+                                  predictors_Y1 = predictors,
+                                  predictors_Y2 = predictors,
+                                  parameters = estimates_2p, copula = "2param")
+lrt_copula(minusloglik_Clayton, minusloglik_2param)
+
+# Example 2: Test marginal parameters (alternative model has better fit).
+set.seed(10)
+genodata &lt;- generate_genodata(n_SNV = 20, n_ind = 100)
+phenodata &lt;- generate_phenodata_2_copula(genodata = genodata$SNV1,
+                                         MAF_cutoff = 1, prop_causal = 1,
+                                         tau = 0.2, b1 = 2, b2 = 2)
+predictors_1 &lt;- data.frame(X1 = phenodata$X1, X2 = phenodata$X2)
+estimates_1 &lt;- get_estimates_naive(Y1 = phenodata$Y1, Y2 = phenodata$Y2,
+                                   predictors_Y1 = predictors_1,
+                                   predictors_Y2 = predictors_1,
+                                   copula_param = "phi")
+minusloglik_1 &lt;- minusloglik(Y1 = phenodata$Y1, Y2 = phenodata$Y2,
+                             predictors_Y1 = predictors_1,
+                             predictors_Y2 = predictors_1,
+                             parameters = estimates_1, copula = "Clayton")
+predictors_2 &lt;- data.frame(X1 = phenodata$X1, X2 = phenodata$X2,
+                           SNV = genodata$SNV1)
+estimates_2 &lt;- get_estimates_naive(Y1 = phenodata$Y1, Y2 = phenodata$Y2,
+                                   predictors_Y1 = predictors_2,
+                                   predictors_Y2 = predictors_2,
+                                   copula_param = "phi")
+minusloglik_2 &lt;- minusloglik(Y1 = phenodata$Y1, Y2 = phenodata$Y2,
+                             predictors_Y1 = predictors_2,
+                             predictors_Y2 = predictors_2,
+                             parameters = estimates_2, copula = "Clayton")
+lrt_param(minusloglik_1, minusloglik_2, df=2)
+
+</code></pre>
+
+
+</div>

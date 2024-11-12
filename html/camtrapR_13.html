@@ -1,0 +1,213 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>checkSpeciesIdentification</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Consistency check on species image identification</h2>
+
+<h3>Description</h3>
+
+<p>This function serves 2 purposes: 1) it assesses possible misidentification
+of species and 2) compares double observer species identification (only if
+metadata tagging was used for species identification).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">checkSpeciesIdentification(
+  inDir,
+  IDfrom,
+  hasCameraFolders,
+  metadataSpeciesTag,
+  metadataSpeciesTagToCompare,
+  metadataHierarchyDelimitor = "|",
+  maxDeltaTime,
+  excludeSpecies,
+  stationsToCheck,
+  writecsv = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>inDir</code></td>
+<td>
+<p>character. Directory containing identified camera trap images
+sorted into station subdirectories (e.g. inDir/StationA/)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>IDfrom</code></td>
+<td>
+<p>character. Read species ID from image metadata ("metadata") of
+from species directory names ("directory")?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hasCameraFolders</code></td>
+<td>
+<p>logical. Do the station directories in <code>inDir</code>
+have camera subdirectories (e.g. "inDir/StationA/Camera1" or
+"inDir/StationA/Camera1/Species1")?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metadataSpeciesTag</code></td>
+<td>
+<p>character. The species ID tag name in image
+metadata (if IDfrom = "metadata").</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metadataSpeciesTagToCompare</code></td>
+<td>
+<p>character. A second species ID tag name
+in image metadata (if IDfrom = "metadata"). For comparing double observer
+species identification.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metadataHierarchyDelimitor</code></td>
+<td>
+<p>character. The character delimiting
+hierarchy levels in image metadata tags in field "HierarchicalSubject".
+Either "|" or ":"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxDeltaTime</code></td>
+<td>
+<p>numeric. Maximum time interval between images to be
+returned (in seconds)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>excludeSpecies</code></td>
+<td>
+<p>character. vector of species to exclude from checks</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stationsToCheck</code></td>
+<td>
+<p>character. vector of stations to be checked
+(optionally)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>writecsv</code></td>
+<td>
+<p>logical. Should the resulting data.frame be saved as a .csv?</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Within each station, it assesses whether there are images of a species taken
+within a given time interval of another species. Often, it is unlikely that
+different species are encountered within a very short time intervals at the
+same location. This type of misidentification can arise easily if some
+images belonging to a sequence of images were accidentally moved into
+different species directories or tagged incorrectly.
+</p>
+<p>Double observer identification may be desirable to increase reliability of
+species identification. The function returns conflicts in species
+identification between 2 observers. These conflicts can then be corrected.
+</p>
+<p>Images may accidentally be misidentified by assigning wrong species tags or
+by moving them into wrong species directories. Imagine your cameras take
+sequences of images each time they are triggered and one image of the
+sequence is misidentified. The time difference between these images (that
+have different species assigned to them) will be very small, usually a few
+seconds. This function will return all these images for you to check if they
+were identified correctly.
+</p>
+<p>If multiple observers identify images independently using metadata tagging,
+their identifications can be compared by setting
+<code>metadataSpeciesTagToCompare</code>. Conflicting or missing identifications
+will be reported. This feature is only available if images were identified
+by metadata tagging.
+</p>
+<p>Species like "blank" or "team" can be ignored using <code>excludeSpecies</code>.
+If only specific stations are to be checked, <code>stationsToCheck</code> can be
+set.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>list</code> containing 2 data frames. The first contains a data
+frame with images file names, directories, time stamp and species ID that
+were taken within <code>maxDeltaTime</code> seconds of another species image at a
+particular station. The second data frame contains images with conflicting
+species IDs (if <code>IDfrom = "metadata"</code> and
+<code>metadataSpeciesTagToCompare</code> is defined)
+</p>
+
+
+<h3>Note</h3>
+
+<p>The function will not be able to find "isolated" images, i.e. images
+that were misidentified, but were not part of a sequence of images.
+Likewise, if all images of a sequence were misidentified, they cannot be
+found either. From version 0.99.0, the function can also handle images
+identied with metadata tags.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Juergen Niedballa
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+
+wd_images_ID &lt;- system.file("pictures/sample_images_species_dir", package = "camtrapR")
+
+if (Sys.which("exiftool") != ""){        # only run this example if ExifTool is available
+check.folders &lt;- checkSpeciesIdentification(inDir             = wd_images_ID,
+                                            IDfrom            = "directory",
+                                            hasCameraFolders  = FALSE,
+                                            maxDeltaTime      = 120,
+                                            writecsv          = FALSE)
+                                     
+check.folders   # In the example, 2 different species were photographed within 2 minutes. 
+}
+
+
+## Not run: 
+# now exclude one of these 2 species 
+check.folders2 &lt;- checkSpeciesIdentification(inDir             = wd_images_ID,
+                                             IDfrom            = "directory",
+                                             hasCameraFolders  = FALSE,
+                                             maxDeltaTime      = 120,
+                                             excludeSpecies    = "EGY",
+                                             writecsv          = FALSE)           
+  
+check.folders2   # the data frame is empty
+
+# now we check only one station
+check.folders3 &lt;- checkSpeciesIdentification(inDir             = wd_images_ID,
+                                             IDfrom            = "directory",
+                                             hasCameraFolders  = FALSE,
+                                             maxDeltaTime      = 120,
+                                             stationsToCheck   = "StationB",
+                                             writecsv          = FALSE)
+check.folders3   # the data frame is empty
+
+## End(Not run)
+
+
+</code></pre>
+
+
+</div>

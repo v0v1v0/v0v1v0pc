@@ -1,0 +1,263 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>flm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fast (Weighted) Linear Model Fitting
+</h2>
+
+<h3>Description</h3>
+
+<p><code>flm</code> is a fast linear model command that (by default) only returns a coefficient matrix. 6 different efficient fitting methods are implemented: 4 using base R linear algebra, and 2 utilizing the <em>RcppArmadillo</em> and <em>RcppEigen</em> packages. The function itself only has an overhead of 5-10 microseconds, and is thus well suited as a bootstrap workhorse.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">flm(...)  # Internal method dispatch: default if is.atomic(..1)
+
+## Default S3 method:
+flm(y, X, w = NULL, add.icpt = FALSE, return.raw = FALSE,
+    method = c("lm", "solve", "qr", "arma", "chol", "eigen"),
+    eigen.method = 3L, ...)
+
+## S3 method for class 'formula'
+flm(formula, data = NULL, weights = NULL, add.icpt = TRUE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>a response vector or matrix. Multiple dependent variables are only supported by methods "lm", "solve", "qr" and "chol".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>a matrix of regressors.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>a weight vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>add.icpt</code></td>
+<td>
+<p>logical. <code>TRUE</code> adds an intercept column named '(Intercept)' to <code>X</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>a <code>lm</code> formula, without factors, interaction terms or other operators (<code>:</code>, <code>*</code>, <code>^</code>, <code>-</code>, etc.), may include regular transformations e.g. <code>log(var)</code>, <code>cbind(y1, y2)</code>, <code>magrittr::multiply_by(var1, var2)</code>, <code>magrittr::raise_to_power(var, 2)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a named list or data frame.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>a weights vector or expression that results in a vector when evaluated in the <code>data</code> environment.</p>
+</td>
+</tr>
+</table>
+<table>
+<tr style="vertical-align: top;">
+<td><code>return.raw</code></td>
+<td>
+<p>logical. <code>TRUE</code> returns the original output from the different methods. For 'lm', 'arma' and 'eigen', this includes additional statistics such as residuals, fitted values or standard errors. The other methods just return coefficients but in different formats. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>an integer or character string specifying the method of computation:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<em> Int. </em>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> String </em>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> Description </em>  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 1 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "lm"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> uses <code>.lm.fit</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 2 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "solve" </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <code>solve(crossprod(X), crossprod(X, y))</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 3 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "qr"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <code>qr.coef(qr(X), y)</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 4 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "arma"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> uses <code>RcppArmadillo::fastLmPure</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 5 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "chol"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <code>chol2inv(chol(crossprod(X))) %*% crossprod(X, y)</code> (quite fast, requires <code>crossprod(X)</code> to be positive definite i.e. problematic if multicollinearity).  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 6 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "eigen"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> uses <code>RcppEigen::fastLmPure</code> (very fast but, depending on the method, also unstable if multicollinearity). </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+  </td>
+</tr>
+</table>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eigen.method</code></td>
+<td>
+<p>integer. Select the method of computation used by <code>RcppEigen::fastLmPure</code>:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<em> Int. </em> </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> Description </em>  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 0 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> column-pivoted QR decomposition. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 1 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> unpivoted QR decomposition. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 2 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> LLT Cholesky. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 3 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> LDLT Cholesky. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 4 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> Jacobi singular value decomposition (SVD).  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 5 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> method based on the eigenvalue-eigenvector decomposition of X'X. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+  </td>
+</tr>
+</table>
+<p>See <code>vignette("RcppEigen-Introduction", package = "RcppEigen")</code> for details on these methods and benchmark results. Run <code>source(system.file("examples", "lmBenchmark.R", package = "RcppEigen"))</code> to re-run the benchmark on your machine.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>further arguments passed to other methods. For the formula method further arguments passed to the default method. Additional arguments can also be passed to the default method e.g. <code>tol = value</code> to set a numerical tolerance for the solution - applicable with methods "lm", "solve" and "qr" (default is <code>1e-7</code>), or <code>LAPACK = TRUE</code> with method "qr" to use LAPACK routines to for the qr decomposition (typically faster than the LINPACK default).</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>If <code>return.raw = FALSE</code>, a matrix of coefficients with the rows corresponding to the columns of <code>X</code>, otherwise the raw results from the various methods are returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Method "qr" supports sparse matrices, so for an <code>X</code> matrix with many dummy variables consider method "qr" passing <code>as(X, "dgCMatrix")</code> instead of just <code>X</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fhdwithin/HDW</code>, <code>fFtest</code>, Data Transformations, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Simple usage
+coef &lt;- flm(mpg ~ hp + carb, mtcars, w = wt)
+
+# Same thing in programming usage
+flm(mtcars$mpg, qM(mtcars[c("hp","carb")]), mtcars$wt, add.icpt = TRUE)
+
+# Check this is correct
+lmcoef &lt;- coef(lm(mpg ~ hp + carb, weights = wt, mtcars))
+all.equal(drop(coef), lmcoef)
+
+# Multi-dependent variable (only some methods)
+flm(cbind(mpg, qsec) ~ hp + carb, mtcars, w = wt)
+
+# Returning raw results from solver: different for different methods
+flm(mpg ~ hp + carb, mtcars, return.raw = TRUE)
+flm(mpg ~ hp + carb, mtcars, method = "qr", return.raw = TRUE)
+ 
+# Test that all methods give the same result
+all_obj_equal(lapply(1:6, function(i)
+  flm(mpg ~ hp + carb, mtcars, w = wt, method = i)))
+
+</code></pre>
+
+
+</div>

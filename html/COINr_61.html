@@ -1,0 +1,175 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>get_str_weak</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate strengths and weaknesses for a specified unit</h2>
+
+<h3>Description</h3>
+
+<p>Generates a table of strengths and weaknesses for a selected unit, based on ranks, or ranks within
+a specified grouping variable.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">get_str_weak(
+  coin,
+  dset,
+  usel = NULL,
+  topN = 5,
+  bottomN = 5,
+  withcodes = TRUE,
+  use_group = NULL,
+  unq_discard = NULL,
+  min_discard = TRUE,
+  report_level = NULL,
+  with_units = TRUE,
+  adjust_direction = NULL,
+  sig_figs = 3
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>coin</code></td>
+<td>
+<p>A coin</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dset</code></td>
+<td>
+<p>The data set to extract indicator data from, to use as strengths and weaknesses.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>usel</code></td>
+<td>
+<p>A selected unit code</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>topN</code></td>
+<td>
+<p>The top N indicators to report</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bottomN</code></td>
+<td>
+<p>The bottom N indicators to report</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>withcodes</code></td>
+<td>
+<p>If <code>TRUE</code> (default), also includes a column of indicator codes. Setting to <code>FALSE</code> may be more useful
+in generating reports, where codes are not helpful.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use_group</code></td>
+<td>
+<p>An optional grouping variable to use for reporting
+in-group ranks. Specifying this will report the ranks of the selected unit within the group of <code>use_group</code>
+to which it belongs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>unq_discard</code></td>
+<td>
+<p>Optional parameter for handling discrete indicators. Some indicators may be binary
+variables of the type "yes = 1", "no = 0". These may be picked up as strengths or weaknesses, when they
+may not be wanted to be highlighted, since e.g. maybe half of units will have a zero or a one. This argument
+takes a number between 0 and 1 specifying a unique value threshold for ignoring indicators as strengths. E.g.
+setting <code>prc_unq_discard = 0.2</code> will ensure that only indicators with at least 20% unique values will be
+highlighted as strengths or weaknesses. Set to <code>NULL</code> to disable (default).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min_discard</code></td>
+<td>
+<p>If <code>TRUE</code> (default), discards any strengths which correspond to the minimum rank for the given
+indicator. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>report_level</code></td>
+<td>
+<p>Aggregation level to report parent codes from. For example, setting
+<code>report_level = 2</code> (default) will add a column to the strengths and weaknesses tables which reports the aggregation
+group from level 2, to which each reported indicator belongs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>with_units</code></td>
+<td>
+<p>If <code>TRUE</code> (default), includes indicator units in output tables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>adjust_direction</code></td>
+<td>
+<p>If <code>TRUE</code>, will adjust directions of indicators according to the "Direction" column
+of <code>IndMeta</code>. By default, this is <code>TRUE</code> <em>if</em> <code>dset = "Raw"</code>, and <code>FALSE</code> otherwise.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sig_figs</code></td>
+<td>
+<p>Number of significant figures to round values to. If <code>NULL</code> returns values as they are.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This currently only works at the indicator level. Indicators with <code>NA</code> values for the selected unit are ignored.
+Strengths and weaknesses mean the <code>topN</code>-ranked indicators for the selected unit. Effectively, this takes the rank that the
+selected unit has in each indicator, sorts the ranks, and takes the top N highest and lowest.
+</p>
+<p>This function must be used with a little care: indicators should be adjusted for their directions before use,
+otherwise a weakness might be counted as a strength, and vice versa. Use the <code>adjust_direction</code> parameter
+to help here.
+</p>
+<p>A further useful parameter is <code>unq_discard</code>, which also filters out any indicators with a low number of
+unique values, based on a specified threshold. Also <code>min_discard</code> which filters out any indicators which
+have the minimum rank.
+</p>
+<p>The best way to use this function is to play around with the settings a little bit. The reason being that
+in practice, indicators have very different distributions and these can sometimes lead to unexpected
+outcomes. An example is if you have an indicator with 50% zero values, and the rest non-zero (but unique).
+Using the sport ranking system, all units with zero values will receive a rank which is equal to the number
+of units divided by two. This then might be counted as a "strength" for some units with overall low scores.
+But a zero value can hardly be called a strength. This is where the <code>min_discard</code> function can help out.
+</p>
+<p>Problems such as these mainly arise when e.g. generating a large number of country profiles.
+</p>
+<p>This function replaces the now-defunct <code>getStrengthNWeak()</code> from COINr &lt; v1.0.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list containing a data frame <code>.$Strengths</code>, and a data frame <code>.$Weaknesses</code>.
+Each data frame has columns with indicator code, name, rank and value (for the selected unit).
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># build example coin
+coin &lt;- build_example_coin(up_to = "new_coin", quietly = TRUE)
+
+# get strengths and weaknesses for ESP
+get_str_weak(coin, dset = "Raw", usel = "ESP")
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,244 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cAIC</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Conditional Akaike Information for 'lme4' and 'lme'</h2>
+
+<h3>Description</h3>
+
+<p>Estimates the conditional Akaike information for models that were fitted in
+'lme4' or with 'lme'. Currently all distributions are supported for 'lme4' models, 
+based on parametric conditional bootstrap. 
+For the Gaussian distribution (from a <code>lmer</code> or <code>lme</code>
+call) and the Poisson distribution analytical estimators for the degrees of
+freedom are available, based on Stein type formulas. Also the conditional
+Akaike information for generalized additive models based on a fit via the
+'gamm4' or <code>gamm</code> calls from the 'mgcv' package can be estimated.
+A hands-on tutorial for the package can be found at <a href="https://arxiv.org/abs/1803.05664">https://arxiv.org/abs/1803.05664</a>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cAIC(object, method = NULL, B = NULL, sigma.penalty = 1, analytic = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>An object of class merMod either fitted by
+<code>lmer</code> or <code>glmer</code> of the lme4-package
+or an <code>lme</code> object fro the nlme-package.
+Also objects returned form a <code>gamm4</code> call are possible.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Either <code>"conditionalBootstrap"</code> for the estimation of the
+degrees of freedom with the help of conditional Bootstrap or
+<code>"steinian"</code> for analytical representations based on Stein type
+formulas. The default is <code>NULL</code>. In this case the method is choosen
+automatically based on the <code>family</code> argument of the
+<code>(g)lmer</code>-object. For <code>"gaussian"</code> and <code>"poisson"</code> this is
+the Steinian type estimator, for all others it is the conditional Bootstrap.
+For models from the nlme package, only <code>lme</code> objects, i.e.,
+with gaussian response are supported.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p>Number of Bootstrap replications. The default is <code>NULL</code>. Then
+B is the minimum of 100 and the length of the response vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sigma.penalty</code></td>
+<td>
+<p>An integer value for additional penalization in the analytic 
+Gaussian calculation to account for estimated variance components in the residual (co-)variance. 
+Per default <code>sigma.penalty</code> is equal <code>1</code>, corresponding to a diagonal error 
+covariance matrix with only one estimated parameter (sigma). If 
+all variance components are known, the value should be set to <code>0</code>. 
+For individual weights (individual variances), this value should be set
+to the number of estimated weights. For <code>lme</code> objects
+the penalty term is automatically set by extracting the number of estimated
+variance components.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>analytic</code></td>
+<td>
+<p>FALSE if the numeric hessian of the (restricted) marginal
+log-likelihood from the lmer optimization procedure should be used.
+Otherwise (default) TRUE, i.e.  use a analytical version that has to be
+computed. Only used for the analytical version of Gaussian responses.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For <code>method = "steinian"</code> and an object of class <code>merMod</code> computed
+the analytic representation of the corrected conditional AIC in Greven and
+Kneib (2010). This is based on a the Stein formula and uses implicit
+differentiation to calculate the derivative of the random effects covariance
+parameters w.r.t.  the data. The code is adapted form the one provided in
+the supplementary material of the paper by Greven and Kneib (2010). The
+supplied <code>merMod</code> model needs to be checked if a random
+effects covariance parameter has an optimum on the boundary, i.e. is zero.
+And if so the model needs to be refitted with the according random effect
+terms omitted. This is also done by the function and the refitted model is
+also returned. Notice that the <code>boundary.tol</code> argument in
+<code>lmerControl</code> has an impact on whether a parameter is
+estimated to lie on the boundary of the parameter space. For estimated error
+variance the degrees of freedom are increased by one per default. 
+<code>sigma.penalty</code> can be set manually for <code>merMod</code> models 
+if no (0) or more than one variance component (&gt;1) has been estimated. For 
+<code>lme</code> objects this value is automatically defined.
+</p>
+<p>If the object is of class <code>merMod</code> and has <code>family =
+"poisson"</code> there is also an analytic representation of the conditional AIC
+based on the Chen-Stein formula, see for instance Saefken et. al (2014). For
+the calculation the model needs to be refitted for each observed response
+variable minus the number of response variables that are exactly zero. The
+calculation therefore takes longer then for models with Gaussian responses.
+Due to the speed and stability of 'lme4' this is still possible, also for
+larger datasets.
+</p>
+<p>If the model has Bernoulli distributed responses and <code>method =
+"steinian"</code>, <code>cAIC</code> calculates the degrees of freedom based on a
+proposed estimator by Efron (2004). This estimator is asymptotically
+unbiased if the estimated conditional mean is consistent. The calculation
+needs as many model refits as there are data points.
+</p>
+<p>Another more general method for the estimation of the degrees of freedom is
+the conditional bootstrap. This is proposed in Efron (2004). For the B
+boostrap samples the degrees of freedom are estimated by </p>
+<p style="text-align: center;"><code class="reqn">\frac{1}{B -
+1}\sum_{i=1}^n\theta_i(z_i)(z_i-\bar{z}),</code>
+</p>
+<p> where <code class="reqn">\theta_i(z_i)</code> is the
+i-th element of the estimated natural parameter.
+</p>
+<p>For models with no random effects, i.e. (g)lms, the <code>cAIC</code>
+function returns the AIC of the model with scale parameter estimated by REML.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>cAIC</code> object, which is a list consisting of: 
+1. the conditional log likelihood, i.e. the log likelihood with the random 
+effects as penalized parameters; 2. the estimated degrees of freedom; 
+3. a list element that is either <code>NULL</code>
+if no new model was fitted otherwise the new (reduced) model, see details;
+4. a boolean variable indicating whether a new model was fitted or not; 5.
+the estimator of the conditional Akaike information, i.e. minus twice the
+log likelihood plus twice the degrees of freedom.
+</p>
+
+
+<h3>WARNINGS </h3>
+
+<p>Currently the cAIC can only be estimated for
+<code>family</code> equal to <code>"gaussian"</code>, <code>"poisson"</code> and
+<code>"binomial"</code>. Neither negative binomial nor gamma distributed responses
+are available. 
+Weighted Gaussian models are not yet implemented.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Benjamin Saefken, David Ruegamer
+</p>
+
+
+<h3>References</h3>
+
+<p>Saefken, B., Ruegamer, D., Kneib, T. and Greven, S. (2021):
+Conditional Model Selection in Mixed-Effects Models with cAIC4.
+&lt;doi:10.18637/jss.v099.i08&gt;
+</p>
+<p>Saefken, B., Kneib T., van Waveren C.-S. and Greven, S. (2014) A
+unifying approach to the estimation of the conditional Akaike information in
+generalized linear mixed models. Electronic Journal Statistics Vol. 8,
+201-225.
+</p>
+<p>Greven, S. and Kneib T. (2010) On the behaviour of marginal and conditional
+AIC in linear mixed models. Biometrika 97(4), 773-789.
+</p>
+<p>Efron , B. (2004) The estimation of prediction error. J. Amer. Statist. Ass.
+99(467), 619-632.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>lme4-package</code>, <code>lmer</code>,
+<code>glmer</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+### Three application examples
+b &lt;- lmer(Reaction ~ Days + (Days | Subject), sleepstudy)
+cAIC(b)
+
+b2 &lt;- lmer(Reaction ~ (1 | Days) + (1 | Subject), sleepstudy)
+cAIC(b2)
+
+b2ML &lt;- lmer(Reaction ~ (1 + Days | Subject), sleepstudy, REML = FALSE)
+cAIC(b2ML)
+
+### Demonstration of boundary case
+## Not run: 
+set.seed(2017-1-1)
+n &lt;- 50
+beta &lt;- 2
+x &lt;- rnorm(n)
+eta &lt;- x*beta
+id &lt;- gl(5,10)
+epsvar &lt;- 1
+data &lt;- data.frame(x = x, id = id)
+y_wo_bi &lt;- eta + rnorm(n, 0, sd = epsvar) 
+
+# use a very small RE variance
+ranvar &lt;- 0.05
+nrExperiments &lt;- 100
+
+sim &lt;- sapply(1:nrExperiments, function(j){
+
+b_i &lt;- scale(rnorm(5, 0, ranvar), scale = FALSE)
+y &lt;- y_wo_bi + model.matrix(~ -1 + id) %*% b_i
+data$y &lt;- y
+
+mixedmod &lt;- lmer(y ~ x + (1 | id), data = data)
+linmod &lt;- lm(y ~ x, data = data)
+
+c(cAIC(mixedmod)$caic, cAIC(linmod)$caic)
+})
+
+rownames(sim) &lt;- c("mixed model", "linear model")
+
+boxplot(t(sim))
+
+
+
+## End(Not run)
+
+
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,117 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>dagp_plot</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Plot posterior distribution from dataframe of posterior draws.</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#stable"><img src="../help/figures/lifecycle-stable.svg" alt="[Stable]"></a>
+</p>
+<p>Plot the posterior distribution of all latent parameters using a dataframe of posterior draws from a <code>causact_graph</code> model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">dagp_plot(drawsDF, densityPlot = FALSE, abbrevLabels = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>drawsDF</code></td>
+<td>
+<p>the dataframe output of <code>dag_numpyro(mcmc=TRUE)</code> where each column is a parameter and each row a single draw from a representative sample.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>densityPlot</code></td>
+<td>
+<p>If <code>TRUE</code>, each parameter gets its own density plot.  If <code>FALSE</code> (recommended usage), parameters are grouped into facets based on whether they share the same prior or not.  10 and 90 percent credible intervals are displayed for the posterior distributions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>abbrevLabels</code></td>
+<td>
+<p>If <code>TRUE</code>, long labels on the plot are abbreviated to 10 characters.  If <code>FALSE</code> the entire label is used.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a credible interval plot of all latent posterior distribution parameters.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># A simple example
+posteriorDF = data.frame(x = rnorm(100),
+y = rexp(100),
+z = runif(100))
+posteriorDF %&gt;%
+dagp_plot(densityPlot = TRUE)
+
+# More complicated example requiring 'numpyro'
+## Not run: 
+# Create a 2 node graph
+graph = dag_create() %&gt;%
+  dag_node("Get Card","y",
+         rhs = bernoulli(theta),
+         data = carModelDF$getCard) %&gt;%
+  dag_node(descr = "Card Probability by Car",label = "theta",
+           rhs = beta(2,2),
+           child = "y")
+graph %&gt;% dag_render()
+
+# below requires Tensorflow installation
+drawsDF = graph %&gt;% dag_numpyro(mcmc=TRUE)
+drawsDF %&gt;% dagp_plot()
+
+## End(Not run)
+
+# A multiple plate example
+library(dplyr)
+poolTimeGymDF = gymDF %&gt;%
+mutate(stretchType = ifelse(yogaStretch == 1,
+                            "Yoga Stretch",
+                            "Traditional")) %&gt;%
+group_by(gymID,stretchType,yogaStretch) %&gt;%
+  summarize(nTrialCustomers = sum(nTrialCustomers),
+            nSigned = sum(nSigned))
+graph = dag_create() %&gt;%
+  dag_node("Cust Signed","k",
+           rhs = binomial(n,p),
+           data = poolTimeGymDF$nSigned) %&gt;%
+  dag_node("Probability of Signing","p",
+           rhs = beta(2,2),
+           child = "k") %&gt;%
+  dag_node("Trial Size","n",
+           data = poolTimeGymDF$nTrialCustomers,
+           child = "k") %&gt;%
+  dag_plate("Yoga Stretch","x",
+            nodeLabels = c("p"),
+            data = poolTimeGymDF$stretchType,
+            addDataNode = TRUE) %&gt;%
+  dag_plate("Observation","i",
+            nodeLabels = c("x","k","n")) %&gt;%
+  dag_plate("Gym","j",
+            nodeLabels = "p",
+            data = poolTimeGymDF$gymID,
+            addDataNode = TRUE)
+graph %&gt;% dag_render()
+## Not run: 
+# below requires Tensorflow installation
+drawsDF = graph %&gt;% dag_numpyro(mcmc=TRUE)
+drawsDF %&gt;% dagp_plot()
+
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,456 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>itChoose</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Choose the Next Item in a CAT</h2>
+
+<h3>Description</h3>
+
+<p><code>itChoose</code> chooses the next item in a CAT based on the
+remaining items and a variety of item selection algorithms.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">itChoose( left_par, mod = c("brm", "grm"), 
+          numb = 1, n.select = 1,
+          cat_par = NULL, cat_resp = NULL, cat_theta = NULL,
+          select = c("UW-FI", "LW-FI", "PW-FI",
+                     "FP-KL", "VP-KL", "FI-KL", "VI-KL",
+                     "random"),
+          at = c("theta", "bounds"),
+          range = c(-6, 6), it.range = NULL,
+          delta = NULL, bounds = NULL,
+          ddist = dnorm, quad = 33, ... )
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>left_par</code></td>
+<td>
+<p><b>numeric:</b> a matrix of item parameters from which to choose
+the next item.  The rows must index the items, and the columns must
+designate the item parameters (in the appropriate order, see 
+<code>catIrt</code>).  The first column of <code>left_par</code> must
+indicate the <em>item numbers</em>, as <code>itChoose</code> returns not
+<em>just</em> the item parameters but also the bank number corresponding
+to those parameters.  See <b>Details</b> for more information.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mod</code></td>
+<td>
+<p><b>character:</b> a character string indicating the IRT model.  Current support
+is for the 3-parameter binary response model (<span class="option">"brm"</span>),
+and Samejima's graded response model (<span class="option">"grm"</span>).  The contents
+of <code>params</code> must match the designation of <code>mod</code>.  See
+<code>catIrt</code> or <code>simIrt</code> for more information.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>numb</code></td>
+<td>
+<p><b>numeric:</b> a scalar indicating the number of items to <em>return</em> to
+the user.  If <code>numb</code> is less than <code>n.select</code>, then
+<code>itChoose</code> will randomly select <code>numb</code> items from the top
+<code>n.select</code> items according to the item selection algorithm.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.select</code></td>
+<td>
+<p><b>numeric:</b> an <em>integer</em> indicating the number of items to randomly select 
+between at one time.  For instance, if <code>select</code> is <span class="option">"UW-FI"</span>, 
+<code>at</code> is <span class="option">"theta"</span>, <code>numb</code> is 3, and <code>n.select</code> is 8, 
+then <code>itChoose</code> will randomly select <em>3</em> items out of the top <em>8</em> 
+items that maximize Fisher information at <code>cat_theta</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cat_par</code></td>
+<td>
+<p><b>numeric:</b> either NULL or a matrix of item parameters that have already
+been administered in the CAT.  <code>cat_par</code> only needs to be specified
+if letting <code>select</code> equal either <span class="option">"LW-FI"</span>, <span class="option">"PW-FI"</span>,
+<span class="option">"VP-KL"</span> or <span class="option">"VI-KL"</span>.  The format of <code>cat_par</code> must be the
+same as the format of <code>left_par</code>. See <b>Details</b> for more information.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cat_resp</code></td>
+<td>
+<p><b>numeric:</b> either NULL or a vector of responses corresponding to the items 
+specified in <code>cat_par</code>.  <code>cat_par</code> only needs to be specified if
+letting <code>select</code> equal either <span class="option">"LW-FI"</span> or <span class="option">"PW-FI"</span>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cat_theta</code></td>
+<td>
+<p><b>numeric:</b> either NULL or a scalar corresponding to the current ability
+estimate.  <code>cat_theta</code> is not needed if selecting items at <span class="option">"bounds"</span>
+or using <span class="option">"LW-FI"</span> or <span class="option">"PW-FI"</span> as the item selection algorithm.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>select</code></td>
+<td>
+<p><b>character:</b> a character string indicating the desired item selection 
+method.  Items can be selected either through maximum Fisher information or
+Kullback-Leibler divergence methods or randomly.  The Fisher information methods
+include
+</p>
+
+<ul>
+<li> <p><span class="option">"UW-FI"</span>: unweighted Fisher information at a point.
+</p>
+</li>
+<li> <p><span class="option">"LW-FI"</span>: Fisher information weighted across the likelihood function.
+</p>
+</li>
+<li> <p><span class="option">"PW-FI"</span>: Fisher information weighted across the posterior distribution of
+<code class="reqn">\theta</code>.
+</p>
+</li>
+</ul>
+<p>And the Kullback-Leibler divergence methods include
+</p>
+
+<ul>
+<li> <p><span class="option">"FP-KL"</span>: pointwise KL divergence between [P +/- delta], where
+P is either the current <code class="reqn">\theta</code> estimate or a classification bound.
+</p>
+</li>
+<li> <p><span class="option">"VP-KL"</span>: pointwise KL divergence between [P +/- delta/sqrt(n)], where
+n is the number of items given to this point in the CAT.
+</p>
+</li>
+<li> <p><span class="option">"FI-KL"</span>: KL divergence integrated along [P -/+ delta] with respect to P
+</p>
+</li>
+<li> <p><span class="option">"VI-KL"</span>: KL divergence integrated along [P -/+ delta/sqrt(n)] with
+respect to P.
+</p>
+</li>
+</ul>
+<p>See <b>Details</b> for more information.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>at</code></td>
+<td>
+<p><b>character:</b> a character string indicating where to select items.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>range</code></td>
+<td>
+<p><b>numeric:</b> a 2-element numeric vector indicating the range of values
+that <code>itChoose</code> should average over if <code>select</code> equals
+<span class="option">"LW-FI"</span> or <span class="option">"PW-FI"</span>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>it.range</code></td>
+<td>
+<p><b>numeric:</b> Either a 2-element numeric vector indicating the minimum
+and maximum allowed difficulty parameters for selected items (only if <code>mod</code>
+is equal to <span class="option">"brm"</span>) or NULL indicating no item parameter restrictions.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta</code></td>
+<td>
+<p><b>numeric:</b> a scalar indicating the multiplier used in item selection
+if a Kullback-Leibler method is chosen.  For fixed-point KL divergence,
+<code>delta</code> is frequently .1 or .2, whereas in variable-point KL divergence,
+<code>delta</code> usually corresponds to 95 or 97.5 percentiles on a normal distribution.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bounds</code></td>
+<td>
+<p><b>numeric:</b> a vector of fixed-points/bounds from which to select items
+if <code>at</code> equals <span class="option">"bounds"</span>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ddist</code></td>
+<td>
+<p><b>function:</b> a function indicating how to calculate prior densities
+if <code>select</code> equals <span class="option">"PW-FI"</span> (i.e., weighting Fisher information
+on the posterior distribution).  See <code>catIrt</code> for more information.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quad</code></td>
+<td>
+<p><b>numeric:</b> a scalar indicating the number of quadrature points when
+<code>select</code> equals <span class="option">"LW-FI"</span> or <span class="option">"PW-FI"</span>.  See <b>Details</b>
+for more information.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments passed to <code>ddist</code>, usually distribution parameters identified by name.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function <code>itChoose</code> returns the next item(s) to administer in a CAT environment.
+The item selection algorithms fall into three major types: Fisher information, Kullback-Leibler
+divergence, and random.
+</p>
+
+<ul>
+<li>
+<p> If choosing items based on Fisher information (<code>select</code> equals <span class="option">"UW-FI"</span>,
+<span class="option">"LW-FI"</span>, or <span class="option">"PW-FI"</span>), then items are selected based on some aggregation
+of Fisher information (see <code>FI</code>).  The difference between the three Fisher information
+methods are the weighting functions used (see van der Linden, 1998; Veerkamp &amp; Berger, 1997).  Let
+</p>
+<p style="text-align: center;"><code class="reqn"> I(w_{ij} | a_j, b_j, c_j) = \int_{-\infty}^{\infty} w_{ij}I_j(\theta)\mu(d\theta) </code>
+</p>
+
+<p>be the "average" Fisher information, weighted by real valued function <code class="reqn">w_{ij}</code>.  Then
+all three Fisher information criteria can be explained solely as using different
+weights.  Unweighted Fisher information (<span class="option">"UW-FI"</span>) sets <code class="reqn">w_{ij}</code> equal to a Dirac
+delta function with all of its mass either on <code>theta</code> (if <code>at</code> equals
+<span class="option">"theta"</span>) or the nearest classification bound (if <code>at</code> equals <span class="option">"bounds"</span>).
+Likelihood-Weighted Fisher information (<span class="option">"UW-FI"</span>) sets <code class="reqn">w_{ij}</code> equal to the likelihood
+function given all of the previously administered items (Veerkamp &amp; Berger, 1997).  And
+Posterior-Weighted Fisher information (<span class="option">"PW-FI"</span>) sets <code class="reqn">w_{ij}</code> equal to the likelihood
+function times the prior distribution specified in <code>ddist</code> (van der Linden, 1998).  All
+three algorithms select items based on maximizing the respective criterion with <span class="option">"UW-FI"</span>
+the most popular CAT item selection algorithm and equivalent to maximizing Fisher information
+at a point (Pashley &amp; van der Linden, 2010).
+</p>
+</li>
+<li>
+<p> If choosing items based on Kullback-Leibler divergence (<code>select</code> equals <span class="option">"FP-KL"</span>,
+<span class="option">"VP-KL"</span>, <span class="option">"FI-KL"</span>, or <span class="option">"VI-KL"</span>), then items are selected based on
+some aggregation of KL divergence (see <code>KL</code>).
+</p>
+
+<ul>
+<li>
+<p> The Pointwise KL divergence criteria (<code>select</code> equals <span class="option">"FP-KL"</span> and 
+<span class="option">"VP-KL"</span>) compares KL divergence at two points:
+</p>
+<p style="text-align: center;"><code class="reqn"> KL(w_{ij} | a_j, b_j, c_j) = KL_j(P + w_{ij} || P - w_{ij}) </code>
+</p>
+
+<p>The difference between <span class="option">"FP-KL"</span> and <span class="option">"VP-KL"</span> are the weights used.  Fixed
+Pointwise KL divergence (<span class="option">"FP-KL"</span>) sets <code class="reqn">w_{ij}</code> equal to <span class="option">delta</span>, and
+Variable Pointwise KL divergence (<span class="option">"VP-KL"</span>) sets <code class="reqn">w_{ij}</code> equal to <span class="option">delta</span>
+multiplied by <code class="reqn">1/\sqrt{n}</code>, where <code class="reqn">n</code> is equal to the number of items given to
+this point in the CAT (see Chang &amp; Ying, 1996).
+</p>
+</li>
+<li>
+<p> The Integral KL divergence criteria (<code>select</code> equals <span class="option">"FI-KL"</span> and
+<span class="option">"VI-KL"</span>) integrates KL divergence across a small area:
+</p>
+<p style="text-align: center;"><code class="reqn"> KL(w_{ij} | a_j, b_j, c_j) = \int_{P - w_{ij}}^{P + w_{ij}} KL_j(\theta || P) d\theta </code>
+</p>
+
+<p>As in Pointwise KL divergence, Fixed Integral KL divergence (<span class="option">"FI-KL"</span>) sets
+<code class="reqn">w_{ij}</code> equal to <span class="option">delta</span>, and Variable Integral KL divergence (<span class="option">"VI-KL"</span>)
+sets <code class="reqn">w_{ij}</code> equal to <span class="option">delta</span> multiplied by <code class="reqn">1/\sqrt{n}</code> (see Chang &amp; Ying, 1996).
+</p>
+</li>
+</ul>
+<p>All KL divergence criteria set <code class="reqn">P</code> equal to <code>theta</code> (if <code>at</code> equals
+<span class="option">"theta"</span>) or the nearest classification bound (if <code>at</code> equals <span class="option">"bounds"</span>)
+and select items based on maximizing the respective criterion.
+</p>
+</li>
+<li>
+<p> If <code>select</code> is <span class="option">"random"</span>, then <code>itChoose</code> randomly picks the next item(s)
+out of the remaining items in the bank.
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p><code>itChoose</code> returns a list of the following elements:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>params</code></td>
+<td>
+<p>a matrix corresponding to the next item or <code>numb</code> items to administer
+in a CAT with the first column indicating the item number
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>info</code></td>
+<td>
+<p>a vector of corresponding information for the <code>numb</code> items of
+<code>params</code>. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>the type of information returned in <code>info</code>, which is equal to the
+item selection algorithm.
+</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Steven W. Nydick <a href="mailto:swnydick@gmail.com">swnydick@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Chang, H.-H., &amp; Ying, Z.  (1996).  A global information approach to computerized adaptive testing.  <em>Applied Psychological Measurement</em>, <em>20</em>, 213 – 229.
+</p>
+<p>Pashley, P. J., &amp; van der Linden, W. J.  (2010).  Item selection and ability estimation in adaptive testing.  In W. J. van der Linden &amp; C. A. W. Glas (Eds.), <em>Elements of adaptive testing</em> (pp. 3 – 30).  New York, NY: Springer.
+</p>
+<p>van der Linden, W. J.  (1998).  Bayesian item selection criteria for adaptive testing.  <em>Psychometrika</em>, <em>63</em>, 201 – 216.
+</p>
+<p>Veerkamp, W. J. J., &amp; Berger, M. P. F.  (1997).  Some new item selection criteria for adaptive testing.  <em>Journal of Educational and Behavioral Statistics</em>, <em>22</em>, 203 – 226.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>catIrt</code>, <code>FI</code>, <code>KL</code>,
+<code>mleEst</code>, <code>simIrt</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#########################
+# Binary Response Model #
+#########################
+## Not run: 
+set.seed(888)
+# generating an item bank under a binary response model:
+b.params &lt;- cbind(a = runif(100, .5, 1.5), b = rnorm(100, 0, 2), c = .2)
+# simulating responses using default theta:
+b.mod &lt;- simIrt(theta = 0, params = b.params, mod = "brm")
+
+# separating the items into "administered" and "not administered":
+left_par &lt;- b.mod$params[1:95, ]
+cat_par &lt;- b.mod$params[96:100, ]
+cat_resp &lt;- b.mod$resp[ , 96:100]
+
+# running simIrt automatically adds the item numbers to the front!
+
+# attempting each item selection algorithm (except random):
+uwfi.it &lt;- itChoose(left_par = left_par, mod = "brm",
+                    numb = 1, n.select = 1,
+                    cat_theta = 0,
+                    select = "UW-FI",
+                    at = "theta")
+lwfi.it &lt;- itChoose(left_par = left_par, mod = "brm",
+                    numb = 1, n.select = 1,
+                    cat_par = cat_par, cat_resp = cat_resp,
+                    select = "LW-FI")
+pwfi.it &lt;- itChoose(left_par = left_par, mod = "brm",
+                    numb = 1, n.select = 1,
+                    cat_par = cat_par, cat_resp = cat_resp,
+                    select = "PW-FI", ddist = dnorm, mean = 0, sd = 1)
+
+fpkl.it &lt;- itChoose(left_par = left_par, mod = "brm",
+                    numb = 1, n.select = 1,
+                    cat_theta = 0,
+                    select = "FP-KL",
+                    at = "theta", delta = 1.96)
+vpkl.it &lt;- itChoose(left_par = left_par, mod = "brm",
+                    numb = 1, n.select = 1,
+                    cat_par = cat_par, cat_theta = 0,
+                    select = "VP-KL",
+                    at = "theta", delta = 1.96)
+fikl.it &lt;- itChoose(left_par = left_par, mod = "brm",
+                    numb = 1, n.select = 1,
+                    cat_theta = 0,
+                    select = "FI-KL",
+                    at = "theta", delta = 1.96)
+vikl.it &lt;- itChoose(left_par = left_par, mod = "brm",
+                    numb = 1, n.select = 1,
+                    cat_par = cat_par, cat_theta = 0,
+                    select = "VI-KL",
+                    at = "theta", delta = 1.96)
+
+# which items were the most popular?
+uwfi.it$params  # 61 (b close to 0)
+lwfi.it$params  # 55 (b close to -2.5)
+pwfi.it$params  # 16 (b close to -0.5)
+fpkl.it$params  # 61 (b close to 0)
+vpkl.it$params  # 61 (b close to 0)
+fikl.it$params  # 16 (b close to -0.5)
+vikl.it$params  # 16 (b close to -0.5)
+
+# if we pick the top 10 items for "FI-KL":
+fikl.it2 &lt;- itChoose(left_par = left_par, mod = "brm",
+                     numb = 10, n.select = 10,
+                     cat_theta = 0,
+                     select = "FI-KL",
+                     at = "theta", delta = 1.96)
+
+# we find that item 61 is the third best item
+fikl.it2$params
+
+# why did "LW-FI" pick an item with a strange difficulty?
+cat_resp
+
+# because cat_resp is mostly 0 ...
+# --&gt; so the likelihood is weighted toward negative numbers.
+
+#########################
+# Graded Response Model #
+#########################
+set.seed(999)
+# generating an item bank under a graded response model:
+g.params &lt;- cbind(runif(100, .5, 1.5), rnorm(100), rnorm(100),
+                                       rnorm(100), rnorm(100), rnorm(100))
+# simulating responses (so that the parameters are ordered - see simIrt)
+left_par &lt;- simIrt(theta = 0, params = g.params, mod = "grm")$params
+
+# now we can choose the best item for theta = 0 according to FI:
+uwfi.it2 &lt;- itChoose(left_par = left_par, mod = "brm",
+                     numb = 1, n.select = 1,
+                     cat_theta = 0,
+                     select = "UW-FI",
+                     at = "theta")
+uwfi.it2
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,103 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>dbGetFieldsIntoDf</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create data frame of specified fields from database collection</h2>
+
+<h3>Description</h3>
+
+<p>Fields in the collection are retrieved from all records into a data
+frame (or tibble). Within a given trial record, a fields can be
+hierarchical and structured, that is, nested.
+Th function uses the field names to appropriately type the values
+that it returns, harmonising original values (e.g. "Information not present
+in EudraCT" to 'NA', "Yes" to 'TRUE', "false" to 'FALSE',
+date strings to dates or time differences, number strings to numbers).
+The function simplifies the structure of nested data and
+may concatenate multiple strings in a field using " / " (see example)
+and may have widened the returned data frame with additional columns that
+were recursively expanded from simply nested data (e.g., "externalRefs"
+to columns "externalRefs.doi", "externalRefs.eudraCTNumber" etc.).
+For an alternative way for handling the complex nested data, see
+dfTrials2Long followed by dfName2Value for extracting
+the sought variable(s).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">dbGetFieldsIntoDf(fields = "", con, verbose = FALSE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>fields</code></td>
+<td>
+<p>Vector of one or more strings, with names of sought fields.
+See function dbFindFields for how to find names of fields.
+Dot path notation ("field.subfield") without indices is supported.
+If compatibility with 'nodbi::src_postgres()' is needed, specify fewer
+than 50 fields, consider also using parent fields e.g., '"a.b"' instead
+of 'c("a.b.c.d", "a.b.c.e")', accessing sought fields with
+dfTrials2Long followed by dfName2Value or other R functions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>con</code></td>
+<td>
+<p>A connection object, see section
+'Databases' in ctrdata.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Printing additional information if set to <code>TRUE</code>;
+(default <code>FALSE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Do not use (captures deprecated parameter <code>stopifnodata</code>)</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A data frame (or tibble, if <code>tibble</code> is loaded)
+with columns corresponding to the sought fields.
+A column for the records' '_id' will always be included.
+The maximum number of rows of the returned data frame is equal to,
+or less than the number of trial records in the database collection.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+dbc &lt;- nodbi::src_sqlite(
+   dbname = system.file("extdata", "demo.sqlite", package = "ctrdata"),
+   collection = "my_trials")
+
+# get fields that are nested within another field
+# and can have multiple values with the nested field
+dbGetFieldsIntoDf(
+  fields = "b1_sponsor.b31_and_b32_status_of_the_sponsor",
+  con = dbc)
+
+# fields that are lists of string values are
+# returned by concatenating values with a slash
+dbGetFieldsIntoDf(
+  fields = "keyword",
+  con = dbc)
+
+</code></pre>
+
+
+</div>

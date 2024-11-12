@@ -1,0 +1,192 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>RunPoissonRegression_Guesses_CPP</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Performs basic Poisson regression, generates multiple starting guesses on c++ side</h2>
+
+<h3>Description</h3>
+
+<p><code>RunPoissonRegression_Guesses_CPP</code> uses user provided data, time/event columns, vectors specifying the model, and options to control the convergence and starting positions. Has additional options to starting with several initial guesses
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">RunPoissonRegression_Guesses_CPP(
+  df,
+  pyr0,
+  event0,
+  names,
+  term_n,
+  tform,
+  keep_constant,
+  a_n,
+  modelform,
+  fir,
+  der_iden,
+  control,
+  guesses_control,
+  strat_col = c("null"),
+  model_control = list()
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>a data.table containing the columns of interest</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pyr0</code></td>
+<td>
+<p>column used for person-years per row</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>event0</code></td>
+<td>
+<p>column used for event status</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>names</code></td>
+<td>
+<p>columns for elements of the model, used to identify data columns</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>term_n</code></td>
+<td>
+<p>term numbers for each element of the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tform</code></td>
+<td>
+<p>list of string function identifiers, used for linear/step</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep_constant</code></td>
+<td>
+<p>binary values to denote which parameters to change</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>a_n</code></td>
+<td>
+<p>list of initial parameter values, used to determine number of parameters. May be either a list of vectors or a single vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelform</code></td>
+<td>
+<p>string specifying the model type: M, ME, A, PA, PAE, GMIX, GMIX-R, GMIX-E</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fir</code></td>
+<td>
+<p>term number for the initial term, used for models of the form T0*f(Ti) in which the order matters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>der_iden</code></td>
+<td>
+<p>number for the subterm to test derivative at, only used for testing runs with a single varying parameter, should be smaller than total number of parameters. indexed starting at 0</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>list of parameters controlling the convergence, see Def_Control() for options or vignette("Control_Options")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>guesses_control</code></td>
+<td>
+<p>list of parameters to control how the guessing works, see Def_Control_Guess() for options or vignette("Control_Options")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>strat_col</code></td>
+<td>
+<p>column to stratify by if needed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model_control</code></td>
+<td>
+<p>controls which alternative model options are used, see Def_model_control() for options and vignette("Control_Options") for further details</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>returns a list of the final results
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other Poisson Wrapper Functions: 
+<code>RunPoissonEventAssignment()</code>,
+<code>RunPoissonEventAssignment_bound()</code>,
+<code>RunPoissonRegression()</code>,
+<code>RunPoissonRegression_Joint_Omnibus()</code>,
+<code>RunPoissonRegression_Omnibus()</code>,
+<code>RunPoissonRegression_Residual()</code>,
+<code>RunPoissonRegression_STRATA()</code>,
+<code>RunPoissonRegression_Single()</code>,
+<code>RunPoissonRegression_Tier_Guesses()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(data.table)
+## basic example code reproduced from the starting-description vignette
+
+df &lt;- data.table::data.table("UserID"=c(112, 114, 213, 214, 115, 116, 117),
+           "Starting_Age"=c(18,  20,  18,  19,  21,  20,  18),
+             "Ending_Age"=c(30,  45,  57,  47,  36,  60,  55),
+          "Cancer_Status"=c(0,   0,   1,   0,   1,   0,   0),
+                      "a"=c(0,   1,   1,   0,   1,   0,   1),
+                      "b"=c(1,   1.1, 2.1, 2,   0.1, 1,   0.2),
+                      "c"=c(10,  11,  10,  11,  12,  9,   11),
+                      "d"=c(0,   0,   0,   1,   1,   1,   1),
+                      "e"=c(0,   0,   1,   0,   0,   0,   1))
+# For the interval case
+pyr &lt;- "Ending_Age"
+event &lt;- "Cancer_Status"
+names &lt;- c('a','b','c','d')
+a_n &lt;- c(1.1, -0.1, 0.2, 0.5) #used to test at a specific point
+term_n &lt;- c(0,1,1,2)
+tform &lt;- c("loglin","lin","lin","plin")
+modelform &lt;- "M"
+fir &lt;- 0
+
+keep_constant &lt;- c(0,0,0,0)
+der_iden &lt;- 0
+
+control &lt;- list("ncores"=2,'lr' = 0.75,'maxiter' = 5,'halfmax' = 5,'epsilon' = 1e-3,
+   'deriv_epsilon' = 1e-3, 'abs_max'=1.0,'change_all'=TRUE,
+   'dose_abs_max'=100.0,'verbose'=FALSE, 'ties'='breslow','double_step'=1)
+guesses_control &lt;- list("maxiter"=10,"guesses"=10,"lin_min"=0.001,"lin_max"=1,
+    "loglin_min"=-1,"loglin_max"=1, "lin_method"="uniform","loglin_method"="uniform",strata=FALSE)
+strat_col &lt;- 'e'
+
+e &lt;- RunPoissonRegression_Guesses_CPP(df, pyr, event, names, term_n,
+                              tform, keep_constant, a_n, modelform, fir,
+                              der_iden, control,guesses_control,strat_col)
+</code></pre>
+
+
+</div>

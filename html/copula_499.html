@@ -1,0 +1,177 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>varianceReduction</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Variance-Reduction Methods</h2>
+
+<h3>Description</h3>
+
+<p>Computing antithetic variates or Latin hypercube samples.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">rAntitheticVariates(u)
+rLatinHypercube(u, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>a <code class="reqn">n\times d</code>-<code>matrix</code> (or
+<code class="reqn">d</code>-<code>vector</code>) of random variates in the unit hypercube.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments passed to the underlying <code>rank()</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>rAntitheticVariates()</code> takes any copula sample <code class="reqn">u</code>, builds
+<code class="reqn">1-u</code>, and returns the two matrices in the form of an array; this
+can be used for the variance-reduction method of (componentwise)
+antithetic variates.
+</p>
+<p><code>rLatinHypercube()</code> takes any copula sample,
+shifts its marginal ranks minus 1 by standard uniforms and then
+divides by the sample size in order to obtain a Latin hypercubed
+sample.
+</p>
+
+
+<h3>Value</h3>
+
+
+<dl>
+<dt><code>rAntitheticVariates()</code></dt>
+<dd>
+<p><code>array</code> of dimension
+<code class="reqn">n\times d\times 2</code>, say <code>r</code>, where <code>r[,,1]</code>
+contains the original sample <code>u</code> and <code>r[,,2]</code> contains
+the sample <code>1-u</code>.</p>
+</dd>
+<dt><code>rLatinHypercube()</code></dt>
+<dd>
+<p><code>matrix</code> of the same
+dimensions as <code>u</code>.</p>
+</dd>
+</dl>
+<h3>References</h3>
+
+<p>Cambou, M., Hofert, M. and Lemieux, C. (2016).
+Quasi-random numbers for copula models.
+<em>Statistics and Computing</em>, 1–23.
+</p>
+<p>Packham, N. and Schmidt, W. M. (2010).
+Latin hypercube sampling with dependence and applications in finance.
+<em>Journal of Computational Finance</em> <b>13</b>(3), 81–111.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">### 1 Basic plots ##############################################################
+
+## Generate data from a Gumbel copula
+cop &lt;- gumbelCopula(iTau(gumbelCopula(), tau = 0.5))
+n &lt;- 1e4
+set.seed(271)
+U &lt;- rCopula(n, copula = cop)
+
+## Transform the sample to a Latin Hypercube sample
+U.LH &lt;- rLatinHypercube(U)
+
+## Plot
+## Note: The 'variance-reducing property' is barely visible, but that's okay
+layout(rbind(1:2))
+plot(U,    xlab = quote(U[1]), ylab = quote(U[2]), pch = ".", main = "U")
+plot(U.LH, xlab = quote(U[1]), ylab = quote(U[2]), pch = ".", main = "U.LH")
+layout(1) # reset layout
+
+## Transform the sample to an Antithetic variate sample
+U.AV &lt;- rAntitheticVariates(U)
+stopifnot(identical(U.AV[,,1],  U ),
+          identical(U.AV[,,2], 1-U))
+
+## Plot original sample and its corresponding (componentwise) antithetic variates
+layout(rbind(1:2))
+plot(U.AV[,,1], xlab = quote(U[1]), ylab = quote(U[2]), pch=".", main= "U")
+plot(U.AV[,,2], xlab = quote(U[1]), ylab = quote(U[2]), pch=".", main= "1 - U")
+layout(1) # reset layout
+
+
+### 2 Small variance-reduction study for exceedance probabilities ##############
+
+## Auxiliary function for approximately computing P(U_1 &gt; u_1,..., U_d &gt; u_d)
+## by Monte Carlo simulation based on pseudo-random numbers, Latin hypercube
+## sampling and quasi-random numbers.
+sProb &lt;- function(n, copula, u)
+{
+    d &lt;- length(u)
+    stopifnot(n &gt;= 1, inherits(copula, "Copula"), 0 &lt; u, u &lt; 1,
+              d == dim(copula))
+    umat &lt;- rep(u, each = n)
+    ## Pseudo-random numbers
+    U &lt;- rCopula(n, copula = copula)
+    PRNG &lt;- mean(rowSums(U &gt; umat) == d)
+    ## Latin hypercube sampling (based on the recycled 'U')
+    U. &lt;- rLatinHypercube(U)
+    LHS &lt;- mean(rowSums(U. &gt; umat) == d)
+    ## Quasi-random numbers
+    U.. &lt;- cCopula(sobol(n, d = d, randomize = TRUE), copula = copula,
+                   inverse = TRUE)
+    QRNG &lt;- mean(rowSums(U.. &gt; umat) == d)
+    ## Return
+    c(PRNG = PRNG, LHS = LHS, QRNG = QRNG)
+}
+
+## Simulate the probabilities of falling in (u_1,1] x ... x (u_d,1]
+library(qrng) # for quasi-random numbers
+(Xtras &lt;- copula:::doExtras()) # determine whether examples will be extra (long)
+B &lt;- if(Xtras)  500 else 100 # number of replications
+n &lt;- if(Xtras) 1000 else 200 # sample size
+d &lt;- 2 # dimension; note: for d &gt; 2, the true value depends on the seed
+nu &lt;- 3 # degrees of freedom
+th &lt;- iTau(tCopula(df = nu), tau = 0.5) # correlation parameter
+cop &lt;- tCopula(param = th, dim = d, df = nu) # t copula
+u &lt;- rep(0.99, d) # lower-left endpoint of the considered cube
+set.seed(42) # for reproducibility
+true &lt;- prob(cop, l = u, u = rep(1, d)) # true exceedance probability
+system.time(res &lt;- replicate(B, sProb(n, copula = cop, u = u)))
+
+## "abbreviations":
+PRNG &lt;- res["PRNG",]
+LHS  &lt;- res["LHS" ,]
+QRNG &lt;- res["QRNG",]
+
+## Compute the variance-reduction factors and % improvements
+vrf  &lt;- var(PRNG) / var(LHS)                    # variance reduction factor w.r.t. LHS
+vrf. &lt;- var(PRNG) / var(QRNG)                   # variance reduction factor w.r.t. QRNG
+pim  &lt;- (var(PRNG) - var(LHS)) / var(PRNG) *100 # improvement w.r.t. LHS
+pim. &lt;- (var(PRNG) - var(QRNG))/ var(PRNG) *100 # improvement w.r.t. QRNG
+
+## Boxplot
+boxplot(list(PRNG = PRNG, LHS = LHS, QRNG = QRNG), notch = TRUE,
+        main = substitute("Simulated exceedance probabilities" ~
+                              P(bold(U) &gt; bold(u))~~ "for a" ~ t[nu.]~"copula",
+                          list(nu. = nu)),
+        sub = sprintf(
+           "Variance-reduction factors and %% improvements: %.1f (%.0f%%), %.1f (%.0f%%)",
+            vrf, pim, vrf., pim.))
+abline(h = true, lty = 3) # true value
+mtext(sprintf("B = %d replications with n = %d and d = %d", B, n, d), side = 3)
+</code></pre>
+
+
+</div>

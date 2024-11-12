@@ -1,0 +1,159 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ciu.meta.explain</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>ciu.meta.explain</h2>
+
+<h3>Description</h3>
+
+<p>ciu.meta.explain
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ciu.meta.explain(
+  ciu,
+  instance,
+  ind.inputs = NULL,
+  in.min.max.limits = NULL,
+  n.samples = 100,
+  concepts.to.explain = NULL,
+  target.concept = NULL,
+  target.ciu = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>ciu</code></td>
+<td>
+<p><code>ciu</code> object as created with ciu function (not to be confused
+with <code>CIU</code> object as created by ciu.new).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>instance</code></td>
+<td>
+<p>Input values for the instance to explain. Should be a
+data.frame even though a <code>vector</code> or <code>matrix</code> might work too if input
+names and other needed metadata can be deduced from the dataset or other
+parameters given to <code>ciu.new</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ind.inputs</code></td>
+<td>
+<p>Indices of input features to explain (the set i in CIU
+formulae)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>in.min.max.limits</code></td>
+<td>
+<p>data.frame or matrix with one row per output
+and two columns, where the first column indicates the minimal value and the
+second column the maximal value for that output. ONLY NEEDED HERE IF not
+given as parameter to ciu.new or if the limits are different for this
+specific instance than the default ones.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.samples</code></td>
+<td>
+<p>How many instances to generate for estimating CI and CU.
+For inputs of type factor, all possible combinations of input values
+are generated, so this parameter only influences how many instances are
+(at least) generated for continuous-valued inputs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>concepts.to.explain</code></td>
+<td>
+<p>List of input feature concepts to explain, as defined
+by vocabulary provided as argument to ciu.new. If <code>ind.inputs=NULL</code>,
+then use <code>concepts.to.explain</code> instead. If both are <code>NULL</code>, then use all inputs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>target.concept</code></td>
+<td>
+<p>If provided, then calculate CIU of inputs
+<code>ind.inputs.to.explain</code> relative to the given concept rather than
+relative to the actual output(s). <code>ind.inputs.to.explain</code> should
+normally be a subset (or all) of the inputs that <code>target.concept</code>
+consists of, even though that not required by the CIU calculation.
+If a <code>target.ciu</code> is provided, then the <code>target.concept</code> doesn't have to
+be included in the <code>vocabulary</code> gives as parameter to ciu.new
+(at least for the moment).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>target.ciu</code></td>
+<td>
+<p><code>ciu.result</code> object previously calculated for
+<code>target.concept</code>. If a <code>target.concept</code> is provided but <code>target.ciu=NULL</code>,
+then <code>target.ciu</code> is estimated by a call to ciu.explain with the
+<code>n.samples</code> value given as a parameter to this call. It may be useful
+to provide <code>target.ciu</code> if it should be estimated using some other
+(typically greater) value for <code>n.samples</code> than the default one, or if it
+has already been calculated for some reason.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An object of class <code>ciu.meta.result</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Kary Främling
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Explaining the classification of an Iris instance with lda model.
+# We use a versicolor (instance 100).
+library(MASS)
+test.ind &lt;- 100
+iris_test &lt;- iris[test.ind, 1:4]
+iris_train &lt;- iris[-test.ind, 1:4]
+iris_lab &lt;- iris[[5]][-test.ind]
+model &lt;- lda(iris_train, iris_lab)
+
+# Create CIU object
+ciu &lt;- ciu.new(model, Species~., iris)
+
+# Get ciu.meta.result. This can either be 'ciu$meta.explain(...)'
+# or 'ciu.meta.explain(ciu, ...)'
+ciu.meta &lt;- ciu$meta.explain(iris_test)
+
+# Use same result for different visualisations.
+ciu$ggplot.col.ciu(ciu.meta = ciu.meta)
+ciu$barplot.ciu(ind.output = 2, ciu.meta = ciu.meta)
+ciu$pie.ciu(ind.output = 2, ciu.meta = ciu.meta)
+
+## Not run: 
+# Same with Boston Housing data set.
+library(caret)
+gbm &lt;- train(medv ~ ., Boston, method="gbm", trControl=trainControl(method="cv", number=10))
+ciu &lt;- ciu.new(gbm, medv~., Boston)
+instance &lt;- Boston[370,1:13]
+ciu.meta &lt;- ciu$meta.explain(instance)
+ciu$barplot.ciu(ciu.meta = ciu.meta, sort = "CI")
+ciu$pie.ciu(ciu.meta = ciu.meta)
+ciu$ggplot.col.ciu(ciu.meta = ciu.meta)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

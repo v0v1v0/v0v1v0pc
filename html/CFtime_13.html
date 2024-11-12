@@ -1,0 +1,163 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CFfactor</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create a factor from the offsets in an CFtime instance</h2>
+
+<h3>Description</h3>
+
+<p>With this function a factor can be generated for the time series, or a part
+thereof, contained in the <code>CFtime</code> instance. This is specifically interesting
+for creating factors from the date part of the time series that aggregate the
+time series into longer time periods (such as month) that can then be used to
+process daily CF data sets using, for instance, <code>tapply()</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CFfactor(cf, period = "month", epoch = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cf</code></td>
+<td>
+<p>CFtime. An instance of the <code>CFtime</code> class whose offsets will
+be used to construct the factor.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>period</code></td>
+<td>
+<p>character. A character string with one of the values
+"year", "season", "quarter", "month" (the default), "dekad" or "day".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>epoch</code></td>
+<td>
+<p>numeric or list, optional. Vector of years for which to
+construct the factor, or a list whose elements are each a vector of years.
+If <code>epoch</code> is not specified, the factor will use the entire time series for
+the factor.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The factor will respect the calendar of the datum that the time series is
+built on. For <code>period</code>s longer than a day this will result in a factor where
+the calendar is no longer relevant (because calendars impacts days, not
+dekads, months, quarters, seasons or years).
+</p>
+<p>The factor will be generated in the order of the offsets of the <code>CFtime</code>
+instance. While typical CF-compliant data sources use ordered time series
+there is, however, no guarantee that the factor is ordered as multiple
+<code>CFtime</code> objects may have been merged out of order.
+</p>
+<p>If the <code>epoch</code> parameter is specified, either as a vector of years to include
+in the factor, or as a list of such vectors, the factor will only consider
+those values in the time series that fall within the list of years, inclusive
+of boundary values. Other values in the factor will be set to <code>NA</code>. The years
+need not be contiguous, within a single vector or among the list items, or in
+order.
+</p>
+<p>The following periods are supported by this function:
+</p>
+
+<ul>
+<li> <p><code>year</code>, the year of each offset is returned as "YYYY".
+</p>
+</li>
+<li> <p><code>season</code>, the meteorological season of each offset is returned as
+"Sx", with x being 1-4, preceeded by "YYYY" if no <code>epoch</code> is
+specified. Note that December dates are labeled as belonging to the
+subsequent year, so the date "2020-12-01" yields "2021S1". This implies
+that for standard CMIP files having one or more full years of data the
+first season will have data for the first two months (January and
+February), while the final season will have only a single month of data
+(December).
+</p>
+</li>
+<li> <p><code>quarter</code>, the calendar quarter of each offset is returned as "Qx",
+with x being 1-4, preceeded by "YYYY" if no <code>epoch</code> is specified.
+</p>
+</li>
+<li> <p><code>month</code>, the month of each offset is returned as "01" to
+"12", preceeded by "YYYY-" if no <code>epoch</code> is specified. This is the default
+period.
+</p>
+</li>
+<li> <p><code>dekad</code>, ten-day periods are returned as
+"Dxx", where xx runs from "01" to "36", preceeded by "YYYY" if no <code>epoch</code>
+is specified. Each month is subdivided in dekads as follows: 1- days 01 -
+10; 2- days 11 - 20; 3- remainder of the month.
+</p>
+</li>
+<li> <p><code>day</code>, the month and day of each offset are returned as "MM-DD",
+preceeded by "YYYY-" if no <code>epoch</code> is specified.
+</p>
+</li>
+</ul>
+<p>It is not possible to create a factor for a period that is shorter than the
+temporal resolution of the source data set from which the <code>cf</code> argument
+derives. As an example, if the source data set has monthly data, a dekad or
+day factor cannot be created.
+</p>
+<p>Creating factors for other periods is not supported by this function. Factors
+based on the timestamp information and not dependent on the calendar can
+trivially be constructed from the output of the <code>as_timestamp()</code> function.
+</p>
+<p>For non-epoch factors the attribute 'CFtime' of the result contains a CFtime
+instance that is valid for the result of applying the factor to a data set
+that the <code>cf</code> argument is associated with. In other words, if CFtime instance
+'Acf' describes the temporal dimension of data set 'A' and a factor 'Af' is
+generated from 'Acf', then <code>attr(Af, "CFtime")</code> describes the temporal
+dimension of the result of, say, <code>apply(A, 1:2, tapply, Af, FUN)</code>. The
+'CFtime' attribute is <code>NULL</code> for epoch factors.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If <code>epoch</code> is a single vector or not specified, a factor with a
+length equal to the number of offsets in <code>cf</code>. If <code>epoch</code> is a list, a list
+with the same number of elements and names as <code>epoch</code>, each containing a
+factor. Elements in the factor will be set to <code>NA</code> for time series values
+outside of the range of specified years.
+</p>
+<p>The factor, or factors in the list, have attributes 'period', 'epoch' and
+'CFtime'. Attribute 'period' holds the value of the <code>period</code> argument.
+Attribute 'epoch' indicates the number of years that are included in the
+epoch, or -1 if no <code>epoch</code> is provided. Attribute 'CFtime' holds an
+instance of CFtime that has the same definition as <code>cf</code>, but with offsets
+corresponding to the mid-point of non-epoch factor levels; if the <code>epoch</code>
+argument is specified, attribute 'CFtime' is <code>NULL</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cut()</code> creates a non-epoch factor for arbitrary cut points.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">cf &lt;- CFtime("days since 1949-12-01", "360_day", 19830:54029)
+
+# Create a dekad factor for the whole time series
+f &lt;- CFfactor(cf, "dekad")
+
+# Create three monthly factors for early, mid and late 21st century epochs
+ep &lt;- CFfactor(cf, epoch = list(early = 2021:2040, mid = 2041:2060, late = 2061:2080))
+</code></pre>
+
+
+</div>

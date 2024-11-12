@@ -1,0 +1,315 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>tune_penCSC</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>tune_penCSC</h2>
+
+<h3>Description</h3>
+
+<p>A flexible function for tuning the involved hyper-parameters of a penalized cause-specific-cox model with elastic net penalty using the linking idea.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">tune_penCSC(
+  time,
+  status,
+  vars.list,
+  data,
+  horizons,
+  event,
+  rhs = ~1,
+  method = "cv",
+  k = 10,
+  times = 25,
+  p = 0.7,
+  strat.var = NULL,
+  metrics = "Brier",
+  final.metric = NULL,
+  alpha.grid = NULL,
+  lambda.grid = NULL,
+  nlambdas.list = NULL,
+  grow.by = 0.01,
+  standardize = TRUE,
+  keep = NULL,
+  preProc.fun = function(x) x,
+  preProc.fun.test = NULL,
+  parallel = FALSE,
+  preProc.pkgs = NULL,
+  preProc.globals = NULL,
+  core.nums = future::availableCores()/2
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>A character showing the name of the time variable in the data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>status</code></td>
+<td>
+<p>A character showing the name of the status/event variable in the data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vars.list</code></td>
+<td>
+<p>A named list containing the variables to be included in each cause-specific model. Variables can be vectors of variable names or a one sided formula. Names of the list must be the events and exactly the same as values in the status variable. See 'Examples' for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data frame containing the information of the variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>horizons</code></td>
+<td>
+<p>A vector of time horizons which we want the absolute risk predictions to be evaluated at.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>event</code></td>
+<td>
+<p>The value for event of interest which we want the absolute risk predictions to be evaluated for. This must be one of the values in the status variable of the data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rhs</code></td>
+<td>
+<p>A right hand sided formula indicating the variables to be used in estimating the inverse probability of censoring weighting (IPCW) model. Default is <code>~1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Resampling method to be used for hyper-parameter tuning. Values can be: <code>'cv'</code> for cross validation, <code>'repcv'</code> for repeated cross validation, <code>'lgocv'</code> for monte-carlo cross validation, <code>'loocv'</code> for leave one out cross validation and <code>'boot'</code> for bootstrap. Default is <code>'cv'</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p>Number of folds. Only applicable for <code>method='cv'</code> and <code>method='repcv'</code>. Default is 10.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>times</code></td>
+<td>
+<p>Repeat number of the resampling process. Only applicable for <code>method='repcv'</code>, <code>method='lgocv'</code> and <code>method='boot'</code>. Default is 25.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p>The fraction of data to be used as the training set during resampling. Only applicable for <code>method='lgocv'</code>. Default is 0.7.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>strat.var</code></td>
+<td>
+<p>A single character indicating name of the strata variable to be used to create resamples. If numerical, groups will be specified based on percentiles. Default is <code>NULL</code> which considers status variable as a factor and creates the resamples based on different levels of it.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metrics</code></td>
+<td>
+<p>Evaluation metric (loss function) to be used. Values can be <code>'Brier'</code> for IPCW brier score, <code>'AUC'</code> for IPCW AUC or a vector of both. Default is <code>'Brier'</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>final.metric</code></td>
+<td>
+<p>The evaluation metric to decide the best hyper-parameters set for the final fits on the whole data. When <code>NULL</code> which is the default value, it takes the value from <code>metrics</code>. If both <code>'Brier'</code> and <code>'AUC'</code> were specified in metrics and <code>final.metric</code> is <code>NULL</code>, <code>'Brier'</code> will be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha.grid</code></td>
+<td>
+<p>A named list containing a sequence of alpha values to be evaluated for each cause-specific model. Names of the list must be the events and exactly the same as values in the status variable. Default is <code>NULL</code> which orders the function to set <code>seq(0,1,.5)</code> for all cause-specific models. See 'Details' for more information.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.grid</code></td>
+<td>
+<p>A named list containing a sequence of lambda values to be evaluated for each cause-specific model. Names of the list must be the events and exactly the same as values in the status variable. Default is <code>NULL</code> which orders the function to calculate exclusive lambda sequences for all causes. See 'Details' for more information.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nlambdas.list</code></td>
+<td>
+<p>A names list of single integers indicating the length of lambda sequences which are calculated automatically by the function for each cause. Only applicable when <code>lambda.grid=NULL</code>. Default is NULL which sets all lengths to 5. See 'Details' for more information.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grow.by</code></td>
+<td>
+<p>Difference between the values in the growing sequence of lambda values to find the maximum value that makes the null model. Only applicable when <code>lambda.grid=NULL</code>. Default is 0.01. See 'Details' for more information.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>standardize</code></td>
+<td>
+<p>Logical indicating whether the variables must be standardized or not during model fitting procedures. Default is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep</code></td>
+<td>
+<p>A character vector of the names of variables that should not be shrunk in all model fitting procedures. Default is <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>preProc.fun</code></td>
+<td>
+<p>A function that accepts a data and returns a modified version of it that has gone through the user's desired pre-processing steps. All modifications from this function will be done during the resampling procedures to avoid data leakage. It will modify all training and test set(s) during the validation unless other argument <code>preProc.fun.test</code> is specified by user and then it only affects the training set(s). Default is <code>function(x) x</code>. Also see the description of <code>preProc.fun.test</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>preProc.fun.test</code></td>
+<td>
+<p>A function the exact same characteristics and description as <code>preProc.fun</code> argument. If user specifies a separate function for <code>preProc.fun.test</code>, it will only affect test set(s) during validation while the function from <code>preProc.fun</code> will affect the training set(s). Default is <code>NULL</code> which means function from <code>preProc.fun</code> will be used on both training and test set(s) during validation. Also see the description of <code>preProc.fun</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+<p>Logical indicating whether the tuning process should be performed in parallel or not. Default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>preProc.pkgs</code></td>
+<td>
+<p>A character vector containing the names of packages that was used in creating user's <code>preProc.fun</code> while using parallel computation. Only applicable if <code>parallel=T</code> and <code>preProc.fun</code> is a user specified function using functions from other packages. See 'Examples' for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>preProc.globals</code></td>
+<td>
+<p>A character vector containing names of objects included in <code>preProc.fun</code> to be considered as global objects while using parallel computation. The most frequent ones are the names of the user specified pre processing function or functions within this function. Only applicable if <code>parallel=T</code> and <code>preProc.fun</code> is a user specified function. See 'Examples' for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>core.nums</code></td>
+<td>
+<p>Number of CPU cores to be used for parallel computation. Only applicable if <code>parallel=T</code>. Default is <code>future::availableCores()/2</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>tune_penCSC</code> has the ability to automatically determine the candidate sequences of alpha &amp; lambda values. Setting any of <code>alpha.grid</code> &amp; <code>lambda.grid</code> to <code>NULL</code> will order the function to calculate them automatically.
+The process of determining the lambda values automatically is by:
+</p>
+
+<ol>
+<li>
+<p> Starting from lambda=0, the algorithm fits LASSO models until finding a lambda value that creates a NULL model where all variables were shrunk to be exactly zero.
+</p>
+</li>
+<li>
+<p> The obtained lambda value will be used as the maximum value of a sequence starting from 0. The length of this sequence is controlled by values in <code>nlambdas.list</code>.
+</p>
+</li>
+</ol>
+<p>This will be done for each cause-specific model to create exclusive sequences of lambdas for each of them.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list containing the detailed information of the hyper-parameter tuning and the validation process, best combination of hyper-parameters and the final fits based on the whole data using the best obtained hyper-parameters. Use <code>$</code> to explore all the involved information.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Shahin Roshani
+</p>
+
+
+<h3>References</h3>
+
+<p>Friedman J, Hastie T, Tibshirani R (2010). "Regularization Paths for Generalized Linear Models via Coordinate Descent." Journal of Statistical Software, 33(1), 1-22. <a href="https://doi.org/10.18637/jss.v033.i01">doi:10.18637/jss.v033.i01</a>, <a href="https://www.jstatsoft.org/v33/i01/">https://www.jstatsoft.org/v33/i01/</a>.
+</p>
+<p>Saadati, M, Beyersmann, J, Kopp-Schneider, A, Benner, A. Prediction accuracy and variable selection for penalized cause-specific hazards models. Biometrical Journal. 2018; 60: 288– 306. <a href="https://doi.org/10.1002/bimj.201600242">doi:10.1002/bimj.201600242</a>.
+</p>
+<p>Gerds TA, Kattan MW (2021). Medical Risk Prediction Models: With Ties to Machine Learning (1st ed.). Chapman and Hall/CRC. <a href="https://doi.org/10.1201/9781138384484">doi:10.1201/9781138384484</a>
+</p>
+<p>Pfeiffer, R. M., &amp; Gail, M. M. (2017). Absolute risk: Methods and applications in clinical management and public health.
+</p>
+<p>Kuhn, M. (2008). Building Predictive Models in R Using the caret Package. Journal of Statistical Software, 28(5), 1–26. <a href="https://doi.org/10.18637/jss.v028.i05">doi:10.18637/jss.v028.i05</a>.
+</p>
+<p>Bengtsson H (2021). “A Unifying Framework for Parallel and Distributed Processing in R using Futures.” The R Journal, 13(2), 208–227. <a href="https://doi.org/10.32614/RJ-2021-048">doi:10.32614/RJ-2021-048</a>.
+</p>
+<p>Vaughan D, Dancho M (2022). furrr: Apply Mapping Functions in Parallel using Futures. <a href="https://github.com/DavisVaughan/furrr">https://github.com/DavisVaughan/furrr</a>, <a href="https://furrr.futureverse.org/">https://furrr.futureverse.org/</a>.
+</p>
+<p>Therneau T (2022). A Package for Survival Analysis in R. R package version 3.3-1, <a href="https://CRAN.R-project.org/package=survival">https://CRAN.R-project.org/package=survival</a>.
+</p>
+<p>Wickham H, Averick M, Bryan J, Chang W, McGowan L, François R, et al. Welcome to the tidyverse. J Open Source Softw. 2019 Nov 21;4(43):1686.
+</p>
+<p>Bache S, Wickham H (2022). magrittr: A Forward-Pipe Operator for R. <a href="https://magrittr.tidyverse.org">https://magrittr.tidyverse.org</a>, <a href="https://github.com/tidyverse/magrittr">https://github.com/tidyverse/magrittr</a>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+library(riskRegression)
+
+data(Melanoma)
+
+vl &lt;- list('1'=~age+sex+epicel+ici,
+
+          '2'=c('age','ulcer','thick','invasion'))
+
+al &lt;- list('1'=0,'2'=c(.5,1))
+
+#External standardization function with data frame as its input and output
+
+library(recipes)
+
+std.fun &lt;- function(data){
+
+ cont_vars &lt;- data %&gt;% select(where(~is.numeric(.))) %&gt;% names
+
+ cont_vars &lt;- cont_vars[-which(cont_vars %in% c('time','status'))]
+
+ #External functions from recipes package are being used
+
+ recipe(~.,data=data) %&gt;%
+
+   step_center(all_of(cont_vars)) %&gt;%
+
+   step_scale(all_of(cont_vars)) %&gt;%
+
+   prep(training=data) %&gt;% juice
+
+}
+
+set.seed(233)
+
+test &lt;- tune_penCSC(time='time',status='status',vars.list=vl,data=Melanoma,horizons=1825,
+
+                   event=1,method='cv',k=5,metrics='AUC',alpha.grid=al,standardize=FALSE,
+
+                   preProc.fun=std.fun,parallel=TRUE,preProc.pkgs='recipes')
+
+test
+
+
+
+</code></pre>
+
+
+</div>

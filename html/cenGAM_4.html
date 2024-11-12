@@ -1,0 +1,146 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>tobit1</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Tobit I family for censored GAM</h2>
+
+<h3>Description</h3>
+
+<p>This function implements the Tobit I family for the mgcv package.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">tobit1(link="identity", left.threshold=-Inf, right.threshold=Inf, 
+theta=NULL, initial.theta=0)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>link</code></td>
+<td>
+<p>The link function: one of <code>"log"</code>, <code>"identity"</code>, <code>"inverse"</code>, <code>"sqrt"</code>, or a 
+<code>power</code> link.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>left.threshold</code></td>
+<td>
+<p>Threshold value, for which response values below this will be censored. Can be a scalar or a vector of same length as the response.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>right.threshold</code></td>
+<td>
+<p>Threshold value, for which response values above this will be censored. Can be a scalar or a vector of same length as the response.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+<p>The log std error. If left NULL, it is estimated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>initial.theta</code></td>
+<td>
+<p>Optional parameter to set initial theta value if it is being estimated - change this value if the variance is very different from 1.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Under the Tobit I model, given a value sigma and a conditional mean of mu, and left and right threshold values lt and rt, response values y are distributed as
+</p>
+<p>lt if z &lt; lt
+</p>
+<p>rt if z &gt; rt
+</p>
+<p>z otherwise
+</p>
+<p>where z is distribution Normal(mu, sigma). (Note that we have extended the model to include right as well as left censoring.
+</p>
+<p>This function allows a non-linear relationship be estimated between mu and the covariates in a restricted maximum likelihood approach, via application of Wood (2016). We allow differing levels of censorship across dataset by allowing the left and right thresholds to be different between data points.
+</p>
+<p>See the examples for more details of how to fit in practice.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object inheriting from class <code>family</code> for use with the mgcv package.
+</p>
+
+
+<h3>References</h3>
+
+<p>Wood, S.N., N. Pya and B. Saefken (2016), Smoothing parameter and
+model selection for general smooth models. Journal of the American
+Statistical Association. &lt;URL: http://arxiv.org/abs/1511.03864&gt;
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>gam</code>,<code>ziplss</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Generate random data
+set.seed(1)
+x &lt;- matrix(2*rnorm(300), 100)
+yn &lt;- 2*x[,3] + 4*cos(x[,1]*2)
+y &lt;- yn + rnorm(100)
+ycensored &lt;- pmax(y, 0) # data left-censored at 0
+ycensored &lt;- pmin(ycensored, 4) # data right-censored at 4
+
+par(mfrow = c(3,3))
+
+# True model
+plot(gam(y ~ s(x[,1]) + s(x[,2]) + s(x[, 3])), ylim=c(-5, 5), main = "True")
+
+# Naive estimation
+plot(gam(ycensored ~ s(x[,1]) + s(x[,2]) + s(x[, 3])), ylim=c(-5, 5), main = "Naive")
+
+# Tobit I estimation
+m &lt;- gam(ycensored ~ s(x[,1]) + s(x[,2]) + s(x[, 3]), family = tobit1(left.threshold=0))
+summary(m) #note x[,2] is not significant
+m$family$getTheta(FALSE) #estimate of theta
+m$family$getTheta(TRUE) #estimate of sigma = exp(theta)
+plot(m, ylim = c(-5, 5), main = "Tobit I") 
+
+# More realistic dataset requires some data processing
+data(nutrient)
+# For this dataset, all values &gt;1 are censored. At location D values are censored below at 0, other
+# locations are censored at 0.1.
+head(nutrient)
+nut = data.frame(day = nutrient$day, location = factor(nutrient$location), y=as.numeric(nutrient$y))
+table(nutrient$y[is.na(nut$y)])
+summary(nut$y)
+nut$upper = 10
+nut$lower = ifelse(nut$location == "D", 0, 1)
+# Recode the data to communicate which is and isn't censored
+nut$y[nutrient$y %in% c("&lt;1", "&lt;0")] = -Inf
+nut$y[nutrient$y %in% c("&gt;10")] = Inf
+# Missing values are best removed here, or can cause confusion later
+nut = na.omit(nut)
+
+# Fit including a random effect for location
+m = gam(y~ s(day) + s(location, bs="re") , data = nut, 
+family = tobit1(left.threshold=nut$lower, right.threshold = nut$upper))
+
+gam.vcomp(m)
+anova(m)
+summary(m)
+
+</code></pre>
+
+
+</div>

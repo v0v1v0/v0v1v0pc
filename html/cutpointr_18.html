@@ -1,0 +1,533 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cutpointr</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Determine and evaluate optimal cutpoints</h2>
+
+<h3>Description</h3>
+
+<p>Using predictions (or e.g. biological marker values) and binary class labels, this function
+will determine "optimal" cutpoints using various selectable methods. The
+methods for cutpoint determination can be evaluated using bootstrapping. An
+estimate of the cutpoint variability and the out-of-sample performance can then
+be returned with <code>summary</code> or <code>plot</code>. For an introduction to the
+package please see <code>vignette("cutpointr", package = "cutpointr")</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cutpointr(...)
+
+## Default S3 method:
+cutpointr(
+  data,
+  x,
+  class,
+  subgroup = NULL,
+  method = maximize_metric,
+  metric = sum_sens_spec,
+  pos_class = NULL,
+  neg_class = NULL,
+  direction = NULL,
+  boot_runs = 0,
+  boot_stratify = FALSE,
+  use_midpoints = FALSE,
+  break_ties = median,
+  na.rm = FALSE,
+  allowParallel = FALSE,
+  silent = FALSE,
+  tol_metric = 1e-06,
+  ...
+)
+
+## S3 method for class 'numeric'
+cutpointr(
+  x,
+  class,
+  subgroup = NULL,
+  method = maximize_metric,
+  metric = sum_sens_spec,
+  pos_class = NULL,
+  neg_class = NULL,
+  direction = NULL,
+  boot_runs = 0,
+  boot_stratify = FALSE,
+  use_midpoints = FALSE,
+  break_ties = median,
+  na.rm = FALSE,
+  allowParallel = FALSE,
+  silent = FALSE,
+  tol_metric = 1e-06,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further optional arguments that will be passed to method.
+minimize_metric and maximize_metric pass ... to metric.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data.frame with the data needed for x, class and optionally
+subgroup.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>The variable name to be used for classification,
+e.g. predictions. The raw vector of values if the data argument
+is unused.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>class</code></td>
+<td>
+<p>The variable name indicating class membership.
+If the data argument is unused, the vector of raw numeric values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subgroup</code></td>
+<td>
+<p>An additional covariate that identifies subgroups or the raw data if
+data = NULL. Separate optimal cutpoints will be determined per group.
+Numeric, character and factor are allowed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>(function) A function for determining cutpoints. Can
+be user supplied or use some of the built in methods. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metric</code></td>
+<td>
+<p>(function) The function for computing a metric when using
+maximize_metric or minimize_metric as method and and for the
+out-of-bag values during bootstrapping. A way of internally validating the performance.
+User defined functions can be supplied, see details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pos_class</code></td>
+<td>
+<p>(optional) The value of class that indicates the positive class.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>neg_class</code></td>
+<td>
+<p>(optional) The value of class that indicates the negative class.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>direction</code></td>
+<td>
+<p>(character, optional) Use "&gt;=" or "&lt;=" to indicate whether x
+is supposed to be larger or smaller for the positive class.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>boot_runs</code></td>
+<td>
+<p>(numerical) If positive, this number of bootstrap samples
+will be used to assess the variability and the out-of-sample performance.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>boot_stratify</code></td>
+<td>
+<p>(logical) If the bootstrap is stratified, bootstrap
+samples are drawn separately in both classes and then combined, keeping the
+proportion of positives and negatives constant in every resample.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use_midpoints</code></td>
+<td>
+<p>(logical) If TRUE (default FALSE) the returned optimal
+cutpoint will be the mean of the optimal cutpoint and the next highest
+observation (for direction = "&gt;=") or the next lowest observation
+(for direction = "&lt;=") which avoids biasing the optimal cutpoint.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>break_ties</code></td>
+<td>
+<p>If multiple cutpoints are found, they can be summarized using
+this function, e.g. mean or median. To return all cutpoints use c as the function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.rm</code></td>
+<td>
+<p>(logical) Set to TRUE (default FALSE) to keep only complete
+cases of x, class and subgroup (if specified). Missing values with
+na.rm = FALSE will raise an error.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>allowParallel</code></td>
+<td>
+<p>(logical) If TRUE, the bootstrapping will be parallelized
+using foreach. A local cluster, for example, should be started manually
+beforehand.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>silent</code></td>
+<td>
+<p>(logical) If TRUE suppresses all messages.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol_metric</code></td>
+<td>
+<p>All cutpoints will be returned that lead to a metric
+value in the interval [m_max - tol_metric, m_max + tol_metric] where
+m_max is the maximum achievable metric value. This can be used to return
+multiple decent cutpoints and to avoid floating-point problems. Not supported
+by all <code>method</code> functions, see details.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If <code>direction</code> and/or <code>pos_class</code> and <code>neg_class</code> are not given, the function will
+assume that higher values indicate the positive class and use the class
+with a higher median as the positive class.
+</p>
+<p>This function uses tidyeval to support unquoted arguments. For programming
+with <code>cutpointr</code> the operator <code>!!</code> can be used to unquote an argument, see the
+examples.
+</p>
+<p>Different methods can be selected for determining the optimal cutpoint via
+the method argument. The package includes the following method functions:
+</p>
+
+<ul>
+<li> <p><code>maximize_metric</code>: Maximize the metric function
+</p>
+</li>
+<li> <p><code>minimize_metric</code>: Minimize the metric function
+</p>
+</li>
+<li> <p><code>maximize_loess_metric</code>: Maximize the metric function after LOESS
+smoothing
+</p>
+</li>
+<li> <p><code>minimize_loess_metric</code>: Minimize the metric function after LOESS
+smoothing
+</p>
+</li>
+<li> <p><code>maximize_spline_metric</code>: Maximize the metric function after spline
+smoothing
+</p>
+</li>
+<li> <p><code>minimize_spline_metric</code>: Minimize the metric function after spline
+smoothing
+</p>
+</li>
+<li> <p><code>maximize_boot_metric</code>: Maximize the metric function as a summary of
+the optimal cutpoints in bootstrapped samples
+</p>
+</li>
+<li> <p><code>minimize_boot_metric</code>: Minimize the metric function as a summary of
+the optimal cutpoints in bootstrapped samples
+</p>
+</li>
+<li> <p><code>oc_youden_kernel</code>: Maximize the Youden-Index after kernel smoothing
+the distributions of the two classes
+</p>
+</li>
+<li> <p><code>oc_youden_normal</code>: Maximize the Youden-Index parametrically
+assuming normally distributed data in both classes
+</p>
+</li>
+<li> <p><code>oc_manual</code>: Specify the cutpoint manually
+</p>
+</li>
+</ul>
+<p>User-defined functions can be supplied to method, too. As a reference,
+the code of all included method functions can be accessed by simply typing
+their name. To define a new method function, create a function that may take
+as input(s):
+</p>
+
+<ul>
+<li> <p><code>data</code>: A <code>data.frame</code> or <code>tbl_df</code>
+</p>
+</li>
+<li> <p><code>x</code>: (character) The name of the predictor or independent variable
+</p>
+</li>
+<li> <p><code>class</code>: (character) The name of the class or dependent variable
+</p>
+</li>
+<li> <p><code>metric_func</code>: A function for calculating a metric, e.g. accuracy
+</p>
+</li>
+<li> <p><code>pos_class</code>: The positive class
+</p>
+</li>
+<li> <p><code>neg_class</code>: The negative class
+</p>
+</li>
+<li> <p><code>direction</code>: "&gt;=" if the positive class has higher x values, "&lt;=" otherwise
+</p>
+</li>
+<li> <p><code>tol_metric</code>: (numeric) In the built-in methods a tolerance around
+the optimal metric value
+</p>
+</li>
+<li> <p><code>use_midpoints</code>: (logical) In the built-in methods whether to
+use midpoints instead of exact optimal cutpoints
+</p>
+</li>
+<li> <p><code>...</code> Further arguments
+</p>
+</li>
+</ul>
+<p>The <code>...</code> argument can be used to avoid an error if not all of the above
+arguments are needed or in order to pass additional arguments to method.
+The function should return a <code>data.frame</code> or <code>tbl_df</code> with
+one row, the column "optimal_cutpoint", and an optional column with an arbitrary name
+with the metric value at the optimal cutpoint.
+</p>
+<p>Built-in metric functions include:
+</p>
+
+<ul>
+<li> <p><code>accuracy</code>: Fraction correctly classified
+</p>
+</li>
+<li> <p><code>youden</code>: Youden- or J-Index = sensitivity + specificity - 1
+</p>
+</li>
+<li> <p><code>sum_sens_spec</code>: sensitivity + specificity
+</p>
+</li>
+<li> <p><code>sum_ppv_npv</code>: The sum of positive predictive value (PPV) and negative
+predictive value (NPV)
+</p>
+</li>
+<li> <p><code>prod_sens_spec</code>: sensitivity * specificity
+</p>
+</li>
+<li> <p><code>prod_ppv_npv</code>: The product of positive predictive value (PPV) and
+negative predictive value (NPV)
+</p>
+</li>
+<li> <p><code>cohens_kappa</code>: Cohen's Kappa
+</p>
+</li>
+<li> <p><code>abs_d_sens_spec</code>: The absolute difference between
+sensitivity and specificity
+</p>
+</li>
+<li> <p><code>roc01</code>: Distance to the point (0,1) on ROC space
+</p>
+</li>
+<li> <p><code>abs_d_ppv_npv</code>: The absolute difference between positive predictive
+value (PPV) and negative predictive value (NPV)
+</p>
+</li>
+<li> <p><code>p_chisquared</code>: The p-value of a chi-squared test on the confusion
+matrix of predictions and observations
+</p>
+</li>
+<li> <p><code>odds_ratio</code>: The odds ratio calculated as (TP / FP) / (FN / TN)
+</p>
+</li>
+<li> <p><code>risk_ratio</code>: The risk ratio (relative risk) calculated as
+(TP / (TP + FN)) / (FP / (FP + TN))
+</p>
+</li>
+<li>
+<p> positive and negative likelihood ratio calculated as
+<code>plr</code> = true positive rate / false positive rate and
+<code>nlr</code> = false negative rate / true negative rate
+</p>
+</li>
+<li> <p><code>misclassification_cost</code>: The sum of the misclassification cost of
+false positives and false negatives fp * cost_fp + fn * cost_fn.
+Additional arguments to cutpointr: <code>cost_fp</code>, <code>cost_fn</code>
+</p>
+</li>
+<li> <p><code>total_utility</code>: The total utility of true / false positives / negatives
+calculated as utility_tp * TP + utility_tn * TN - cost_fp * FP - cost_fn * FN.
+Additional arguments to cutpointr: <code>utility_tp</code>, <code>utility_tn</code>,
+<code>cost_fp</code>, <code>cost_fn</code>
+</p>
+</li>
+<li> <p><code>F1_score</code>: The F1-score (2 * TP) / (2 * TP + FP + FN)
+</p>
+</li>
+<li> <p><code>sens_constrain</code>: Maximize sensitivity given a minimal value of
+specificity
+</p>
+</li>
+<li> <p><code>spec_constrain</code>: Maximize specificity given a minimal value of
+sensitivity
+</p>
+</li>
+<li> <p><code>metric_constrain</code>: Maximize a selected metric given a minimal
+value of another selected metric
+</p>
+</li>
+</ul>
+<p>Furthermore, the following functions are included which can be used as metric
+functions but are more useful for plotting purposes, for example in
+plot_cutpointr, or for defining new metric functions:
+<code>tp</code>, <code>fp</code>, <code>tn</code>, <code>fn</code>, <code>tpr</code>, <code>fpr</code>,
+<code>tnr</code>, <code>fnr</code>, <code>false_omission_rate</code>,
+<code>false_discovery_rate</code>, <code>ppv</code>, <code>npv</code>, <code>precision</code>,
+<code>recall</code>, <code>sensitivity</code>, and <code>specificity</code>.
+</p>
+<p>User defined metric functions can be created as well which can accept the following
+inputs as vectors:
+</p>
+
+<ul>
+<li> <p><code>tp</code>: Vector of true positives
+</p>
+</li>
+<li> <p><code>fp</code>: Vector of false positives
+</p>
+</li>
+<li> <p><code>tn</code>: Vector of true negatives
+</p>
+</li>
+<li> <p><code>fn</code>: Vector of false negatives
+</p>
+</li>
+<li> <p><code>...</code> If the metric function is used in conjunction with any of the
+maximize / minimize methods, further arguments can be passed
+</p>
+</li>
+</ul>
+<p>The function should return a numeric vector or a matrix or a <code>data.frame</code>
+with one column. If the column is named,
+the name will be included in the output and plots. Avoid using names that
+are identical to the column names that are by default returned by <span class="pkg">cutpointr</span>.
+</p>
+<p>If <code>boot_runs</code> is positive, that number of bootstrap samples will be drawn
+and the optimal cutpoint using <code>method</code> will be determined. Additionally,
+as a way of internal validation, the function in <code>metric</code> will be used to
+score the out-of-bag predictions using the cutpoints determined by
+<code>method</code>. Various default metrics are always included in the bootstrap results.
+</p>
+<p>If multiple optimal cutpoints are found, the column optimal_cutpoint becomes a
+list that contains the vector(s) of the optimal cutpoints.
+</p>
+<p>If <code>use_midpoints = TRUE</code> the mean of the optimal cutpoint and the next
+highest or lowest possible cutpoint is returned, depending on <code>direction</code>.
+</p>
+<p>The <code>tol_metric</code> argument can be used to avoid floating-point problems
+that may lead to exclusion of cutpoints that achieve the optimally achievable
+metric value. Additionally, by selecting a large tolerance multiple cutpoints
+can be returned that lead to decent metric values in the vicinity of the
+optimal metric value. <code>tol_metric</code> is passed to metric and is only
+supported by the maximization and minimization functions, i.e.
+<code>maximize_metric</code>, <code>minimize_metric</code>, <code>maximize_loess_metric</code>,
+<code>minimize_loess_metric</code>, <code>maximize_spline_metric</code>, and
+<code>minimize_spline_metric</code>. In <code>maximize_boot_metric</code> and
+<code>minimize_boot_metric</code> multiple optimal cutpoints will be passed to the
+<code>summary_func</code> of these two functions.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A cutpointr object which is also a data.frame and tbl_df.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other main cutpointr functions: 
+<code>add_metric()</code>,
+<code>boot_ci()</code>,
+<code>boot_test()</code>,
+<code>multi_cutpointr()</code>,
+<code>predict.cutpointr()</code>,
+<code>roc()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(cutpointr)
+
+## Optimal cutpoint for dsi
+data(suicide)
+opt_cut &lt;- cutpointr(suicide, dsi, suicide)
+opt_cut
+s_opt_cut &lt;- summary(opt_cut)
+plot(opt_cut)
+
+## Not run: 
+## Predict class for new observations
+predict(opt_cut, newdata = data.frame(dsi = 0:5))
+
+## Supplying raw data, same result
+cutpointr(x = suicide$dsi, class = suicide$suicide)
+
+## direction, class labels, method and metric can be defined manually
+## Again, same result
+cutpointr(suicide, dsi, suicide, direction = "&gt;=", pos_class = "yes",
+          method = maximize_metric, metric = youden)
+
+## Optimal cutpoint for dsi, as before, but for the separate subgroups
+opt_cut &lt;- cutpointr(suicide, dsi, suicide, gender)
+opt_cut
+(s_opt_cut &lt;- summary(opt_cut))
+tibble:::print.tbl(s_opt_cut)
+
+## Bootstrapping also works on individual subgroups
+set.seed(30)
+opt_cut &lt;- cutpointr(suicide, dsi, suicide, gender, boot_runs = 1000,
+  boot_stratify = TRUE)
+opt_cut
+summary(opt_cut)
+plot(opt_cut)
+
+## Parallelized bootstrapping
+  library(doParallel)
+  library(doRNG)
+  cl &lt;- makeCluster(2) # 2 cores
+  registerDoParallel(cl)
+  registerDoRNG(12) # Reproducible parallel loops using doRNG
+  opt_cut &lt;- cutpointr(suicide, dsi, suicide, gender,
+                       boot_runs = 1000, allowParallel = TRUE)
+  stopCluster(cl)
+  opt_cut
+  plot(opt_cut)
+
+## Robust cutpoint method using kernel smoothing for optimizing Youden-Index
+opt_cut &lt;- cutpointr(suicide, dsi, suicide, gender,
+                     method = oc_youden_kernel)
+opt_cut
+
+## End(Not run)
+
+
+
+</code></pre>
+
+
+</div>

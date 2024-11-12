@@ -1,0 +1,192 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>sdists</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Sequence Distance Computation</h2>
+
+<h3>Description</h3>
+
+<p>This function computes and returns the auto-distance matrix between 
+the vectors of a list or between the character strings of a vector 
+treating them as sequences of symbols, as well as the cross-distance 
+matrix between two such lists or vectors.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">sdists(x, y = NULL, method = "ow", weight = c(1, 1, 0, 2), 
+       exclude = c(NA, NaN, Inf, -Inf), pairwise = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x,y</code></td>
+<td>
+<p>a list (of vectors) or a vector of character.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>a mnemonic string referencing a distance measure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weight</code></td>
+<td>
+<p>vector or matrix of parameter values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>exclude</code></td>
+<td>
+<p>argument to factor.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pairwise</code></td>
+<td>
+<p>compute distances for the parallel pairs of <code>x</code>
+and <code>y</code> only.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function provides a common interface to different methods for 
+computation of distances between sequences, such as the edit a.k.a. 
+Levenshtein distance. Conversely, in the context of sequence alignment 
+the similarity of the maximizing alignment is computed.
+</p>
+<p>Note that negative similarities are returned as distances. So be careful
+to use a proper weighting (scoring) scheme.
+</p>
+<p>The following methods are currently implemented:
+</p>
+
+<dl>
+<dt>
+<code>ow</code>:</dt>
+<dd>
+<p>operation-weight edit distance. Weights have to be
+specified for deletion, insertion, match, and replacement. Other
+weights for initial operations can be specified as
+<code>weight[5:6]</code>.</p>
+</dd>
+<dt>
+<code>aw</code>:</dt>
+<dd>
+<p>alphabet-weight sequential alignment similarity.
+A matrix of weights (scores) for all possible symbol replacements 
+needs to be specified with the convention that the first row/column 
+defines the replacement with the empty (space) symbol. The colnames 
+of this matrix are used as the levels argument for the encoding as 
+<code>factor</code>. Consequently, unspecified symbols are mapped to
+<code>NA</code>.</p>
+</dd>
+<dt>
+<code>awl</code>:</dt>
+<dd>
+<p>alphabet-weight local sequential alignment similarity.
+The weight matrix must be as described above. However, note that
+zero acts as threshold for a 'restart' of the search for a local
+alignment and at the same time indicates that the solution is the 
+empty substring. Thus, you normally would use non-negative scores
+for matches and non-positive weights otherwise.</p>
+</dd>
+</dl>
+<p>Missing (and non-finite) values should be avoided, i.e. either be removed
+or recoded (and appropriately weighted). By default they are excluded
+when coercing to factor and therefore mapped to <code>NA</code>. The result 
+is then defined to be <code>NA</code> as we cannot determine a match!
+</p>
+<p>The time complexity is O(n*m) for two sequences of length n and m.
+</p>
+<p>Note that in the case of auto-distances the weight matrix must be
+(exactly) symmetric. Otherwise, for asymmetric weights <code>y</code>
+must not be <code>NULL</code>. For instance, <code>x</code> may be supplied 
+twice (see the examples).
+</p>
+
+
+<h3>Value</h3>
+
+<p>Auto distances are returned as an object of class <code>dist</code> and 
+cross-distances as an object of class <code>matrix</code>. 
+</p>
+
+
+<h3>Warning</h3>
+
+<p>The interface is experimental and may change in the future</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Christian Buchta</p>
+
+
+<h3>References</h3>
+
+<p>D. Gusfield (1997). <em>Algorithms on Strings, Trees, and Sequences</em>. 
+Cambridge University Press, Chapter 11.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>sdists.trace</code> for computation of edit transcripts and sequence alignments,
+<code>dist</code> for computation of common distances,
+<code>agrep</code> for searches for approximate matches.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">### numeric data
+sdists(list(c(2,2,3),c(2,4,3)))			# 2
+sdists(list(c(2,2,3),c(2,4,3)),weight=c(1,1,0,1)) # 1
+
+### character data
+w &lt;- matrix(-1,nrow=8,ncol=8)			# weight/score matrix for
+diag(w) &lt;- 0					# longest common subsequence
+colnames(w) &lt;- c("",letters[1:7])
+x &lt;- sapply(rbinom(3,64,0.5),function(n,x)
+    paste(sample(x,n,rep=TRUE),collapse=""),
+    colnames(w)[-1])
+x
+sdists(x,method="aw",weight=w)
+sdists(x,x,method="aw",weight=w)		# check
+## pairwise
+sdists(x,rev(x),method="aw",weight=w,pairwise = TRUE)
+diag(w) &lt;- seq(0,7)
+sdists(x,method="aw", weight=w)			# global alignment
+sdists(x,method="awl",weight=w)			# local alignment
+
+## empty strings
+sdists("", "FOO")
+sdists("", list(c("F","O","O")))
+sdists("", list(""))				# space symbol
+sdists("", "abc", method="aw", weight=w)
+sdists("", list(""), method="aw", weight=w)
+
+### asymmetric weights
+w[] &lt;- matrix(-sample(0:5,64,TRUE),ncol=8)
+diag(w) &lt;- seq(0,7)
+sdists(x,x,method="aw", weight=w)
+sdists(x,x,method="awl",weight=w)
+
+### missing values
+sdists(list(c(2,2,3),c(2,NA,3)),exclude=NULL)	# 2 (include anything)
+sdists(list(c(2,2,3),c(2,NA,3)),exclude=NA)	# NA
+
+</code></pre>
+
+
+</div>

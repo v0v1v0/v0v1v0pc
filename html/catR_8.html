@@ -1,0 +1,193 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fullDist</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Full distribution of ability estimator (dichotomous models only)</h2>
+
+<h3>Description</h3>
+
+<p>This command returns the full distribution of the selected ability estimator, that is, the set of all possible ability estimates and related probabilities, for a given matrix of item parameters and ability estimate (or true value).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fullDist(th, it, method = "BM", priorDist = "norm", priorPar = c(0,1), 
+ 	weight = "Huber", tuCo  = 1, range = c(-4 ,4), parInt = c(-4, 4, 33))
+ </code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>th</code></td>
+<td>
+<p>numeric: the ability estimate of interest (can be a vector of estimates too).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>it</code></td>
+<td>
+<p>numeric: a suitable matrix of item parameters. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>character: the ability estimator. Possible values are <code>"BM"</code> (default), <code>"ML"</code>, <code>"WL"</code>, <code>"EAP"</code> and <code>"ROB"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>priorDist</code></td>
+<td>
+<p>character: specifies the prior distribution. Possible values are <code>"norm"</code> (default), <code>"unif"</code> and <code>"Jeffreys"</code>. Ignored if <code>method</code> is neither <code>"BM"</code> nor <code>"EAP"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>priorPar</code></td>
+<td>
+<p>numeric: vector of two components specifying the prior parameters (default is <code>c(0,1)</code>) of the prior ability distribution. Ignored if <code>method</code> is neither <code>"BM"</code> nor <code>"EAP"</code>, or if <code>priorDist="Jeffreys"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weight</code></td>
+<td>
+<p>character: the type of weight function for the robust estimator. Possible values are <code>"Huber"</code> (default) and <code>"Tukey"</code>. Ignored if <code>method</code> is not <code>"ROB"</code> or if <code>model</code> is not <code>NULL</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tuCo</code></td>
+<td>
+<p>numeric: the value of the tuning constant for the weight function (default is 1, suitable with <code>"Huber"</code> weight). Ignored if <code>method</code> is not <code>"ROB"</code> or if <code>model</code> is not <code>NULL</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>range</code></td>
+<td>
+<p>numeric: vector of two components specifying the range wherein the ability estimate must be looked for (default is <code>c(-4,4)</code>). Ignored if <code>method=="EAP"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parInt</code></td>
+<td>
+<p>numeric: vector of three components, holding respectively the values of the arguments <code>lower</code>, <code>upper</code> and <code>nqp</code> of the <code>eapEst</code> command. Default vector is (-4, 4, 33). Ignored if <code>method</code> is not <code>"EAP"</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The computation of the full distribution of an ability estimator is required to determine the exact standard error of ability, compared to the asympotic SE (ASE) displayed by former versions of the <code>semTheta</code> function. This distribution is computed as follows. 
+</p>
+<p>First, all possible response patterns (for the given test length fixed by the number of items specified by <code>it</code> argument) are generated through the internal <code>dataGen</code> function. Second, ability estimation is performed with each generated pattern, and the corresponding pattern probability is computed using the set of item parameters <code>it</code> and the predefined ability level <code>th</code> of interest. These to components are eventually returned as the full distribution. 
+</p>
+<p>In case of the Rasch (1PL) model, this long process can be shortened as the total test score is a proxy for ability estimation. Hence, with <code class="reqn">n</code> items, only <code class="reqn">(n+1)</code> patterns must be created, one for each test score from zero to <code class="reqn">n</code>. Related probabilities can be derived using the Lord-Wingersky algorithm (1984) that is implemented internally through the <code>LW()</code> function.
+</p>
+<p>Dichotomous IRT models are considered whenever <code>model</code> is set to <code>NULL</code> (default value). In this case, <code>it</code> must be a matrix with one row per item and four columns, with the values of the discrimination, the difficulty, the pseudo-guessing and the inattention parameters (in this order). These are the parameters of the four-parameter logistic (4PL) model
+(Barton and Lord, 1981). 
+</p>
+<p>Five ability estimators are available: the maximum likelihood (ML) estimator (Lord, 1980), the Bayes modal (BM) estimator (Birnbaum, 1969), the expected a posteriori (EAP) estimator (Bock and Mislevy, 1982), the weighted likelihood (WL) estimator (Warm, 1989) and the robust estimator (Schuster &amp; Yuan, 2011). The selected estimator is specified by the <code>method</code> argument, with values <code>"ML"</code>, <code>"BM"</code>, <code>"EAP"</code>, <code>"WL"</code> and <code>"ROB"</code> respectively.
+</p>
+<p>For the BM and EAP estimators, three prior distributions are available: the normal distribution, the uniform distribution and the Jeffreys' prior distribution (Jeffreys, 1939, 1946). The prior distribution is specified by the argument <code>priorPar</code>, with values <code>"norm"</code>, <code>"unif"</code> and <code>"Jeffreys"</code>, respectively. The <code>priorPar</code> argument is ignored if <code>method="ML"</code> or <code>method="WL"</code>.
+</p>
+<p>The argument <code>priorPar</code> determines either: the prior mean and standard deviation of the normal prior distribution (if <code>priorDist="norm"</code>), or the range for defining the prior uniform distribution (if <code>priorDist="unif"</code>). This argument is ignored if <code>priorDist="Jeffreys"</code>.
+</p>
+<p>The <code>eapPar</code> argument sets the range and the number of quadrature points for numerical integration in the EAP process. By default, it takes the vector value (-4, 4, 33), that is, 33 quadrature points on the range [-4; 4] (or, by steps of 0.25). See <code>eapEst</code> for further details. 
+</p>
+<p>Robust estimation requires an appropriate weight function that depends on an accurate tuning constant. Suggested functions are the Huber weight (Schuester and Yuan, 2011) and the Tukey weight (Mosteller and Tukey, 1977). Both can be set by the <code>weight</code> argument, with respective values <code>"Huber"</code> and <code>"Tukey"</code>. Default function is Huber. Moreover, the <code>tuCo</code> argument specifies the tuning constant for the weight function. Default value is 1 and suggested for Huber weight (also by default), and value 4 is suggested for Tukey weight (Schuester and Yuan, 2011).
+</p>
+<p>The ability level of interest (that is, for which the probability distribution must be computed) is specified by the<code>th</code> argument. Note that it can hold a vector of ability levels too; in this case, the probability distribution is computed for each component of <code>th</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A matrix with <code class="reqn">(t+1)</code> columns (where <code class="reqn">t</code> is the length of vector <code>th</code>), the first column holding all observable ability estimates and columns 2 to <code class="reqn">(t+1)</code> with related probabilities of the corresponding components of <code>th</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Under the Rasch (1PL) model, the computation of the full distribution is very efficient even for a large test: due to the Lord-Wingersky algorithm, only <code class="reqn">(n+1)</code> patterns (where <code class="reqn">n</code> is the number of items) must be created, one for each possible test score. But for other models, <code class="reqn">2^n</code> patterns must be generated and used for ability estimation, which can become computationally intensive with long tests. Therefore it is recommended not to make use of this function with more than ten items (except under the Rasch model).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>David Magis <br>
+Department of Psychology, University of Liege, Belgium <br><a href="mailto:david.magis@uliege.be">david.magis@uliege.be</a>
+</p>
+<p>Lianne Ippel <br>
+Department of Psychology, University of Liege, Belgium <br><a href="mailto:g.j.e.ippel@gmail.com">g.j.e.ippel@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Barton, M.A., and Lord, F.M. (1981). <em>An upper asymptote for the three-parameter logistic item-response model</em>.
+Research Bulletin 81-20. Princeton, NJ: Educational Testing Service.
+</p>
+<p>Birnbaum, A. (1969). Statistical theory for logistic mental test models with a prior distribution of ability. <em>Journal of Mathematical Psychology, 6</em>, 258-276. doi: <a href="https://doi.org/10.1016/0022-2496(69)90005-4">10.1016/0022-2496(69)90005-4</a>
+</p>
+<p>Bock, R. D., and Mislevy, R. J. (1982). Adaptive EAP estimation of ability in a microcomputer environment. <em>Applied Psychological Measurement, 6</em>, 431-444. doi: <a href="https://doi.org/10.1177/014662168200600405">10.1177/014662168200600405</a>
+</p>
+<p>Haley, D.C. (1952). <em>Estimation of the dosage mortality relationship when the dose is subject to error</em>. 
+Technical report no 15. Palo Alto, CA: Applied Mathematics and Statistics Laboratory, Stanford University. 
+</p>
+<p>Jeffreys, H. (1939). <em>Theory of probability</em>. Oxford, UK: Oxford University Press.
+</p>
+<p>Jeffreys, H. (1946). An invariant form for the prior probability in estimation problems. <em>Proceedings of the Royal Society of London. Series A, Mathematical and Physical Sciences, 186</em>, 453-461.
+</p>
+<p>Lord, F.M. (1980). <em>Applications of item response theory to practical testing problems</em>. Hillsdale, NJ: Lawrence Erlbaum.
+</p>
+<p>Lord, F. M., and Wingersky, M. S. (1984). Comparison of IRT true-score and equipercentile observed-score equatings. <em>Applied Psychological Measurement, 8</em>, 453-461.  doi: <a href="https://doi.org/10.1177/014662168400800409">10.1177/014662168400800409</a>
+</p>
+<p>Magis, D. and Barrada, J. R. (2017). Computerized Adaptive Testing with R: Recent Updates of the Package <em>catR</em>. <em>Journal of Statistical Software</em>, <em>Code Snippets</em>, <em>76(1)</em>, 1-18. doi: <a href="https://doi.org/10.18637/jss.v076.c01">10.18637/jss.v076.c01</a>
+</p>
+<p>Magis, D., and Raiche, G. (2012). Random Generation of Response Patterns under Computerized Adaptive Testing with the R Package <em>catR</em>. <em>Journal of Statistical Software</em>, <em>48 (8)</em>, 1-31. doi: <a href="https://doi.org/10.18637/jss.v048.i08">10.18637/jss.v048.i08</a>
+</p>
+<p>Mosteller, F., and Tukey, J. (1977). <em>Exploratory data analysis and regression</em>. Reading, MA: Addison-Wesley.
+</p>
+<p>Schuester, C., and Yuan, K.-H. (2011). Robust estimation of latent ability in item response models. <em>Journal of Educational and Behavioral Statistics, 36</em>, 720)735.doi: <a href="https://doi.org/10.3102/1076998610396890">10.3102/1076998610396890</a>
+</p>
+<p>Warm, T.A. (1989). Weighted likelihood estimation of ability in item response models. <em>Psychometrika, 54</em>, 427-450. doi: <a href="https://doi.org/10.1007/BF02294627">10.1007/BF02294627</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>semTheta</code>, <code>thetaEst</code>, 
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Dichotomous models ##
+
+ # Generation of ten items under 1PL model
+ it &lt;- genDichoMatrix(10, model = "1PL")
+ 
+ # Full distribution of ML estimator for ability level zero
+ fullDist(0, it, method = "ML")
+
+ # Idem with BM estimator (probabilities don't change, only estimated abilities)
+ fullDist(0, it, method = "BM")
+
+ # Idem with ability level 1 (only probabilities change)
+ fullDist(1, it, method = "BM")
+
+ # Distributions with two ability levels 1 and 0.5
+ fullDist(c(1, 0.5), it, method = "BM")
+
+ # Generation of ten items under 2PL model
+ it2 &lt;- genDichoMatrix(10, model = "2PL")
+ 
+ # Full distribution of ML estimator for ability level zero
+ fullDist(0, it2, method = "ML")
+ </code></pre>
+
+
+</div>

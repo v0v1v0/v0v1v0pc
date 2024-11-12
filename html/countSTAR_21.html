@@ -1,0 +1,228 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>genMCMC_star_ispline</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>MCMC sampler for STAR with a monotone spline model
+for the transformation</h2>
+
+<h3>Description</h3>
+
+<p>Run the MCMC algorithm for STAR given
+</p>
+
+<ol>
+<li>
+<p> a function to initialize model parameters; and
+</p>
+</li>
+<li>
+<p> a function to sample (i.e., update) model parameters.
+</p>
+</li>
+</ol>
+<p>The transformation is modeled as an unknown, monotone function
+using I-splines. The Robust Adaptive Metropolis (RAM) sampler
+is used for drawing the parameter of the transformation function.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">genMCMC_star_ispline(
+  y,
+  sample_params,
+  init_params,
+  lambda_prior = 1/2,
+  y_max = Inf,
+  nsave = 5000,
+  nburn = 5000,
+  nskip = 0,
+  save_y_hat = FALSE,
+  target_acc_rate = 0.3,
+  adapt_rate = 0.75,
+  stop_adapt_perc = 0.5,
+  verbose = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p><code>n x 1</code> vector of observed counts</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sample_params</code></td>
+<td>
+<p>a function that inputs data <code>y</code> and a named list
+<code>params</code> containing at least
+</p>
+
+<ol>
+<li> <p><code>mu</code>: vector of conditional means (fitted values)
+</p>
+</li>
+<li> <p><code>sigma</code>: the conditional standard deviation
+</p>
+</li>
+<li> <p><code>coefficients</code>: a named list of parameters that determine <code>mu</code>
+</p>
+</li>
+</ol>
+<p>and optionally a fourth element <code>mu_test</code> which contains the vector of conditional means
+at test points. The output is an updated list <code>params</code> of samples from the full conditional posterior
+distribution of <code>coefficients</code> and <code>sigma</code> (along with updates of <code>mu</code> and <code>mu_test</code> if applicable)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>init_params</code></td>
+<td>
+<p>an initializing function that inputs data <code>y</code>
+and initializes the named list <code>params</code> of <code>mu</code>, <code>sigma</code>, <code>coefficients</code> and <code>mu_test</code> (if desired)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda_prior</code></td>
+<td>
+<p>the prior mean for the transformation g() is the Box-Cox function with
+parameter <code>lambda_prior</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y_max</code></td>
+<td>
+<p>a fixed and known upper bound for all observations; default is <code>Inf</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsave</code></td>
+<td>
+<p>number of MCMC iterations to save</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nburn</code></td>
+<td>
+<p>number of MCMC iterations to discard</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nskip</code></td>
+<td>
+<p>number of MCMC iterations to skip between saving iterations,
+i.e., save every (nskip + 1)th draw</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save_y_hat</code></td>
+<td>
+<p>logical; if TRUE, compute and save the posterior draws of
+the expected counts, E(y), which may be slow to compute</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>target_acc_rate</code></td>
+<td>
+<p>target acceptance rate (between zero and one)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>adapt_rate</code></td>
+<td>
+<p>rate of adaptation in RAM sampler (between zero and one)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stop_adapt_perc</code></td>
+<td>
+<p>stop adapting at the proposal covariance at <code>stop_adapt_perc*nburn</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>logical; if TRUE, print time remaining</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If the coefficients list from <code>init_params</code> and <code>sample_params</code> contains a named element <code>beta</code>,
+e.g. for linear regression, then the function output contains
+</p>
+
+<ul>
+<li> <p><code>coefficients</code>: the posterior mean of the beta coefficients
+</p>
+</li>
+<li> <p><code>post.beta</code>: draws from the posterior distribution of <code>beta</code>
+</p>
+</li>
+<li> <p><code>post.othercoefs</code>: draws from the posterior distribution of any other sampled coefficients, e.g. variance terms
+</p>
+</li>
+</ul>
+<p>If no <code>beta</code> exists in the parameter coefficients, then the output list just contains
+</p>
+
+<ul>
+<li> <p><code>coefficients</code>: the posterior mean of all coefficients
+</p>
+</li>
+<li> <p><code>post.beta</code>: draws from the posterior distribution of all coefficients
+</p>
+</li>
+</ul>
+<p>Additionally, if <code>init_params</code> and <code>sample_params</code> have output <code>mu_test</code>, then the sampler will output
+<code>post.predtest</code>, which contains draws from the posterior predictive distribution at test points.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with at least the following elements:
+</p>
+
+<ul>
+<li> <p><code>post.pred</code>: draws from the posterior predictive distribution of <code>y</code>
+</p>
+</li>
+<li> <p><code>post.sigma</code>: draws from the posterior distribution of <code>sigma</code>
+</p>
+</li>
+<li> <p><code>post.log.like.point</code>: draws of the log-likelihood for each of the <code>n</code> observations
+</p>
+</li>
+<li> <p><code>WAIC</code>: Widely-Applicable/Watanabe-Akaike Information Criterion
+</p>
+</li>
+<li> <p><code>p_waic</code>: Effective number of parameters based on WAIC
+</p>
+</li>
+<li> <p><code>post.g</code>: draws from the posterior distribution of the transformation <code>g</code>
+</p>
+</li>
+<li> <p><code>post.sigma.gamma</code>: draws from the posterior distribution of <code>sigma.gamma</code>,
+the prior standard deviation of the transformation g() coefficients
+</p>
+</li>
+<li> <p><code>fitted.values</code>: the posterior mean of the conditional expectation of the counts <code>y</code>
+(<code>NULL</code> if <code>save_y_hat=FALSE</code>)
+</p>
+</li>
+<li> <p><code>post.fitted.values</code>: posterior draws of the conditional mean of the counts <code>y</code>
+(<code>NULL</code> if <code>save_y_hat=FALSE</code>)
+</p>
+</li>
+</ul>
+<p>along with other elements depending on the nature of the initialization and sampling functions. See details for more info.
+</p>
+
+
+</div>

@@ -1,0 +1,170 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cpop</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Find the best segmentation of data for a change-in-slope model</h2>
+
+<h3>Description</h3>
+
+<p>The CPOP algorithm fits a change-in-slope model to data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cpop(
+  y,
+  x = 1:length(y) - 1,
+  grid = x,
+  beta = 2 * log(length(y)),
+  sd = sqrt(mean(diff(diff(y))^2)/6),
+  minseglen = 0,
+  prune.approx = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>A vector of length n containing the data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A vector of length n containing the locations of y. Default value is NULL, in which case the locations <code>x = 1:length(y)-1</code> are assumed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grid</code></td>
+<td>
+<p>An ordered vector of possible locations for the change points. If this is NULL, then this is set to x, the vector of times/locations of the data points.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta</code></td>
+<td>
+<p>A positive real value for the penalty incurred for adding a changepoint (prevents over-fitting). Default value is <code>2*log(length(y))</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sd</code></td>
+<td>
+<p>Estimate of residual standard deviation. Can be a single numerical value or a vector of values for the case of varying standard deviation.
+Default value is <code>sd = sqrt(mean(diff(diff(y))^2)/6)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minseglen</code></td>
+<td>
+<p>The minimum allowable segment length, i.e. distance between successive changepoints. Default is 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prune.approx</code></td>
+<td>
+<p>Only relevant if a minimum segment length is set. If True, cpop will use an approximate pruning algorithm that will speed up computation but may
+occasionally lead to a sub-optimal solution in terms of the estimate change point locations. If the minimum segment length is 0, then an exact pruning algorithm is possible and is used.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<script id="MathJax-script" async src="../../mathjaxr/doc/mathjax/es5/tex-chtml-full.js"></script><p> The CPOP algorithm fits a change-in-slope model to data. It assumes that we have we have data points \((y_1,x_1),\ldots,(y_n,x_n)\), ordered
+so that \(x_1 &lt; x_2 &lt; \cdots &lt; x_n\). For example  \(x_i\) could be a time-stamp of when response \(y_i\) is obtained. We model the response, \(y\), as a signal
+plus noise where the signal is modelled as a continuous piecewise linear function of \(x\). That is \[y_i=f(x_i)+\epsilon_i\] where \(f(x)\) is a continuous
+piecewise linear function.
+</p>
+<p>To estimate the function \(f(x)\) we specify a set of \(N\) grid points, \(g_{1:N}\) with these ordered so that \(g_i &lt; g_j\) if and only if \(i &lt; j\),
+and allow the slope of \(f(x)\) to only change at these grid points. We then estimate the number of changes, the location of the changes, and hence the resulting
+function \(f(x)\) by minimising a penalised weighted least squares criteria. This criteria includes a term which measures fit to the data, which is calculated as the sum of the
+square residuals of the fitted function, scaled by the variance of the noise. The penalty is proportional to the number of changes.
+</p>
+<p>That is our estimated function will depend on \(K\), the number of changes in slope, their locations, \(\tau_1,\ldots,\tau_K\), and the value of the function
+\(f(x)\) at these change points, \(\alpha_1,\ldots,\alpha_K\), and its values, \(\alpha_0\) at  \(\tau_0 &lt; x_1\) and
+\(\alpha_{K+1}\) at some \(\tau_{K+1} &gt; x_N\). The CPOP algorithm then estimates \(K\), \(\tau_{1:K}\) and \(\alpha_{0:K+1}\) 
+as the values that solve the following minimisation problem
+\[\min_{K,\tau_{1:K}\in g_{1:N}, \alpha_{0:K+1} }\left\lbrace\sum_{i=1}^n \frac{1}{\sigma^2_i} \left(y_i -  \alpha_{j(i)}-(\alpha_{j(i)+1}-  \alpha_{j(i)})\frac{x_i-\tau_{j(i)}}{\tau_{j(i)+1}-\tau_{j(i)}}\right)^2+K\beta\right\rbrace\]
+</p>
+<p>where \(\sigma^2_1,\ldots,\sigma^2_n\) are the variances of the noise \(\epsilon_i\) for \(i=1,\ldots,n\), and \(\beta\) is the
+penalty for adding a changepoint. The sum in this expression is the weighted residual sum of squares, and the \(K\beta\) term is the penalty for having \(K\) changes. 
+</p>
+<p>If we know, or have a good estimate of, the residual variances, and the noise is (close to) independent over time then an appropriate choice for the penalty is
+\(\beta=2 \log n\), and this is the default for CPOP. However in many applications these assumptions will not hold and it is advised to look at segmentations for
+different value of \(\beta\) – this is possible
+using CPOP with the CROPS algorithm <code>cpop.crops</code>. Larger values of \(\beta\) will lead to functions with fewer changes. Also there is a trade-off between the variances of the residuals
+and \(\beta\): e.g. if we double the variances and half the value of \(\beta\) we will obtain the same estimates for the number and location of the changes and the
+underlying function.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An instance of an S4 class of type cpop.class.
+</p>
+
+
+<h3>References</h3>
+
+<p>Fearnhead P, Maidstone R, Letchford A (2019).
+“Detecting Changes in Slope With an L0 Penalty.”
+<em>Journal of Computational and Graphical Statistics</em>, <b>28</b>(2), 265-275.
+<a href="https://doi.org/10.1080/10618600.2018.1512868">doi:10.1080/10618600.2018.1512868</a>.
+</p>
+<p>Fearnhead P, Grose D (2024).
+“cpop: Detecting Changes in Piecewise-Linear Signals.”
+<em>Journal of Statistical Software</em>, <b>109</b>(7), 1–30.
+<a href="https://doi.org/10.18637/jss.v109.i07">doi:10.18637/jss.v109.i07</a>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(cpop)
+
+# simulate data with change in gradient
+set.seed(1)
+x &lt;- (1:50/5)^2
+y &lt;- simchangeslope(x,changepoints=c(10,50),change.slope=c(0.25,-0.25),sd=1)
+# analyse using cpop
+res &lt;- cpop(y,x)
+p &lt;- plot(res)
+print(p)
+ 
+# generate the "true" mean
+mu &lt;- simchangeslope(x,changepoints=c(10,50),change.slope=c(0.25,-0.25),sd=0)
+# add the true mean to the plot
+library(pacman)
+p_load(ggplot2)
+p &lt;- p + geom_line(aes(y = mu), color = "blue", linetype = "dotted")
+print(p)
+
+# heterogeneous data
+set.seed(1)
+sd &lt;- (1:50)/25
+y &lt;- simchangeslope(x,changepoints=c(10,50),change.slope=c(0.25,-0.25),sd=sd)
+
+# analysis assuming constant noise standard deviation
+res &lt;- cpop(y,x,beta=2*log(length(y)),sd=sqrt(mean(sd^2)))
+p &lt;- plot(res)
+print(p)
+
+# analysis with the true noise standard deviation
+res.true &lt;- cpop(y,x,beta=2*log(length(y)),sd=sd)
+p &lt;- plot(res.true)
+print(p)
+
+# add the true mean to the plot
+p &lt;- p + geom_line(aes(y = mu), color = "blue", linetype = "dotted")
+print(p)
+
+</code></pre>
+
+
+</div>

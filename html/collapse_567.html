@@ -1,0 +1,163 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>unlist2d</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Recursive Row-Binding / Unlisting in 2D - to Data Frame
+</h2>
+
+<h3>Description</h3>
+
+<p><code>unlist2d</code> efficiently unlists lists of regular R objects (objects built up from atomic elements) and creates a data frame representation of the list through recursive flattening and intelligent row-binding operations. It is a full 2-dimensional generalization of <code>unlist</code>, and best understood as a recursive generalization of <code>do.call(rbind, ...)</code>.
+</p>
+<p>It is a powerful tool to create a tidy data frame representation from (nested) lists of vectors, data frames, matrices, arrays or heterogeneous objects. For simple row-wise combining lists/data.frame's use the non-recursive <code>rowbind</code> function.   
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">unlist2d(l, idcols = ".id", row.names = FALSE, recursive = TRUE,
+         id.factor = FALSE, DT = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>l</code></td>
+<td>
+<p>a unlistable list (with atomic elements in all final nodes, see <code>is_unlistable</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>idcols</code></td>
+<td>
+<p>a character stub or a vector of names for id-columns automatically added - one for each level of nesting in <code>l</code>. By default the stub is <code>".id"</code>, so columns will be of the form <code>".id.1", ".id.2",</code> etc... . if <code>idcols = TRUE</code>, the stub is also set to <code>".id"</code>. If <code>idcols = FALSE</code>, id-columns are omitted. The content of the id columns are the list names, or (if missing) integers for the list elements. Missing elements in asymmetric nested structures are filled up with <code>NA</code>. See Examples. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>row.names</code></td>
+<td>
+<p><code>TRUE</code> extracts row names from all the objects in <code>l</code> (where available) and adds them to the output in a column named <code>"row.names"</code>. Alternatively, a column name i.e. <code>row.names = "variable"</code> can be supplied. For plain matrices in <code>l</code>, integer row names are generated. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>recursive</code></td>
+<td>
+<p>logical. if <code>FALSE</code>, only process the lowest (deepest) level of <code>l</code>. See Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id.factor</code></td>
+<td>
+<p>if <code>TRUE</code> and <code>!isFALSE(idcols)</code>, create id columns as factors instead of character or integer vectors. Alternatively it is possible to specify <code>id.factor = "ordered"</code> to generate ordered factor id's. This is <b>strongly recommended</b> when binding lists of larger data frames, as factors are much more memory efficient than character vectors and also speed up subsequent grouping operations on these columns. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>DT</code></td>
+<td>
+<p>logical. <code>TRUE</code> returns a <em>data.table</em>, not a data.frame.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The data frame representation created by <code>unlist2d</code> is built as follows:
+</p>
+
+<ul>
+<li>
+<p> Recurse down to the lowest level of the list-tree, data frames are exempted and treated as a final (atomic) elements.
+</p>
+</li>
+<li>
+<p> Identify the objects, if they are vectors, matrices or arrays convert them to data frame (in the case of atomic vectors each element becomes a column).
+</p>
+</li>
+<li>
+<p> Row-bind these data frames using <em>data.table</em>'s <code>rbindlist</code> function. Columns are matched by name. If the number of columns differ, fill empty spaces with <code>NA</code>'s. If <code>!isFALSE(idcols)</code>, create id-columns on the left, filled with the object names or indices (if the (sub-)list is unnamed). If <code>!isFALSE(row.names)</code>, store rownames of the objects (if available) in a separate column.
+</p>
+</li>
+<li>
+<p> Move up to the next higher level of the list-tree and repeat: Convert atomic objects to data frame and row-bind while matching all columns and filling unmatched ones with <code>NA</code>'s. Create another id-column for each level of nesting passed through. If the list-tree is asymmetric, fill empty spaces in lower-level id columns with <code>NA</code>'s.
+</p>
+</li>
+</ul>
+<p>The result of this iterative procedure is a single data frame containing on the left side id-columns for each level of nesting (from higher to lower level), followed by a column containing all the rownames of the objects (if <code>!isFALSE(row.names)</code>), followed by the data columns, matched at each level of recursion. Optimal results are obtained with symmetric lists of arrays, matrices or data frames, which <code>unlist2d</code> efficiently binds into a beautiful data frame ready for plotting or further analysis. See examples below.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame or (if <code>DT = TRUE</code>) a <em>data.table</em>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>For lists of data frames <code>unlist2d</code> works just like <code>data.table::rbindlist(l, use.names = TRUE, fill = TRUE, idcol = ".id")</code> however for lists of lists <code>unlist2d</code> does not produce the same output as <code>data.table::rbindlist</code> because <code>unlist2d</code> is a recursive function. You can use <code>rowbind</code> as a faithful alternative to <code>data.table::rbindlist</code>.
+</p>
+<p>The function <code>rrapply::rrapply(l, how = "melt"|"bind")</code> is a fast alternative (written fully in C) for nested lists of atomic elements.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>rowbind</code>, <code>rsplit</code>, <code>rapply2d</code>, List Processing, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Basic Examples:
+l &lt;- list(mtcars, list(mtcars, mtcars))
+tail(unlist2d(l))
+unlist2d(rapply2d(l, fmean))
+l = list(a = qM(mtcars[1:8]),
+         b = list(c = mtcars[4:11], d = list(e = mtcars[2:10], f = mtcars)))
+tail(unlist2d(l, row.names = TRUE))
+unlist2d(rapply2d(l, fmean))
+unlist2d(rapply2d(l, fmean), recursive = FALSE)
+
+## Groningen Growth and Development Center 10-Sector Database
+head(GGDC10S) # See ?GGDC10S
+namlab(GGDC10S, class = TRUE)
+
+# Panel-Summarize this data by Variable (Emloyment and Value Added)
+l &lt;- qsu(GGDC10S, by = ~ Variable,             # Output as list (instead of 4D array)
+         pid = ~ Variable + Country,
+         cols = 6:16, array = FALSE)
+str(l, give.attr = FALSE)                      # A list of 2-levels with matrices of statistics
+head(unlist2d(l))                              # Default output, missing the variables (row-names)
+head(unlist2d(l, row.names = TRUE))            # Here we go, but this is still not very nice
+head(unlist2d(l, idcols = c("Sector","Trans"), # Now this is looking pretty good
+              row.names = "Variable"))
+
+dat &lt;- unlist2d(l, c("Sector","Trans"),        # Id-columns can also be generated as factors
+                "Variable", id.factor = TRUE)
+str(dat)
+
+# Split this sectoral data, first by Variable (Emloyment and Value Added), then by Country
+sdat &lt;- rsplit(GGDC10S, ~ Variable + Country, cols = 6:16)
+
+# Compute pairwise correlations between sectors and recombine:
+dat &lt;- unlist2d(rapply2d(sdat, pwcor),
+                idcols = c("Variable","Country"),
+                row.names = "Sector")
+head(dat)
+plot(hclust(as.dist(1-pwcor(dat[-(1:3)]))))    # Using corrs. as distance metric to cluster sectors
+
+# List of panel-series matrices
+psml &lt;- psmat(fsubset(GGDC10S, Variable == "VA"), ~Country, ~Year, cols = 6:16, array = FALSE)
+
+# Recombining with unlist2d() (effectively like reshapig the data)
+head(unlist2d(psml, idcols = "Sector", row.names = "Country"))
+
+rm(l, dat, sdat, psml)
+</code></pre>
+
+
+</div>

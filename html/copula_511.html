@@ -1,0 +1,198 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>RSpobs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Pseudo-Observations of Radial and Uniform Part of Elliptical and Archimedean Copulas</h2>
+
+<h3>Description</h3>
+
+<p>Given a matrix of iid multivariate data from a meta-elliptical or
+meta-Archimedean model, <code>RSpobs()</code> computes pseudo-observations
+of the radial part <code class="reqn">R</code> and the vector <code class="reqn">\bm{S}</code> which
+follows a uniform distribution on the unit sphere (for elliptical
+copulas) or the unit simplex (for Archimedean copulas). These
+quantities can be used for (graphical) goodness-of-fit tests, for example.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">RSpobs(x, do.pobs = TRUE, method = c("ellip", "archm"), ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>an <code class="reqn">(n, d)</code>-<code>matrix</code> of data; if
+<code>do.pobs=FALSE</code>, the rows of <code>x</code> are assumed to lie in the
+<code class="reqn">d</code>-dimensional unit hypercube (if they do not, this leads to an
+error).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>do.pobs</code></td>
+<td>
+<p><code>logical</code> indicating whether
+<code>pobs()</code> is applied to <code>x</code> for transforming the
+data to the <code class="reqn">d</code>-dimensional unit hypercube.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p><code>character</code> string indicating the assumed
+underlying model, being meta-elliptical if <code>method="ellip"</code> (in
+which case <code>S</code> should be approximately uniform on the
+<code class="reqn">d</code>-dimensional unit sphere) or
+meta-Archimedean if <code>method="archm"</code> (in which case <code>S</code>
+should be approximately uniform on the <code class="reqn">d</code>-dimensional unit simplex).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments passed to the implemented
+methods. These can be
+</p>
+
+<dl>
+<dt><code>method="ellip"</code></dt>
+<dd>
+<p><code>qQg()</code>
+(the quantile <code>function</code> of the (assumed)
+distribution function <code class="reqn">G_g</code> as given in Genest,
+Hofert, G. Nešlehová
+(2014)); if provided, <code>qQg()</code> is used in the transformation for
+obtaining pseudo-observations of <code class="reqn">R</code> and <code class="reqn">\bm{S}</code>
+(see the code for more details).</p>
+</dd>
+<dt><code>method="archm"</code></dt>
+<dd>
+<p><code>iPsi()</code> (the assumed underlying
+generator inverse); if provided, <code>iPsi()</code> is used in the
+transformation for obtaining pseudo-observations of <code class="reqn">R</code> and
+<code class="reqn">\bm{S}</code> (see the code for more details).</p>
+</dd>
+</dl>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The construction of the pseudo-obersvations of the radial part and the
+uniform distribution on the unit sphere/simplex is described in
+Genest, Hofert, G. Nešlehová (2014).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>list</code> with components <code>R</code> (an
+<code class="reqn">n</code>-<code>vector</code> containing the pseudo-observations
+of the radial part) and <code>S</code> (an <code class="reqn">(n,
+    d)</code>-<code>matrix</code> containing the pseudo-observations of the
+uniform distribution (on the unit sphere/simplex)).
+</p>
+
+
+<h3>References</h3>
+
+<p>Genest, C., Hofert, M., G. Nešlehová, J., (2014).
+Is the dependence Archimedean, elliptical, or what?
+<em>To be submitted</em>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>pobs()</code> for computing the “classical”
+pseudo-observations.</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(100)
+n &lt;- 250 # sample size
+d &lt;- 5 # dimension
+nu &lt;- 3 # degrees of freedom
+
+## Build a mean vector and a dispersion matrix,
+## and generate multivariate t_nu data:
+mu &lt;- rev(seq_len(d)) # d, d-1, .., 1
+L &lt;- diag(d) # identity in dim d
+L[lower.tri(L)] &lt;- 1:(d*(d-1)/2)/d # Cholesky factor (diagonal &gt; 0)
+Sigma &lt;- crossprod(L) # pos.-def. dispersion matrix (*not* covariance of X)
+X &lt;- rep(mu, each=n) + mvtnorm::rmvt(n, sigma=Sigma, df=nu) # multiv. t_nu data
+## note: this is *wrong*: mvtnorm::rmvt(n, mean=mu, sigma=Sigma, df=nu)
+
+## compute pseudo-observations of the radial part and uniform distribution
+## once for 1a), once for 1b) below
+RS.t    &lt;- RSpobs(X, method="ellip", qQg=function(p) qt(p, df=nu)) # 'correct'
+RS.norm &lt;- RSpobs(X, method="ellip", qQg=qnorm) # for testing 'wrong' distribution
+stopifnot(length(RS.norm$R) == n, length(RS.t$R) == n,
+          dim(RS.norm$S) == c(n,d), dim(RS.t$S) == c(n,d))
+
+## 1) Graphically testing the radial part
+
+## 1a) Q-Q plot of R against the correct quantiles
+qqplot2(RS.t$R, qF=function(p) sqrt(d*qf(p, df1=d, df2=nu)),
+        main.args=list(text= substitute(bold(italic(F[list(d.,nu.)](r^2/d.))~~"Q-Q Plot"),
+                                        list(d.=d, nu.=nu)),
+		       side=3, cex=1.3, line=1.1, xpd=NA))
+
+## 1b) Q-Q plot of R against the quantiles of F_R for a multivariate normal
+##     distribution
+qqplot2(RS.norm$R, qF=function(p) sqrt(qchisq(p, df=d)),
+        main.args=list(text= substitute(bold(italic(chi[D_]) ~~ "Q-Q Plot"), list(D_=d)),
+               side=3, cex=1.3, line=1.1, xpd=NA))
+
+## 2) Graphically testing the angular distribution
+
+## auxiliary function
+qqp &lt;- function(k, Bmat) {
+    d &lt;- ncol(Bmat) + 1
+    qqplot2(Bmat[,k],
+            qF = function(p) qbeta(p, shape1=k/2, shape2=(d-k)/2),
+            main.args=list(text= substitute(plain("Beta")(s1,s2) ~~ bold("Q-Q Plot"),
+                                            list(s1 = k/2, s2 = (d-k)/2)),
+  	                   side=3, cex=1.3, line=1.1, xpd=NA))
+}
+
+## 2a) Q-Q plot of the 'correct' angular distribution
+##     (Bmat[,k] should follow a Beta(k/2, (d-k)/2) distribution)
+Bmat.t &lt;- gofBTstat(RS.t$S)
+qqp(1, Bmat=Bmat.t) # k=1
+qqp(3, Bmat=Bmat.t) # k=3
+
+## 2b) Q-Q plot of the 'wrong' angular distribution
+Bmat.norm &lt;- gofBTstat(RS.norm$S)
+qqp(1, Bmat=Bmat.norm) # k=1
+qqp(3, Bmat=Bmat.norm) # k=3
+
+## 3) Graphically check independence between radial part and B_1 and B_3
+
+## 'correct' distributions (multivariate t)
+plot(pobs(cbind(RS.t$R, Bmat.t[,1])), # k = 1
+          xlab=quote(italic(R)), ylab=quote(italic(B)[1]),
+          main=quote(bold("Rank plot between"~~italic(R)~~"and"~~italic(B)[1])))
+plot(pobs(cbind(RS.t$R, Bmat.t[,3])), # k = 3
+	  xlab=quote(italic(R)), ylab=quote(italic(B)[3]),
+          main=quote(bold("Rank plot between"~~italic(R)~~"and"~~italic(B)[3])))
+
+## 'wrong' distributions (multivariate normal)
+plot(pobs(cbind(RS.norm$R, Bmat.norm[,1])), # k = 1
+          xlab=quote(italic(R)), ylab=quote(italic(B)[1]),
+          main=quote(bold("Rank plot between"~~italic(R)~~"and"~~italic(B)[1])))
+plot(pobs(cbind(RS.norm$R, Bmat.norm[,3])), # k = 3
+	  xlab=quote(italic(R)), ylab=quote(italic(B)[3]),
+          main=quote(bold("Rank plot between"~~italic(R)~~"and"~~italic(B)[3])))
+</code></pre>
+
+
+</div>

@@ -1,0 +1,177 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cdm.est.class.accuracy</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Classification Reliability in a CDM
+</h2>
+
+<h3>Description</h3>
+
+<p>This function computes the classification accuracy and
+consistency originally proposed by Cui, Gierl and Chang (2012;
+see also Wang et al., 2015).
+The function computes both statistics by estimators of Johnson and Sinharay (2018;
+see also Sinharay &amp; Johnson, 2019) and simulation based estimation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cdm.est.class.accuracy(cdmobj, n.sims=0, version=2)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cdmobj</code></td>
+<td>
+
+<p>Object of class <code>din</code> or <code>gdina</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.sims</code></td>
+<td>
+
+<p>Number of simulated persons. If <code>n.sims=0</code>, then the number
+of persons in the original data is used as the sample size.
+In case of missing item responses, for every simulated dataset this sample
+size is used.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>version</code></td>
+<td>
+<p>Correct classification reliability statistics can be obtained
+using the default <code>version=2</code>. For backward compatibility,
+<code>version=1</code> contains estimators for <span class="pkg">CDM</span> (&lt;=6.2) which
+have been shown to be biased (Johnson &amp; Sinharay, 2018).
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The item parameters and the probability distribution of
+latent classes is used as the basis of the simulation.
+Accuracy and consistency is estimated for both MLE and MAP
+classification estimators. In addition, classification accuracy measures
+are available for the separate classification of all skills.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame for MLE, MAP and MAP (Skill 1, ..., Skill <code class="reqn">K</code>)
+classification reliability for the whole latent class pattern and
+marginal skill classification with following columns:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>Pa_est</code></td>
+<td>
+<p>Classification accuracy (Cui et al., 2012) using
+the estimator of Johnson and Sinharay, 2018</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Pa_sim</code></td>
+<td>
+<p>Classification accuracy based on simulated data
+(only for <code>din</code> models)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Pc</code></td>
+<td>
+<p>Classification consistency (Cui et al., 2012) using
+the estimator of Johnson and Sinharay, 2018</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Pc_sim</code></td>
+<td>
+<p>Classification consistency based on simulated data
+(only for <code>din</code> models)</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Cui, Y., Gierl, M. J., &amp; Chang, H.-H. (2012).
+Estimating classification consistency and accuracy for cognitive
+diagnostic assessment.
+<em>Journal of Educational Measurement, 49</em>, 19-38.
+doi: <a href="https://doi.org/10.1111/j.1745-3984.2011.00158.x">10.1111/j.1745-3984.2011.00158.x</a>
+</p>
+<p>Johnson, M. S., &amp; Sinharay, S. (2018). Measures of agreement to assess attribute-level
+classification accuracy and consistency for cognitive diagnostic assessments.
+<em>Journal of Educational Measurement, 45</em>(4), 635-664.
+doi: <a href="https://doi.org/10.1111/jedm.12196">10.1111/jedm.12196</a>
+</p>
+<p>Sinharay, S., &amp; Johnson, M. S. (2019). Measures of agreement:
+Reliability, classification accuracy, and classification consistency.
+In M. von Davier &amp; Y.-S. Lee (Eds.). <em>Handbook of diagnostic
+classification models</em> (pp. 359-377). Cham: Springer.
+doi: <a href="https://doi.org/10.1007/978-3-030-05584-4_17">10.1007/978-3-030-05584-4_17</a>
+</p>
+<p>Wang, W., Song, L., Chen, P., Meng, Y., &amp; Ding, S. (2015). Attribute-level and
+pattern-level classification consistency and accuracy indices for cognitive diagnostic
+assessment. <em>Journal of Educational Measurement, 52</em>(4), 457-476.
+doi: <a href="https://doi.org/10.1111/jedm.12096">10.1111/jedm.12096</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+#############################################################################
+# EXAMPLE 1: DINO data example
+#############################################################################
+
+data(sim.dino, package="CDM")
+data(sim.qmatrix, package="CDM")
+
+#***
+# Model 1: estimate DINO model with din
+mod1 &lt;- CDM::din( sim.dino, q.matrix=sim.qmatrix, rule="DINO")
+# estimate classification reliability
+cdm.est.class.accuracy( mod1, n.sims=5000)
+
+#***
+# Model 2: estimate DINO model with gdina
+mod2 &lt;- CDM::gdina( sim.dino, q.matrix=sim.qmatrix, rule="DINO")
+# estimate classification reliability
+cdm.est.class.accuracy( mod2 )
+
+m1 &lt;- mod1$coef[, c("guess", "slip" ) ]
+m2 &lt;- mod2$coef
+m2 &lt;- cbind( m1, m2[ seq(1,18,2), "est" ],
+          1 - m2[ seq(1,18,2), "est" ]  - m2[ seq(2,18,2), "est" ]  )
+colnames(m2) &lt;- c("g.M1", "s.M1", "g.M2", "s.M2" )
+  ##   &gt; round( m2, 3 )
+  ##          g.M1  s.M1  g.M2  s.M2
+  ##   Item1 0.109 0.192 0.109 0.191
+  ##   Item2 0.073 0.234 0.072 0.234
+  ##   Item3 0.139 0.238 0.146 0.238
+  ##   Item4 0.124 0.065 0.124 0.009
+  ##   Item5 0.125 0.035 0.125 0.037
+  ##   Item6 0.214 0.523 0.214 0.529
+  ##   Item7 0.193 0.514 0.192 0.514
+  ##   Item8 0.246 0.100 0.246 0.100
+  ##   Item9 0.201 0.032 0.195 0.032
+# Note that s (the slipping parameter) substantially differs for Item4
+# for DINO estimation in 'din' and 'gdina'
+
+## End(Not run)
+</code></pre>
+
+
+</div>

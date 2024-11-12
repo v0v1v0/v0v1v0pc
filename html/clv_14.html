@@ -1,0 +1,176 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>clv.Dunn</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Dunn Index - Internal Measure</h2>
+
+<h3>Description</h3>
+
+<p>Function computes <em>Dunn index</em> - internal measure for given data and its partitioning.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">clv.Dunn( index.list, intracls, intercls)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>index.list</code></td>
+<td>
+ 
+<p>object returned by function <code>cls.scatt.data</code> or <code>cls.scatt.diss.mx</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>intracls</code></td>
+<td>
+
+<p>string <code>vector</code> containing one or more names of intra cluster distances. 
+Available are:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+		1. if <code>index.list</code> is produced by <code>cls.scatt.data</code>:
+			complete | average | centroid, </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+		2. if <code>index.list</code> is produced by <code>cls.scatt.diss.mx</code>: 
+			complete | average.
+		</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>intercls</code></td>
+<td>
+
+<p>string <code>vector</code> containing one or more names of inter cluster diameters. 
+Available are:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+		1. if <code>index.list</code> is produced by <code>cls.scatt.data</code>: 
+			single | complete | average | centroid | aveToCent | hausdorff. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+		2. if <code>index.list</code> is produced by <code>cls.scatt.diss.mx</code>:
+			single | complete | average | hausdorff.
+		</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Dunn index:
+</p>
+<p>D = [ min{ k,l - numbers of clusters } <em>dist</em>(Ck, Cl) ]/[  max{ m - cluster number } <em>diam</em>(Cm) ]
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+	k,l,m  </td>
+<td style="text-align: left;"> - numbers of clusters which come from the same partitioning, </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+	<em>dist(Ck,Cl)</em> </td>
+<td style="text-align: left;"> - inter cluster distance between clusters Ck and Cl, </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+	<em>diam(Cm)</em> </td>
+<td style="text-align: left;"> - intra cluster diameter computed for cluster Cm. 
+	</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>As output user gets matrix of <em>Dunn</em> indices.
+Matrix dimension depends on how many <em>diam</em> and <em>dist</em> measures are chosen by the user, 
+normally <code>dim(D)=c(length(intercls),length(intracls))</code>.
+Each pair: (inter-cluster dist, intra-cluster diam) have its own position in result matrix. 
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Lukasz Nieweglowski</p>
+
+
+<h3>References</h3>
+
+<p>M. Halkidi, Y. Batistakis, M. Vazirgiannis <em>Clustering Validity Checking Methods : Part II</em>,
+<a href="http://citeseer.ist.psu.edu/537304.html">http://citeseer.ist.psu.edu/537304.html</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Functions which produce <em>index.list</em> input argument: <code>cls.scatt.data</code>, <code>cls.scatt.diss.mx</code>.
+Related functions: clv.Davies.Bouldin.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># load and prepare data
+library(clv)
+data(iris)
+iris.data &lt;- iris[,1:4]
+
+# cluster data
+agnes.mod &lt;- agnes(iris.data) # create cluster tree 
+v.pred &lt;- as.integer(cutree(agnes.mod,5)) # "cut" the tree 
+
+intraclust = c("complete","average","centroid")
+interclust = c("single", "complete", "average","centroid", "aveToCent", "hausdorff")
+
+# compute Dunn indicies (also Davies-Bouldin indicies)
+# 1. optimal solution:
+
+# compute intercluster distances and intracluster diameters
+cls.scatt &lt;- cls.scatt.data(iris.data, v.pred, dist="manhattan")
+
+# once computed valuse use in both functions
+dunn1 &lt;- clv.Dunn(cls.scatt, intraclust, interclust)
+davies1 &lt;- clv.Davies.Bouldin(cls.scatt, intraclust, interclust)
+
+# 2. functional solution:
+
+# define new Dunn and Davies.Bouldin functions
+Dunn &lt;- function(data,clust) 
+  clv.Dunn( cls.scatt.data(data,clust),
+     intracls = c("complete","average","centroid"), 
+     intercls = c("single", "complete", "average","centroid", "aveToCent", "hausdorff")
+  )
+Davies.Bouldin &lt;- function(data,clust) 
+  clv.Davies.Bouldin( cls.scatt.data(data,clust),
+    intracls = c("complete","average","centroid"),
+    intercls = c("single", "complete", "average","centroid", "aveToCent", "hausdorff")
+  )
+
+# compute indicies
+dunn2 &lt;- Dunn(iris.data, v.pred)
+davies2 &lt;- Davies.Bouldin(iris.data, v.pred)
+</code></pre>
+
+
+</div>

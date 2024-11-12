@@ -1,0 +1,279 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>singlewin</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fit a single climate window</h2>
+
+<h3>Description</h3>
+
+<p>Fit a single climate window with a known start and end time.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">singlewin(
+  xvar,
+  cdate,
+  bdate,
+  baseline,
+  range,
+  stat,
+  func,
+  type,
+  refday,
+  cmissing = FALSE,
+  cinterval = "day",
+  cohort = NULL,
+  spatial = NULL,
+  upper = NA,
+  lower = NA,
+  binary = FALSE,
+  centre = list(NULL, "both"),
+  cutoff.day = NULL,
+  cutoff.month = NULL,
+  furthest = NULL,
+  closest = NULL,
+  thresh = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>xvar</code></td>
+<td>
+<p>A list object containing all climate variables of interest. 
+Please specify the parent environment and variable name (e.g. Climate$Temp).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cdate</code></td>
+<td>
+<p>The climate date variable (dd/mm/yyyy). Please specify the parent
+environment and variable name (e.g. Climate$Date).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bdate</code></td>
+<td>
+<p>The biological date variable (dd/mm/yyyy). Please specify the 
+parent environment and variable name (e.g. Biol$Date).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>baseline</code></td>
+<td>
+<p>The baseline model structure used for testing correlation. 
+Currently known to support lm, glm, lmer and glmer objects.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>range</code></td>
+<td>
+<p>Two values signifying respectively the furthest and closest number 
+of time intervals (set by cinterval) back from the cutoff date or biological record to include 
+in the climate window search.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stat</code></td>
+<td>
+<p>The aggregate statistic used to analyse the climate data. Can 
+currently use basic R statistics (e.g. mean, min), as well as slope. 
+Additional aggregate statistics can be created using the format function(x)
+(...). See FUN in <code>apply</code> for more detail.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>func</code></td>
+<td>
+<p>The functions used to fit the climate variable. Can be linear 
+("lin"), quadratic ("quad"), cubic ("cub"), inverse ("inv") or log ("log").</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>"absolute" or "relative", whether you wish the climate window to be relative
+(e.g. the number of days before each biological record is measured) or absolute
+(e.g. number of days before a set point in time).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>refday</code></td>
+<td>
+<p>If type is absolute, the day and month respectively of the 
+year from which the absolute window analysis will start.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cmissing</code></td>
+<td>
+<p>cmissing Determines what should be done if there are 
+missing climate data. Three approaches are possible: 
+- FALSE; the function will not run if missing climate data is encountered.
+An object 'missing' will be returned containing the dates of missing climate.
+- "method1"; missing climate data will be replaced with the mean climate
+of the preceding and following 2 days.
+- "method2"; missing climate data will be replaced with the mean climate
+of all records on the same date.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cinterval</code></td>
+<td>
+<p>The resolution at which climate window analysis will be 
+conducted. May be days ("day"), weeks ("week"), or months ("month"). Note the units
+of parameter 'range' will differ depending on the choice
+of cinterval.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cohort</code></td>
+<td>
+<p>A variable used to group biological records that occur in the same biological
+season but cover multiple years (e.g. southern hemisphere breeding season). Only required
+when type is "absolute". The cohort variable should be in the same dataset as the variable bdate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>spatial</code></td>
+<td>
+<p>A list item containing:
+1. A factor that defines which spatial group (i.e. population) each biological
+record is taken from. The length of this factor should correspond to the length 
+of the biological dataset.
+2. A factor that defines which spatial group (i.e. population) climate data
+corresponds to. This length of this factor should correspond to the length of
+the climate dataset.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>upper</code></td>
+<td>
+<p>Cut-off values used to determine growing degree days or positive 
+climate thresholds (depending on parameter thresh). Note that when values
+of lower and upper are both provided, climatewin will instead calculate an 
+optimal climate zone.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lower</code></td>
+<td>
+<p>Cut-off values used to determine chill days or negative 
+climate thresholds (depending on parameter thresh). Note that when values
+of lower and upper are both provided, climatewin will instead calculate an 
+optimal climate zone.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>binary</code></td>
+<td>
+<p>TRUE or FALSE. Determines whether to use values of upper and
+lower to calculate binary climate data (thresh = TRUE), or to use for
+growing degree days (thresh = FALSE).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>centre</code></td>
+<td>
+<p>A list item containing:
+1. The variable used for mean centring (e.g. Year, Site, Individual). 
+Please specify the parent environment and variable name (e.g. Biol$Year).
+2. Whether the model should include both within-group means and variance ("both"),
+only within-group means ("mean"), or only within-group variance ("dev").</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cutoff.day, cutoff.month</code></td>
+<td>
+<p>Redundant parameters. Now replaced by refday.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>furthest, closest</code></td>
+<td>
+<p>Redundant parameters. Now replaced by range.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thresh</code></td>
+<td>
+<p>Redundant parameter. Now replaced by binary.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Will return a list containing two objects:
+</p>
+
+<ul>
+<li>
+<p> BestModel, a model object of the fitted climate window
+model.
+</p>
+</li>
+<li>
+<p> BestModelData, a dataframe with the biological and climate data
+used to fit the climate window model.</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Liam D. Bailey and Martijn van de Pol
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+#Simple test example
+#Create data from a subset of our test dataset
+#Just use two years
+biol_data &lt;- Mass[1:2, ]
+clim_data &lt;- MassClimate[grep(pattern = "1979|1986", x = MassClimate$Date), ]
+
+single &lt;- singlewin(xvar = list(Temp = clim_data$Temp),
+                   cdate = clim_data$Date, 
+                   bdate = biol_data$Date, 
+                   baseline = lm(Mass ~ 1, data = biol_data),
+                   range = c(1, 0), 
+                   type = "relative", stat = "mean", 
+                   func = c("lin"), cmissing = FALSE, cinterval = "day")
+
+## Not run: 
+# Full working example
+# Fit a known climate window to the datasets Mass and MassClimate
+
+data(Mass)
+data(MassClimate)
+
+# Test for a fixed climate window, starting from 20th May
+# Fit a climate window starting 72 days ago and ending 15 days ago
+# Fit a linear term for the mean climate
+# Fit climate windows at the resolution of days
+
+single &lt;- singlewin(xvar = list(Temp = MassClimate$Temp), 
+                   cdate = MassClimate$Date, bdate = Mass$Date,
+                   baseline = lm(Mass ~ 1, data = Mass), 
+                   range = c(72, 15),
+                   stat = "mean", func = "lin",
+                   type = "absolute", refday = c(20, 5),
+                   cmissing = FALSE, cinterval = "day")
+               
+##View data##
+single$BestModel
+head(single$BestModelData)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

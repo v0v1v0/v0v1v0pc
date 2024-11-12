@@ -1,0 +1,280 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>rsm.sample</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Conditional Sampler for Regression-Scale Models
+</h2>
+
+<h3>Description</h3>
+
+<p>Generates replicates of the <abbr><span class="acronym">MLE</span></abbr>s of the parameters 
+occuring in a regression-scale model using as reference distribution
+the conditional distribution of the <abbr><span class="acronym">MLE</span></abbr>s given the value 
+of the ancillary. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">rsm.sample(data = stop("no data given"), R = 10000, 
+    ran.gen = stop("candidate distribution is missing, with no default"), 
+           trace = TRUE, step = 100, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+
+<p>A special <em>conditional sampling</em> data object.  This object 
+must be a list with the following elements:
+</p>
+
+<dl>
+<dt><code>anc</code></dt>
+<dd>
+<p>the vector containing the values of the ancillary; usually the 
+Pearson residuals.  It has to be of the same length than the 
+number of observations in the linear regression model.  
+</p>
+</dd>
+<dt><code>X</code></dt>
+<dd>
+<p>the model matrix.  It may be obtained applying 
+<code>model.matrix</code> to the fitted <code>rsm</code> 
+object of interest.  The number of observations has to be the
+same than the dimension of the ancillary, and the number of 
+covariates must correspond to the number of regression 
+coefficients defined in the <code>coef</code> component.
+</p>
+</dd>
+<dt><code>coef</code></dt>
+<dd>
+<p>the vector of <em>true</em> values of the regression coefficients,
+that is, the values used in the simulation study.
+</p>
+</dd>
+<dt><code>disp</code></dt>
+<dd>
+<p>the <em>true</em> value of the scale parameter used in the 
+simulation study.
+</p>
+</dd>
+<dt><code>family</code></dt>
+<dd>
+<p>a <code>family.rsm</code> object characterizing the error
+distribution of the linear regression model.  The following
+generator functions are available in the <code>marg</code> 
+package of the <abbr><span class="acronym">R</span></abbr> package bundle <code>hoa</code>: 
+<code>student</code> (Student's t), <code>extreme</code> (Gumbel or extreme 
+value), <code>logistic</code>, <code>logWeibull</code>, 
+<code>logExponential</code>, <code>logRayleigh</code> and <code>Huber</code> 
+(Huber's least favourable).  The demonstration file 
+‘<span class="file">margdemo.R</span>’ that accompanies the <code>marg</code> package shows
+how to create a new generator function. 
+</p>
+</dd> 
+<dt><code>fixed</code></dt>
+<dd>
+<p>a logical value.  If <code>TRUE</code> the scale parameter is known.
+</p>
+</dd>
+</dl>
+<p>The <code>make.sample.data</code> function can be used
+to create this data object from a fitted <code>rsm</code> model.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>R</code></td>
+<td>
+
+<p>the number of replicates.  
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ran.gen</code></td>
+<td>
+
+<p>a function which describes how the candidate values used in the 
+Metropolis-Hastings algorithm should be generated.  It must be 
+a function of at least two arguments.  The first one is the data 
+object <code>data</code>, and the second argument is <code>R</code>, the 
+number of replicates required.  Any other information needed may 
+be passed through the <code>...</code> argument.  The returned value 
+should be a <code>R</code> times <em>k</em> matrix of simulated values.  
+For the value of <em>k</em> see the details section below.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+
+<p>a logical value; if <code>TRUE</code>, the iteration number is printed.
+Defaults to <code>TRUE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>step</code></td>
+<td>
+
+<p>a numercial value defining after how many iterations to print the
+iteration number.  Default is 100.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+
+<p>absorbs additional arguments to <code>ran.gen</code>.  These are passed
+unchanged each time this function is called.  
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>rsm.sample</code> function uses the Metropolis-Hastings 
+algorithm to generate an ergodic chain with equilibrium distribution
+equal to the conditional distribution of the <abbr><span class="acronym">MLE</span></abbr>s given 
+the ancillary.  Because of the broad applicability of this 
+algorithm 
+the candidate generation density was not built in, but has to be 
+supplied by the user through the <code>ran.gen</code> argument.  The 
+output of this function must be a <code>R</code> times <em>k</em> matrix, 
+where <em>k = p</em> + <em>1</em> or <em>k = p</em> + <em>2</em> depending 
+on whether the 
+scale parameter is fixed or not.  The first <em>p</em> columns contain
+the <abbr><span class="acronym">MLE</span></abbr>s of the regression coefficients, the following the
+<abbr><span class="acronym">MLE</span></abbr>s of the scale parameter if unknown, and the last 
+column contains the probabilities of the candidate values drawn 
+from the candidate generation distribution.  Note that these 
+probabilities need only be calculated up to a normalizing constant.
+</p>
+<p>All information is supplied through the <code>data</code> argument.  The 
+user has to keep to the structure described above.  If a conditional
+simulation is to be performed for a fitted <code>rsm</code> object, the
+<code>make.sample.data</code> function can be used to 
+generate this special object.  It is advisable to specify the 
+logical switch <code>fixed</code> in the conditional sampling object, 
+although it needs not (in which case the scale parameter is supposed
+to be unknown).
+</p>
+<p>The conditional simulation (<code>cs</code>) object generated by 
+<code>rsm.sample</code> contains all information necessary for further 
+investigation, such as the derivation of the conditional 
+distribution of test statistics, the calculation of conditional 
+coverage levels of confidence intervals and many more.  As the 
+computation is somewhat tricky, an example is given in the 
+demonstration file ‘<span class="file">csamplingdemo.R</span>’.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The returned value is an object of class <code>cs</code> containing the 
+following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>sim</code></td>
+<td>
+
+<p>a matrix with <code>R</code> rows each of which contains a sample from
+the conditional distribution of the <abbr><span class="acronym">MLEs</span></abbr>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rho</code></td>
+<td>
+
+<p>the acceptance probabilities at each Metropolis-Hastings step, 
+that is, the probabilities with which the candidate values drawn from 
+the candidate generation distribution are accepted. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+
+<p>the value of <code>.Random.seed</code> when <code>rsm.sample</code> was 
+called.  
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+
+<p>the <code>data</code> as passed to <code>rsm.sample</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>R</code></td>
+<td>
+
+<p>the value of <code>R</code> as passed to <code>rsm.sample</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+
+<p>the original call to <code>rsm.sample</code>.
+</p>
+</td>
+</tr>
+</table>
+<h3>Side Effects</h3>
+
+<p>The function <code>rsm.sample</code> causes creation of the dataset
+<code>.Random.seed</code> if it does not already exist, 
+otherwise its value is updated.
+</p>
+
+
+<h3>Demonstration</h3>
+
+<p>The file ‘<span class="file">csamplingdemo.R</span>’ contains code that can be used to 
+run a conditional simulation study similar to the one described
+in <cite>Brazzale (2000, Section 7.3)</cite> using the data given in 
+Example 3 of <cite>DiCiccio, Field and Fraser (1990)</cite>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Brazzale, A. R. (2000) <em>Practical Small-Sample Parametric 
+Inference</em>.  Ph.D. Thesis N. 2230, Department of Mathematics, Swiss
+Federal Institute of Technology Lausanne.
+</p>
+<p>DiCiccio, T. J., Field, C. A. and Fraser, D. A. S. (1990) 
+Approximations of marginal tail probabilities and inference for 
+scalar parameters. <em>Biometrika</em>, <b>77</b>, 77–95.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>make.sample.data</code>, 
+<code>rsm.object</code>,  
+<code>family.rsm.object</code>, 
+<code>rsm</code>
+</p>
+
+
+</div>

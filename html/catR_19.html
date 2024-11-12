@@ -1,0 +1,631 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>nextItem</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Selection of the next item</h2>
+
+<h3>Description</h3>
+
+<p>This command selects the next item to be administered, given the list of previously administered items and the current
+ability estimate, with several possible criteria. Item exposure and content balancing can also be controlled.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">nextItem(itemBank, model = NULL, theta = 0, out = NULL, x = NULL, 
+ 	criterion = "MFI", method = "BM", priorDist = "norm", priorPar = c(0, 1), 
+ 	D = 1, range = c(-4, 4), parInt = c(-4, 4, 33), infoType = "observed", 
+ 	randomesque = 1, random.seed = NULL, rule = "length", thr = 20, SETH = NULL, 
+ 	AP = 1, nAvailable = NULL, maxItems = 50, cbControl = NULL, cbGroup = NULL) 
+ </code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>itemBank</code></td>
+<td>
+<p>numeric: a suitable matrix of item parameters. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>either <code>NULL</code> (default) for dichotomous models, or any suitable acronym for polytomous models. Possible values are <code>"GRM"</code>, <code>"MGRM"</code>, <code>"PCM"</code>, <code>"GPCM"</code>, <code>"RSM"</code> and <code>"NRM"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+<p>numeric: the current value of the ability estimate (default is 0). Ignored if <code>criterion</code> is either <code>"MLWI"</code>, <code>"MPWI"</code> or <code>"random"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>out</code></td>
+<td>
+<p>either a vector of integer values specifying the items previously administered, or <code>NULL</code> (default).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>numeric: the provisional response pattern, with the same length as <code>out</code> (and <code>NULL</code> by default). Ignored if <code>criterion</code> is either <code>"MFI"</code>, <code>"bOtp"</code>, <code>"thOpt"</code>, <code>"proportional"</code>, <code>"progressive"</code> or <code>"random"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>criterion</code></td>
+<td>
+<p>character: the method for next item selection. Possible values are <code>"MFI"</code> (default), <code>"bOpt"</code>, <code>"thOpt"</code>, <code>"MLWI"</code>, <code>"MPWI"</code>, <code>"MEI"</code>, <code>"MEPV"</code>, <code>"progressive"</code>, <code>"proportional"</code>, <code>"KL"</code>, <code>"KLP"</code>, <code>"GDI"</code>, <code>"GDIP"</code> and <code>random</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>character: the ability estimator. Possible values are <code>"BM"</code> (default), <code>"ML"</code> and <code>"WL"</code>. Ignored if <code>method</code> is not <code>"MEI"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>priorDist</code></td>
+<td>
+<p>character: the prior ability distribution. Possible values are <code>"norm"</code> (default) for the normal distribution, and <code>"unif"</code> for the uniform distribution. Ignored if <code>type</code> is not <code>"MPWI"</code>, <code>"KLP"</code> or <code>"GDIP"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>priorPar</code></td>
+<td>
+<p>numeric: a vector of two components with the prior parameters. If <code>priorDist</code> is <code>"norm"</code>, then <code>priorPar</code> contains the mean and the standard deviation of the normal distribution. If <code>priorDist</code> is <code>"unif"</code>, then <code>priorPar</code> contains the bounds of the uniform distribution. The default values are 0 and 1 respectively. Ignored if <code>type</code> is neither <code>"MPWI"</code> nor <code>"KLP"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>D</code></td>
+<td>
+<p>numeric: the metric constant. Default is <code>D=1</code> (for logistic metric); <code>D=1.702</code> yields approximately the normal metric (Haley, 1952).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>range</code></td>
+<td>
+<p>numeric: vector of two components specifying the range wherein the ability estimate must be looked for (default is <code>c(-4,4)</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parInt</code></td>
+<td>
+<p>numeric: a vector of three numeric values, specifying respectively the lower bound, the upper bound and the number of quadrature points for numerical integration (default is <code>c(-4,4,33)</code>). Ignored if <code>method</code> is either <code>"MFI"</code>, <code>"bOpt"</code>, <code>"thOpt"</code>, <code>"progressive"</code>, <code>"proportional"</code> or <code>"random"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>infoType</code></td>
+<td>
+<p>character: the type of information function to be used. Possible values are <code>"observed"</code> (default) and <code>"Fisher"</code>. Ignored if <code>criterion</code> is not <code>"MEI"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>randomesque</code></td>
+<td>
+<p>integer: the number of items to be chosen from the next item selection rule, among those the next item to be administered will be randomly picked up. Default value is 1 and leads to usual selection of the optimal item for the specified <code>criterion</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>random.seed</code></td>
+<td>
+<p>either <code>NULL</code> (default) or a numeric value to fix the random seed of randomesque selection of the items. Ignored if <code>randomesque</code> is equal to one.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rule</code></td>
+<td>
+<p>character: the type of stopping rule for next item selection. Possible values are <code>"length"</code> (default) or <code>"precision"</code>. Ignored if <code>criterion</code> is any other value than <code>"progressive"</code> or <code>"proportional"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thr</code></td>
+<td>
+<p>numeric: the threshold related to the stopping rule. Ignored if <code>criterion</code> is neither <code>"progressive"</code> nor <code>"proportional"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SETH</code></td>
+<td>
+<p>either a numeric value for the provisional standard error<code>NULL</code> (default). Ignored if <code>criterion</code> is neither <code>"progressive"</code> nor <code>"proportional"</code>, or if <code>rule</code> is not <code>"precision"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>AP</code></td>
+<td>
+<p>numeric: the value of the acceleration parameter  (default value is 1). Ignored if <code>criterion</code> is neither <code>"progressive"</code> nor <code>"proportional"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nAvailable</code></td>
+<td>
+<p>either a numeric vector of zero and one entries to denote respectively which items are not available and are availbale, or <code>NULL</code> (default). Used for content balancing purposes only. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxItems</code></td>
+<td>
+<p>integer: the maximum number of items to be administered during the adaptive test (default value is 50). See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cbControl</code></td>
+<td>
+<p>either a list of accurate format to control for content balancing, or <code>NULL</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cbGroup</code></td>
+<td>
+<p>either a factor vector of accurate format to control for content balancing, or <code>NULL</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Currently twelve methods are available for selecting the next item to be administered in the adaptive test. All are avilable with dichotomous items and ten out of the twelve are also available for polytomous items. For a given current ability estimate, the next item is selected (among the available items) by using: 
+</p>
+
+<ol>
+<li>
+<p>the maximum Fisher information (MFI) criterion,
+</p>
+</li>
+<li>
+<p>the so-called <code>bOpt</code> procedure (Urry, 1970) (<b>not</b> for polytomous items),
+</p>
+</li>
+<li>
+<p>the so-called <code>thOpt</code> procedure (see e.g., Barrada, Mazuela and Olea, 2006; Magis, 2013) (<b>not</b> for polytomous items),
+</p>
+</li>
+<li>
+<p>the maximum likelihood weighted information (MLWI) (Veerkamp and Berger, 1997),
+</p>
+</li>
+<li>
+<p>the maximum posterior weighted information (MPWI)
+(van der Linden, 1998),
+</p>
+</li>
+<li>
+<p>the maximum expected information (MEI) criterion (van der Linden, 1998),
+</p>
+</li>
+<li>
+<p>the minimum expected posterior variance (MEPV),
+</p>
+</li>
+<li>
+<p>the Kullback-Leibler (KL) divergency criterion (Chang and Ying, 1996),
+</p>
+</li>
+<li>
+<p>the posterior Kullback-Leibler (KLP) criterion (Chang and Ying, 1996),
+</p>
+</li>
+<li>
+<p>the progressive method (Barrada, Olea, Ponsoda, and Abad, 2008, 2010; Revuelta and Ponsoda, 1998),
+</p>
+</li>
+<li>
+<p>the proportional method (Barrada, Olea, Ponsoda, and Abad, 2008, 2010; Segall, 2004),
+</p>
+</li>
+<li>
+<p>the global-discrimination index (GDI) (Kaplan, de la Torre, and Barrada, 2015),
+</p>
+</li>
+<li>
+<p>the posterior global-discrimination index (GDIP) (Kaplan, de la Torre, and Barrada, 2015),
+</p>
+</li>
+<li>
+<p>or by selecting the next item completely <em>randomly</em> among the available items.
+</p>
+</li>
+</ol>
+<p>The MFI criterion selects the next item as the one which maximizes the item information function (Baker, 1992). The most informative item is selected from the item informations computed from the bank of items specified with <code>itemBank</code>. 
+</p>
+<p>The so-called <code>bOpt</code> method (formerly referred to as <em>Urry's procedure</em>) consists in selecting as next the item whose difficulty level is closest to the current ability estimate. Under the 1PL model, both bOpt and MFI methods are equivalent. This method is not available with polytomous items.
+</p>
+<p>The so-called <code>thOpt</code> method consists in selecting the item for which optimal <code class="reqn">\theta</code> value (that is, the value <code class="reqn">\theta^*</code> for which item information is maximal) is closest to the current ability estimate. Under the 1PL and 2PL models, both bOpt and thOpt methods are equivalent. This method is not available with polytomous items.
+</p>
+<p>The MLWI and MPWI criteria select the next item as the one with maximal information, weighted either by the likelihood function or the posterior distribution. See the function <code>MWI</code> for further details. 
+</p>
+<p>The MEI criterion selects the item with maximum expected information, computed with the <code>MEI</code> function. 
+</p>
+<p>The MEPV criterion selects the item with minimum expected posterior variance, computed with the <code>EPV</code> function.
+</p>
+<p>The KL and KLP criteria select the item with maximum Kullback-Leibler (KL) information (or the posterior KL information in case of KLP criterion). This information is computed by the <code>KL</code> function.
+</p>
+<p>With the progressive method the item selected is the one that maximizes the sum of two elements, a random part and a part determined by the Fisher information. At the beginning of the test, the importance of the random element is maximum; as the test advances, the information increases its relevance in the item selection. The speed for the transition from purely random selection to purely information based selection is determined by the acceleration parameter, set by the argument <code>AP</code>, where higher values imply a greater importance of the random element during the test. This method is not available with <code>rule="classification"</code>.
+</p>
+<p>In the proportional method the items are randomly selected with probabilities of selection determined by their Fisher information  raised to a given power. This power is equal to 0 at the beginning of the test and increases as the test advances. This implies that the test starts with completely random selection and approaches the MFI at the end of the test. Here, the acceleration parameter, set by the argument <code>AP</code>, plays a similar role than with the progressive method. This method is not available with <code>rule="classification"</code>.
+</p>
+<p>The GDI and GDIP criteria select the item with maximum global-discrimination index (GDI),  or the posterior GDI  in case of GDIP criterion. This index is computed by the <code>GDI</code> function.
+</p>
+<p>The method for next item selection is specified by the <code>criterion</code> argument. Possible values are <code>"MFI"</code> for maximum Fisher information criterion, <code>"bOpt"</code> for bOpt's method, <code>"thOpt"</code> for the eponym method, <code>"MLWI"</code> for maximum likelihood weighted information criterion, <code>"MPWI"</code> for the maximum posterior weighted information criterion, <code>"MEI"</code> for the maximum expected information criterion, <code>"MEPV"</code> for minimum expected posterior variance, <code>"KL"</code> for Kullback-Leibler information method, <code>"KLP"</code> for posterior Kullback-Leibler information method, <code>"progressive"</code> for the progressive method, <code>"proportional"</code> for the proportional method, <code>"GDI"</code> for global-discrimination index method, <code>"KLP"</code> for posterior global-discrimination index method, and <code>"random"</code> for random selection. Other values return an error message. 
+</p>
+<p>For all methods but MLWI, MPWI, GDI, GDIP and random criteria, the provisional ability estimate must be supplied throught the <code>theta</code> argument (by default, it is equal to zero). For MLWI, MPWI, G and random criteria, this argument is ignored. 
+</p>
+<p>The available items are those that are not specified in the <code>out</code> argument. By default, <code>out</code> is <code>NULL</code>, which means that all items are available. Typically <code>out</code> contains the item numbers that have been already administered. Alternatively one can reduce the number of available items by specifying the argument <code>nAvailable</code> appropriately. The latter is a vector of 0 and 1 values, where 1 corresponds to an available item and 0 to a non-availbale item. It works similarly as for the function <code>startItems</code>. If both <code>out</code> and <code>nAvailable</code> are supplied, then all items from both vectors are discarded for next item selection.
+</p>
+<p>For MEI, MEPV, MLWI, MPWI, KL, KLP, GDI, and GDIP methods, the provisional response pattern must be provided through the <code>x</code> argument. It must be of 0/1 entries and of the same length as the <code>out</code> argument. It is ignored with MFI, bOpt, thOpt, progressive, proportional and random criteria. Moreover, the range of integration (or posterior variance computation) is specified by the triplet <code>parInt</code>, where the first, second, and third value correspond to the arguments <code>lower</code>, <code>upper</code> and <code>nqp</code> of e.g., the <code>MWI</code> function, respectively. 
+</p>
+<p>The <code>method</code>, <code>priorDist</code>, <code>priorPar</code>, <code>D</code>, <code>range</code> and <code>intPar</code> arguments fix the choice of the ability estimator for MEI method. See the <code>thetaEst</code> function for further details. Note that <code>priorDist</code> and <code>priorPar</code> are also used to select the prior distribution with the MPWI and KLP methods. Finally, <code>parInt</code> is also used for numerical integration, among others for MLWI, MPWI, MEPV, KL and KLP methods. 
+</p>
+<p>Finally, for MEI criterion, the type of information function must be supplied through the <code>infoType</code> argument. It is equal to <code>"observed"</code> by default, which refers to the observed information function, and the other possible value is <code>"Fisher"</code> for Fisher information function. See the <code>MEI</code> funtion for further details. This argument is ignored if <code>criterion</code> is not <code>"MEI"</code>.
+</p>
+<p>The so-called <em>randomesque</em> approach is used to improve item exposure control (Kingsbury and Zara, 1989), which consists in selecting more than one item as the best items to be administered (according to the specified <code>criterion</code>). The final item that is administered is randomly chosen among this set of optimal items.  The argument <code>randomesque</code> controls for the number of optimal items to be selected. The default value is 1, which corresponds to the usual framework of selecting the optimal item for next administration. Note that, for compatibility issues, if the number of remaining items is smaller than <code>randomesque</code>, the latter is replaced by this number of remaining items. The  <em>randomesque</em> approach is not considered with the progressive or proportional item selection rules.
+</p>
+<p>Dichotomous IRT models are considered whenever <code>model</code> is set to <code>NULL</code> (default value). In this case, <code>itemBank</code> must be a matrix with one row per item and four columns, with the values of the discrimination, the difficulty, the pseudo-guessing and the inattention parameters (in this order). These are the parameters of the four-parameter logistic (4PL) model (Barton and Lord, 1981). 
+</p>
+<p>Polytomous IRT models are specified by their respective acronym: <code>"GRM"</code> for Graded Response Model, <code>"MGRM"</code> for Modified Graded Response Model, <code>"PCM"</code> for Partical Credit Model, <code>"GPCM"</code> for Generalized Partial Credit Model, <code>"RSM"</code> for Rating Scale Model and <code>"NRM"</code> for Nominal Response Model. The <code>itemBank</code> still holds one row per item, end the number of columns and their content depends on the model. See <code>genPolyMatrix</code> for further information and illustrative examples of suitable polytomous item banks.
+</p>
+<p>Control for content balancing is also possible, given two conditions: (a) the <code>cbGroup</code> argument is a vector with the names of the subgroups of items for content balancing (one value per item), and (b) the argument <code>cbControl</code> is a correctly specified list. The correct format for <code>cbControl</code> is a list with two elements. The first one is called <code>names</code> and holds the names of the subgroups of items (in the order that is prespecified by the user). The second element is called <code>props</code> and contains the (theoretical) proportions of items to be administered from each subgroup for content balancing. These proportions must be strictly positive but may not sum to one; in this case they are internally normalized to sum to one. Note that <code>cbControl</code> should be tested with the <code>test.cbList</code> function prior to using <code>nextItem</code>.
+</p>
+<p>Under content balancing, the selection of the next item is done in several steps.
+</p>
+
+<ol>
+<li>
+<p>If no item was administered yet, one subgroup is randomly picked up and the optimal item from this subgroup is selected.
+</p>
+</li>
+<li>
+<p>If at least one subgroup wasn't targeted yet by item selection, one of these subgroups is randomly picked up and the optimal item
+from this subgroup is selected.
+</p>
+</li>
+<li>
+<p>If at least one item per subgroup was already administered, the empirical relative proportions of items administered per subgroup are computed, and 
+the subgroup(s) whose difference between empirical and theoretical (i.e. given by <code>cbControl$props</code>) proportions is (are) selected. The optimal
+item is then selected from this subgroup for next administration (in case of several such groups, one group is randomly picked up first).
+</p>
+</li>
+</ol>
+<p>See Kingsbury and Zara (1989) for further details.
+</p>
+<p>In case of content balancing control, three vectors of proportions are returned in the output list: <code>$prior.prop</code> contains the empirical relative proportions for items already administered (i.e.
+passed through the <code>out</code> argument); <code>$post.prop</code> contains the same empirical relative proportions but including the optimal item that was just selected;
+and <code>$th.prop</code> contains the theoretical proportions (i.e. those from <code>cbControl$props</code> or the normalized values). Note that <code>NA</code> values are returned when no control for content balancing is specified.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with nine arguments:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>item</code></td>
+<td>
+<p>the selected item (identified by its number in the item bank).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>par</code></td>
+<td>
+<p>the vector of item parameters of the selected item.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>info</code></td>
+<td>
+<p>the value of the MFI, Fisher's information, the MLWI, the MPWI, the MEI, the EPV, the unsigned distance between estimated ability and difficulty parameter (or the ability value were maximum Fisher information is provided) or NA (for <code>"random"</code> criterion) for the selected item and the current ability estimate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>criterion</code></td>
+<td>
+<p>the value of the <code>criterion</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>randomesque</code></td>
+<td>
+<p>the value of the <code>randomesque</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p>either the name of the selected item (provided as the row name of the appropriate row in the item bank matrix) or <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.prop</code></td>
+<td>
+<p>a vector with empirical proportions of items previously administered for each subgroup of items set by <code>cbControl</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>post.prop</code></td>
+<td>
+<p>a vector with empirical proportions of items previously administered, together with the one currently selected, for each subgroup
+of items set by <code>cbControl</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>th.prop</code></td>
+<td>
+<p>a vector with theoretical proportions given by <code>cbControl$props</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>van der linden (1998) also introduced the Maximum Expected Posterior Weighted Information (MEPWI) criterion, as
+a mix of both MEI and MPWI methods (see also van der Linden and Pashley, 2000). However, Choi and Swartz (2009) established that this method is completely equivalent to
+MPWI. For this reason, MEPWI was not implemented here. 
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>David Magis <br>
+Department of Psychology, University of Liege, Belgium <br><a href="mailto:david.magis@uliege.be">david.magis@uliege.be</a>
+</p>
+<p>Juan Ramon Barrada <br>
+Department of Psychology and Sociology, Universidad Zaragoza, Spain <br><a href="mailto:barrada@unizar.es">barrada@unizar.es</a>
+</p>
+<p>Guido Corradi <br>
+Department of Psychology and Sociology, Universidad Zaragoza, Spain <br><a href="mailto:guidocor@gmail.com">guidocor@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Baker, F.B. (1992). <em>Item response theory: parameter estimation techniques</em>. New York, NY: Marcel Dekker.
+</p>
+<p>Barrada, J. R., Mazuela, P., and Olea, J. (2006). Maximum information stratification method for controlling item exposure in computerized adaptive testing. <em>Psicothema, 18</em>, 156-159. 
+</p>
+<p>Barrada, J. R., Olea, J., Ponsoda, V., and Abad, F. J. (2008). Incorporating randomness to the Fisher information for improving item exposure control in CATS. <em>British Journal of Mathematical and Statistical Psychology, 61</em>, 493-513. doi: <a href="https://doi.org/10.1348/000711007X230937">10.1348/000711007X230937</a>
+</p>
+<p>Barrada, J. R., Olea, J., Ponsoda, V., and Abad, F. J. (2010). A method for the comparison of item selection rules in computerized adaptive testing. <em>Applied Psychological Measurement</em>, <em>34</em>, 438-452. doi: <a href="https://doi.org/10.1177/0146621610370152">10.1177/0146621610370152</a>
+</p>
+<p>Barton, M.A., and Lord, F.M. (1981). <em>An upper asymptote for the three-parameter logistic item-response model</em>.
+Research Bulletin 81-20. Princeton, NJ: Educational Testing Service.
+</p>
+<p>Chang, H.-H., and Ying, Z. (1996). A global information approach to computerized adaptive testing. <em>Applied Psychological Measurement, 20</em>, 213-229. doi: <a href="https://doi.org/10.1177/014662169602000303">10.1177/014662169602000303</a>
+</p>
+<p>Choi, S. W., and Swartz, R. J. (2009). Comparison of CAT item selection criteria for polytomous items. <em>Applied Psychological Measurement, 32</em>, 419-440. doi: <a href="https://doi.org/10.1177/0146621608327801">10.1177/0146621608327801</a>
+</p>
+<p>Haley, D.C. (1952). <em>Estimation of the dosage mortality relationship when the dose is subject to error</em>. Technical report no 15. Palo Alto, CA: Applied Mathematics and Statistics Laboratory, Stanford University. 
+</p>
+<p>Kaplan, M., de la Torre, J., and Barrada, J. R. (2015). New item selection methods for cognitive diagnosis computerized adaptive testing. <em>Applied Psychological Measurement, 39</em>, 167-188. doi: <a href="https://doi.org/10.1177/0146621614554650">10.1177/0146621614554650</a>
+</p>
+<p>Kingsbury, G. G., and Zara, A. R. (1989). Procedures for selecting items for computerized adaptive tests. <em>Applied Measurement in Education, 2</em>, 359-375. doi: <a href="https://doi.org/10.1207/s15324818ame0204_6">10.1207/s15324818ame0204_6</a>
+</p>
+<p>Leroux, A. J., Lopez, M., Hembry, I. and Dodd, B. G. (2013). A comparison of exposure control procedures in CATs using the 3PL model. <em>Educational and Psychological Measurement, 73</em>, 857-874. doi: <a href="https://doi.org/10.1177/0013164413486802">10.1177/0013164413486802</a>
+</p>
+<p>Magis, D. (2013). A note on the item information function of the four-parameter logistic model. <em>Applied Psychological Measurement, 37</em>, 304-315. doi: <a href="https://doi.org/10.1177/0146621613475471">10.1177/0146621613475471</a>
+</p>
+<p>Magis, D. and Barrada, J. R. (2017). Computerized Adaptive Testing with R: Recent Updates of the Package <em>catR</em>. <em>Journal of Statistical Software</em>, <em>Code Snippets</em>, <em>76(1)</em>, 1-18. doi: <a href="https://doi.org/10.18637/jss.v076.c01">10.18637/jss.v076.c01</a>
+</p>
+<p>Magis, D., and Raiche, G. (2012). Random Generation of Response Patterns under Computerized Adaptive Testing with the R Package <em>catR</em>. <em>Journal of Statistical Software</em>, <em>48 (8)</em>, 1-31. doi: <a href="https://doi.org/10.18637/jss.v048.i08">10.18637/jss.v048.i08</a>
+</p>
+<p>Revuelta, J., and Ponsoda, V. (1998). A comparison of item exposure control methods in computerized adaptive testing. <em>Journal of Educational Measurement, 35</em>, 311-327. doi: <a href="https://doi.org/10.1111/j.1745-3984.1998.tb00541.x">10.1111/j.1745-3984.1998.tb00541.x</a>
+</p>
+<p>Segall, D. O. (2004). A sharing item response theory model for computerized adaptive testing. <em>Journal of Educational and Behavioral Statistics, 29</em>, 439-460. doi: <a href="https://doi.org/10.3102/10769986029004439">10.3102/10769986029004439</a>
+</p>
+<p>Urry, V. W. (1970). <em>A Monte Carlo investigation of logistic test models.</em> Unpublished doctoral dissertation. West Lafayette, IN: Purdue University.
+</p>
+<p>van der Linden, W. J. (1998). Bayesian item selection criteria for adaptive testing. <em>Psychometrika, 63</em>, 201-216. doi: <a href="https://doi.org/10.1007/BF02294775">10.1007/BF02294775</a>
+</p>
+<p>van der Linden, W. J., and Pashley, P. J. (2000). Item selection and ability estimation in adaptive testing. In W. J. van der Linden and C. A. W. Glas (Eds.), <em>Computerized adaptive testing. Theory and practice</em> (pp. 1-25). Boston, MA: Kluwer. 
+</p>
+<p>Veerkamp, W. J. J., and Berger, M. P. F. (1997). Some new item selection criteria for adaptive testing. <em>Journal of Educational and Behavioral Statistics, 22</em>, 203-226. doi: <a href="https://doi.org/10.3102/10769986022002203">10.3102/10769986022002203</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>MWI</code>, <code>MEI</code>, <code>KL</code>, <code>thetaEst</code>, <code>test.cbList</code>, <code>randomCAT</code>, <code>genPolyMatrix</code> 
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Dichotomous models ##
+
+ # Loading the 'tcals' parameters 
+ data(tcals)
+ 
+ # Item bank creation with 'tcals' item parameters
+ prov &lt;- breakBank(tcals)
+ bank &lt;- prov$itemPar
+ cbGroup &lt;- prov$cbGroup
+
+ ## MFI criterion
+
+ # Selecting the next item, current ability estimate is 0
+ nextItem(bank, theta = 0) # item 63 is selected
+
+ # Selecting the next item, current ability estimate is 0 and item 63 is removed
+ nextItem(bank, theta = 0, out = 63) # item 10 is selected
+
+ # Selecting the next item, current ability estimate is 0 and items 63 and 10 are 
+ # removed
+ nextItem(bank, theta = 0, out = c(63, 10)) # item 62 is selected
+
+ # Item exposure control by selecting three items (selected item will be either 10, 62 
+ # or 63)
+ nextItem(bank, theta = 0, randomesque = 3)
+
+ # Fixing the random seed for randomesque selection
+ nextItem(bank, theta = 0, randomesque = 3, random.seed = 1)
+
+
+ ## bOpt method
+
+ # Selecting the next item, current ability estimate is 0
+ nextItem(bank, theta = 0, criterion = "bOpt") # item 24 is selected
+
+ # Selecting the next item, current ability estimate is 0 and item 24 is removed
+ nextItem(bank, theta = 0, out = 24, criterion = "bOpt")
+
+
+ ## thOpt method
+
+ # Selecting the next item, current ability estimate is 0
+ nextItem(bank, theta = 0, criterion = "thOpt") # item 76 is selected
+
+ # Selecting the next item, current ability estimate is 0 and item 76 is removed
+ nextItem(bank, theta = 0, out = 76, criterion = "thOpt") # item 70 is selected
+
+
+ ## MLWI and MPWI methods
+
+ # Selecting the next item, current response pattern is 0 and item 63 was administered 
+ # first
+ nextItem(bank, x = 0, out = 63, criterion = "MLWI") 
+ nextItem(bank, x = 0, out = 63, criterion = "MPWI")
+
+ # Selecting the next item, current response pattern is (0,1) and item 19 is removed
+ nextItem(bank, x = c(0, 1), out = c(63, 19), criterion = "MLWI")
+ nextItem(bank, x = c(0, 1), out = c(63, 19), criterion = "MPWI")
+
+## Not run: 
+
+ ## MEI method
+
+ # Selecting the next item, current response pattern is 0 and item 63 was administered 
+ # first
+ # Ability estimation by WL method
+ th &lt;- thetaEst(rbind(bank[63,]), 0, method = "WL")
+ nextItem(bank, x = 0, out = 63, theta = th, criterion = "MEI") # item 49 is selected
+
+ # With Fisher information
+ nextItem(bank, x = 0, out = 63, theta = th, criterion = "MEI", infoType = "Fisher") 
+   # item 10 is selected
+
+
+ ## MEPV method
+
+ # Selecting the next item, current response pattern is 0 and item 63 was administered 
+ # first
+ # Ability estimation by WL method
+ nextItem(bank, x = 0, out = 63, theta = th, criterion = "MEPV") # item 19 is selected
+
+
+ ## KL and KLP methods
+
+ # Selecting the next item, current response pattern is 0 and item 63 was administered 
+ # first
+ # Ability estimation by WL method
+ nextItem(bank, x = 0, out = 63, theta = th, criterion = "KL") # item 19 is selected
+ nextItem(bank, x = 0, out = 63, theta = th, criterion = "KLP") # item 44 is selected
+
+
+## GDI and GDIP methods
+
+ # Selecting the next item, current response pattern is 0 and item 63 was administered 
+ # first
+ nextItem(bank, x = 0, out = 63, criterion = "GDI") # item 49 is selected
+ nextItem(bank, x = 0, out = 63, criterion = "GDIP") # item 44 is selected
+
+
+ ## Progressive method
+
+ # Selecting the next item, current ability estimate is 0 and item 63 was administered 
+ # first
+ # (default options: "length" rule with "thr = 20")
+ nextItem(bank, out = 63, theta = 0, criterion = "progressive") 
+ nextItem(bank, out = 63, theta = 0, criterion = "progressive")
+  # result can be different!
+
+
+ ## Proportional method
+
+ # Selecting the next item, current ability estimate is 0 and item 63 was administered 
+ # first
+ # (default options: "length" rule with "thr = 20")
+ nextItem(bank, out = 63, theta = 0, criterion = "proportional") 
+ nextItem(bank, out = 63, theta = 0, criterion = "proportional")
+  # result can be different!
+
+
+ ## Random method
+
+ # Selecting the next item, item 63 was administered first
+ nextItem(bank, out = 63, criterion = "random") 
+ nextItem(bank, out = 63, criterion = "random")  # may produce a different result
+
+
+ ## Content balancing
+
+ # Creation of the 'cbList' list with arbitrary proportions
+ cbList &lt;- list(names = c("Audio1", "Audio2", "Written1", "Written2", "Written3"), 
+        props = c(0.1, 0.2, 0.2, 0.2, 0.3))
+
+ # Selecting the next item, MFI criterion, current ability estimate is 0, items 12, 33, 
+ # 46 and 63 previously administered
+ nextItem(bank, theta = 0, out = c(12, 33, 46, 63), cbControl = cbList, 
+          cbGroup = cbGroup)  # item 70 is selected
+
+
+## Polytomous models ##
+
+ # Generation of an item bank under GRM with 100 items and at most 4 categories
+ m.GRM &lt;- genPolyMatrix(100, 4, "GRM")
+ m.GRM &lt;- as.matrix(m.GRM)
+
+ # Current ability estimate is 0
+ # Selecting the next item, current response pattern is 1 and item 70 was administered 
+ # first
+
+ ## MFI method
+ nextItem(m.GRM, model = "GRM", theta = 0, criterion = "MFI", out = 70)
+
+ ## Progressive method
+ nextItem(m.GRM, model = "GRM", theta = 0, criterion = "progressive", out = 70)
+
+ ## KL method
+ nextItem(m.GRM, model = "GRM", theta = 0, criterion = "KL", out = 70, x = 1)
+
+ ## MFI with content balancing
+ cbList &lt;- list(names = c("Audio1","Audio2","Written1","Written2", "Written3"), 
+        props = c(0.1,0.2,0.2,0.2,0.3))
+ m.GRM&lt;-genPolyMatrix(100, 4, model = "GRM", cbControl = cbList)
+ bank&lt;-breakBank(m.GRM)
+ nextItem(bank$itemPar, model = "GRM", theta = 0, criterion = "MFI", out = 70,
+  cbControl = cbList, cbGroup = bank$cbGroup)
+
+
+ # Loading the cat_pav data
+ data(cat_pav)
+ cat_pav &lt;- as.matrix(cat_pav)
+
+ # Current ability estimate is 0
+ # Selecting the next item, current response pattern is 1 and item 15 was administered 
+ # first
+
+ ## MFI method
+ nextItem(cat_pav, model = "GPCM", theta = 0, criterion = "MFI", out = 15)
+
+ ## Progressive method
+ nextItem(cat_pav, model = "GPCM", theta = 0, criterion = "progressive", out = 15)
+
+ ## KL method
+ nextItem(cat_pav, model = "GPCM", theta = 0, criterion = "KL", out = 15, x = 1)
+
+ ## MFI with content balancing
+ cbList &lt;- list(names = c("Audio1", "Audio2", "Written1", "Written2", "Written3"), 
+        props = c(0.1, 0.2, 0.2, 0.2, 0.3))
+ cat_pav&lt;-genPolyMatrix(100, 4, model = "GPCM", cbControl = cbList)
+ bank&lt;-breakBank(cat_pav)
+ nextItem(bank$itemPar, model = "GPCM", theta = 0, criterion = "MFI", out = 15, 
+          cbControl = cbList, cbGroup = bank$cbGroup)
+ 
+## End(Not run)
+</code></pre>
+
+
+</div>

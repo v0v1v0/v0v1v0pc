@@ -1,0 +1,210 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>mthreshC</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Function to perform 'multiwavelet style' level-dependent soft
+thresholding for complex-valued wavelet coefficients
+</h2>
+
+<h3>Description</h3>
+
+<p>This function uses chi^2 statistics similar to Barber and Nason
+(2004) to threshold wavelet coefficients based on their magnitude
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">mthreshC(coeffv, Sigma, rl, po, ali, verbose = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>coeffv</code></td>
+<td>
+
+<p>A matrix of complex-valued wavelet coefficients (columns are
+real and imaginary parts of the coefficients respectively).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Sigma</code></td>
+<td>
+
+<p>An array of dimension <code>2 x 2 x n</code> describing the covariance
+between real and imaginary parts of the wavelet coefficients.
+In particular, <code>Sigma[,,i]</code> represents the covariance between
+real and imaginary parts of the <code>i</code>th lifted wavelet
+coefficient (see <span class="env">rl</span> argument).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rl</code></td>
+<td>
+
+<p>The removelist (trajectory of lifted points) corresponding to
+a forward lifting transform.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>po</code></td>
+<td>
+
+<p>A vector of indices describing the unlifted scaling
+coefficients in a forward lifting transform.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ali</code></td>
+<td>
+
+<p>A list of indices of observations, each entry corresponding
+to an 'artificial level' (finest to coarsest), see <code>artlev</code>
+for more details.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+
+<p>Indicates whether helpful messages should be printed to the
+console during the procedure.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The procedure in Downie and Silverman (1998) or Barber and Nason (2004) makes
+use of the magnitude of wavelet coefficients to threshold them.
+In particular, the covariance between the components of the
+wavelet coefficients (contained in <span class="env">Sigma</span> is taken into account
+to compute a thresholding statistic, the distribution of which is
+chi-squared_2 distributed, see <code>cthresh</code> for more details.  These
+statistics are then compared with level-dependent universal
+thresholds computed by counting the numnber of coefficients in
+specific artificial levels.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>chi</code></td>
+<td>
+<p>the vector of chi-squared statistics used in the thresholding procedure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coeffvt</code></td>
+<td>
+<p>the matrix of thresholded coefficients, columns representing
+the real and imaginary components respectively.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Matt Nunes, Marina Knight
+</p>
+
+
+<h3>References</h3>
+
+<p>Hamilton, J., Knight, M. I., Nunes, M. A. and Fryzlewicz (2018)
+Complex-valued wavelet lifting and applications. <em>Technometrics</em>, <b>60</b> (1), 48-60,DOI 10.1080/00401706.2017.1281846.
+Barber, S. and Nason, G. P. (2004) Real nonparametric regression
+using complex wavelets. <em>J. Roy. Stat. Soc. B</em> <b>66</b> (4), 927–939.
+Downie, T. R. and Silverman, B. W. (1998) The discrete multiple
+wavelet tranform and thresholding methods. <em>IEEE Trans. Sig.
+Proc.</em> <b>46</b> 2558–2561.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cthresh</code>,
+<code>denoisepermC</code>,
+<code>denoisepermCh</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+library(adlift)
+
+set.seed(100)
+
+# construct an (irregular) sampling structure:
+
+x&lt;-sort(runif(200))
+
+g&lt;-make.signal2("bumps",x=x)
+
+# generate IID noise with a particular sd
+noise&lt;-rnorm(200,0,sd=0.5)
+
+f&lt;-g+noise
+
+# perform forward complex lifting transform
+
+out&lt;-fwtnppermC(x,f,LocalPred=LinearPred,neigh=1)
+
+# have a look at some of the coefficients
+
+out$coeffv[1:10]
+
+# extract lifting matrix and induced lifting variances
+W &lt;- out$W
+
+Gpre&lt;-tcrossprod(W,Conj(W))
+
+indsd&lt;-sqrt(diag(Gpre))
+
+# now estimate noise sd using the first artificial level:
+
+al&lt;-artlev(out$lengthsremove,out$removelist)
+
+fine&lt;-(out$coeffv/indsd)[al[[1]]]
+
+varest&lt;-mad(Re(fine))^2
+
+# now compute coefficient covariance structure, see
+# Hamilton et al. (2018), Appendix B
+
+C = varest * tcrossprod(W)
+    G = varest * Gpre
+    P = Conj(G) - t(Conj(C)) 
+    Sigma &lt;- array(0, dim = c(2, 2, length(out$coeffv)))
+    Sigma[1, 1, ] &lt;- diag(Re(G + C)/2)
+    Sigma[2, 2, ] &lt;- diag(Re(G - C)/2)
+    Sigma[1, 2, ] &lt;- -diag(Im(G - C)/2)
+    Sigma[2, 1, ] &lt;- diag(Im(G + C)/2)
+
+# now threshold complex coefficients according to this structure:
+
+coeff.thresh&lt;-mthreshC(out$coeffv,Sigma,out$removelist,out$pointsin,al)
+
+# have a look at some of these coefficients
+
+coeff.thresh$coeffv[1:10]
+
+</code></pre>
+
+
+</div>

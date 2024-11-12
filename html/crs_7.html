@@ -1,0 +1,520 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>crsiv</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Nonparametric Instrumental Regression
+</h2>
+
+<h3>Description</h3>
+
+<p><code>crsiv</code> computes nonparametric estimation of an instrumental
+regression function <code class="reqn">\varphi</code> defined by conditional moment
+restrictions stemming from a structural econometric model: <code class="reqn">E [Y -
+\varphi (Z,X) | W ] = 0</code>, and involving
+endogenous variables <code class="reqn">Y</code> and <code class="reqn">Z</code>, exogenous variables <code class="reqn">X</code>,
+and instruments <code class="reqn">W</code>. The function <code class="reqn">\varphi</code> is the solution
+of an ill-posed inverse problem.
+</p>
+<p>When <code>method="Tikhonov"</code>, <code>crsiv</code> uses the approach of
+Darolles, Fan, Florens and Renault (2011) modified for regression
+splines (Darolles et al use local constant kernel weighting). When
+<code>method="Landweber-Fridman"</code>, <code>crsiv</code> uses the approach of
+Horowitz (2011) using the regression spline methodology implemented in
+the <span class="pkg">crs</span> package.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">crsiv(y,
+      z,
+      w,
+      x = NULL,
+      zeval = NULL,
+      weval = NULL,
+      xeval = NULL,
+      alpha = NULL,
+      alpha.min = 1e-10,
+      alpha.max = 1e-01,
+      alpha.tol = .Machine$double.eps^0.25,
+      deriv = 0,
+      iterate.max = 1000,
+      iterate.diff.tol = 1.0e-08,
+      constant = 0.5,
+      penalize.iteration = TRUE,
+      smooth.residuals = TRUE,
+      start.from = c("Eyz","EEywz"),
+      starting.values = NULL,
+      stop.on.increase = TRUE,
+      method = c("Landweber-Fridman","Tikhonov"),
+      opts = list("MAX_BB_EVAL"=10000,
+                  "EPSILON"=.Machine$double.eps,
+                  "INITIAL_MESH_SIZE"="r1.0e-01",
+                  "MIN_MESH_SIZE"=paste("r",sqrt(.Machine$double.eps),sep=""),
+                  "MIN_POLL_SIZE"=paste("r",1,sep=""),
+                  "DISPLAY_DEGREE"=0),
+      ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+
+<p>a one (1) dimensional numeric or integer vector of dependent data, each
+element <code class="reqn">i</code> corresponding to each observation (row) <code class="reqn">i</code> of
+<code>z</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+
+<p>a <code class="reqn">p</code>-variate data frame of endogenous predictors. The data
+types may be continuous, discrete (unordered and ordered factors),
+or some combination thereof
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+
+<p>a <code class="reqn">q</code>-variate data frame of instruments. The data types may be
+continuous, discrete (unordered and ordered factors), or some
+combination thereof
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+
+<p>an <code class="reqn">r</code>-variate data frame of exogenous predictors. The data
+types may be continuous, discrete (unordered and ordered factors),
+or some combination thereof
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>zeval</code></td>
+<td>
+
+<p>a <code class="reqn">p</code>-variate data frame of endogenous predictors on which the
+regression will be estimated (evaluation data). By default, evaluation
+takes place on the data provided by <code>z</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weval</code></td>
+<td>
+
+<p>a <code class="reqn">q</code>-variate data frame of instruments on which the regression
+will be estimated (evaluation data). By default, evaluation
+takes place on the data provided by <code>w</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xeval</code></td>
+<td>
+
+<p>an <code class="reqn">r</code>-variate data frame of exogenous predictors on which the
+regression will be estimated (evaluation data). By default,
+evaluation takes place on the data provided by <code>x</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+
+<p>a numeric scalar that, if supplied, is used rather than numerically
+solving for <code>alpha</code>, when using <code>method="Tikhonov"</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha.min</code></td>
+<td>
+
+<p>minimum of search range for <code class="reqn">\alpha</code>, the Tikhonov
+regularization parameter, when using <code>method="Tikhonov"</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha.max</code></td>
+<td>
+
+<p>maximum of search range for <code class="reqn">\alpha</code>, the Tikhonov
+regularization parameter, when using  <code>method="Tikhonov"</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha.tol</code></td>
+<td>
+
+<p>the search tolerance for <code>optimize</code> when solving for
+<code class="reqn">\alpha</code>, the Tikhonov regularization parameter, 
+when using <code>method="Tikhonov"</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iterate.max</code></td>
+<td>
+
+<p>an integer indicating the maximum number of iterations permitted
+before termination occurs when using <code>method="Landweber-Fridman"</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iterate.diff.tol</code></td>
+<td>
+
+<p>the search tolerance for the difference in the stopping rule from
+iteration to iteration when using <code>method="Landweber-Fridman"</code>
+(disable by setting to zero)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>constant</code></td>
+<td>
+
+<p>the constant to use when using  <code>method="Landweber-Fridman"</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+
+<p>the regularization method employed (default
+<code>"Landweber-Fridman"</code>, see Horowitz (2011); see Darolles, Fan,
+Florens and Renault (2011) for details for <code>"Tikhonov"</code>)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>penalize.iteration</code></td>
+<td>
+<p> a logical value indicating whether to
+penalize the norm by the number of iterations or not (default
+<code>TRUE</code>)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smooth.residuals</code></td>
+<td>
+
+<p>a logical value (defaults to <code>TRUE</code>) indicating whether to
+optimize bandwidths for the regression of <code class="reqn">y-\varphi(z)</code>
+on <code class="reqn">w</code> or for the regression of <code class="reqn">\varphi(z)</code> on
+<code class="reqn">w</code> during iteration
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start.from</code></td>
+<td>
+<p> a character string indicating whether to start from
+<code class="reqn">E(Y|z)</code> (default, <code>"Eyz"</code>) or from <code class="reqn">E(E(Y|z)|z)</code> (this can
+be overridden by providing <code>starting.values</code> below)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>starting.values</code></td>
+<td>
+<p> a value indicating whether to commence
+Landweber-Fridman assuming
+<code class="reqn">\varphi_{-1}=starting.values</code> (proper
+Landweber-Fridman) or instead begin from <code class="reqn">E(y|z)</code> (defaults to
+<code>NULL</code>, see details below)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stop.on.increase</code></td>
+<td>
+
+<p>a logical value (defaults to <code>TRUE</code>) indicating whether to halt
+iteration if the stopping criterion (see below) increases over the
+course of one iteration (i.e. it may be above the iteration tolerance
+but increased)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>opts</code></td>
+<td>
+
+<p>arguments passed to the NOMAD solver (see <code>snomadr</code> for
+further details)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deriv</code></td>
+<td>
+<p> an integer <code>l</code> (default <code>deriv=0</code>) specifying
+whether to compute the univariate <code>l</code>th partial derivative for
+each continuous predictor (and difference in levels for each
+categorical predictor) or not and if so what order. Note that if
+<code>deriv</code> is higher than the spline degree of the associated
+continuous predictor then the derivative will be zero and a warning
+issued to this effect (see important note below)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+
+<p>additional arguments supplied to <code>crs</code>
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Tikhonov regularization requires computation of weight matrices of
+dimension <code class="reqn">n\times n</code> which can be computationally costly
+in terms of memory requirements and may be unsuitable
+(i.e. unfeasible) for large datasets. Landweber-Fridman will be
+preferred in such settings as it does not require construction and
+storage of these weight matrices while it also avoids the need for
+numerical optimization methods to determine <code class="reqn">\alpha</code>,
+though it does require iteration that may be equally or even more
+computationally demanding in terms of total computation time.
+</p>
+<p>When using <code>method="Landweber-Fridman"</code>, an optimal stopping rule
+based upon <code class="reqn">||E(y|w)-E(\varphi_k(z,x)|w)||^2
+  </code> is used to terminate
+iteration. However, if local rather than global optima are encountered
+the resulting estimates can be overly noisy. To best guard against
+this eventuality set <code>nmulti</code> to a larger number than the default
+<code>nmulti=5</code> for <code>crs</code> when using <code>cv="nomad"</code> or
+instead use <code>cv="exhaustive"</code> if possible (this may not be
+feasible for non-trivial problems).
+</p>
+<p>When using <code>method="Landweber-Fridman"</code>, iteration will terminate
+when either the change in the value of
+<code class="reqn">||(E(y|w)-E(\varphi_k(z,x)|w))/E(y|w)||^2
+  </code> from iteration to iteration is
+less than <code>iterate.diff.tol</code> or we hit <code>iterate.max</code> or
+<code class="reqn">||(E(y|w)-E(\varphi_k(z,x)|w))/E(y|w)||^2
+  </code> stops falling in value and
+starts rising.
+</p>
+<p>When your problem is a simple one (e.g. univariate <code class="reqn">Z</code>, <code class="reqn">W</code>,
+and <code class="reqn">X</code>) you might want to avoid <code>cv="nomad"</code> and instead use
+<code>cv="exhaustive"</code> since exhaustive search may be feasible (for
+<code>degree.max</code> and <code>segments.max</code> not overly large). This will
+guarantee an exact solution for each iteration (i.e. there will be no
+errors arising due to numerical search).
+</p>
+<p><code>demo(crsiv)</code>, <code>demo(crsiv_exog)</code>, and
+<code>demo(crsiv_exog_persp)</code> provide flexible interactive
+demonstrations similar to the example below that allow you to modify
+and experiment with parameters such as the sample size, method, and so
+forth in an interactive session.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>crsiv</code> returns a <code>crs</code> object.  The generic
+functions <code>fitted</code> and <code>residuals</code> extract
+(or generate) estimated values and residuals. Furthermore, the
+functions <code>summary</code>, <code>predict</code>, and
+<code>plot</code> (options <code>mean=FALSE</code>, <code>deriv=i</code> where
+<code class="reqn">i</code> is an integer, <code>ci=FALSE</code>,
+<code>plot.behavior=c("plot","plot-data","data")</code>) support objects
+of this type.
+</p>
+<p>See <code>crs</code> for details on the return object components.
+</p>
+<p>In addition to the standard <code>crs</code> components,
+<code>crsiv</code> returns components <code>phi</code> and either <code>alpha</code>
+when <code>method="Tikhonov"</code> or <code>phi</code>, <code>phi.mat</code>,
+<code>num.iterations</code>, <code>norm.stop</code>, <code>norm.value</code> and
+<code>convergence</code> when <code>method="Landweber-Fridman"</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Using the option <code>deriv=</code> computes (effectively) the analytical
+derivative of the estimated <code class="reqn">\varphi(Z,X)</code> and not that
+using <code>crsivderiv</code>, which instead uses the method of
+Florens and Racine (2012). Though both are statistically consistent,
+practitioners may desire one over the other hence we provide both.
+</p>
+
+
+<h3>Note</h3>
+
+<p>This function should be considered to be in ‘beta test’ status until further notice.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jeffrey S. Racine <a href="mailto:racinej@mcmaster.ca">racinej@mcmaster.ca</a>, Samuele Centorrino
+<a href="mailto:samuele.centorrino@univ-tlse1.fr">samuele.centorrino@univ-tlse1.fr</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Carrasco, M. and J.P. Florens and E. Renault (2007), “Linear
+Inverse Problems in Structural Econometrics Estimation Based on
+Spectral Decomposition and Regularization,” In: James J. Heckman and
+Edward E. Leamer, Editor(s), Handbook of Econometrics, Elsevier, 2007,
+Volume 6, Part 2, Chapter 77, Pages 5633-5751
+</p>
+<p>Darolles, S. and Y. Fan and J.P. Florens and E. Renault (2011),
+“Nonparametric Instrumental Regression,” Econometrica, 79,
+1541-1565.
+</p>
+<p>Feve, F. and J.P. Florens (2010), “The Practice of
+Non-parametric Estimation by Solving Inverse Problems: The Example of
+Transformation Models,” Econometrics Journal, 13, S1-S27.
+</p>
+<p>Florens, J.P. and J.S. Racine (2012), “Nonparametric
+Instrumental Derivatives,” Working Paper.
+</p>
+<p>Fridman, V. M. (1956), “A Method of Successive Approximations
+for Fredholm Integral Equations of the First Kind,” Uspeskhi,
+Math. Nauk., 11, 233-334, in Russian.
+</p>
+<p>Horowitz, J.L. (2011), “Applied Nonparametric Instrumental
+Variables Estimation,” Econometrica, 79, 347-394.
+</p>
+<p>Landweber, L. (1951), “An Iterative Formula for Fredholm
+Integral Equations of the First Kind,” American Journal of
+Mathematics, 73, 615-24.
+</p>
+<p>Li, Q. and J.S. Racine (2007), <em>Nonparametric Econometrics:
+Theory and Practice,</em> Princeton University Press.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>npreg</code>, <code>crs</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+## This illustration was made possible by Samuele Centorrino
+## &lt;samuele.centorrino@univ-tlse1.fr&gt;
+
+set.seed(42)
+n &lt;- 1500
+
+## The DGP is as follows:
+
+## 1) y = phi(z) + u
+
+## 2) E(u|z) != 0 (endogeneity present)
+
+## 3) Suppose there exists an instrument w such that z = f(w) + v and
+## E(u|w) = 0
+
+## 4) We generate v, w, and generate u such that u and z are
+## correlated. To achieve this we express u as a function of v (i.e. u =
+## gamma v + eps)
+
+v &lt;- rnorm(n,mean=0,sd=0.27)
+eps &lt;- rnorm(n,mean=0,sd=0.05)
+u &lt;- -0.5*v + eps
+w &lt;- rnorm(n,mean=0,sd=1)
+
+## In Darolles et al (2011) there exist two DGPs. The first is
+## phi(z)=z^2 and the second is phi(z)=exp(-abs(z)) (which is
+## discontinuous and has a kink at zero).
+
+fun1 &lt;- function(z) { z^2 }
+fun2 &lt;- function(z) { exp(-abs(z)) }
+
+z &lt;- 0.2*w + v
+
+## Generate two y vectors for each function.
+
+y1 &lt;- fun1(z) + u
+y2 &lt;- fun2(z) + u
+
+## You set y to be either y1 or y2 (ditto for phi) depending on which
+## DGP you are considering:
+
+y &lt;- y1
+phi &lt;- fun1
+
+## Create an evaluation dataset sorting on z (for plotting)
+
+evaldata &lt;- data.frame(y,z,w)
+evaldata &lt;- evaldata[order(evaldata$z),]
+
+## Compute the non-IV regression spline estimator of E(y|z)
+
+model.noniv &lt;- crs(y~z,opts=opts)
+mean.noniv &lt;- predict(model.noniv,newdata=evaldata)
+
+## Compute the IV-regression spline estimator of phi(z)
+
+model.iv &lt;- crsiv(y=y,z=z,w=w)
+phi.iv &lt;- predict(model.iv,newdata=evaldata)
+
+## For the plots, restrict focal attention to the bulk of the data
+## (i.e. for the plotting area trim out 1/4 of one percent from each
+## tail of y and z)
+
+trim &lt;- 0.0025
+
+curve(phi,min(z),max(z),
+      xlim=quantile(z,c(trim,1-trim)),
+      ylim=quantile(y,c(trim,1-trim)),
+      ylab="Y",
+      xlab="Z",
+      main="Nonparametric Instrumental Spline Regression",
+      sub=paste("Landweber-Fridman: iterations = ", model.iv$num.iterations,sep=""),
+      lwd=1,lty=1)
+
+points(z,y,type="p",cex=.25,col="grey")
+
+lines(evaldata$z,evaldata$z^2 -0.325*evaldata$z,lwd=1,lty=1)
+
+lines(evaldata$z,phi.iv,col="blue",lwd=2,lty=2)
+
+lines(evaldata$z,mean.noniv,col="red",lwd=2,lty=4)
+
+legend(quantile(z,trim),quantile(y,1-trim),
+       c(expression(paste(varphi(z),", E(y|z)",sep="")),
+         expression(paste("Nonparametric ",hat(varphi)(z))),
+         "Nonparametric E(y|z)"),
+       lty=c(1,2,4),
+       col=c("black","blue","red"),
+       lwd=c(1,2,2))
+
+## End(Not run) 
+</code></pre>
+
+
+</div>

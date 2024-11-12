@@ -1,0 +1,245 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fast-statistical-functions</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fast (Grouped, Weighted) Statistical Functions for Matrix-Like Objects</h2>
+
+<h3>Description</h3>
+
+<p>With <code>fsum</code>, <code>fprod</code>, <code>fmean</code>, <code>fmedian</code>, <code>fmode</code>, <code>fvar</code>, <code>fsd</code>, <code>fmin</code>, <code>fmax</code>, <code>fnth</code>, <code>ffirst</code>, <code>flast</code>, <code>fnobs</code> and <code>fndistinct</code>, <em>collapse</em> presents a coherent set of extremely fast and flexible statistical functions (S3 generics) to perform column-wise, grouped and weighted computations on vectors, matrices and data frames, with special support for grouped data frames / tibbles (<em>dplyr</em>) and <em>data.table</em>'s.
+</p>
+
+
+<h3>Usage</h3>
+
+<div class="sourceCode r"><pre>
+## All functions (FUN) follow a common syntax in 4 methods:
+FUN(x, ...)
+
+## Default S3 method:
+FUN(x, g = NULL, [w = NULL,] TRA = NULL, [na.rm = TRUE,]
+    use.g.names = TRUE, [nthreads = 1L,] ...)
+
+## S3 method for class 'matrix'
+FUN(x, g = NULL, [w = NULL,] TRA = NULL, [na.rm = TRUE,]
+    use.g.names = TRUE, drop = TRUE, [nthreads = 1L,] ...)
+
+## S3 method for class 'data.frame'
+FUN(x, g = NULL, [w = NULL,] TRA = NULL, [na.rm = TRUE,]
+    use.g.names = TRUE, drop = TRUE, [nthreads = 1L,] ...)
+
+## S3 method for class 'grouped_df'
+FUN(x, [w = NULL,] TRA = NULL, [na.rm = TRUE,]
+    use.g.names = FALSE, keep.group_vars = TRUE,
+    [keep.w = TRUE,] [stub = TRUE,] [nthreads = 1L,] ...)
+</pre></div>
+
+
+<h3>Arguments</h3>
+
+
+<table>
+<tr>
+<td style="text-align: left;">
+<code>x</code> </td>
+<td style="text-align: left;"> </td>
+<td style="text-align: left;"> a vector, matrix, data frame or grouped data frame (class 'grouped_df'). </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+<code>g</code> </td>
+<td style="text-align: left;"> </td>
+<td style="text-align: left;"> a factor, <code>GRP</code> object, atomic vector (internally converted to factor) or a list of vectors / factors (internally converted to a <code>GRP</code> object) used to group <code>x</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+<code>w</code> </td>
+<td style="text-align: left;"> </td>
+<td style="text-align: left;"> a numeric vector of (non-negative) weights, may contain missing values. Supported by <code>fsum</code>, <code>fprod</code>, <code>fmean</code>, <code>fmedian</code>, <code>fnth</code>, <code>fvar</code>, <code>fsd</code> and <code>fmode</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+<code>TRA</code> </td>
+<td style="text-align: left;"> </td>
+<td style="text-align: left;"> an integer or quoted operator indicating the transformation to perform:
+0 - "na"     |     1 - "fill"     |     2 - "replace"     |     3 - "-"     |     4 - "-+"     |     5 - "/"     |     6 - "%"     |     7 - "+"     |     8 - "*"     |     9 - "%%"     |     10 - "-%%". See <code>TRA</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+<code>na.rm</code> </td>
+<td style="text-align: left;"> </td>
+<td style="text-align: left;"> logical. Skip missing values in <code>x</code>. Defaults to <code>TRUE</code> in all functions and implemented at very little computational cost. Not available for <code>fnobs</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+<code>use.g.names</code> </td>
+<td style="text-align: left;"> </td>
+<td style="text-align: left;"> logical. Make group-names and add to the result as names (default method) or row-names (matrix and data frame methods). No row-names are generated for <em>data.table</em>'s. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+<code>nthreads</code> </td>
+<td style="text-align: left;"> </td>
+<td style="text-align: left;"> integer. The number of threads to utilize. Supported by <code>fsum</code>, <code>fmean</code>, <code>fmedian</code>, <code>fnth</code>, <code>fmode</code> and <code>fndistinct</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+<code>drop</code> </td>
+<td style="text-align: left;"> </td>
+<td style="text-align: left;"> <em>matrix and data.frame methods:</em> Logical. <code>TRUE</code> drops dimensions and returns an atomic vector if <code>g = NULL</code> and <code>TRA = NULL</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+<code>keep.group_vars</code>  </td>
+<td style="text-align: left;"> </td>
+<td style="text-align: left;"> <em>grouped_df method:</em> Logical. <code>FALSE</code> removes grouping variables after computation. By default grouping variables are added, even if not present in the grouped_df. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+<code>keep.w</code> </td>
+<td style="text-align: left;"> </td>
+<td style="text-align: left;"> <em>grouped_df method:</em> Logical. <code>TRUE</code> (default) also aggregates weights and saves them in a column, <code>FALSE</code> removes weighting variable after computation (if contained in <code>grouped_df</code>). </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+<code>stub</code> </td>
+<td style="text-align: left;"> </td>
+<td style="text-align: left;"> <em>grouped_df method:</em> Character. If <code>keep.w = TRUE</code> and <code>stub = TRUE</code> (default), the aggregated weights column is prefixed by the name of the aggregation function (mostly <code>"sum."</code>). Users can specify a different prefix through this argument, or set it to <code>FALSE</code> to avoid prefixing.</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+<code>...</code> </td>
+<td style="text-align: left;"> </td>
+<td style="text-align: left;"> arguments to be passed to or from other methods. If <code>TRA</code> is used, passing <code>set = TRUE</code> will transform data by reference and return the result invisibly (except for the grouped_df method which always returns visible output). </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Please see the documentation of individual functions.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>x</code> suitably aggregated or transformed. Data frame column-attributes and overall attributes are generally preserved if the output is of the same data type.
+</p>
+
+
+<h3>Related Functionality</h3>
+
+
+<ul>
+<li>
+<p> Functions <code>fquantile</code> and <code>frange</code> are for atomic vectors.
+</p>
+</li>
+<li>
+<p> Panel-decomposed (i.e. between and within) statistics as well as grouped and weighted skewness and kurtosis are implemented in <code>qsu</code>.
+</p>
+</li>
+<li>
+<p> The vector-valued functions and operators <code>fcumsum</code>, <code>fscale/STD</code>, <code>fbetween/B</code>, <code>fhdbetween/HDB</code>, <code>fwithin/W</code>, <code>fhdwithin/HDW</code>, <code>flag/L/F</code>, <code>fdiff/D/Dlog</code> and <code>fgrowth/G</code> are grouped under Data Transformations and Time Series and Panel Series. These functions also support indexed data (<em>plm</em>).
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<div class="sourceCode r"><pre>
+## default vector method
+mpg &lt;- mtcars$mpg
+fsum(mpg)                         # Simple sum
+fsum(mpg, TRA = "/")              # Simple transformation: divide all values by the sum
+fsum(mpg, mtcars$cyl)             # Grouped sum
+fmean(mpg, mtcars$cyl)            # Grouped mean
+fmean(mpg, w = mtcars$hp)         # Weighted mean, weighted by hp
+fmean(mpg, mtcars$cyl, mtcars$hp) # Grouped mean, weighted by hp
+fsum(mpg, mtcars$cyl, TRA = "/")  # Proportions / division by group sums
+fmean(mpg, mtcars$cyl, mtcars$hp, # Subtract weighted group means, see also ?fwithin
+      TRA = "-")
+
+## data.frame method
+fsum(mtcars)
+fsum(mtcars, TRA = "%")                  # This computes percentages
+fsum(mtcars, mtcars[c(2,8:9)])           # Grouped column sum
+g &lt;- GRP(mtcars, ~ cyl + vs + am)        # Here precomputing the groups!
+fsum(mtcars, g)                          # Faster !!
+fmean(mtcars, g, mtcars$hp)
+fmean(mtcars, g, mtcars$hp, "-")         # Demeaning by weighted group means..
+fmean(fgroup_by(mtcars, cyl, vs, am), hp, "-")  # Another way of doing it..
+
+
+fmode(wlddev, drop = FALSE)              # Compute statistical modes of variables in this data
+fmode(wlddev, wlddev$income)             # Grouped statistical modes ..
+
+## matrix method
+m &lt;- qM(mtcars)
+fsum(m)
+fsum(m, g) # ..
+
+## method for grouped data frames - created with dplyr::group_by or fgroup_by
+library(dplyr)
+mtcars |&gt; group_by(cyl,vs,am) |&gt; select(mpg,carb) |&gt; fsum()
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fselect(mpg,carb) |&gt; fsum() # equivalent and faster !!
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fsum(TRA = "%")
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fmean(hp)         # weighted grouped mean, save sum of weights
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fmean(hp, keep.group_vars = FALSE)
+</pre></div>
+
+
+<h3>Benchmark</h3>
+
+<div class="sourceCode r"><pre>
+## This compares fsum with data.table (2 threads) and base::rowsum
+# Starting with small data
+mtcDT &lt;- qDT(mtcars)
+f &lt;- qF(mtcars$cyl)
+
+library(microbenchmark)
+microbenchmark(mtcDT[, lapply(.SD, sum), by = f],
+               rowsum(mtcDT, f, reorder = FALSE),
+               fsum(mtcDT, f, na.rm = FALSE), unit = "relative")
+
+#                              expr        min         lq      mean    median        uq       max neval cld
+# mtcDT[, lapply(.SD, sum), by = f] 145.436928 123.542134 88.681111 98.336378 71.880479 85.217726   100   c
+# rowsum(mtcDT, f, reorder = FALSE)   2.833333   2.798203  2.489064  2.937889  2.425724  2.181173   100  b
+#     fsum(mtcDT, f, na.rm = FALSE)   1.000000   1.000000  1.000000  1.000000  1.000000  1.000000   100 a
+
+# Now larger data
+tdata &lt;- qDT(replicate(100, rnorm(1e5), simplify = FALSE)) # 100 columns with 100.000 obs
+f &lt;- qF(sample.int(1e4, 1e5, TRUE))                        # A factor with 10.000 groups
+
+microbenchmark(tdata[, lapply(.SD, sum), by = f],
+               rowsum(tdata, f, reorder = FALSE),
+               fsum(tdata, f, na.rm = FALSE), unit = "relative")
+
+#                              expr      min       lq     mean   median       uq       max neval cld
+# tdata[, lapply(.SD, sum), by = f] 2.646992 2.975489 2.834771 3.081313 3.120070 1.2766475   100   c
+# rowsum(tdata, f, reorder = FALSE) 1.747567 1.753313 1.629036 1.758043 1.839348 0.2720937   100  b
+#     fsum(tdata, f, na.rm = FALSE) 1.000000 1.000000 1.000000 1.000000 1.000000 1.0000000   100 a
+</pre></div>
+
+
+<h3>See Also</h3>
+
+<p>Collapse Overview, Data Transformations, Time Series and Panel Series
+</p>
+
+
+</div>

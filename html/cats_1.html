@@ -1,0 +1,237 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>make_decision_trial</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Checks whether decision criteria are met and updates trial results accordingly.</h2>
+
+<h3>Description</h3>
+
+<p>Given a res_list object, checks the supplied decision criteria and saves the results in the res_list file.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">make_decision_trial(
+  res_list,
+  which_cohort,
+  Bayes_Sup1 = NULL,
+  Bayes_Fut1 = NULL,
+  Bayes_Sup2 = NULL,
+  Bayes_Fut2 = NULL,
+  w = 0.5,
+  analysis_number,
+  beta_prior = 0.5,
+  hist_lag,
+  endpoint_number,
+  analysis_time,
+  dataset,
+  hist_miss = TRUE,
+  sharing_type,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>res_list</code></td>
+<td>
+<p>List item containing individual cohort trial results so far in a format used by the
+other functions in this package</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>which_cohort</code></td>
+<td>
+<p>Current cohort that should be evaluated</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Bayes_Sup1</code></td>
+<td>
+<p>List of matrices with rows corresponding to number of multiple Bayesian posterior two-arm combination criteria for superiority of histology endpoint 1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Bayes_Fut1</code></td>
+<td>
+<p>List of matrices with rows corresponding to number of multiple Bayesian posterior two-arm combination criteria for futility of histology endpoint 1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Bayes_Sup2</code></td>
+<td>
+<p>List of matrices with rows corresponding to number of multiple Bayesian posterior two-arm combination criteria for superiority of histology endpoint 2</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Bayes_Fut2</code></td>
+<td>
+<p>List of matrices with rows corresponding to number of multiple Bayesian posterior two-arm combination criteria for futility of histology endpoint 2</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>If dynamic borrowing, what is the prior choice for w. Default is 0.5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>analysis_number</code></td>
+<td>
+<p>1st, second or third analysis?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta_prior</code></td>
+<td>
+<p>Prior parameter for all Beta Distributions. Default is 0.5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hist_lag</code></td>
+<td>
+<p>Histology Lag</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>endpoint_number</code></td>
+<td>
+<p>Should histology endpoint 1 or 2 be evaluated?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>analysis_time</code></td>
+<td>
+<p>Platform Time of Analysis</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dataset</code></td>
+<td>
+<p>Dataset to be used for analysis</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hist_miss</code></td>
+<td>
+<p>Whether or not to exclude missing histology data</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sharing_type</code></td>
+<td>
+<p>Type of Data Sharing to perform</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments inherited from simulate_trial</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>List containing original res_list and results of decision rules
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Example 1
+
+# Initialize empty data frame
+cols &lt;- c("PatID", "ArrivalTime", "Cohort", "Arm", "RespHist1", "RespHist2", "HistMissing")
+df &lt;- matrix(nrow = 100, ncol = length(cols))
+colnames(df) &lt;- cols
+df &lt;- as.data.frame(df)
+df$PatID &lt;- 1:100
+df$ArrivalTime &lt;- sort(runif(100, min = 0, max = 5))
+df$Cohort &lt;- sample(1:2, 100, replace = TRUE)
+df$Arm &lt;- sample(c("Combo", "Plac"), 100, replace = TRUE)
+df$RespHist1 &lt;- sample(0:1, 100, replace = TRUE)
+df$RespHist2 &lt;- sample(0:1, 100, replace = TRUE)
+df$HistMissing &lt;- sample(0:1, 100, replace = TRUE, prob = c(0.95, 0.05))
+
+# Initialize res_list Object
+
+res_list &lt;-
+rep(
+  list(
+    list(
+      Meta = list(
+        decision = rep("none", 3),
+        decision_hist1 = rep("none", 3),
+        decision_hist2 = rep("none", 3),
+        start_n = 0,
+        start_time = 0,
+        pat_enrolled = 0
+      ),
+      Arms = rep(
+        list(
+          list(
+            rr = NULL,
+            hist_observed = 0
+          )
+        ),
+        2
+      )
+    )
+  ),
+  2
+)
+
+arm_names &lt;- c("Comb", "Plac")
+
+for (i in 1:2) {
+  names(res_list)[i] &lt;- paste0("Cohort", i)
+  names(res_list[[i]]$Arms) &lt;- arm_names
+
+  res_list[[i]]$Arms$Comb$rr &lt;- matrix(c(0.2, 0.2), ncol = 2)
+  res_list[[i]]$Arms$Plac$rr &lt;- matrix(c(0.1, 0.1), ncol = 2)
+}
+
+sharing_type &lt;- "all"
+analysis_number &lt;- 3
+which_cohort &lt;- 1
+endpoint_number &lt;- 2
+hist_lag &lt;- 1
+analysis_time &lt;- 6
+
+# Comparison IA1
+Bayes_Sup11 &lt;- matrix(nrow = 2, ncol = 2)
+Bayes_Sup11[1,] &lt;- c(0.00, 0.95)
+Bayes_Sup11[2,] &lt;- c(0.10, 0.80)
+# Comparison IA2
+Bayes_Sup12 &lt;- matrix(nrow = 2, ncol = 2)
+Bayes_Sup12[1,] &lt;- c(0.00, 0.95)
+Bayes_Sup12[2,] &lt;- c(NA, NA)
+# Comparison IA3
+Bayes_Sup13 &lt;- matrix(nrow = 2, ncol = 2)
+Bayes_Sup13[1,] &lt;- c(0.00, 0.95)
+Bayes_Sup13[2,] &lt;- c(0.10, 0.80)
+
+Bayes_Sup1 &lt;- Bayes_Sup2 &lt;- list(list(Bayes_Sup11), list(Bayes_Sup12), list(Bayes_Sup13))
+
+
+# DO NOT RUN
+res_list2 &lt;-
+make_decision_trial(
+res_list = res_list, which_cohort = which_cohort,
+analysis_number = analysis_number, endpoint_number = endpoint_number,
+Bayes_Sup1 = Bayes_Sup1, Bayes_Sup2 = Bayes_Sup2,
+dataset = df, analysis_time = analysis_time, hist_lag = hist_lag,
+sharing_type = sharing_type
+)
+
+</code></pre>
+
+
+</div>

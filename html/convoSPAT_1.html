@@ -1,0 +1,306 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Aniso_fit</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fit the stationary spatial model</h2>
+
+<h3>Description</h3>
+
+<p><code>Aniso_fit</code> estimates the parameters of the stationary spatial model.
+Required inputs are the observed data and locations.
+Optional inputs include the covariance model (exponential is the default).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">Aniso_fit(
+  sp.SPDF = NULL,
+  coords = NULL,
+  data = NULL,
+  cov.model = "exponential",
+  mean.model = data ~ 1,
+  fixed.nugg2.var = NULL,
+  method = "reml",
+  fix.tausq = FALSE,
+  tausq = 0,
+  fix.kappa = FALSE,
+  kappa = 0.5,
+  local.pars.LB = NULL,
+  local.pars.UB = NULL,
+  local.ini.pars = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>sp.SPDF</code></td>
+<td>
+<p>A "<code>SpatialPointsDataFrame</code>" object, which contains the
+spatial coordinates and additional attribute variables corresponding to the
+spatoal coordinates</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coords</code></td>
+<td>
+<p>An N x 2 matrix where each row has the two-dimensional
+coordinates of the N data locations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A vector or matrix with N rows, containing the data values.
+Inputting a vector corresponds to a single replicate of data, while
+inputting a matrix corresponds to replicates. In the case of replicates,
+the model assumes the replicates are independent and identically
+distributed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cov.model</code></td>
+<td>
+<p>A string specifying the model for the correlation
+function; defaults to <code>"exponential"</code>.
+Options available in this package are: "<code>exponential</code>",
+<code>"matern"</code>, or <code>"gaussian"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mean.model</code></td>
+<td>
+<p>An object of class <code>formula</code>,
+specifying the mean model to be used. Defaults to an intercept only.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixed.nugg2.var</code></td>
+<td>
+<p>Optional; describes the variance/covariance for
+a fixed (second) nugget term (represents a known error term). Either
+a vector of length N containing a station-specific variances (implying
+independent error) or an NxN covariance matrix (implying dependent error).
+Defaults to zero.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Indicates the estimation method, either maximum likelihood
+(<code>"ml"</code>) or restricted maximum likelihood (<code>"reml"</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fix.tausq</code></td>
+<td>
+<p>Logical; indicates whether the default nugget term
+(tau^2) should be fixed (<code>TRUE</code>) or estimated (<code>FALSE</code>). Defaults to
+<code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tausq</code></td>
+<td>
+<p>Scalar; fixed value for the nugget variance (when
+<code>fix.tausq = TRUE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fix.kappa</code></td>
+<td>
+<p>Logical; indicates if the kappa parameter should be
+fixed (<code>TRUE</code>) or estimated (<code>FALSE</code>). Defaults to <code>FALSE</code>
+(only valid for <code>cov.model = "matern"</code> and <code>cov.model = "cauchy"</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kappa</code></td>
+<td>
+<p>Scalar; value of the kappa parameter. Only used if
+<code>fix.kappa = TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>local.pars.LB, local.pars.UB</code></td>
+<td>
+<p>Optional vectors of lower and upper
+bounds, respectively, used by the <code>"L-BFGS-B"</code> method option in the
+<code>optim</code> function for the local parameter estimation.
+Each vector must be of length five,
+containing values for lam1, lam2, tausq, sigmasq, and nu. Default for
+<code>local.pars.LB</code> is <code>rep(1e-05,5)</code>; default for
+<code>local.pars.UB</code> is <code>c(max.distance/2, max.distance/2, 4*resid.var, 4*resid.var, 100)</code>,
+where <code>max.distance</code> is the maximum interpoint distance of the
+observed data and <code>resid.var</code> is the residual variance from using
+<code>lm</code> with <code>mean.model</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>local.ini.pars</code></td>
+<td>
+<p>Optional vector of initial values used by the
+<code>"L-BFGS-B"</code> method option in the <code>optim</code>
+function for the local parameter estimation. The vector must be of length
+five, containing values for lam1, lam2, tausq, sigmasq, and nu. Defaults
+to <code>c(max.distance/10, max.distance/10, 0.1*resid.var, 0.9*resid.var, 1)</code>,
+where <code>max.distance</code> is the maximum interpoint distance of the
+observed data and <code>resid.var</code> is the residual variance from using
+<code>lm</code> with <code>mean.model</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list with the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>MLEs.save</code></td>
+<td>
+<p>Table of local maximum likelihood estimates for each
+mixture component location.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>Observed data values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta.GLS</code></td>
+<td>
+<p>Vector of generalized least squares estimates of beta,
+the mean coefficients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta.cov</code></td>
+<td>
+<p>Covariance matrix of the generalized least squares
+estimate of beta.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Mean.coefs</code></td>
+<td>
+<p>"Regression table" for the mean coefficient estimates,
+listing the estimate, standard error, and t-value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Cov.mat</code></td>
+<td>
+<p>Estimated covariance matrix (<code>N.obs</code> x <code>N.obs</code>)
+using all relevant parameter estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Cov.mat.chol</code></td>
+<td>
+<p>Cholesky of <code>Cov.mat</code> (i.e., <code>chol(Cov.mat)</code>),
+the estimated covariance matrix (<code>N.obs</code> x <code>N.obs</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aniso.pars</code></td>
+<td>
+<p>Vector of MLEs for the anisotropy parameters lam1,
+lam2, eta.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aniso.mat</code></td>
+<td>
+<p>2 x 2 anisotropy matrix, calculated from
+<code>aniso.pars</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tausq.est</code></td>
+<td>
+<p>Scalar maximum likelihood estimate of tausq (nugget
+variance).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sigmasq.est</code></td>
+<td>
+<p>Scalar maximum likelihood estimate of sigmasq
+(process variance).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kappa.MLE</code></td>
+<td>
+<p>Scalar maximum likelihood estimate for kappa (when
+applicable).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixed.nugg2.var</code></td>
+<td>
+<p>N x N matrix with the fixed
+variance/covariance for the second (measurement error) nugget term (defaults
+to zero).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cov.model</code></td>
+<td>
+<p>String; the correlation model used for estimation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coords</code></td>
+<td>
+<p>N x 2 matrix of observation locations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>global.loglik</code></td>
+<td>
+<p>Scalar value of the maximized likelihood from the
+global optimization (if available).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Xmat</code></td>
+<td>
+<p>Design matrix, obtained from using <code>lm</code>
+with <code>mean.model</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fix.kappa</code></td>
+<td>
+<p>Logical, indicating if kappa was fixed (<code>TRUE</code>) or
+estimated (<code>FALSE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kappa</code></td>
+<td>
+<p>Scalar; fixed value of kappa.</p>
+</td>
+</tr>
+</table>
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+# Using iid standard Gaussian data
+aniso.fit &lt;- Aniso_fit( coords = cbind(runif(100), runif(100)),
+data = rnorm(100) )
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

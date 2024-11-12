@@ -1,0 +1,338 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cpsurv</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Nonparametric Change Point Estimation</h2>
+
+<h3>Description</h3>
+
+<p>Change point estimation for survival data based on exact
+binomial test.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cpsurv(time, event, cpmax, intwd, cpmin = 0, censoring = c("random",
+  "type1", "no"), censpoint = NULL, biascorrect = FALSE,
+  parametric = FALSE, B.correct = 49, opt.start = c(0.1, 50),
+  boot.ci = FALSE, B = 999, conf.level = 0.95, norm.riskset = TRUE,
+  seed = NULL, parallel = TRUE, cores = 4L)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>Numeric vector with survival times.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>event</code></td>
+<td>
+<p>Numeric vector indicating censoring status; 0 = alive (censored), 1 =
+dead (uncensored). If missing, all observations are assumed to be
+uncensored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cpmax</code></td>
+<td>
+<p>Upper bound for estimated change point. Time period is split into
+intervals up to this point. Has to be an integer value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>intwd</code></td>
+<td>
+<p>Width of intervals into which the time period is split; default
+is <code>ceiling(cpmax/20)</code>. Has to be an integer value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cpmin</code></td>
+<td>
+<p>Lower bound for estimated change point; default is
+<code>cpmin=0</code>. Has to be an integer value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>censoring</code></td>
+<td>
+<p>Type of right-censoring for simulated data on which the
+bootstrap bias correction is based. Possible types are "random" for
+<em>random censoring</em> (default), "type1" for <em>Type I censoring</em> or
+"no" for data without censored observations. Because simulated data should
+be similar to given data, the censoring type is adapted from vector
+'events' if given and argument 'censoring' is ignored than.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>censpoint</code></td>
+<td>
+<p>Point of <em>Type I censoring</em>; if missing, minimum time
+after which all events are equal to 0 is used. Censpoint is only needed for
+bootstrap bias correction.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>biascorrect</code></td>
+<td>
+<p>Logical; if <code>TRUE</code>, a bootstrap bias correction is
+performed; see 'Details'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parametric</code></td>
+<td>
+<p>Indicator for parametric bias-correction (see Details for
+more information).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B.correct</code></td>
+<td>
+<p>Number of bootstrap samples for bias-correction; defaults to
+49.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>opt.start</code></td>
+<td>
+<p>Numeric vector of length two; initial values for the Weibull
+parameters (shape and scale parameters) to be optimized if parametric
+bootstrap bias correction is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>boot.ci</code></td>
+<td>
+<p>Indicator if confidence intervals (and thereby standard
+deviation) should be calculated by bootstrap sampling. Please note the
+extended runtime (see details for examples).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p>Number of bootstrap samples for confidence intervals; defaults to
+999.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conf.level</code></td>
+<td>
+<p>Confidence level for bootstrap confidence intervals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>norm.riskset</code></td>
+<td>
+<p>Logical; if <code>TRUE</code> normalized number of units at
+risk is used within an interval.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>Seed for random number generator (optional).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+<p>Indicator if bootstrap-sampling is executed parallelized
+(based on package 'parallel'); operating system is identified
+automatically.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cores</code></td>
+<td>
+<p>Number of CPU-cores that are used for parallelization; maximum
+possible value is the detected number of logical CPU cores.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Change point is a point in time, from which on the hazard rate is
+supposed to be constant. For its estimation the timeline up to <code>cpmax</code>
+is split into equidistant intervals of width <code>intwd</code> and exact
+binomial tests are executed for each interval. The change point is
+estimated by fitting a regression model on the resulting p-values. See
+Brazzale <em>et al</em> (2017) for details. <br><br> For bootstrap bias
+correction the change point is estimated for a given number
+(<code>B.correct</code>) of bootstrap samples whereupon the bias is built by
+subtracting their median from primary estimation. Depending on argument
+<code>parametric</code> the data for bootstrapping are simulated either
+parametric (Weibull distributed with estimated shape and scale parameters)
+or nonparametric (based on Kaplan-Meier estimation).
+</p>
+
+
+<h3>Value</h3>
+
+
+<table>
+<tr>
+<td style="text-align: left;"> <code>cp</code>
+</td>
+<td style="text-align: left;"> estimated change point</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+  <code>p.values</code>
+</td>
+<td style="text-align: left;"> p-values resulting from exact binomial test</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+  <code>pv.mean</code>
+</td>
+<td style="text-align: left;"> mean of p-values for intervals above the estimated
+  change point</td>
+</tr>
+<tr>
+<td style="text-align: left;"> <code>lower.lim</code>
+</td>
+<td style="text-align: left;"> lower interval limits</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+  <code>upper.lim</code>
+</td>
+<td style="text-align: left;"> upper interval limits</td>
+</tr>
+<tr>
+<td style="text-align: left;"> <code>cp.bc</code>
+</td>
+<td style="text-align: left;"> bias
+  corrected change point</td>
+</tr>
+<tr>
+<td style="text-align: left;"> <code>ml.shape</code>
+</td>
+<td style="text-align: left;"> ML estimator of shape
+  parameter for Weibull distribution</td>
+</tr>
+<tr>
+<td style="text-align: left;"> <code>ml.scale</code>
+</td>
+<td style="text-align: left;"> ML estimator of
+  scale parameter for Weibull distribution</td>
+</tr>
+<tr>
+<td style="text-align: left;"> <code>cp.boot</code>
+</td>
+<td style="text-align: left;"> estimated
+  change points for bootstrap samples</td>
+</tr>
+<tr>
+<td style="text-align: left;"> <code>sd</code>
+</td>
+<td style="text-align: left;"> standard deviation
+  estimated by bootstrap sampling</td>
+</tr>
+<tr>
+<td style="text-align: left;"> <code>ci.normal</code>
+</td>
+<td style="text-align: left;"> confidence interval
+  with normal approximation</td>
+</tr>
+<tr>
+<td style="text-align: left;"> <code>ci.percent</code>
+</td>
+<td style="text-align: left;"> bootstrap percentile
+  interval</td>
+</tr>
+<tr>
+<td style="text-align: left;"> <code>conf.level</code>
+</td>
+<td style="text-align: left;"> the <code>conf.level</code> argument passed to
+  <code>cpsurv</code>
+</td>
+</tr>
+<tr>
+<td style="text-align: left;"> <code>B</code>
+</td>
+<td style="text-align: left;"> the <code>B</code> argument passed to
+  <code>cpsurv</code>
+</td>
+</tr>
+<tr>
+<td style="text-align: left;"> <code>time</code>
+</td>
+<td style="text-align: left;"> the <code>time</code> argument passed to
+  <code>cpsurv</code>
+</td>
+</tr>
+<tr>
+<td style="text-align: left;"> <code>event</code>
+</td>
+<td style="text-align: left;"> the <code>event</code> argument passed to
+  <code>cpsurv</code>
+</td>
+</tr>
+<tr>
+<td style="text-align: left;"> <code>cpmax</code>
+</td>
+<td style="text-align: left;"> the <code>cpmax</code> argument passed to
+  <code>cpsurv</code>
+</td>
+</tr>
+<tr>
+<td style="text-align: left;"> <code>intwd</code>
+</td>
+<td style="text-align: left;"> the <code>intwd</code> argument passed to
+  <code>cpsurv</code>
+</td>
+</tr>
+<tr>
+<td style="text-align: left;"> <code>call</code>
+</td>
+<td style="text-align: left;"> matched call</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Stefanie Krügel <a href="mailto:stefanie.kruegel@gmail.com">stefanie.kruegel@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Brazzale, A. R. and Küchenhoff, H. and Krügel, S. and Hartl, W.
+(2017) <em>Nonparametric change point estimation for survival
+distributions with a partially constant hazard rate.</em>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(survdata)
+# estimate change point for survdata (random censored)
+cp &lt;- cpsurv(survdata$time, survdata$event, cpmax = 360, intwd = 20)
+summary(cp)
+
+## Not run: 
+# estimation with parametric bootstrap bias correction
+cp_param &lt;- cpsurv(survdata$time, survdata$event, cpmax = 360, intwd = 20,
+            biascorrect = TRUE, parametric = TRUE)
+summary(cp_param)
+
+# with bootstrap confidence intervals and parametric bootstrap bias
+cp_ci &lt;- cpsurv(survdata$time, survdata$event, cpmax = 360, intwd = 20,
+biascorrect = TRUE, parametric = FALSE, boot.ci = TRUE, cores = 4, seed = 36020)
+# runtime: approx. 180 min (with Intel(R) Core(TM) i7 CPU 950 @ 3.07GHz, 4 logical CPUs used)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

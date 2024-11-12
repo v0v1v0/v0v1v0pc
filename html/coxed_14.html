@@ -1,0 +1,180 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>generate.lm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate simulated durations using a baseline survivor function and proportional hazards</h2>
+
+<h3>Description</h3>
+
+<p>This function is called by <code>sim.survdata</code> and is not intended to be used by itself.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">generate.lm(baseline, X = NULL, N = 1000, type = "none",
+  beta = NULL, xvars = 3, mu = 0, sd = 1, censor = 0.1)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>baseline</code></td>
+<td>
+<p>The baseline hazard, cumulative hazard, survival, failure PDF, and failure CDF as output by <code>baseline.build</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>A user-specified data frame containing the covariates that condition duration. If <code>NULL</code>, covariates are generated from
+normal distributions with means given by the <code>mu</code> argument and standard deviations given by the <code>sd</code> argument</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>N</code></td>
+<td>
+<p>Number of observations in each generated data frame</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>If "none" (the default) data are generated with no time-varying covariates or coefficients.
+If "tvc", data are generated with time-varying covariates, and if "tvbeta" data are generated with time-varying
+coefficients (see details)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta</code></td>
+<td>
+<p>A user-specified vector containing the coefficients that for the linear part of the duration model. If <code>NULL</code>, coefficients are generated from
+normal distributions with means of 0 and standard deviations of 0.1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xvars</code></td>
+<td>
+<p>The number of covariates to generate. Ignored if <code>X</code> is not <code>NULL</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mu</code></td>
+<td>
+<p>If scalar, all covariates are generated to have means equal to this scalar. If a vector, it specifies the mean of each covariate separately,
+and it must be equal in length to <code>xvars</code>. Ignored if <code>X</code> is not <code>NULL</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sd</code></td>
+<td>
+<p>If scalar, all covariates are generated to have standard deviations equal to this scalar. If a vector, it specifies the standard deviation
+of each covariate separately, and it must be equal in length to <code>xvars</code>. Ignored if <code>X</code> is not <code>NULL</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>censor</code></td>
+<td>
+<p>The proportion of observations to designate as being right-censored</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If <code>type="none"</code> then the function generates idiosyncratic survival functions for each observation via proportional hazards: first the
+linear predictor is calculated from the X variables and beta coefficients, then the linear predictor is exponentiated and set as the exponent of the
+baseline survivor function.  For each individual observation's survival function, a duration is drawn by drawing a single random number on U[0,1]
+and finding the time point at which the survival function first decreases past this value. See Harden and Kropko (2018) for a more detailed description
+of this algorithm.
+</p>
+<p>If <code>type="tvc"</code>, this function cannot accept user-supplied data for the covariates, as a time-varying covariate is expressed over time frames
+which themselves convey part of the variation of the durations, and we are generating these durations. If user-supplied X data is provided, the
+function passes a warning and generates random data instead as if <code>X=NULL</code>. Durations are drawn again using proportional hazards, and are passed
+to the <code>permalgorithm</code> function in the <code>PermAlgo</code> package to generate the time-varying data structure (Sylvestre and Abrahamowicz 2008).
+</p>
+<p>If <code>type="tvbeta"</code> the first coefficient, whether coefficients are user-supplied or randomly generated, is interacted with the natural log of
+the time counter from 1 to <code>T</code> (the maximum time point for the <code>baseline</code> functions). Durations are generated via proportional hazards,
+and coefficients are saved as a matrix to illustrate their dependence on time.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a list with the following components:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<code>data</code> </td>
+<td style="text-align: left;"> The simulated data frame, including the simulated durations, the censoring variable, and covariates</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>beta</code> </td>
+<td style="text-align: left;"> The coefficients, varying over time if <code>type</code> is "tvbeta" </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>XB</code> </td>
+<td style="text-align: left;"> The linear predictor for each observation </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>exp.XB</code> </td>
+<td style="text-align: left;"> The exponentiated linear predictor for each observation </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>survmat</code> </td>
+<td style="text-align: left;"> An (<code>N</code> x <code>T</code>) matrix containing the individual survivor function at
+time t for the individual represented by row n   </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>tvc</code> </td>
+<td style="text-align: left;"> A logical value indicating whether or not the data includes time-varying covariates </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Jonathan Kropko &lt;jkropko@virginia.edu&gt; and Jeffrey J. Harden &lt;jharden2@nd.edu&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Harden, J. J. and Kropko, J. (2018). Simulating Duration Data for the Cox Model.
+<em>Political Science Research and Methods</em> <a href="https://doi.org/10.1017/psrm.2018.19">https://doi.org/10.1017/psrm.2018.19</a>
+</p>
+<p>Sylvestre M.-P., Abrahamowicz M. (2008) Comparison of algorithms to generate event times conditional on time-dependent covariates. <em>Statistics in Medicine</em> <strong>27(14)</strong>:2618–34.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>sim.survdata</code>, <code>permalgorithm</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">baseline &lt;- baseline.build(T=100, knots=8, spline=TRUE)
+simdata &lt;- generate.lm(baseline, N=1000, xvars=5, mu=0, sd=1, type="none", censor=.1)
+summary(simdata$data)
+simdata &lt;- generate.lm(baseline, N=1000, xvars=5, mu=0, sd=1, type="tvc", censor=.1)
+summary(simdata$data)
+simdata &lt;- generate.lm(baseline, N=1000, xvars=5, mu=0, sd=1, type="tvbeta", censor=.1)
+simdata$beta
+</code></pre>
+
+
+</div>

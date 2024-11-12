@@ -1,0 +1,147 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>read_csv_chunkwise</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Read chunkwise data from text files</h2>
+
+<h3>Description</h3>
+
+<p>read_csv_chunk will open a connection to a text file. Subsequent dplyr verbs and commands
+are recorded until <code>collect</code>, <code>write_csv_chunkwise</code> is called. In that case
+the recorded commands will be executed chunk by chunk. This
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">read_csv_chunkwise(
+  file,
+  chunk_size = 10000L,
+  header = TRUE,
+  sep = ",",
+  dec = ".",
+  stringsAsFactors = FALSE,
+  ...
+)
+
+read_csv2_chunkwise(
+  file,
+  chunk_size = 10000L,
+  header = TRUE,
+  sep = ";",
+  dec = ",",
+  ...
+)
+
+read_table_chunkwise(
+  file,
+  chunk_size = 10000L,
+  header = TRUE,
+  sep = " ",
+  dec = ".",
+  ...
+)
+
+read_laf_chunkwise(laf, chunk_size = 10000L)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>file</code></td>
+<td>
+<p>path of texst file</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>chunk_size</code></td>
+<td>
+<p>size of the chunks te be read</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>header</code></td>
+<td>
+<p>Does the csv file have a header with column names?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sep</code></td>
+<td>
+<p>field separator to be used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dec</code></td>
+<td>
+<p>decimal separator to be used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stringsAsFactors</code></td>
+<td>
+<p><code>logical</code> should string be read as factors?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>not used
+</p>
+<p><code>read_laf_chunkwise</code> reads chunkwise from a LaF object created with <code>laf_open</code>.
+It offers more control over
+data specification.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>laf</code></td>
+<td>
+<p>laf object created using LaF</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>read_csv_chunkwise can be best combined with
+<code>write_csv_chunkwise</code> or
+<code>insert_chunkwise_into</code> (see example)
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># create csv file for demo purpose
+in_file &lt;- file.path(tempdir(), "in.csv")
+write.csv(women, in_file, row.names = FALSE, quote = FALSE)
+
+#
+women_chunked &lt;-
+  read_chunkwise(in_file) %&gt;%  #open chunkwise connection
+  mutate(ratio = weight/height) %&gt;%
+  filter(ratio &gt; 2) %&gt;%
+  select(height, ratio) %&gt;%
+  inner_join(data.frame(height=63:66)) # you can join with data.frames!
+
+# no processing done until
+out_file &lt;- file.path(tempdir(), "processed.csv")
+women_chunked %&gt;%
+  write_chunkwise(file=out_file)
+
+head(women_chunked) # works (without processing all data...)
+
+iris_file &lt;- file.path(tempdir(), "iris.csv")
+write.csv(iris, iris_file, row.names = FALSE, quote= FALSE)
+
+iris_chunked &lt;-
+  read_chunkwise(iris_file, chunk_size = 49) %&gt;% # 49 for demo purpose
+  group_by(Species) %&gt;%
+  summarise(sepal_length = mean(Sepal.Length), n=n()) # note that mean is per chunk
+
+</code></pre>
+
+
+</div>

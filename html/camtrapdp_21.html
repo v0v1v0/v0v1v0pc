@@ -1,0 +1,136 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>write_dwc</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Transform a Camera Trap Data Package to a Darwin Core Archive</h2>
+
+<h3>Description</h3>
+
+<p>Transforms a Camera Trap Data Package object to a <a href="https://dwc.tdwg.org/text/">Darwin Core Archive</a>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">write_dwc(x, directory)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Camera Trap Data Package object, as returned by <code>read_camtrapdp()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>directory</code></td>
+<td>
+<p>Path to local directory to write files to.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>CSV and <code>meta.xml</code> files written to disk.
+And invisibly, a list of data frames with the transformed data.
+</p>
+
+
+<h3>Transformation details</h3>
+
+<p>This function <strong>follows recommendations</strong> in Reyserhove et al. (2023)
+<a href="https://doi.org/10.35035/doc-0qzp-2x37">doi:10.35035/doc-0qzp-2x37</a> and transform data to:
+</p>
+
+<ul>
+<li>
+<p> An <a href="https://docs.gbif.org/camera-trap-guide/en/#section-occurrence-core">Occurrence core</a>.
+</p>
+</li>
+<li>
+<p> An <a href="https://docs.gbif.org/camera-trap-guide/en/#section-ac-extension">Audubon/Audiovisual Media Description extension</a>.
+</p>
+</li>
+<li>
+<p> A <code>meta.xml</code> file.
+</p>
+</li>
+</ul>
+<p>Key features of the Darwin Core transformation:
+</p>
+
+<ul>
+<li>
+<p> The Occurrence core contains one row per observation
+(<code>dwc:occurrenceID = observationID</code>).
+</p>
+</li>
+<li>
+<p> Only observations with <code>observationType = "animal"</code> and
+<code>observationLevel = "event"</code> are included, thus excluding observations that
+are (of) humans, vehicles, blanks, unknowns, unclassified and media-based.
+</p>
+</li>
+<li>
+<p> Deployment information is included in the Occurrence core, such as
+location, habitat, <code>dwc:samplingProtocol</code>, deployment duration in
+<code>dwc:samplingEffort</code> and <code>dwc:parentEventID = deploymentID</code> as grouping
+identifier.
+</p>
+</li>
+<li>
+<p> Event information is included in the Occurrence core, as event duration in
+<code>dwc:eventDate</code> and <code>dwc:eventID = eventID</code> as grouping identifier.
+</p>
+</li>
+<li>
+<p> Media files are included in the Audubon/Audiovisual Media Description
+extension, with a foreign key to the observation.
+A media file that is used for more than one observation is repeated.
+</p>
+</li>
+<li>
+<p> Metadata is used to set the following record-level terms:
+</p>
+
+<ul>
+<li> <p><code>dwc:datasetID = id</code>.
+</p>
+</li>
+<li> <p><code>dwc:datasetName = title</code>.
+</p>
+</li>
+<li> <p><code>dwc:collectionCode</code>: first source in <code>sources</code>.
+</p>
+</li>
+<li> <p><code>dcterms:license</code>: license (<code>name</code>) in <code>licenses</code> with scope <code>data</code>.
+The license (<code>name</code>) with scope <code>media</code> is used as <code>dcterms:rights</code> in
+the Audubon Media Description extension.
+</p>
+</li>
+<li> <p><code>dcterms:rightsHolder</code>: first contributor in <code>contributors</code> with role
+<code>rightsHolder</code>.
+</p>
+</li>
+<li> <p><code>dwc:dataGeneralizations</code>: set if <code>coordinatePrecision</code> is defined.
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">x &lt;- example_dataset()
+write_dwc(x, directory = "my_directory")
+
+# Clean up (don't do this if you want to keep your files)
+unlink("my_directory", recursive = TRUE)
+</code></pre>
+
+
+</div>

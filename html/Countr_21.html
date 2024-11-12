@@ -1,0 +1,175 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>dCount_conv_loglik_bi</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Log-likelihood of a count probability computed by convolution (bi)</h2>
+
+<h3>Description</h3>
+
+<p>Compute the log-likelihood of a count model using  convolution
+methods to compute the probabilities.
+<code>dCount_conv_loglik_bi</code> is for the builtin distributions.
+<code>dCount_conv_loglik_user</code> is for user defined survival functions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">dCount_conv_loglik_bi(
+  x,
+  distPars,
+  dist = c("weibull", "gamma", "gengamma", "burr"),
+  method = c("dePril", "direct", "naive"),
+  nsteps = 100,
+  time = 1,
+  extrap = TRUE,
+  na.rm = TRUE,
+  weights = NULL
+)
+
+dCount_conv_loglik_user(
+  x,
+  distPars,
+  extrapolPars,
+  survR,
+  method = c("dePril", "direct", "naive"),
+  nsteps = 100,
+  time = 1,
+  extrap = TRUE,
+  na.rm = TRUE,
+  weights = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>integer (vector), the desired count values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>distPars</code></td>
+<td>
+<p>list of the same length as x with each slot being itself a
+named list containing the distribution parameters corresponding to
+<code>x[i]</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist</code></td>
+<td>
+<p>character name of the built-in distribution, see details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>character, convolution method to be used; choices are
+<code>"dePril"</code> (section 3.2), <code>"direct"</code> (section 2) or
+<code>"naive"</code> (section 3.1).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsteps</code></td>
+<td>
+<p>unsiged integer number of steps used to compute the integral.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>double time at wich to compute the probabilities. Set to 1 by
+default.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extrap</code></td>
+<td>
+<p>logical if <code>TRUE</code>, Richardson extrapolation will be
+applied to improve accuracy.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.rm</code></td>
+<td>
+<p>logical, if TRUE, <code>NA</code>s (produced by taking the log of
+very small probabilities) will be replaced by the smallest allowed
+probability; default is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>numeric, vector of weights to apply. If <code>NULL</code>, a vector
+of ones.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extrapolPars</code></td>
+<td>
+<p>list of same length as x where each slot is a vector of
+length 2 (the extrapolation values to be used) corresponding to
+<code>x[i]</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>survR</code></td>
+<td>
+<p>a user defined survival function; should have the signature
+<code>function(t, distPars)</code> where <code>t</code> is a real number (&gt;0) where
+the survival function is evaluated and <code>distPars</code> is a list of
+distribution parameters. It should return a double value.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>numeric, the log-likelihood of the count process
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">x &lt;- 0:10
+lambda &lt;- 2.56
+distPars &lt;- list(scale = lambda, shape = 1)
+distParsList &lt;- lapply(seq(along = x), function(ind) distPars)
+extrapolParsList &lt;- lapply(seq(along = x), function(ind) c(2, 1))
+## user pwei
+pwei_user &lt;- function(tt, distP) {
+    alpha &lt;- exp(-log(distP[["scale"]]) / distP[["shape"]])
+    pweibull(q = tt, scale = alpha, shape = distP[["shape"]],
+             lower.tail = FALSE)
+}
+
+## log-likehood allProbs Poisson
+dCount_conv_loglik_bi(x, distParsList,
+                      "weibull", "direct", nsteps = 400)
+
+dCount_conv_loglik_user(x, distParsList, extrapolParsList,
+                        pwei_user, "direct", nsteps = 400)
+
+## log-likehood naive Poisson
+dCount_conv_loglik_bi(x, distParsList,
+                      "weibull", "naive", nsteps = 400)
+
+dCount_conv_loglik_user(x, distParsList, extrapolParsList,
+                        pwei_user, "naive", nsteps = 400)
+
+## log-likehood dePril Poisson
+dCount_conv_loglik_bi(x, distParsList,
+                      "weibull", "dePril", nsteps = 400)
+
+dCount_conv_loglik_user(x, distParsList, extrapolParsList,
+                        pwei_user, "dePril", nsteps = 400)
+## see dCount_conv_loglik_bi()
+</code></pre>
+
+
+</div>

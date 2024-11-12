@@ -1,0 +1,234 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>posixt-count-between</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Counting: date-times</h2>
+
+<h3>Description</h3>
+
+<p>This is a POSIXct/POSIXlt method for the <code>date_count_between()</code> generic.
+</p>
+<p><code>date_count_between()</code> counts the number of <code>precision</code> units between
+<code>start</code> and <code>end</code> (i.e., the number of years or months). This count
+corresponds to the <em>whole number</em> of units, and will never return a
+fractional value.
+</p>
+<p>This is suitable for, say, computing the whole number of years or months
+between two dates, accounting for the day of the month and the time of day.
+</p>
+<p>Internally, the date-time is converted to one of the following three clock
+types, and the counting is done directly on that type. The choice of type is
+based on the most common interpretation of each precision, but is ultimately
+a heuristic. See the examples for more information.
+</p>
+<p><em>Calendrical based counting:</em>
+</p>
+<p>These precisions convert to a year-month-day calendar and count while in that
+type.
+</p>
+
+<ul>
+<li> <p><code>"year"</code>
+</p>
+</li>
+<li> <p><code>"quarter"</code>
+</p>
+</li>
+<li> <p><code>"month"</code>
+</p>
+</li>
+</ul>
+<p><em>Naive-time based counting:</em>
+</p>
+<p>These precisions convert to a naive-time and count while in that type.
+</p>
+
+<ul>
+<li> <p><code>"week"</code>
+</p>
+</li>
+<li> <p><code>"day"</code>
+</p>
+</li>
+</ul>
+<p><em>Sys-time based counting:</em>
+</p>
+<p>These precisions convert to a sys-time and count while in that type.
+</p>
+
+<ul>
+<li> <p><code>"hour"</code>
+</p>
+</li>
+<li> <p><code>"minute"</code>
+</p>
+</li>
+<li> <p><code>"second"</code>
+</p>
+</li>
+</ul>
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'POSIXt'
+date_count_between(start, end, precision, ..., n = 1L)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>start, end</code></td>
+<td>
+<p><code style="white-space: pre;">⁠[POSIXct / POSIXlt]⁠</code>
+</p>
+<p>A pair of date-time vectors. These will be recycled to their common
+size.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>precision</code></td>
+<td>
+<p><code style="white-space: pre;">⁠[character(1)]⁠</code>
+</p>
+<p>One of:
+</p>
+
+<ul>
+<li> <p><code>"year"</code>
+</p>
+</li>
+<li> <p><code>"quarter"</code>
+</p>
+</li>
+<li> <p><code>"month"</code>
+</p>
+</li>
+<li> <p><code>"week"</code>
+</p>
+</li>
+<li> <p><code>"day"</code>
+</p>
+</li>
+<li> <p><code>"hour"</code>
+</p>
+</li>
+<li> <p><code>"minute"</code>
+</p>
+</li>
+<li> <p><code>"second"</code>
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>These dots are for future extensions and must be empty.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p><code style="white-space: pre;">⁠[positive integer(1)]⁠</code>
+</p>
+<p>A single positive integer specifying a multiple of <code>precision</code> to use.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>"quarter"</code> is equivalent to <code>"month"</code> precision with <code>n</code> set to <code>n * 3L</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An integer representing the number of <code>precision</code> units between
+<code>start</code> and <code>end</code>.
+</p>
+
+
+<h3>Comparison Direction</h3>
+
+<p>The computed count has the property that if <code>start &lt;= end</code>, then
+<code style="white-space: pre;">⁠start + &lt;count&gt; &lt;= end⁠</code>. Similarly, if <code>start &gt;= end</code>, then
+<code style="white-space: pre;">⁠start + &lt;count&gt; &gt;= end⁠</code>. In other words, the comparison direction between
+<code>start</code> and <code>end</code> will never change after adding the count to <code>start</code>. This
+makes this function useful for repeated count computations at
+increasingly fine precisions.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">start &lt;- date_time_parse("2000-05-05 02:00:00", zone = "America/New_York")
+end &lt;- date_time_parse(
+  c("2020-05-05 01:00:00", "2020-05-05 03:00:00"),
+  zone = "America/New_York"
+)
+
+# Age in years
+date_count_between(start, end, "year")
+
+# Number of "whole" months between these dates. i.e.
+# `2000-05-05 02:00:00 -&gt; 2020-04-05 02:00:00` is 239 months
+# `2000-05-05 02:00:00 -&gt; 2020-05-05 02:00:00` is 240 months
+# Since `2020-05-05 01:00:00` occurs before the 2nd hour,
+# it gets a count of 239
+date_count_between(start, end, "month")
+
+# Number of seconds between
+date_count_between(start, end, "second")
+
+# ---------------------------------------------------------------------------
+# Naive-time VS Sys-time interpretation
+
+# The difference between whether `start` and `end` are converted to a
+# naive-time vs a sys-time comes into play when dealing with daylight
+# savings.
+
+# Here are two times around a 1 hour DST gap where clocks jumped from
+# 01:59:59 -&gt; 03:00:00
+x &lt;- date_time_build(1970, 4, 26, 1, 50, 00, zone = "America/New_York")
+y &lt;- date_time_build(1970, 4, 26, 3, 00, 00, zone = "America/New_York")
+
+# When treated like sys-times, these are considered to be 10 minutes apart,
+# which is the amount of time that would have elapsed if you were watching
+# a clock as it changed between these two times.
+date_count_between(x, y, "minute")
+
+# Lets add a 3rd date that is ~1 day ahead of these
+z &lt;- date_time_build(1970, 4, 27, 1, 55, 00, zone = "America/New_York")
+
+# When treated like naive-times, `z` is considered to be at least 1 day ahead
+# of `x`, because `01:55:00` is after `01:50:00`. This is probably what you
+# expected.
+date_count_between(x, z, "day")
+
+# If these were interpreted like sys-times, then `z` would not be considered
+# to be 1 day ahead. That would look something like this:
+date_count_between(x, z, "second")
+trunc(date_count_between(x, z, "second") / 86400)
+
+# This is because there have only been 83,100 elapsed seconds since `x`,
+# which isn't a full day's worth (86,400 seconds). But we'd generally
+# consider `z` to be 1 day ahead of `x` (and ignore the DST gap), so that is
+# how it is implemented.
+
+# You can override this by converting directly to sys-time, then using
+# `time_point_count_between()`
+x_st &lt;- as_sys_time(x)
+x_st
+
+z_st &lt;- as_sys_time(z)
+z_st
+
+time_point_count_between(x_st, z_st, "day")
+</code></pre>
+
+
+</div>

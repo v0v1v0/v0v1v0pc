@@ -1,0 +1,115 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>data_request_access</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>User commands</h2>
+
+<h3>Description</h3>
+
+<p>User commands
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">data_request_access(path_data = NULL, path_user = NULL, quiet = FALSE)
+
+data_key(
+  path_data = NULL,
+  path_user = NULL,
+  test = TRUE,
+  quiet = FALSE,
+  cache = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>path_data</code></td>
+<td>
+<p>Path to the data.  If not given, then we look
+recursively down below the working directory for a ".cyphr"
+directory, and use that as the data directory.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>path_user</code></td>
+<td>
+<p>Path to the directory with your user key.
+Usually this can be omitted.  This argument is passed in as both
+<code>pub</code> and <code>key</code> to <code>keypair_openssl()</code>.
+Briefly, if this argument is not given we look at the
+environment variables <code>USER_PUBKEY</code> and <code>USER_KEY</code> -
+if set then these must refer to path of your public and private
+keys.  If these environment variables are not set then we fall
+back on <code style="white-space: pre;">⁠~/.ssh/id_rsa.pub⁠</code> and <code style="white-space: pre;">⁠~/.ssh/id_rsa⁠</code>,
+which should work in most environments.  Alternatively, provide
+a path to a directory where the file <code>id_rsa.pub</code> and
+<code>id_rsa</code> can be found.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quiet</code></td>
+<td>
+<p>Suppress printing of informative messages.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test</code></td>
+<td>
+<p>Test that the encryption is working?  (Recommended)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cache</code></td>
+<td>
+<p>Cache the key within the session.  This will be
+useful if you are using ssh keys that have passwords, as if the
+key is found within the cache, then you will not have to
+re-enter your password.  Using <code>cache = FALSE</code> neither
+looks for the key in the cache, nor saves it.</p>
+</td>
+</tr>
+</table>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# The workflow here does not really lend itself to an example,
+# please see the vignette.
+
+# Suppose that Alice has created a data directory:
+path_alice &lt;- tempfile()
+cyphr::ssh_keygen(path_alice, password = FALSE)
+path_data &lt;- tempfile()
+dir.create(path_data, FALSE, TRUE)
+cyphr::data_admin_init(path_data, path_user = path_alice)
+
+# If Bob can also write to the data directory (e.g., it is a
+# shared git repo, on a shared drive, etc), then he can request
+# access
+path_bob &lt;- tempfile()
+cyphr::ssh_keygen(path_bob, password = FALSE)
+hash &lt;- cyphr::data_request_access(path_data, path_user = path_bob)
+
+# Alice can authorise Bob
+cyphr::data_admin_authorise(path_data, path_user = path_alice, yes = TRUE)
+
+# After which Bob can get the data key
+cyphr::data_key(path_data, path_user = path_bob)
+
+# See the vignette for more details.  This is not the best medium
+# to explore this.
+
+# Cleanup
+unlink(path_alice, recursive = TRUE)
+unlink(path_bob, recursive = TRUE)
+unlink(path_data, recursive = TRUE)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,148 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>lateweight</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Local average treatment effect estimation based on inverse probability weighting</h2>
+
+<h3>Description</h3>
+
+<p>Instrumental variable-based evaluation of local average treatment effects using weighting by the inverse of the instrument propensity score.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">lateweight(
+  y,
+  d,
+  z,
+  x,
+  LATT = FALSE,
+  trim = 0.05,
+  logit = FALSE,
+  boot = 1999,
+  cluster = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Dependent variable, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+<p>Treatment, must be binary (either 1 or 0), must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>Instrument for the endogenous treatment, must be binary (either 1 or 0), must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Confounders of the instrument and outcome, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>LATT</code></td>
+<td>
+<p>If FALSE, the local average treatment effect (LATE) among compliers (whose treatment reacts to the instrument) is estimated. If TRUE, the local average treatment effect on the treated compliers (LATT)  is estimated. Default is FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trim</code></td>
+<td>
+<p>Trimming rule for discarding observations with extreme propensity scores. If <code>LATT=FALSE</code>, observations with Pr(Z=1|X)&lt;<code>trim</code> or Pr(Z=1|X)&gt;(1-<code>trim</code>) are dropped.
+If <code>LATT=TRUE</code>, observations with Pr(Z=1|X)&gt;(1-<code>trim</code>) are dropped. Default is 0.05.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logit</code></td>
+<td>
+<p>If FALSE, probit regression is used for propensity score estimation. If TRUE, logit regression is used. Default is FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>boot</code></td>
+<td>
+<p>Number of bootstrap replications for estimating standard errors. Default is 1999.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cluster</code></td>
+<td>
+<p>A cluster ID for block or cluster bootstrapping when units are clustered rather than iid. Must be numerical. Default is NULL (standard bootstrap without clustering).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Estimation of local average treatment effects of a binary endogenous treatment based on a binary instrument that is conditionally valid, implying that all confounders of the instrument and the outcome are observed. Units are weighted by the inverse of their conditional instrument propensities given the observed confounders, which are estimated by probit or logit regression. Standard errors are obtained by bootstrapping the effect.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A lateweight object contains 10 components, <code>effect</code>, <code>se.effect</code>, <code>pval.effect</code>, <code>first</code>, <code>se.first</code>, <code>pval.first</code>, <code>ITT</code>, <code>se.ITT</code>, <code>pval.ITT</code>, and <code>ntrimmed</code>:
+</p>
+<p><code>effect</code>: local average treatment effect (LATE) among compliers if <code>LATT=FALSE</code> or the local average treatment effect on treated compliers (LATT) if <code>LATT=TRUE</code>.
+</p>
+<p><code>se.effect</code>: bootstrap-based standard error of the effect.
+</p>
+<p><code>pval.effect</code>: p-value of the effect.
+</p>
+<p><code>first</code>: first stage estimate of the complier share if <code>LATT=FALSE</code> or the first stage estimate among treated if <code>LATT=TRUE</code>.
+</p>
+<p><code>se.first</code>: bootstrap-based standard error of the first stage effect.
+</p>
+<p><code>pval.first</code>: p-value of the first stage effect.
+</p>
+<p><code>ITT</code>: intention to treat effect (ITT) of <code>z</code> on <code>y</code> if <code>LATT=FALSE</code> or the ITT among treated if <code>LATT=TRUE</code>.
+</p>
+<p><code>se.ITT</code>: bootstrap-based standard error of the ITT.
+</p>
+<p><code>pval.ITT</code>: p-value of the ITT.
+</p>
+<p><code>ntrimmed</code>: number of discarded (trimmed) observations due to extreme propensity score values.
+</p>
+
+
+<h3>References</h3>
+
+<p>Frölich, M. (2007): "Nonparametric IV estimation of local average treatment effects with covariates", Journal of Econometrics, 139, 35-75.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># A little example with simulated data (10000 observations)
+## Not run: 
+n=10000
+u=rnorm(n)
+x=rnorm(n)
+z=(0.25*x+rnorm(n)&gt;0)*1
+d=(z+0.25*x+0.25*u+rnorm(n)&gt;0.5)*1
+y=0.5*d+0.25*x+u
+# The true LATE is equal to 0.5
+output=lateweight(y=y,d=d,z=z,x=x,trim=0.05,LATT=FALSE,logit=TRUE,boot=19)
+cat("LATE: ",round(c(output$effect),3),", standard error: ",
+             round(c(output$se.effect),3), ", p-value: ",
+             round(c(output$pval.effect),3))
+output$ntrimmed
+## End(Not run)
+</code></pre>
+
+
+</div>

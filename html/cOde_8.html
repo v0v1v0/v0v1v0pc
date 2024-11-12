@@ -1,0 +1,245 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>odeC</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Interface to ode()</h2>
+
+<h3>Description</h3>
+
+<p>Interface to ode()
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">odeC(y, times, func, parms, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>named vector of type numeric. Initial values for the integration</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>times</code></td>
+<td>
+<p>vector of type numeric. Integration times. If <code>includeTimeZero</code>
+is <code>TRUE</code> (see funC), the times vector is augmented by t = 0. If
+<code>nGridpoints</code> (see funC) was set &gt;= 0, uniformly distributed time points
+between the first and last time point are introduced and the solution is returned
+for these time points, too. Any additional time points that are introduced during
+integration (e.g. event time points) are returned unless nGridpoints = -1 (the default).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>func</code></td>
+<td>
+<p>return value from funC()</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parms</code></td>
+<td>
+<p>named vector of type numeric.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>further arguments going to <code>ode()</code></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>See deSolve-package for a full description of possible arguments
+</p>
+
+
+<h3>Value</h3>
+
+<p>matrix with times and states
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+
+######################################################################
+## Ozone formation and decay, modified by external forcings
+######################################################################
+
+library(deSolve)
+data(forcData)
+forcData$value &lt;- forcData$value + 1
+
+# O2 + O &lt;-&gt; O3
+f &lt;- c(
+  O3 = " (build_O3 + u_build) * O2 * O - (decay_O3 + u_degrade) * O3",
+  O2 = "-(build_O3 + u_build) * O2 * O + (decay_O3 + u_degrade) * O3",
+  O  = "-(build_O3 + u_build) * O2 * O + (decay_O3 + u_degrade) * O3"
+)
+
+# Generate ODE function
+forcings &lt;- c("u_build", "u_degrade")
+func &lt;- funC(f, forcings = forcings, modelname = "test", 
+             fcontrol = "nospline", nGridpoints = 10)
+
+# Initialize times, states, parameters and forcings
+times &lt;- seq(0, 8, by = .1)
+yini &lt;- c(O3 = 0, O2 = 3, O = 2)
+pars &lt;- c(build_O3 = 1/6, decay_O3 = 1)
+
+forc &lt;- setForcings(func, forcData)
+
+# Solve ODE
+out &lt;- odeC(y = yini, times = times, func = func, parms = pars, 
+            forcings = forc)
+
+# Plot solution
+
+par(mfcol=c(1,2))
+t1 &lt;- unique(forcData[,2])
+M1 &lt;- matrix(forcData[,3], ncol=2)
+t2 &lt;- out[,1]
+M2 &lt;- out[,2:4]
+M3 &lt;- out[,5:6]
+
+matplot(t1, M1, type="l", lty=1, col=1:2, xlab="time", ylab="value", 
+	main="forcings", ylim=c(0, 4))
+matplot(t2, M3, type="l", lty=2, col=1:2, xlab="time", ylab="value", 
+	main="forcings", add=TRUE)
+
+legend("topleft", legend = c("u_build", "u_degrade"), lty=1, col=1:2)
+matplot(t2, M2, type="l", lty=1, col=1:3, xlab="time", ylab="value", 
+	main="response")
+legend("topright", legend = c("O3", "O2", "O"), lty=1, col=1:3)
+
+
+
+######################################################################
+## Ozone formation and decay, modified by events
+######################################################################
+
+
+f &lt;- c(
+  O3 = " (build_O3 + u_build) * O2 * O - 
+         (decay_O3 + u_degrade) * O3",
+  O2 = "-(build_O3 + u_build) * O2 * O + 
+         (decay_O3 + u_degrade) * O3",
+  O  = "-(build_O3 + u_build) * O2 * O + 
+         (decay_O3 + u_degrade) * O3",
+  u_build = "0",    # piecewise constant
+  u_degrade = "0"   # piecewise constant
+)
+
+# Define parametric events
+events.pars &lt;- data.frame(
+  var = c("u_degrade", "u_degrade", "u_build"),
+  time = c("t_on", "t_off", "2"),
+  value = c("plus", "minus", "2"),
+  method = "replace"
+)
+
+# Declar parameteric events when generating funC object
+func &lt;- funC(f, forcings = NULL, events = events.pars, modelname = "test", 
+             fcontrol = "nospline", nGridpoints = -1)
+
+# Set Parameters
+yini &lt;- c(O3 = 0, O2 = 3, O = 2, u_build = 1, u_degrade = 1)
+times &lt;- seq(0, 8, by = .1)
+pars &lt;- c(build_O3 = 1/6, decay_O3 = 1, t_on = exp(rnorm(1, 0)), t_off = 6, plus = 3, minus = 1)
+
+# Solve ODE with additional fixed-value events
+out &lt;- odeC(y = yini, times = times, func = func, parms = pars)
+
+
+# Plot solution
+
+par(mfcol=c(1,2))
+t2 &lt;- out[,1]
+M2 &lt;- out[,2:4]
+M3 &lt;- out[,5:6]
+
+
+matplot(t2, M3, type="l", lty=2, col=1:2, xlab="time", ylab="value", 
+        main="events")
+legend("topleft", legend = c("u_build", "u_degrade"), lty=1, col=1:2)
+matplot(t2, M2, type="l", lty=1, col=1:3, xlab="time", ylab="value", 
+        main="response")
+legend("topright", legend = c("O3", "O2", "O"), lty=1, col=1:3)
+
+
+######################################################################
+## Ozone formation and decay, modified by events triggered by root
+######################################################################
+
+
+f &lt;- c(
+  O3 = " (build_O3 + u_build) * O2 * O - 
+         (decay_O3 + u_degrade) * O3",
+  O2 = "-(build_O3 + u_build) * O2 * O + 
+         (decay_O3 + u_degrade) * O3",
+  O  = "-(build_O3 + u_build) * O2 * O + 
+         (decay_O3 + u_degrade) * O3",
+  u_build = "0",    # piecewise constant
+  u_degrade = "0"   # piecewise constant
+)
+
+# Define parametric events
+events.pars &lt;- data.frame(
+  var = c("u_degrade", "u_degrade", "u_build", "O3"),
+  time = c("t_on", "t_off", "2", "t_thres_O3"),
+  value = c("plus", "minus", "2", "0"),
+  root = c(NA, NA, NA, "O3 - thres_O3"),
+  method = "replace"
+)
+
+# Declar parameteric events when generating funC object
+func &lt;- funC(f, forcings = NULL, events = events.pars, modelname = "test", 
+             fcontrol = "nospline", nGridpoints = -1)
+
+# Set Parameters
+yini &lt;- c(O3 = 0, O2 = 3, O = 2, u_build = 1, u_degrade = 1)
+times &lt;- seq(0, 8, by = .01)
+pars &lt;- c(build_O3 = 1/6, decay_O3 = 1, 
+          t_on = exp(rnorm(1, 0)), t_off = 6, plus = 3, minus = 1, 
+          thres_O3 = 0.5, t_thres_O3 = 1)
+
+# Solve ODE with additional fixed-value events
+out &lt;- odeC(y = yini, times = times, func = func, parms = pars, method = "lsode")
+
+class(out) &lt;- c("deSolve")
+plot(out)
+# Plot solution
+
+par(mfcol=c(1,2))
+t2 &lt;- out[,1]
+M2 &lt;- out[,2:4]
+M3 &lt;- out[,5:6]
+
+
+matplot(t2, M3, type="l", lty=2, col=1:2, xlab="time", ylab="value", 
+        main="events")
+legend("topleft", legend = c("u_build", "u_degrade"), lty=1, col=1:2)
+matplot(t2, M2, type="l", lty=1, col=1:3, xlab="time", ylab="value", 
+        main="response")
+legend("topright", legend = c("O3", "O2", "O"), lty=1, col=1:3)
+
+
+
+
+
+## End(Not run)
+</code></pre>
+
+
+</div>

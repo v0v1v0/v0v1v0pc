@@ -1,0 +1,197 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>simCOPmicro</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simulate V from U through a Copula by Numerical Derivative Method</h2>
+
+<h3>Description</h3>
+
+<p>Perform bivariate simulation of random but coupled variables <code class="reqn">V</code> from <code class="reqn">U</code> through a copula (Nelsen, 2006, p. 32) by inversion of the numerical derivatives of the copula (<code>derCOPinv</code>, <code>derCOPinv2</code>). The method is more broadly known as <em>conditional simulation method</em>. An elaborate implementation is available in <code>simCOP</code>, which unlike <code>simCOPmicro</code>, has provisions (default) for graphical support. The <code>simCOPmicro</code> function is intended to be a minimalist version for copula simulation, and such a version is useful for pedagogic purposes including <em>conditional distributions</em>, <em>conditional quantile functions</em>, and <em>copula reflection</em> (see <b>Note</b> and <code>COP</code>). An extended educational discussion of simulation using the conditional method is available in the <b>Note</b> section of <code>derCOPinv</code>.
+</p>
+<p>Some definitions are needed. The copula of <code class="reqn">(1-U, 1-V)</code> is the <em>survival copula</em> (<code>surCOP</code>) and is defined as
+</p>
+<p style="text-align: center;"><code class="reqn">\hat{\mathbf{C}}(u,v) = u + v - 1 + \mathbf{C}(1-u, 1-v)\mbox{,}</code>
+</p>
+
+<p>whereas, following the notation of Joe (2014, pp. 271–272), the copula of <code class="reqn">(1-U, V)</code> is defined as
+</p>
+<p style="text-align: center;"><code class="reqn">\acute{\mathbf{C}}(u,v) = v - \mathbf{C}(1-u, v)\mbox{, and}</code>
+</p>
+
+<p>the copula of <code class="reqn">(U, 1-V)</code> is defined as
+</p>
+<p style="text-align: center;"><code class="reqn">\grave{\mathbf{C}}(u,v) = u - \mathbf{C}(u, 1-v)\mbox{.}</code>
+</p>
+
+<p>Careful consideration of the nomenclature is necessary as confusion with the occurrences of <code class="reqn">1-u</code> and <code class="reqn">1-v</code> easily conflate meaning. The nomenclature for the <em>survival copula</em> is more elaborately shown under <code>surCOP</code>. The difficulty is that the bivariate arguments to the <em>survival copula</em> are <em>exceedance probabilities</em>.
+</p>
+<p>For simulation, again following the nomenclature of Joe (2014, p. 272), the conditional distribution functions (numerical derivatives; <code>derCOP</code> <code class="reqn">\equiv</code> <code class="reqn">\mathbf{C}_{2 \mid 1}(v \mid u)</code> and <code>derCOP2</code> <code class="reqn">\equiv</code> <code class="reqn">\mathbf{C}_{1 \mid 2}(u \mid v)</code>) can be written in terms of <code class="reqn">\mathbf{C}(u \mid v) = \mathbf{C}_{2 \mid 1}(v \mid u)</code> as
+</p>
+<p style="text-align: center;"><code class="reqn">  \hat{\mathbf{C}}_{2 \mid 1}(v \mid u) = 1 - \mathbf{C}_{2 \mid 1}(1-v \mid 1-u)\mbox{,}</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">\acute{\mathbf{C}}_{2 \mid 1}(v \mid u) =     \mathbf{C}_{2 \mid 1}(  v \mid 1-u)\mbox{, and}</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">\grave{\mathbf{C}}_{2 \mid 1}(v \mid u) = 1 - \mathbf{C}_{2 \mid 1}(1-v \mid   u)\mbox{,}</code>
+</p>
+
+<p>where the respective <code>"surv"</code>, <code>"acute"</code>, and <code>"grave"</code> are inverses (conditional quantile functions; inverses of numerical derivatives; <code>derCOPinv</code> <code class="reqn">\equiv</code> <code class="reqn">\mathbf{C}^{(-1)}_{2 \mid 1}(v \mid u)</code> and <code>derCOPinv2</code> <code class="reqn">\equiv</code> <code class="reqn">\mathbf{C}^{(-1)}_{1 \mid 2}(u \mid v)</code>) are
+</p>
+<p style="text-align: center;"><code class="reqn">  \hat{\mathbf{C}}^{(-1)}_{2 \mid 1}(t \mid u) = 1 - \mathbf{C}^{(-1)}_{2 \mid 1}(1-t \mid 1-u)\:\rightarrow\mbox{\ \code{"sur"},}</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">\acute{\mathbf{C}}^{(-1)}_{2 \mid 1}(t \mid u) =     \mathbf{C}^{(-1)}_{2 \mid 1}(  t \mid 1-u)\:\rightarrow\mbox{\ \code{"acute"}, and}</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">\grave{\mathbf{C}}^{(-1)}_{2 \mid 1}(t \mid u) = 1 - \mathbf{C}^{(-1)}_{2 \mid 1}(1-t \mid   u)\:\rightarrow\mbox{\ \code{"grave"},}</code>
+</p>
+
+<p>where <code class="reqn">t</code> is a uniformly distributed variable.
+</p>
+<p>To clarify the seemingly clunky nomenclature—Joe (2014) does not provide “names” for <code class="reqn">\acute{\mathbf{C}}(u,v)</code> or <code class="reqn">\grave{\mathbf{C}}(u,v)</code>—the following guidance is informative:<br><code class="reqn">\mbox{}\quad\mbox{}</code>(1) <code>"surv"</code> or <code class="reqn">\hat{\mathbf{C}}(u,v)</code> is a reflection of <code class="reqn">U</code> and <code class="reqn">V</code> on the horizontal <em>and</em> vertical axes, respectively<br><code class="reqn">\mbox{}\quad\mbox{}</code>(2) <code>"acute"</code> or <code class="reqn">\acute{\mathbf{C}}(u,v)</code> is a reflection of <code class="reqn">U</code> on the horizontal axis, and<br><code class="reqn">\mbox{}\quad\mbox{}</code>(3) <code>"grave"</code> or <code class="reqn">\grave{\mathbf{C}}(u,v)</code> is a reflection of <code class="reqn">V</code> on the verical axis.<br>
+The names <code>"acute"</code> and <code>"grave"</code> match those used in the <b>Rd</b>-format math typesetting instructions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">simCOPmicro(u, cop=NULL, para=NULL, seed=NULL,
+               reflect=c("cop", "surv", "acute", "grave",
+                           "1",    "2",     "3",     "4"), ...)
+simCOPv(u, cop=NULL, para=NULL,
+               reflect=c("cop", "surv", "acute", "grave",
+                           "1",    "2",     "3",     "4"), ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">u</code> in the <code class="reqn">X</code> direction. The <code>runif()</code> function in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> can be used to drive conditional simulation using the <code>simCOPmicro</code> function (see <b>Examples</b>);</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cop</code></td>
+<td>
+<p>A copula function;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>Vector of parameters, if needed, to pass to the copula;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>The integer seed to pass immediately to <code>set.seed()</code> and setting it for the <code>simCOPv</code> version will dispatch through the triple dots down to <code>simCOPmicro</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reflect</code></td>
+<td>
+<p>The reflection of the copula (see above) and the default <code>"cop"</code> or <code>"1"</code> is the usual copula definition.  The numbered values correspond, respectively, to the named values; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass should they be needed.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Simulated value(s) of nonexceedance probability <code class="reqn">v</code> are returned based on the nonexceedance probabilities <code class="reqn">u</code> in argument <code>u</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The advanced features of <code>simCOPmicro</code> permit simulation of the three permutations of <em>variable reflection</em>. The first code simply produce four different “copulas” based on the <em>Gumbel–Hougaard</em> copula (<code class="reqn">\mathbf{GH}(u,v; \Theta)</code>; <code>GHcop</code>), which has substantial upper tail dependency but no lower tail dependency for <code class="reqn">\Theta = 2.512</code> as quantified by the <code>taildepCOP</code> function call.
+</p>
+<pre>
+  U &lt;- runif(1500); G &lt;- 2.512; u &lt;- 0.1; up &lt;- 1-u; v &lt;- 0.2; vp &lt;- 1-v
+  UV   &lt;- data.frame(U, simCOPmicro(U, cop=GHcop, para=G                 ))
+  sUsV &lt;- data.frame(U, simCOPmicro(U, cop=GHcop, para=G, reflect="surv" ))
+  sUV  &lt;- data.frame(U, simCOPmicro(U, cop=GHcop, para=G, reflect="acute"))
+  UsV  &lt;- data.frame(U, simCOPmicro(U, cop=GHcop, para=G, reflect="grave"))
+  taildepCOP(cop=GHcop, para=G) # lambdaL = 2e-05; lambdaU = 0.68224
+</pre>
+<p>The following code example will verify that the simulations produce values of <code class="reqn">U</code> and <code class="reqn">V</code> that are consistent with the <em>empirical copula</em> (<code>EMPIRcop</code>) results as well as consistent with the variable reflections provided through the <code>COP</code> interface. Notice the combinations of nonexceedance and exceedance probabilities blended so that the two returned values for the four different copulas are numerically congruent.
+</p>
+<pre>
+  c(EMPIRcop(u, v,  para=UV  ), COP(u, v,  cop=GHcop, para=G, reflect="cop"  ))
+  c(EMPIRcop(up,vp, para=sUsV), COP(up,vp, cop=GHcop, para=G, reflect="surv" ))
+  c(EMPIRcop(up,v,  para=sUV ), COP(up,v,  cop=GHcop, para=G, reflect="acute"))
+  c(EMPIRcop(u, vp, para=UsV ), COP(u, vp, cop=GHcop, para=G, reflect="grave"))
+</pre>
+<p>The user can verify the reflections graphically using code such as this
+</p>
+<pre>
+  xlab &lt;- "PROBABILITY IN U"; ylab &lt;- "PROBABILITY IN V"
+  layout(matrix(c(1,2,3,4), 2, 2, byrow = TRUE));
+  plot(UV,   xlab=xlab, ylab=ylab, pch=3, lwd=0.5, col=1)
+    mtext("no reflection")
+  plot(sUV,  xlab=xlab, ylab=ylab, pch=3, lwd=0.5, col=3)
+    mtext("horizontal reflection")
+  plot(UsV,  xlab=xlab, ylab=ylab, pch=3, lwd=0.5, col=4)
+    mtext("vertical reflection")
+  plot(sUsV, xlab=xlab, ylab=ylab, pch=3, lwd=0.5, col=2)
+    mtext("double reflection")
+</pre>
+<p>in which inspection of tails exhibiting the dependency is readily seen on the four plots: upper right tail dependency (no reflection), upper left tail dependency (horizontal reflection), lower right tail dependency (vertical reflection), and lower left tail dependency (double reflection). It is important to stress that these descriptions and graphical depictions of single tail dependency are specific to the <code class="reqn">\mathbf{GH}(u,v; \Theta)</code> copula chosen for the demonstration.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Joe, H., 2014, Dependence modeling with copulas: Boca Raton, CRC Press, 462 p.
+</p>
+<p>Nelsen, R.B., 2006, An introduction to copulas: New York, Springer, 269 p.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>simCOP</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">simCOPmicro(runif(1), cop=W  ) # Frechet lower-bound copula
+simCOPmicro(runif(1), cop=P  ) # Independence copula
+simCOPmicro(runif(1), cop=M  ) # Frechet upper-bound copula
+simCOPmicro(runif(1), cop=PSP) # The PSP copula
+
+## Not run: 
+# Now let us get more complicated and mix two Plackett copulas together using the
+# composite2COP as a "compositor." The parameter argument becomes more complex, but is
+# passed as shown into composite2COP.
+para &lt;- list(cop1=PLACKETTcop,cop2=PLACKETTcop, alpha=0.3,beta=0.5, para1=0.1,para2=50)
+simCOPmicro(runif(5), cop=composite2COP, para=para) #
+## End(Not run)
+
+## Not run: 
+# Now let us implement "our" own version of features of simCOP() but using
+# the micro version to manually create just the simulation vector of V.
+U &lt;- runif(1500)
+UV &lt;- data.frame(U, simCOPmicro(U, cop=N4212cop, para=4))
+plot(UV, xlab="PROBABILITY IN U", ylab="PROBABILITY IN V", pch=3, col=2) #
+## End(Not run)
+</code></pre>
+
+
+</div>

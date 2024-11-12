@@ -1,0 +1,267 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cosso</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fit a generalized nonparametric model with cosso penalty</h2>
+
+<h3>Description</h3>
+
+<p>A comprehensive method for fitting various type of regularized nonparametric regression models using cosso penalty.
+Fits mean, logistic, Cox and quantile regression.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cosso(x,y,tau,family=c("Gaussian","Binomial","Cox","Quantile"),wt=rep(1,ncol(x)),
+      scale=FALSE,nbasis,basis.id,cpus)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>input matrix; the number of rows is sample size, the number of columns is the data dimension.
+The range of input variables is scaled to [0,1] for continuous variables. Variables with less than 7 unique values will be considered as discrete variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>response vector. Quantitative for <code>family="Gaussian"</code> or <code>family="Quantile"</code>.
+For <code>family="Binomial"</code> should be a vector with two levels.
+For <code>family="Cox"</code>, y should be a two-column matrix (or data frame) with columns named 'time' and 'status'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau</code></td>
+<td>
+<p>the quantile to be estimated, a number strictly between 0 and 1. Argument required when <code>family="Quantile"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>response type. Abbreviations are allowed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wt</code></td>
+<td>
+<p>weights for predictors. Default is <code>rep(1,ncol(x))</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scale</code></td>
+<td>
+<p>if <code>TRUE</code>, continuous predictors will be rescaled to [0,1] interval. Default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nbasis</code></td>
+<td>
+<p>number of "knots" to be selected. Ignored when <code>basis.id</code> is provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>basis.id</code></td>
+<td>
+<p>index designating selected "knots". Argument is not valid for <code>family="Quantile"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cpus</code></td>
+<td>
+<p>number of available processor units. Default is <code>1</code>. If <code>cpus</code>&gt;=2, parallelize task using "parallel" package. Recommended when either sample size or number of covariates is large.
+Argument is only valid for <code>family="Cox"</code> or <code>family="Quantile"</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>In the SS-ANOVA model framework, the regression function is assumed to have an additive form
+</p>
+<p style="text-align: center;"><code class="reqn">\eta(x)=b+\sum_{j=1}^p\eta_j(x^{(j)}),</code>
+</p>
+
+<p>where <code class="reqn">b</code> denotes intercept and <code class="reqn">\eta_j</code> denotes the main effect of the <code class="reqn">j</code>-th covariate.
+</p>
+<p>For <code>"Gaussian"</code> response, the mean function is estimated by minimizing the objective function:
+</p>
+<p style="text-align: center;"><code class="reqn">\sum_i(y_i-\eta(x_i))^2/nobs+\lambda_0\sum_{j=1}^p\theta^{-1}_jw_j^2||\eta_j||^2, s.t.~\sum_{j=1}^p\theta_j\leq M.</code>
+</p>
+
+<p>For <code>"Binomial"</code> response, the log-odd function is estimated by minimizing the objective function:
+</p>
+<p style="text-align: center;"><code class="reqn">-log-likelihood/nobs+\lambda_0\sum_{j=1}^p\theta^{-1}_jw_j^2||\eta_j||^2, s.t.~\sum_{j=1}^p\theta_j\leq M.</code>
+</p>
+
+<p>For <code>"Quantile"</code> regression model, the quantile function, is estimated by minimizing the objective function:
+</p>
+<p style="text-align: center;"><code class="reqn">\sum_i\rho_{\tau}(y_i-\eta(x_i))/nobs+\lambda_0\sum_{j=1}^p\theta^{-1}_jw_j^2||\eta_j||^2, s.t.~\sum_{j=1}^p\theta_j\leq M.</code>
+</p>
+
+<p>For <code>"Cox"</code> regression model, the log-relative hazard function is estimated by minimizing the objective function:
+</p>
+<p style="text-align: center;"><code class="reqn">-log-Partial Likelihood/nobs+\lambda_0\sum_{j=1}^p\theta^{-1}_jw_j^2||\eta_j||^2, s.t.~\sum_{j=1}^p\theta_j\leq M.</code>
+</p>
+
+<p>For identifiability sake, the intercept term in Cox model is absorbed into basline hazard, or equivalently set <code class="reqn">b=0</code>.
+</p>
+<p>For large data sets, we can reduce the computational load of the optimization problem by
+selecting a subset of the observations of size <em>nbais</em> as "knots", which reduces the dimension of the
+kernel matrices from <em>nobs</em> to <em>nbasis</em>.
+Unless specified via <code>basis.id</code> or <code>nbasis</code>, the default number of "knots" is <code class="reqn">max</code>(40,12*nobs^(2/9)) for <code>"Gaussian"</code> and <code>"Binomial"</code> and
+<code class="reqn">max</code>(35,11 * nobs^(2/9)) for <code>"Cox"</code>.
+</p>
+<p>The weights can be specified based on either user's own discretion or adaptively computed from initial
+function estimates. See Storlie et al. (2011) for more discussions. One possible choice is to specify the weights
+as the inverse <code class="reqn">L_2</code> norm of initial function estimator, see <code>SSANOVAwt</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object with S3 class "cosso".
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>the response vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>the input matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Kmat</code></td>
+<td>
+<p>a three-dimensional array containing kernel matrices for each input variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wt</code></td>
+<td>
+<p>weights for predictors.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>type of regression model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>basis.id</code></td>
+<td>
+<p>indices of observations used as "knots".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cpus</code></td>
+<td>
+<p>number of cpu units used. Will be returned if <code>family="Cox"</code> or <code>family="Quantile"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau</code></td>
+<td>
+<p>the quantile to be estimated. Will be returned if <code>family="Quantile"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tune</code></td>
+<td>
+<p>a list containing preliminary tuning result and L2-norm.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Hao Helen Zhang and Chen-Yen Lin</p>
+
+
+<h3>References</h3>
+
+<p>Lin, Y. and Zhang, H. H. (2006) "Component Selection and Smoothing in Smoothing Spline Analysis of Variance Models", Annals of Statistics, <b>34</b>, 2272–2297.
+</p>
+<p>Leng, C. and Zhang, H. H. (2006) "Model selection in nonparametric hazard regression", Nonparametric Statistics, <b>18</b>, 417–429.
+</p>
+<p>Zhang, H. H. and Lin, Y. (2006) "Component Selection and Smoothing for Nonparametric Regression in Exponential Families", Statistica Sinica, <b>16</b>, 1021–1041.
+</p>
+<p>Storlie, C. B., Bondell, H. D., Reich, B. J. and Zhang, H. H. (2011) "Surface Estimation, Variable Selection, and the Nonparametric Oracle Property", Statistica Sinica, <b>21</b>, 679–705.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code>plot.cosso</code>, <code>predict.cosso</code>, <code>tune.cosso</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Gaussian
+set.seed(20130310)
+x=cbind(rbinom(200,1,.7),matrix(runif(200*9,0,1),nc=9))
+y=x[,1]+sin(2*pi*x[,2])+5*(x[,4]-0.4)^2+rnorm(200,0,1)
+G.Obj=cosso(x,y,family="Gaussian")
+plot.cosso(G.Obj,plottype="Path")
+
+## Not run: 
+## Use all observations as knots
+set.seed(20130310)
+x=cbind(rbinom(200,1,.7),matrix(runif(200*9,0,1),nc=9))
+y=x[,1]+sin(2*pi*x[,2])+5*(x[,4]-0.4)^2+rnorm(200,0,1)
+G.Obj=cosso(x,y,family="Gaussian",nbasis=200)
+## Clean up
+rm(list=ls())
+
+## Binomial
+set.seed(20130310)
+x=cbind(rbinom(200,1,.7),matrix(runif(200*9,0,1),nc=9))
+trueProb=1/(1+exp(-x[,1]-sin(2*pi*x[,2])-5*(x[,4]-0.4)^2))
+y=rbinom(200,1,trueProb)
+
+B.Obj=cosso(x,y,family="Bin")
+## Clean up
+rm(list=ls())
+
+## Cox
+set.seed(20130310)
+x=cbind(rbinom(200,1,.7),matrix(runif(200*9,0,1),nc=9))
+hazard=x[,1]+sin(2*pi*x[,2])+5*(x[,4]-0.4)^2
+surTime=rexp(200,exp(hazard))
+cenTime=rexp(200,exp(-hazard)*runif(1,4,6))
+y=cbind(time=apply(cbind(surTime,cenTime),1,min),status=1*(surTime&lt;cenTime))
+C.obj=cosso(x,y,family="Cox",cpus=1)
+
+## Try parallel computing
+C.obj=cosso(x,y,family="Cox",cpus=4)
+
+## Clean up
+rm(list=ls())
+
+## Quantile
+set.seed(20130310)
+x=cbind(rbinom(200,1,.7),matrix(runif(200*7,0,1),nc=7))
+y=x[,1]+sin(2*pi*x[,2])+5*(x[,4]-0.4)^2+rt(200,3)
+Q.obj=cosso(x,y,0.3,family="Quan",cpus=1)
+
+## Try parallel computing
+Q.obj=cosso(x,y,0.3,family="Quan",cpus=4)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

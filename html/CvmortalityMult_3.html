@@ -1,0 +1,183 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>MeasureAccuracy</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Measures of Accuracy</h2>
+
+<h3>Description</h3>
+
+<p>R function to estimate different measures of accuracy.
+</p>
+
+<ol>
+<li>
+<p> the sum of squared errors (SSE) for the mortality rates:
+</p>
+<p style="text-align: center;"><code class="reqn">\sum_{x}^{} \sum_{t} \left( qxt1 - qxt2 \right)^{2}</code>
+</p>
+
+<p>where qxt1 is the real mortality rates <code>qxt_re</code>, and qxt2 is the adjusted mortality rates <code>qxt_aju</code>.
+</p>
+</li>
+<li>
+<p> The mean squared errors (MSE) for the mortality rates:
+</p>
+<p style="text-align: center;"><code class="reqn">\frac{1}{n}\sum_{x} \sum_{t} \left( qxt1 - qxt2 \right)^2 = \frac{1}{n} SSE</code>
+</p>
+
+<p>where qxt1 is the real mortality rates <code>qxt_re</code>, and qxt2 is the adjusted mortality rates <code>qxt_aju</code>.
+</p>
+</li>
+<li>
+<p> The mean absolute errors (MAE) for the mortality rates:
+</p>
+<p style="text-align: center;"><code class="reqn">\frac{1}{n}\sum_{x} \sum_{t} \left| qx1 - qxt2 \right|</code>
+</p>
+<p>.
+where qxt1 is the real mortality rates <code>qxt_re</code>, and qxt2 is the adjusted mortality rates <code>qxt_aju</code>.
+</p>
+</li>
+<li>
+<p> The mean absolute percentage error (MAPE) for the mortality rates:
+</p>
+<p style="text-align: center;"><code class="reqn">\frac{1}{n}\sum_{x} \sum_{t}\left| \frac{\left(qxt1 - qxt2\right) }{qxt2} \right|</code>
+</p>
+
+<p>where qxt1 is the real mortality rates <code>qxt_re</code>, and qxt2 is the adjusted mortality rates <code>qxt_aju</code>.
+You only have to provide the real value, the fitted or forecasted value for your mortality rates and the measure of accuracy chosen.
+However, the function is constructed to provide the real value and the fitted or forecasted value of your independent variable.
+These variables must have the same dimensions to be compared.
+</p>
+</li>
+</ol>
+<h3>Usage</h3>
+
+<pre><code class="language-R">MeasureAccuracy(
+  measure = c("SSE", "MSE", "MAE", "MAPE", "All"),
+  qxt_re,
+  qxt_aju,
+  wxt
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>measure</code></td>
+<td>
+<p>choose the non-penalized measure of accuracy that you want to use; c("<code>SSE</code>", "<code>MSE</code>", "<code>MAE</code>", "<code>MAPE</code>", "<code>All</code>"). Check the function. In case you do not provide any value, the function will apply the "<code>SSE</code>" as measure of forecasting accuracy.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>qxt_re</code></td>
+<td>
+<p>real mortality rates used to check the goodness of fit measure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>qxt_aju</code></td>
+<td>
+<p>adjusted mortality rates using a specific mode.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wxt</code></td>
+<td>
+<p>weights of the mortality rates or data provided.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An object with class <code>"MoA"</code> including the value of the measure of accuracy for the data provided.
+</p>
+
+
+<h3>References</h3>
+
+<p>Atance, D., Debón, A., &amp; Navarro, E. (2020).
+A comparison of forecasting mortality models using resampling methods.
+Mathematics, 8(9), 1550.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fitLCmulti</code>, <code>forecast.fitLCmulti</code>,
+<code>multipopulation_cv</code>, <code>multipopulation_loocv</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#The example takes more than 5 seconds because it includes
+#several fitting and forecasting process and hence all
+#the process is included in donttest
+
+#To show how the function works, we need to provide fitted or forecasted data and the real data.
+#In this case, we employ the following data of the library:
+SpainRegions
+
+library(gnm)
+library(forecast)
+ages &lt;- c(0, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90)
+#In this case, we fit for males providing the lxt
+multiplicative_Spainmales &lt;- fitLCmulti(model = "multiplicative",
+                              qxt = SpainRegions$qx_male,
+                              periods = c(1991:2020),
+                              ages = c(ages),
+                              nPop = 18,
+                              lxt = SpainRegions$lx_male)
+
+multiplicative_Spainmales
+plot(multiplicative_Spainmales)
+
+#Once, we have the fitted data, we will obtain different measures of accuracy
+#for the first population.
+#We need to obtain wxt (weight of the mortality rates or data provided) using a
+library(StMoMo)
+wxt_1pob &lt;- genWeightMat(ages = ages, years = c(1991:2020), clip = 0)
+
+##########################
+#SSE#
+##########################
+SSE_multSpmales &lt;- MeasureAccuracy(measure = "SSE",
+                       qxt_re = multiplicative_Spainmales$qxt.real$pob1,
+                       qxt_aju = multiplicative_Spainmales$qxt.fitted$pob1,
+                       wxt = wxt_1pob)
+SSE_multSpmales
+##########################
+#MSE#
+##########################
+MSE_multSpmales &lt;- MeasureAccuracy(measure = "MSE",
+                       qxt_re = multiplicative_Spainmales$qxt.real$pob1,
+                       qxt_aju = multiplicative_Spainmales$qxt.fitted$pob1,
+                       wxt = wxt_1pob)
+MSE_multSpmales
+##########################
+#MAE#
+##########################
+MAE_multSpmales &lt;- MeasureAccuracy(measure = "MSE",
+                       qxt_re = multiplicative_Spainmales$qxt.real$pob1,
+                       qxt_aju = multiplicative_Spainmales$qxt.fitted$pob1,
+                       wxt = wxt_1pob)
+MAE_multSpmales
+##########################
+#MAPE#
+##########################
+MAPE_multSpmales &lt;- MeasureAccuracy(measure = "MSE",
+                        qxt_re = multiplicative_Spainmales$qxt.real$pob1,
+                        qxt_aju = multiplicative_Spainmales$qxt.fitted$pob1,
+                        wxt = wxt_1pob)
+MAPE_multSpmales
+
+
+
+</code></pre>
+
+
+</div>

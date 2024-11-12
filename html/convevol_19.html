@@ -1,0 +1,181 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>plot2D</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Plots calcConv or convSig output as a two-dimensional time series.</h2>
+
+<h3>Description</h3>
+
+<p>plot2D Plots calcConv or convSig output as a two-dimensional time series.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">plot2D(
+  Ct,
+  phy,
+  tip,
+  foc.trt,
+  trait,
+  pca = FALSE,
+  save = FALSE,
+  filename = "frame",
+  dir = NULL,
+  leg = FALSE,
+  leg.pos = "topleft",
+  width = 480,
+  height = 480,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Ct</code></td>
+<td>
+<p>object containing calcConvCt or convSigCt output</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>phy</code></td>
+<td>
+<p>The time calibrated phylogeny of interest in phylo format</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tip</code></td>
+<td>
+<p>vector of two tip labels indicating the putatively convergent taxa to be plotted in morphospace</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>foc.trt</code></td>
+<td>
+<p>vector of two traits to be used in plotting. If pca == TRUE this should indicate which PC axes should be plotted in format "PC1"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trait</code></td>
+<td>
+<p>the matrix of trait values used to compute Ct</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pca</code></td>
+<td>
+<p>logical value indicating whether to conduct principal component analysis and plot PC scores instead of raw trait values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save</code></td>
+<td>
+<p>logical value indicating whether an animated time series (along with individual time slices) should be saved to a user specified folder</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>filename</code></td>
+<td>
+<p>character indicating the desired prefix for filenames to be saved</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dir</code></td>
+<td>
+<p>optional character indicating the folderpath of the desired save location</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>leg</code></td>
+<td>
+<p>logical value indicating whether a legend should be added to plots</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>leg.pos</code></td>
+<td>
+<p>character indicating the position of the legend</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>width</code></td>
+<td>
+<p>pixel width of saved png files</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>height</code></td>
+<td>
+<p>pixel height of saved png files</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>optional arguments to be passed to plot</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>None
+</p>
+
+
+<h3>Value</h3>
+
+<p>Plots tracking putatively convergent taxa in two-dimensional morphospace through time
+</p>
+<p>A table with trait values, morphospace distance, and nodeheights conincident with Dmax.t. See meas.path output from calcConvCt and convSigCt
+</p>
+
+
+<h3>References</h3>
+
+<p>Grossnickle DM, Brightly WH, Weaver LN, Stanchak KE, Roston RA, Pevsner SK, Stayton CT, Polly PD, Law CJ. 2022. A cautionary note on quantitative measures of phenotypic convergence. in revision
+Zelditch ML, Ye J, Mitchell JS, Swiderski DL. 2017. Rare ecomorphological convergence on a complex adaptive landscape: Body size and diet mediate evolution of jaw shape in squirrels (Sciuridae). Evolution 71: 633-649
+Stayton CT. 2015. The definition, recognition, and interpretation of convergent evolution and two new measures for quantifying and assessing the significance of convergence. Evolution 69(8): 2140-2153.
+Revell, L. J. (2012) phytools: An R package for phylogenetic comparative biology (and other things). Methods Ecol. Evol., 3, 217-223.
+Felsenstein, J. 1985. Phylogenies and the comparative method. American Naturalist, 125, 1-15.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+library(phytools)
+library(geiger)
+
+# create time calibrated tree
+mytree&lt;-rtree(100)
+mycalibration &lt;- makeChronosCalib(mytree, node="root", age.max=50)
+phy &lt;- chronos(mytree, lambda = 1, model = "correlated", 
+calibration = mycalibration, control = chronos.control() )
+class(phy)&lt;-"phylo"
+
+# create three normally distributed phenotypic traits
+traits &lt;- cbind(rnorm(Ntip(phy)),rnorm(Ntip(phy)),rnorm(Ntip(phy)))
+colnames(traits) &lt;- c("V1","V2","V3")
+rownames(traits) &lt;- phy$tip.label
+
+#	select two random tips, excluding sister taxa
+pairs &lt;- apply(combn(phy$tip.label,2),2,function(x) nodepath(phy,
+which(phy$tip.label == x[1]),which(phy$tip.label == x[2])))
+nosis &lt;- combn(phy$tip.label,2)[,unlist(lapply(pairs, function(x) length(x) &gt; 3))]
+focaltaxa &lt;- nosis[,sample(1:ncol(nosis),1)]
+
+system.time(run &lt;- calcConvCt(phy, traits, focaltaxa))
+system.time(run2 &lt;- convSigCt(phy, traits, focaltaxa, nsim=100))
+
+plot2D(run, phy, focaltaxa[1:2], colnames(traits)[1:2], traits)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

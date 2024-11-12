@@ -1,0 +1,494 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>coxphw</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2> Weighted Estimation in Cox Regression </h2>
+
+<h3>Description</h3>
+
+<p> Weighted Cox regression as proposed by Schemper et al. (2009) <a href="https://doi.org/10.1002/sim.3623">doi:10.1002/sim.3623</a>
+provides unbiased estimates of average hazard ratios also in case of non-proportional hazards. Time-dependent
+effects can be conveniently estimated by including interactions of covariates with arbitrary
+functions of time, with or without making use of the weighting option. </p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">coxphw(formula, data, template = c("AHR", "ARE", "PH"), subset, na.action,
+       robust = TRUE, jack = FALSE, betafix = NULL, alpha = 0.05,
+       trunc.weights = 1, control, caseweights, x = TRUE, y = TRUE,
+       verbose = FALSE, sorted = FALSE, id = NULL, clusterid = NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p> a formula object with the response on the left of the  operator and the model terms
+on the right. The response must be a survival object as returned by
+<code>Surv</code>. <code>formula</code> may include <code>offset</code>-terms or
+functions of time (see example).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p> a data frame in which to interpret the variables named in <code>formula</code>. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>template</code></td>
+<td>
+<p> choose among three pre-defined templates: <code>"AHR"</code> requests estimation of
+average hazard ratios (Schemper et al., 2009), <code>"ARE"</code> requests estimation of
+average regression effects (Xu and O'Quigley, 2000) and <code>"PH"</code> requests
+Cox proportional hazards regression.
+Recommended and default template is <code>"AHR"</code>. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subset</code></td>
+<td>
+<p>expression indicating which subset of the rows of data should be used in the fit.
+All observations are included by default.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.action</code></td>
+<td>
+<p>missing-data filtering. Defaults to <code>options$na.action</code>. Applied after subsetting data,
+but applied to the all variables in the data set (not only those listed in the formula).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>robust</code></td>
+<td>
+<p> if set to TRUE, the robust covariance estimate (Lin-Wei) is used; otherwise the Lin-Sasieni
+covariance estimate is applied. Default is TRUE. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>jack</code></td>
+<td>
+<p> if set to TRUE, the variance is based on a complete jackknife. Each individual (as
+identified by <code>id</code>) is left out in turn. The resulting matrix of DFBETA residuals
+D is then used to compute the variance matrix: V = D'D. Default is FALSE. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>betafix</code></td>
+<td>
+<p> can be used to restrict the estimation of one or more regression coefficients to pre-defined
+values. A vector with one element for each model term as given in <code>formula</code> is expected
+(with an identical order as in <code>formula</code>). If estimation of a model term is requested,
+then the corresponding element in <code>betafix</code> has to be set to <code>NA</code>, otherwise it
+should be set to the fixed parameter value. The default value is <code>betafix = NULL</code>,
+yielding unrestricted estimation of all regression coefficients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p> the significance level (1-<code class="reqn">\alpha</code>), 0.05 as default. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trunc.weights</code></td>
+<td>
+<p> specifies a quantile at which the (combined normalized) weights are to be truncated.
+It can be used to increase the precision of the estimates, particularly if
+<code>template</code> <code>= "AHR"</code> or <code>"ARE"</code> is used. Default is 1 (no truncation).
+Recommended value is 0.95 for mild truncation. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p> Object of class <code>coxphw.control</code> specifying iteration limit and other
+control options. Default is <code>coxphw.control(...)</code>.  </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>caseweights</code></td>
+<td>
+<p> vector of case weights, equivalent to <code>weights</code> in <code>coxph</code>.
+If <code>caseweights</code> is a vector of integers, then the estimated coefficients
+are equivalent to estimating the model from data with the individual cases replicated as
+many times as indicated by <code>caseweights</code>. These weights should not be confused with the
+weights in weighted Cox regression which account for the non-proportional hazards. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p> requests copying explanatory variables into the output object. Default is TRUE. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p> requests copying survival information into the output object. Default is TRUE. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p> requests echoing of intermediate results. Default is FALSE. </p>
+</td>
+</tr>
+</table>
+<table>
+<tr style="vertical-align: top;">
+<td><code>sorted</code></td>
+<td>
+<p> if set to TRUE, the data set will not be sorted prior to passing it to FORTRAN.
+This may speed up computations. Default is FALSE. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id</code></td>
+<td>
+<p> a vector of subject identification integer numbers starting from 1 used only if the data are
+in the counting process format. These IDs are used to compute the robust covariance matrix.
+If <code>id = NA</code> (the default) the program assumes that each line of the data set refers to
+a distinct subject. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clusterid</code></td>
+<td>
+<p>a vector of cluster identification integer numbers starting from 1. These IDs are used
+to compute the robust covariance matrix. If <code>clusterid = NA</code> (the default) the program
+assumes that no cluster exist. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p> additional arguments. </p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p> If Cox's proportional hazards regression is used in the presence of non-proportional
+hazards, i.e., with underlying time-dependent hazard ratios of prognostic factors, the average relative
+risk for such a factor is under- or overestimated and testing power for the corresponding regression
+parameter is reduced. In such a situation weighted estimation provides a parsimonious
+alternative to more elaborate modelling of time-dependent effects. Weighted estimation in Cox regression
+extends the tests by Breslow and Prentice to a multi-covariate situation as does the Cox model to Mantel's
+logrank test. Weighted Cox regression can also be seen as a robust alternative to the standard Cox
+estimator, reducing the influence of outlying survival times on parameter estimates.
+</p>
+
+
+
+
+
+
+<p>Three pre-defined templates can be requested: <br> 1) <code>"AHR"</code>, i.e., estimation of average hazard ratios
+(Schemper et al., 2009) using Prentice weights with censoring correction and robust variance estimation; <br>
+2) <code>"ARE"</code>, i.e., estimation of average regression effects (Xu and O'Quigley, 2000) using censoring
+correction and robust variance estimation; or <br> 3) <code>"PH"</code>, i.e., Cox proportional hazards regression
+using robust variance estimation.
+</p>
+<p>Breslow's tie-handling method is used by the program, other methods to handle ties are currently not
+available.
+</p>
+<p>A fit of <code>coxphw</code> with <code>template = "PH"</code> will yield identical estimates as a fit of
+<code>coxph</code> using Breslow's tie handling method and robust variance estimation
+(using <code>cluster</code>).
+</p>
+<p>If <code>robust = FALSE</code>, the program estimates the covariance matrix using the Lin (1991)
+and Sasieni (1993) sandwich estimate <code class="reqn">A^{-1}BA^{-1}</code> with <code class="reqn">-A</code> and <code class="reqn">-B</code> denoting the sum
+of contributions to the second derivative of the log likelihood, weighted by <code class="reqn">w(t_j)</code> and <code class="reqn">w(t_j)^2</code>,
+respectively. This estimate is independent from the scaling of the weights and reduces to the inverse
+of the information matrix in case of no weighting. However, it is theoretically valid only in case of
+proportional hazards. Therefore, since application of weighted Cox regression usually implies a violated
+proportional hazards assumption, the robust Lin-Wei covariance estimate is used by default (<code>robust = </code>
+<code>TRUE</code>).
+</p>
+<p>If some regression coefficients are held constant using <code>betafix</code>, no standard errors
+are given for these coefficients as they are not estimated in the model. The global Wald test
+only relates to those variables for which regression coefficients were estimated.
+</p>
+<p>An <code>offset</code> term can be included in the <code>formula</code> of <code>coxphw</code>.
+In this way a variable can be specified which is included in the model but its parameter estimate is
+fixed at 1.
+</p>
+
+
+<h3>Value</h3>
+
+<p> A list with the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>coefficients</code></td>
+<td>
+<p>the parameter estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var</code></td>
+<td>
+<p>the estimated covariance matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>the degrees of freedom.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ci.lower</code></td>
+<td>
+<p>the lower confidence limits of exp(beta).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ci.upper</code></td>
+<td>
+<p>the upper confidence limits of exp(beta).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prob</code></td>
+<td>
+<p>the p-values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>linear.predictors</code></td>
+<td>
+<p>the linear predictors.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>the number of observations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dfbeta.resid</code></td>
+<td>
+<p> matrix of DFBETA residuals. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iter</code></td>
+<td>
+<p>the number of iterations needed to converge.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method.ties</code></td>
+<td>
+<p>the ties handling method.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PTcoefs</code></td>
+<td>
+<p> matrix with scale and shift used for pretransformation of <code>fp()</code>-terms. </p>
+</td>
+</tr>
+</table>
+<table>
+<tr style="vertical-align: top;">
+<td><code>cov.j</code></td>
+<td>
+<p>the covariance matrix computed by the jackknife method (only computed if <code>jack = TRUE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cov.lw</code></td>
+<td>
+<p>the covariance matrix computed by the Lin-Wei method (robust covariance)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cov.ls</code></td>
+<td>
+<p>the covariance matrix computed by the Lin-Sasieni method.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cov.method</code></td>
+<td>
+<p>the method used to compute the (displayed) covariance matrix and the standard errors.
+This method is either "jack" if <code>jack = TRUE</code>, or "Lin-Wei" if <code>jack = FALSE</code>. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w.matrix</code></td>
+<td>
+<p>a matrix with four columns according to the number of uncensored failure
+times. The first column contains the failure times, the remaining columns (labeled
+<code>w.raw</code>, <code>w.obskm</code>, and <code>w</code>) contain the raw weights, the weights
+according to the inverse of the Kaplan-Meier estimates with reverse status indicator
+and the normalized product of both.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>caseweights</code></td>
+<td>
+<p> if <code>x = TRUE</code> the case weights. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Wald</code></td>
+<td>
+<p> Wald-test statistics. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>means</code></td>
+<td>
+<p>the means of the covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>offset.values</code></td>
+<td>
+<p>offset values. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dataline</code></td>
+<td>
+<p>the first dataline of the input data set (required for <code>plotfp</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p> if <code>x = TRUE</code> the explanatory variables. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>the response.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>the significance level = 1 - confidence level.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>template</code></td>
+<td>
+<p> the requested template. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>the model formula.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>betafix</code></td>
+<td>
+<p>the <code>betafix</code> vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the function call.</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p> The <code>SAS</code> macro <code>WCM</code> with similar functionality is offered for download at
+<a href="https://cemsiis.meduniwien.ac.at/en/kb/science-research/software/statistical-software/wcmcoxphw/">https://cemsiis.meduniwien.ac.at/en/kb/science-research/software/statistical-software/wcmcoxphw/</a> .
+</p>
+<p>Up to Version 2.13 <span class="pkg">coxphw</span> used a slightly different syntax (arguments: <code>AHR</code>,
+<code>AHR.norobust</code>, <code>ARE</code>, <code>PH</code>, <code>normalize</code>, <code>censcorr</code>, <code>prentice</code>,
+<code>breslow</code>, <code>taroneware</code>). From Version 3.0.0 on the old syntax is disabled.
+From Version 4.0.0 estimation of fractional polynomials is disabled. </p>
+
+
+<h3>Author(s)</h3>
+
+<p>Georg Heinze, Meinhard Ploner, Daniela Dunkler</p>
+
+
+<h3>References</h3>
+
+<p>Dunkler D, Ploner M, Schemper M, Heinze G. (2018) Weighted Cox Regression Using the R Package coxphw. <em>JSS</em> <b>84</b>, 1–26, <a href="https://doi.org/10.18637/jss.v084.i02">doi:10.18637/jss.v084.i02</a>.
+</p>
+<p>Lin D and Wei L (1989). The Robust Inference for the Cox Proportional Hazards Model.
+<em>J AM STAT ASSOC</em> <b>84</b>, 1074-1078.
+</p>
+<p>Lin D (1991). Goodness-of-Fit Analysis for the Cox Regression Model Based on a Class of Parameter
+Estimators. <em>J AM STAT ASSOC</em> <b>86</b>, 725-728.
+</p>
+<p>Royston P and Altman D (1994). Regression Using Fractional Polynomials of Continuous Covariates:
+Parsimonious Parametric Modelling. <em>J R STAT SOC C-APPL</em> <b>43</b>, 429-467.
+</p>
+<p>Royston P and Sauerbrei W (2008). <em>Multivariable Model-Building. A Pragmatic Approach to Regression
+Analysis Based on Fractional Polynomials for Modelling Continuous Variables.</em> Wiley, Chichester, UK.
+</p>
+<p>Sasieni P (1993). Maximum Weighted Partial Likelihood Estimators for the Cox Model. <em>J AM STAT ASSOC</em>
+<b>88</b>, 144-152.
+</p>
+<p>Schemper M (1992).  Cox Analysis of Survival Data with Non-Proportional Hazard Functions. <em>J  R STAT SOC D</em>
+<b>41</b>, 455-465.
+</p>
+<p>Schemper M, Wakounig S and Heinze G (2009). The Estimation of Average Hazard Ratios by Weighted Cox
+Regression. <em>STAT MED</em> <b>28</b>, 2473-2489. <a href="https://doi.org/10.1002/sim.3623">doi:10.1002/sim.3623</a>
+</p>
+<p>Xu R and O'Quigley J (2000). Estimating Average Regression Effect Under Non-Proportional Hazards.
+<em>Biostatistics</em> <b>1</b>, 423-439. </p>
+
+
+<h3>See Also</h3>
+
+ <p><code>concord</code>, <code>plot.coxphw</code>, <code>predict.coxphw</code>, <code>plot.coxphw.predict</code>, <code>coxph </code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data("gastric")
+
+# weighted estimation of average hazard ratio
+fit1 &lt;- coxphw(Surv(time, status) ~ radiation, data = gastric, template = "AHR")
+summary(fit1)
+fit1$cov.lw     # robust covariance
+fit1$cov.ls     # Lin-Sasieni covariance
+
+
+# unweighted estimation, include interaction with years
+# ('radiation' must be included in formula!)
+gastric$years &lt;- gastric$time / 365.25
+fit2 &lt;- coxphw(Surv(years, status) ~ radiation + years : radiation, data = gastric,
+               template = "PH")
+summary(fit2)
+
+
+# unweighted estimation with a function of time
+data("gastric")
+gastric$yrs &lt;- gastric$time / 365.25
+
+fun &lt;- function(t) { (t &gt; 1) * 1 }
+fit3 &lt;- coxphw(Surv(yrs, status) ~ radiation + fun(yrs):radiation, data = gastric,
+               template = "PH")
+
+# for more examples see vignette or predict.coxphw
+</code></pre>
+
+
+</div>

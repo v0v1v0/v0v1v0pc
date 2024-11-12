@@ -1,0 +1,106 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cross_c2c</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Make a combination of weights from different methods</h2>
+
+<h3>Description</h3>
+
+<p>adding the additional column which is a mix of weights columns
+by each row.
+Ensemble of a few methods usually produces more accurate solutions
+than a single model would.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cross_c2c(
+  df,
+  cols = colnames(df)[grepl("^wei_.*_c2c$", colnames(df))],
+  weis = rep(1/length(cols), length(cols)),
+  na.rm = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>'data.frame' like result of the 'cat2cat' function
+for a specific period.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cols</code></td>
+<td>
+<p>'character' vector default all columns under
+the regex "wei_.*_c2c".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weis</code></td>
+<td>
+<p>'numeric' vector weighs for columns in the 'cols' argument.
+By default a vector of the same length as 'cols' argument and with equally
+spaced probability (summing to 1).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.rm</code></td>
+<td>
+<p>'logical(1)' if 'NA' values should be omitted, default TRUE.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>'data.frame' with the additional column 'wei_cross_c2c'.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+data("occup_small", package = "cat2cat")
+data("occup", package = "cat2cat")
+data("trans", package = "cat2cat")
+
+occup_old &lt;- occup_small[occup_small$year == 2008, ]
+occup_new &lt;- occup_small[occup_small$year == 2010, ]
+
+# mix of methods - forward direction, try out backward too
+occup_mix &lt;- cat2cat(
+  data = list(
+    old = occup_old, new = occup_new, cat_var = "code", time_var = "year"
+  ),
+  mappings = list(trans = trans, direction = "backward"),
+  ml = list(
+    data = occup_new,
+    cat_var = "code",
+    method = c("knn"),
+    features = c("age", "sex", "edu", "exp", "parttime", "salary"),
+    args = list(k = 10, ntree = 20)
+  )
+)
+# correlation between ml model
+occup_mix_old &lt;- occup_mix$old
+cor(
+  occup_mix_old[occup_mix_old$rep_c2c != 1, c("wei_knn_c2c", "wei_freq_c2c")]
+)
+# cross all methods and subset one highest probability category for each obs
+occup_old_highest1_mix &lt;- prune_c2c(cross_c2c(occup_mix$old),
+  column = "wei_cross_c2c", method = "highest1"
+)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

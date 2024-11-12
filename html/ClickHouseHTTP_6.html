@@ -1,0 +1,496 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ClickHouseHTTPConnection-class</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>ClickHouseHTTPConnection class.</h2>
+
+<h3>Description</h3>
+
+<p>ClickHouseHTTPConnection class.
+</p>
+<p>Send SQL query to ClickHouse
+</p>
+<p>Information about the ClickHouse database
+</p>
+<p>Create a table in ClickHouse
+</p>
+<p>Write a table in ClickHouse
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S4 method for signature 'ClickHouseHTTPConnection,character'
+dbSendQuery(
+  conn,
+  statement,
+  format = c("Arrow", "TabSeparatedWithNamesAndTypes"),
+  file = NA,
+  ...
+)
+
+## S4 method for signature 'ClickHouseHTTPConnection'
+dbGetInfo(dbObj, ...)
+
+## S4 method for signature 'ClickHouseHTTPConnection'
+dbCreateTable(
+  conn,
+  name,
+  fields,
+  engine = "TinyLog",
+  overwrite = FALSE,
+  ...,
+  row.names = NULL,
+  temporary = FALSE
+)
+
+## S4 method for signature 'ClickHouseHTTPConnection,ANY'
+dbWriteTable(
+  conn,
+  name,
+  value,
+  overwrite = FALSE,
+  append = FALSE,
+  engine = "TinyLog",
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>conn</code></td>
+<td>
+<p>a ClickHouseHTTPConnection object created with <code>dbConnect()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>statement</code></td>
+<td>
+<p>the SQL query statement</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>format</code></td>
+<td>
+<p>the format used by ClickHouse to send the results.
+Two formats are supported:
+"Arrow" (default) and "TabSeparatedWithNamesAndTypes"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>file</code></td>
+<td>
+<p>a path to a file to send along the query (default: NA)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Other parameters passed on to methods</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dbObj</code></td>
+<td>
+<p>a ClickHouseHTTPConnection object</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p>the name of the table to create</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fields</code></td>
+<td>
+<p>a character vector with the name of the fields and their
+ClickHouse type
+(e.g.
+<code>c("text_col String", "num_col Nullable(Float64)", "nul_col Array(Int32)")</code>
+)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>engine</code></td>
+<td>
+<p>the ClickHouse table engine as described in ClickHouse
+<a href="https://clickhouse.com/docs/en/engines/table-engines/">documentation</a>.
+Examples:
+</p>
+
+<ul>
+<li> <p><code>"TinyLog"</code> (default)
+</p>
+</li>
+<li> <p><code>"MergeTree() ORDER BY (expr)"</code>
+(expr generally correspond to fields separated by ",")
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>overwrite</code></td>
+<td>
+<p>if TRUE and if a table with the same name exists,
+then it is deleted before creating the new one (default: FALSE)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>row.names</code></td>
+<td>
+<p>unsupported parameter (add for compatibility reason)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>temporary</code></td>
+<td>
+<p>unsupported parameter (add for compatibility reason)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>value</code></td>
+<td>
+<p>the table to write</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>append</code></td>
+<td>
+<p>if TRUE, the values are added to the database table if
+it exists (default: FALSE).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Both format have their pros and cons:
+</p>
+
+<ul>
+<li> <p><strong>Arrow</strong> (default):
+</p>
+
+<ul>
+<li>
+<p> fast for long tables but slow for wide tables
+</p>
+</li>
+<li>
+<p> fast with Array columns
+</p>
+</li>
+<li>
+<p> Date and DateTime columns are returned as UInt16 and UInt32
+respectively: by default, ClickHouseHTTP interpret them as Date and
+POSIXct columns but cannot make the difference with actual UInt16 and
+UInt32
+</p>
+</li>
+</ul>
+</li>
+<li> <p><strong>TabSeparatedWithNamesAndTypes</strong>:
+</p>
+
+<ul>
+<li>
+<p> in general faster than Arrow
+</p>
+</li>
+<li>
+<p> fast for wide tables but slow for long tables
+</p>
+</li>
+<li>
+<p> slow with Array columns
+</p>
+</li>
+<li>
+<p> Special characters are not well interpreted. In such cases, the function
+below can be useful but can also take time.
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<pre>
+      .sp_ch_recov &lt;- function(x){
+         stringi::stri_replace_all_regex(
+            x,
+            c(
+               "\\n", "\\t",  "\\r", "\\b",
+               "\\a", "\\f", "\\'",  "\\\\"
+            ),
+            c("\n", "\t", "\r", "\b", "\a", "\f", "'", "\\"),
+            vectorize_all=FALSE
+         )
+      }
+</pre>
+
+
+<h3>Value</h3>
+
+<p>A ClickHouseHTTPResult object
+</p>
+<p>A list with the following elements:
+</p>
+
+<ul>
+<li>
+<p> name: "ClickHouseHTTPConnection"
+</p>
+</li>
+<li>
+<p> db.version: the version of ClickHouse
+</p>
+</li>
+<li>
+<p> uptime: ClickHouse uptime
+</p>
+</li>
+<li>
+<p> dbname: the default database
+</p>
+</li>
+<li>
+<p> username: user name
+</p>
+</li>
+<li>
+<p> host: ClickHouse host
+</p>
+</li>
+<li>
+<p> port: ClickHouse port
+</p>
+</li>
+<li>
+<p> https: Is the connection using HTTPS protocol instead of HTTP
+</p>
+</li>
+</ul>
+<p>dbCreateTable() returns TRUE, invisibly.
+</p>
+<p>TRUE; called for side effects
+</p>
+
+
+<h3>See Also</h3>
+
+<p>ClickHouseHTTPResult
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+
+## Connection ----
+
+library(DBI)
+### HTTP connection ----
+
+con &lt;- dbConnect(
+   ClickHouseHTTP::ClickHouseHTTP(), host="localhost",
+   port=8123
+)
+
+### HTTPS connection (without ssl peer verification) ----
+
+con &lt;- dbConnect(
+   ClickHouseHTTP::ClickHouseHTTP(), host="localhost",
+   port=8443, https=TRUE, ssl_verifypeer=FALSE
+)
+
+## Write a table in the database ----
+
+library(dplyr)
+data("mtcars")
+mtcars &lt;- as_tibble(mtcars, rownames="car")
+dbWriteTable(con, "mtcars", mtcars)
+
+## Query the database ----
+
+carsFromDB &lt;- dbReadTable(con, "mtcars")
+dbGetQuery(con, "SELECT car, mpg, cyl, hp FROM mtcars WHERE hp&gt;=110")
+
+## By default, ClickHouseHTTP relies on the
+## Apache Arrow format provided by ClickHouse.
+## The `format` argument of the `dbGetQuery()` function can be used to
+## rely on the *TabSeparatedWithNamesAndTypes* format.
+selCars &lt;- dbGetQuery(
+   con, "SELECT car, mpg, cyl, hp FROM mtcars WHERE hp&gt;=110",
+   format="TabSeparatedWithNamesAndTypes"
+)
+## Identifying the original ClickHouse data types
+attr(selCars, "type")
+
+## Using alternative databases stored in ClickHouse ----
+
+dbSendQuery(con, "CREATE DATABASE swiss")
+dbSendQuery(con, "USE swiss")
+
+## The chosen database is used until the session expires.
+## It can also be chosen when connecting using the `dbname` argument of
+## the `dbConnect()` function.
+
+## The example below shows that spaces in column names are supported.
+## It also shows the support of R `list` using the *Array* ClickHouse type.
+data("swiss")
+swiss &lt;- as_tibble(swiss, rownames="province")
+swiss &lt;- mutate(swiss, "pr letters"=strsplit(province, ""))
+dbWriteTable(
+   con, "swiss", swiss,
+   engine="MergeTree() ORDER BY (Fertility, province)"
+)
+swissFromDB &lt;- dbReadTable(con, "swiss")
+
+## A table from another database can also be accessed as following:
+dbReadTable(con, SQL("default.mtcars"))
+
+
+## End(Not run)
+## Not run: 
+
+## Connection ----
+
+library(DBI)
+### HTTP connection ----
+
+con &lt;- dbConnect(
+   ClickHouseHTTP::ClickHouseHTTP(), host="localhost",
+   port=8123
+)
+
+### HTTPS connection (without ssl peer verification) ----
+
+con &lt;- dbConnect(
+   ClickHouseHTTP::ClickHouseHTTP(), host="localhost",
+   port=8443, https=TRUE, ssl_verifypeer=FALSE
+)
+
+## Write a table in the database ----
+
+library(dplyr)
+data("mtcars")
+mtcars &lt;- as_tibble(mtcars, rownames="car")
+dbWriteTable(con, "mtcars", mtcars)
+
+## Query the database ----
+
+carsFromDB &lt;- dbReadTable(con, "mtcars")
+dbGetQuery(con, "SELECT car, mpg, cyl, hp FROM mtcars WHERE hp&gt;=110")
+
+## By default, ClickHouseHTTP relies on the
+## Apache Arrow format provided by ClickHouse.
+## The `format` argument of the `dbGetQuery()` function can be used to
+## rely on the *TabSeparatedWithNamesAndTypes* format.
+selCars &lt;- dbGetQuery(
+   con, "SELECT car, mpg, cyl, hp FROM mtcars WHERE hp&gt;=110",
+   format="TabSeparatedWithNamesAndTypes"
+)
+## Identifying the original ClickHouse data types
+attr(selCars, "type")
+
+## Using alternative databases stored in ClickHouse ----
+
+dbSendQuery(con, "CREATE DATABASE swiss")
+dbSendQuery(con, "USE swiss")
+
+## The chosen database is used until the session expires.
+## It can also be chosen when connecting using the `dbname` argument of
+## the `dbConnect()` function.
+
+## The example below shows that spaces in column names are supported.
+## It also shows the support of R `list` using the *Array* ClickHouse type.
+data("swiss")
+swiss &lt;- as_tibble(swiss, rownames="province")
+swiss &lt;- mutate(swiss, "pr letters"=strsplit(province, ""))
+dbWriteTable(
+   con, "swiss", swiss,
+   engine="MergeTree() ORDER BY (Fertility, province)"
+)
+swissFromDB &lt;- dbReadTable(con, "swiss")
+
+## A table from another database can also be accessed as following:
+dbReadTable(con, SQL("default.mtcars"))
+
+
+## End(Not run)
+## Not run: 
+
+## Connection ----
+
+library(DBI)
+### HTTP connection ----
+
+con &lt;- dbConnect(
+   ClickHouseHTTP::ClickHouseHTTP(), host="localhost",
+   port=8123
+)
+
+### HTTPS connection (without ssl peer verification) ----
+
+con &lt;- dbConnect(
+   ClickHouseHTTP::ClickHouseHTTP(), host="localhost",
+   port=8443, https=TRUE, ssl_verifypeer=FALSE
+)
+
+## Write a table in the database ----
+
+library(dplyr)
+data("mtcars")
+mtcars &lt;- as_tibble(mtcars, rownames="car")
+dbWriteTable(con, "mtcars", mtcars)
+
+## Query the database ----
+
+carsFromDB &lt;- dbReadTable(con, "mtcars")
+dbGetQuery(con, "SELECT car, mpg, cyl, hp FROM mtcars WHERE hp&gt;=110")
+
+## By default, ClickHouseHTTP relies on the
+## Apache Arrow format provided by ClickHouse.
+## The `format` argument of the `dbGetQuery()` function can be used to
+## rely on the *TabSeparatedWithNamesAndTypes* format.
+selCars &lt;- dbGetQuery(
+   con, "SELECT car, mpg, cyl, hp FROM mtcars WHERE hp&gt;=110",
+   format="TabSeparatedWithNamesAndTypes"
+)
+## Identifying the original ClickHouse data types
+attr(selCars, "type")
+
+## Using alternative databases stored in ClickHouse ----
+
+dbSendQuery(con, "CREATE DATABASE swiss")
+dbSendQuery(con, "USE swiss")
+
+## The chosen database is used until the session expires.
+## It can also be chosen when connecting using the `dbname` argument of
+## the `dbConnect()` function.
+
+## The example below shows that spaces in column names are supported.
+## It also shows the support of R `list` using the *Array* ClickHouse type.
+data("swiss")
+swiss &lt;- as_tibble(swiss, rownames="province")
+swiss &lt;- mutate(swiss, "pr letters"=strsplit(province, ""))
+dbWriteTable(
+   con, "swiss", swiss,
+   engine="MergeTree() ORDER BY (Fertility, province)"
+)
+swissFromDB &lt;- dbReadTable(con, "swiss")
+
+## A table from another database can also be accessed as following:
+dbReadTable(con, SQL("default.mtcars"))
+
+
+## End(Not run)
+</code></pre>
+
+
+</div>

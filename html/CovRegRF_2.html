@@ -1,0 +1,214 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>covregrf</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Covariance Regression with Random Forests</h2>
+
+<h3>Description</h3>
+
+<p>Estimates the covariance matrix of a multivariate response given a set of
+covariates using a random forest framework.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">covregrf(
+  formula,
+  data,
+  params.rfsrc = list(ntree = 1000, mtry = ceiling(px/3), nsplit = max(round(n/50),
+    10)),
+  nodesize.set = round(0.5^(1:100) * sampsize)[round(0.5^(1:100) * sampsize) &gt; py],
+  importance = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>Object of class <code>formula</code> or <code>character</code> describing
+the model to fit. Interaction terms are not supported.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>The multivariate data set which has <code class="reqn">n</code> observations and
+<code class="reqn">px+py</code> variables where <code class="reqn">px</code> and <code class="reqn">py</code> are the number of
+covariates (<code class="reqn">X</code>) and response variables (<code class="reqn">Y</code>), respectively. Should
+be a data.frame.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>params.rfsrc</code></td>
+<td>
+<p>List of parameters that should be passed to
+<code>randomForestSRC</code>. In the default parameter set, <code>ntree</code> = 1000,
+<code>mtry</code> = <code class="reqn">px/3</code>  (rounded up), <code>nsplit</code> =
+<code class="reqn">max(round(n/50), 10)</code>. See <code>randomForestSRC</code> for possible
+parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nodesize.set</code></td>
+<td>
+<p>The set of <code>nodesize</code> levels for tuning. Default set
+includes the power of two times the sub-sample size (<code class="reqn">.632n</code>) greater
+than the number of response variables (<code class="reqn">py</code>). See below for details of
+the <code>nodesize</code> tuning.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>importance</code></td>
+<td>
+<p>Should variable importance of covariates be assessed? The
+default is <code>FALSE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An object of class <code>(covregrf, grow)</code> which is a list with the
+following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>predicted.oob</code></td>
+<td>
+<p>OOB predicted covariance matrices for training
+observations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>importance</code></td>
+<td>
+<p>Variable importance measures (VIMP) for covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>best.nodesize</code></td>
+<td>
+<p>Best <code>nodesize</code> value selected with the proposed
+tuning method.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>params.rfsrc</code></td>
+<td>
+<p>List of parameters that was used to fit random forest
+with <code>randomForestSRC</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>Sample size of the data (<code>NA</code>'s are omitted).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xvar.names</code></td>
+<td>
+<p>A character vector of the covariate names.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>yvar.names</code></td>
+<td>
+<p>A character vector of the response variable names.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xvar</code></td>
+<td>
+<p>Data frame of covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>yvar</code></td>
+<td>
+<p>Data frame of responses.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rf.grow</code></td>
+<td>
+<p>Fitted random forest object. This object is used for
+prediction with training or new data.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For mean regression problems, random forests search for the optimal level
+of the <code>nodesize</code> parameter by using out-of-bag (OOB) prediction
+errors computed as the difference between the true responses and OOB
+predictions. The <code>nodesize</code> value having the smallest OOB prediction
+error is chosen. However, the covariance regression problem is
+unsupervised by nature. Therefore, we tune <code>nodesize</code> parameter with a
+heuristic method. We use OOB covariance matrix estimates. The general idea
+of the proposed tuning method is to find the <code>nodesize</code> level where
+the OOB covariance matrix predictions converge. The steps are as follows.
+Firstly, we train separate random forests for a set of <code>nodesize</code>
+values. Secondly, we compute the OOB covariance matrix estimates for each
+random forest. Next, we compute the mean absolute difference (MAD) between
+the upper triangular OOB covariance matrix estimates of two consecutive
+<code>nodesize</code> levels over all observations. Finally, we take the pair of
+<code>nodesize</code> levels having the smallest MAD. Among these two
+<code>nodesize</code> levels, we select the smaller since in general deeper trees
+are desired in random forests.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>predict.covregrf</code>
+<code>significance.test</code>
+<code>vimp.covregrf</code>
+<code>print.covregrf</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">options(rf.cores=2, mc.cores=2)
+
+## load generated example data
+data(data, package = "CovRegRF")
+xvar.names &lt;- colnames(data$X)
+yvar.names &lt;- colnames(data$Y)
+data1 &lt;- data.frame(data$X, data$Y)
+
+## define train/test split
+set.seed(2345)
+smp &lt;- sample(1:nrow(data1), size = round(nrow(data1)*0.6), replace = FALSE)
+traindata &lt;- data1[smp,,drop=FALSE]
+testdata &lt;- data1[-smp, xvar.names, drop=FALSE]
+
+## formula object
+formula &lt;- as.formula(paste(paste(yvar.names, collapse="+"), ".", sep=" ~ "))
+
+## train covregrf
+covregrf.obj &lt;- covregrf(formula, traindata, params.rfsrc = list(ntree = 50),
+  importance = TRUE)
+
+## get the OOB predictions
+pred.oob &lt;- covregrf.obj$predicted.oob
+
+## predict with new test data
+pred.obj &lt;- predict(covregrf.obj, newdata = testdata)
+pred &lt;- pred.obj$predicted
+
+## get the variable importance measures
+vimp &lt;- covregrf.obj$importance
+
+
+</code></pre>
+
+
+</div>

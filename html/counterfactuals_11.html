@@ -1,0 +1,238 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>NICERegr</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>NICE (Nearest Instance Counterfactual Explanations) for Regression Tasks</h2>
+
+<h3>Description</h3>
+
+<p>NICE (Brughmans and Martens 2021) searches for counterfactuals by iteratively replacing feature values
+of <code>x_interest</code> with the corresponding value of its most similar (optionally correctly predicted) instance <code>x_nn</code>.
+While the original method is only applicable to classification tasks (see NICEClassif), this implementation extend it to regression tasks.
+</p>
+
+
+<h3>Details</h3>
+
+<p>NICE starts the counterfactual search for <code>x_interest</code> by finding its most similar (optionally) correctly predicted
+neighbor <code>x_nn</code> with(in) the desired prediction (range). Correctly predicted means that the prediction of <code>x_nn</code> is less
+than a user-specified <code>margin_correct</code> away from the true outcome of <code>x_nn</code>.
+This is designed to mimic the search for <code>x_nn</code> for regression tasks.
+If no <code>x_nn</code> satisfies this constraint, a warning is returned that no counterfactual could be found.
+<br>
+In the first iteration, NICE creates new instances by replacing a different feature value of <code>x_interest</code> with the corresponding
+value of <code>x_nn</code> in each new instance. Thus, if <code>x_nn</code> differs from <code>x_interest</code> in <code>d</code> features, <code>d</code> new instances are created. <br>
+Then, the reward values for the created instances are computed with the chosen reward function.
+Available reward functions are <code>sparsity</code>, <code>proximity</code>, and <code>plausibility</code>. <br>
+In the second iteration, NICE creates <code>d-1</code> new instances by replacing a different feature value of the highest
+reward instance of the previous iteration with the corresponding value of <code>x_interest</code>, and so on. <br>
+If <code>finish_early = TRUE</code>, the algorithm terminates when the predicted outcome for
+the highest reward instance is in the interval <code>desired_outcome</code>; if <code>finish_early = FALSE</code>, the
+algorithm continues until <code>x_nn</code> is recreated. <br>
+Once the algorithm terminated, it depends on <code>return_multiple</code> which instances
+are returned as counterfactuals: if <code>return_multiple = FALSE</code>, then only the highest reward instance in the
+last iteration is returned as counterfactual; if <code>return_multiple = TRUE</code>, then all instances (of all iterations)
+whose predicted outcome is in the interval <code>desired_outcome</code> are returned as counterfactuals.
+</p>
+<p>If <code>finish_early = FALSE</code> and <code>return_multiple = FALSE</code>, then <code>x_nn</code> is returned as single counterfactual.
+</p>
+<p>The function computes the dissimilarities using Gower's dissimilarity measure (Gower 1971).
+</p>
+
+
+<h3>Super classes</h3>
+
+<p><code>counterfactuals::CounterfactualMethod</code> -&gt; <code>counterfactuals::CounterfactualMethodRegr</code> -&gt; <code>NICERegr</code>
+</p>
+
+
+<h3>Active bindings</h3>
+
+<div class="r6-active-bindings">
+
+<dl>
+<dt><code>x_nn</code></dt>
+<dd>
+<p>(<code>logical(1)</code>) <br>
+The most similar (optionally) correctly classified instance of <code>x_interest</code>.</p>
+</dd>
+<dt><code>archive</code></dt>
+<dd>
+<p>(<code>list()</code>) <br>
+A list that stores the history of the algorithm run. For each algorithm iteration, it has one element containing
+a <code>data.table</code>, which stores all created instances of this iteration together with their
+reward values and their predictions.</p>
+</dd>
+</dl>
+</div>
+
+
+<h3>Methods</h3>
+
+
+
+<h4>Public methods</h4>
+
+
+<ul>
+<li> <p><a href="#method-NICERegr-new"><code>NICERegr$new()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-NICERegr-clone"><code>NICERegr$clone()</code></a>
+</p>
+</li>
+</ul>
+<details open><summary>Inherited methods</summary><ul>
+<li><span class="pkg-link" data-pkg="counterfactuals" data-topic="CounterfactualMethod" data-id="print"><a href="../../counterfactuals/html/CounterfactualMethod.html#method-CounterfactualMethod-print"><code>counterfactuals::CounterfactualMethod$print()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="counterfactuals" data-topic="CounterfactualMethodRegr" data-id="find_counterfactuals"><a href="../../counterfactuals/html/CounterfactualMethodRegr.html#method-CounterfactualMethodRegr-find_counterfactuals"><code>counterfactuals::CounterfactualMethodRegr$find_counterfactuals()</code></a></span></li>
+</ul></details><hr>
+<a id="method-NICERegr-new"></a>
+
+
+
+<h4>Method <code>new()</code>
+</h4>
+
+<p>Create a new NICERegr object.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>NICERegr$new(
+  predictor,
+  optimization = "sparsity",
+  x_nn_correct = TRUE,
+  margin_correct = NULL,
+  return_multiple = FALSE,
+  finish_early = TRUE,
+  distance_function = "gower"
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>predictor</code></dt>
+<dd>
+<p>(Predictor)<br>
+The object (created with <code>iml::Predictor$new()</code>) holding the machine learning model and the data.</p>
+</dd>
+<dt><code>optimization</code></dt>
+<dd>
+<p>(<code>character(1)</code>)<br>
+The reward function to optimize. Can be <code>sparsity</code> (default), <code>proximity</code> or <code>plausibility</code>.</p>
+</dd>
+<dt><code>x_nn_correct</code></dt>
+<dd>
+<p>(<code>logical(1)</code>)<br>
+Should only <em>correctly</em> classified data points in <code>predictor$data$X</code> be considered for the most similar instance search?
+Default is <code>TRUE</code>.</p>
+</dd>
+<dt><code>margin_correct</code></dt>
+<dd>
+<p>(<code>numeric(1)</code> | <code>NULL</code>)<br>
+The accepted margin for considering a prediction as "correct".
+Ignored if <code>x_nn_correct = FALSE</code>.
+If NULL, the accepted margin is set to half the median absolute distance between the true and predicted outcomes in the data (<code>predictor$data</code>).</p>
+</dd>
+<dt><code>return_multiple</code></dt>
+<dd>
+<p>(<code>logical(1)</code>)<br>
+Should multiple counterfactuals be returned? If TRUE, the algorithm returns all created instances whose
+prediction is in the interval <code>desired_outcome</code>. For more information, see the <code>Details</code> section.</p>
+</dd>
+<dt><code>finish_early</code></dt>
+<dd>
+<p>(<code>logical(1)</code>)<br>
+Should the algorithm terminate after an iteration in which the prediction for the highest reward instance
+is in the interval <code>desired_outcome</code>. If <code>FALSE</code>, the algorithm continues until <code>x_nn</code> is recreated.</p>
+</dd>
+<dt><code>distance_function</code></dt>
+<dd>
+<p>(<code style="white-space: pre;">⁠function()⁠</code> | <code>'gower'</code> | <code>'gower_c'</code>)<br>
+The distance function used to compute the distances between <code>x_interest</code>
+and the training data points for finding <code>x_nn</code>. If <code>optimization</code> is set
+to <code>proximity</code>, the distance function is also used for calculating the
+distance between candidates and <code>x_interest</code>.
+Either the name of an already implemented distance function
+('gower' or 'gower_c') or a function is allowed as input.
+If set to 'gower' (default), then Gower's distance (Gower 1971) is used;
+if set to 'gower_c', a C-based more efficient version of Gower's distance is used.
+A function must have three arguments  <code>x</code>, <code>y</code>, and <code>data</code> and should
+return a <code>double</code> matrix with <code>nrow(x)</code> rows and maximum <code>nrow(y)</code> columns.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-NICERegr-clone"></a>
+
+
+
+<h4>Method <code>clone()</code>
+</h4>
+
+<p>The objects of this class are cloneable with this method.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>NICERegr$clone(deep = FALSE)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>deep</code></dt>
+<dd>
+<p>Whether to make a deep clone.</p>
+</dd>
+</dl>
+</div>
+
+
+
+
+<h3>References</h3>
+
+<p>Brughmans, D., &amp; Martens, D. (2021). NICE: An Algorithm for Nearest Instance Counterfactual Explanations.
+<a href="https://arxiv.org/abs/2104.07411">arXiv 2104.07411</a> v2.
+</p>
+<p>Gower, J. C. (1971), "A general coefficient of similarity and some of its properties". Biometrics, 27, 623–637.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">if (require("randomForest")) {
+  set.seed(123456)
+  # Train a model
+  rf = randomForest(mpg ~ ., data = mtcars)
+  # Create a predictor object
+  predictor = iml::Predictor$new(rf)
+  # Find counterfactuals
+  nice_regr = NICERegr$new(predictor)
+  cfactuals = nice_regr$find_counterfactuals(
+     x_interest = mtcars[1L, ], desired_outcome = c(22, 26)
+  )
+  # Print the results
+  cfactuals$data
+  # Print archive
+  nice_regr$archive
+}
+
+</code></pre>
+
+
+</div>

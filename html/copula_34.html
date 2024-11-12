@@ -1,0 +1,208 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>khoudrajiCopula</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Construction of copulas using Khoudraji's device</h2>
+
+<h3>Description</h3>
+
+<p>Creates an object representing a copula constructed using
+<em>Khoudraji's device</em> (Khoudraji, 1995). The resulting <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> object
+is either of class <code>"khoudrajiBivCopula"</code>,
+<code>"khoudrajiExplicitCopula"</code>
+or <code>"khoudrajiCopula"</code>.
+</p>
+<p>In the bivariate case, given two copulas <code class="reqn">C_1</code> and <code class="reqn">C_2</code>,
+Khoudraji's device consists of defining a copula whose c.d.f. is given
+by:
+</p>
+<p style="text-align: center;"><code class="reqn">C_1(u_1^{1 - a_1}, u_2^{1 - a_2}) C_2(u_1^{a_1}, u_2^{a_2})</code>
+</p>
+
+<p>where <code class="reqn">a_1</code> and <code class="reqn">a_2</code> are <em>shape parameters</em> in [0,1].
+</p>
+<p>The construction principle (see also Genest et al. 1998) is a special
+case of that considered in Liebscher (2008).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">khoudrajiCopula(copula1 = indepCopula(), copula2 = indepCopula(dim = d),
+                shapes = rep(NA_real_, dim(copula1)))
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>copula1, copula2</code></td>
+<td>
+<p>each a <code>copula</code> (possibly
+generalized, e.g., also a <code>"rotCopula"</code>) of the
+same dimension <code class="reqn">d</code>.  By default independence copulas, where
+<code>copula2</code> gets the dimension from <code>copula1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>shapes</code></td>
+<td>
+<p><code>numeric</code> vector of length <code class="reqn">d</code>,
+with values in <code class="reqn">[0,1]</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If the argument copulas are bivariate, an object of class
+<code>"khoudrajiBivCopula"</code> will be constructed.  If
+they are exchangeable and <code class="reqn">d</code>-dimensional with <code class="reqn">d &gt; 2</code>, and if
+they have explicit p.d.f. and c.d.f. expressions, an object of class
+<code>"khoudrajiExplicitCopula"</code> will be
+constructed.  For the latter two classes, density evaluation is implemented,
+and fitting and goodness-of-fit testing can be attempted. If <code class="reqn">d &gt;
+  2</code> but one of the argument copulas does not have explicit p.d.f. and
+c.d.f. expressions, or is not exchangeable, an object of class
+<code>"khoudrajiCopula"</code> will be constructed, for which
+density evaluation is not possible.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A new object of class <code>"khoudrajiBivCopula"</code> in
+dimension two or of class
+<code>"khoudrajiExplicitCopula"</code> or
+<code>"khoudrajiCopula"</code> when <code class="reqn">d &gt; 2</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Genest, C., Ghoudi, K., and Rivest, L.-P. (1998), Discussion of
+"Understanding relationships using copulas", by Frees, E., and
+Valdez, E., <em>North American Actuarial Journal</em> <b>3</b>,
+143–149.
+</p>
+<p>Khoudraji, A. (1995), Contributions à l'étude des copules et
+àla modélisation des valeurs extrêmes
+bivariées, <em>PhD thesis, Université Laval</em>, Québec,
+Canada.
+</p>
+<p>Liebscher, E. (2008), Construction of asymmetric multivariate copulas,
+<em>Journal of Multivariate Analysis</em> <b>99</b>, 2234–2250.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## A bivariate Khoudraji-Clayton copula
+kc &lt;- khoudrajiCopula(copula2 = claytonCopula(6),
+                      shapes = c(0.4, 0.95))
+class(kc) # "kh..._Biv_Copula"
+kc
+contour(kc, dCopula, nlevels = 20, main = "dCopula(&lt;khoudrajiBivCopula&gt;)")
+
+## A Khoudraji-Clayton copula with second shape parameter fixed
+kcf &lt;- khoudrajiCopula(copula2 = claytonCopula(6),
+                       shapes = fixParam(c(0.4, 0.95), c(FALSE, TRUE)))
+kcf. &lt;- setTheta(kcf, c(3, 0.2)) # (change *free* param's only)
+validObject(kcf) &amp; validObject(kcf.)
+
+## A "nested" Khoudraji bivariate copula
+kgkcf &lt;- khoudrajiCopula(copula1 = gumbelCopula(3),
+                         copula2 = kcf,
+                         shapes = c(0.7, 0.25))
+kgkcf # -&gt; 6 parameters (1 of 6 is 'fixed')
+contour(kgkcf, dCopula, nlevels = 20,
+        main = "dCopula(&lt;khoudrajiBivC.(nested)&gt;)")
+
+(Xtras &lt;- copula:::doExtras()) # determine whether examples will be extra (long)
+n &lt;- if(Xtras) 300 else 64 # sample size (realistic vs short for example)
+
+u &lt;- rCopula(n, kc)
+plot(u)
+
+## For likelihood (or fitting), specify the "free" (non-fixed) param's:
+##           C1:  C2c C2s1    sh1  sh2
+loglikCopula(c(3,   6, 0.4,   0.7, 0.25),
+             u = u, copula = kgkcf)
+
+## Fitting takes time (using numerical differentiation) and may be difficult:
+
+## Starting values are required for all parameters
+f.IC &lt;- fitCopula(khoudrajiCopula(copula2 = claytonCopula()),
+                  start = c(1.1, 0.5, 0.5), data = pobs(u),
+                  optim.method = "Nelder-Mead")
+summary(f.IC)
+confint(f.IC) # (only interesting for reasonable sample size)
+
+## Because of time,  don't run these by default :
+
+## Second shape parameter fixed to 0.95
+kcf2 &lt;- khoudrajiCopula(copula2 = claytonCopula(),
+                        shapes = fixParam(c(NA_real_, 0.95), c(FALSE, TRUE)))
+system.time(
+f.ICf &lt;- fitCopula(kcf2, start = c(1.1, 0.5), data = pobs(u),
+                   optim.method = "Nelder-Mead")
+) # ~ 7-8 sec
+confint(f.ICf) # !
+coef(f.ICf, SE=TRUE)
+
+## With a different optimization method
+system.time(
+f.IC2 &lt;- fitCopula(kcf2, start = c(1.1, 0.5), data = pobs(u),
+                   optim.method = "BFGS")
+)
+printCoefmat(coef(f.IC2, SE=TRUE), digits = 3) # w/o unuseful extra digits
+
+
+if(Xtras &gt;= 2) { # really S..L..O..W... --------
+
+## GOF example
+optim.method &lt;- "Nelder-Mead" #try "BFGS" as well
+gofCopula(kcf2, x = u, start = c(1.1, 0.5), optim.method = optim.method)
+gofCopula(kcf2, x = u, start = c(1.1, 0.5), optim.method = optim.method,
+          sim = "mult")
+## The goodness-of-fit tests should hold their level
+## but this would need to be tested
+
+## Another example under the alternative
+u &lt;- rCopula(n, gumbelCopula(4))
+gofCopula(kcf2, x = u, start = c(1.1, 0.5), optim.method = optim.method)
+gofCopula(kcf2, x = u, start = c(1.1, 0.5), optim.method = optim.method,
+          sim = "mult")
+
+}## ------ end { really slow gofC*() } --------
+
+## Higher-dimensional constructions
+
+## A three dimensional Khoudraji-Clayton copula
+kcd3 &lt;- khoudrajiCopula(copula1 = indepCopula(dim=3),
+                        copula2 = claytonCopula(6, dim=3),
+                        shapes = c(0.4, 0.95, 0.95))
+
+n &lt;- if(Xtras) 1000 else 100 # sample size (realistic vs short for example)
+u &lt;- rCopula(n, kcd3)
+splom2(u)
+v &lt;- matrix(runif(15), 5, 3)
+dCopula(v, kcd3)
+
+## A four dimensional Khoudraji-Normal copula
+knd4 &lt;- khoudrajiCopula(copula1 = indepCopula(dim=4),
+                        copula2 = normalCopula(.9, dim=4),
+                        shapes = c(0.4, 0.95, 0.95, 0.95))
+knd4
+stopifnot(class(knd4) == "khoudrajiCopula")
+u &lt;- rCopula(n, knd4)
+splom2(u)
+## TODO :
+## dCopula(v, knd4) ## not implemented
+
+</code></pre>
+
+
+</div>

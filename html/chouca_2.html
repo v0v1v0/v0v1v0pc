@@ -1,0 +1,375 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>camodel</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Definition of a stochastic cellular automaton</h2>
+
+<h3>Description</h3>
+
+<p>High-level definition of a stochastic cellular automaton
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">camodel(
+  ...,
+  neighbors,
+  wrap,
+  parms = list(),
+  all_states = NULL,
+  check_model = "quick",
+  verbose = FALSE,
+  epsilon = sqrt(.Machine[["double.eps"]]),
+  fixed_neighborhood = FALSE
+)
+
+transition(from, to, prob)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>A number of transition descriptions, as built by the
+<code>transition</code> function (see Details and Examples)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>neighbors</code></td>
+<td>
+<p>The number of neighbors to use in the cellular automaton (4 for 4-way
+or von-Neumann neigborhood, or 8 for an 8-way or Moore neighborhood)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wrap</code></td>
+<td>
+<p>If <code>TRUE</code>, then the 2D grid on which the model is run wraps around
+at the edges (the top/leftmost cells will be considered neighbors of the
+bottom/rightmost cells)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parms</code></td>
+<td>
+<p>A named list of parameters, which should be all numeric, single values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>all_states</code></td>
+<td>
+<p>The complete set of states of the model (a character vector). If
+unspecified, it will be guessed from the transition rules, but it is a good idea
+to pass it here to make sure the model definition is correct.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>check_model</code></td>
+<td>
+<p>A check of the model definition is done to make sure there
+are no issues with it (e.g. probabilities outside the [0,1] interval, or an
+unsupported model definition). A quick check that should catch most problems is
+performed if check_model is "quick", an extensive check that tests all possible
+neighborhood configurations is done with "full", and no check is performed with
+"none".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Whether information should be printed when parsing the model
+definition.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>epsilon</code></td>
+<td>
+<p>A small value under which the internal model coefficients values are
+considered to be equal to zero. The default value should work well here, except
+if you run models that have extremely small transition probabilities (&lt;1e-8).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixed_neighborhood</code></td>
+<td>
+<p>When not using wrapping around the edges 
+(<code>wrap = FALSE</code>), the number of neighbors per cell is variable, which can 
+slow down the simulation. Set this option to <code>TRUE</code> to consider that the number
+of neighbors is always four or eight, regardless of the position of the cell in the
+landscape, at the cost of approximate dynamics at the edges of the landscape.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>from</code></td>
+<td>
+<p>The state from which the transition is defined</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>to</code></td>
+<td>
+<p>The state to which the transition is defined</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prob</code></td>
+<td>
+<p>a one-sided formula describing the probability of transition between the two
+states (see Details section for more information).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This help page describes in detail technical points related to the definition of 
+models in <code>chouca</code>. If this is your first time working with <code>chouca</code>, 
+you may like the longer introduction in the vignette, accessible using 
+<code>vignette("chouca-package")</code>.
+</p>
+<p><code>camodel</code> allows defining a stochastic cellular automaton model by its set of
+transition rules. These are defined by a set of calls to the <code>transition()</code>
+function. Each of these calls defines the two states of the transition, and the
+probability as a one-sided formula involving constants and the special vectors 
+p and q.
+</p>
+<p><code>transition()</code> calls takes three arguments: the state from which the transition
+is defined, the state to which the transition goes, and a transition probability,
+defined as a one-sided formula. This formula can include numerical constants,
+parameters defined in the named list <code>parms</code>, and any combination of
+<code>p['a']</code> and <code>q['b']</code>, which respectively represent the proportion 
+of cells in a landscape in state 'a', and the proportion of neighbors of a given cell
+in state 'b' ('a', and 'b' being, of course, any of the possible states defined in the
+model). Such formula could typically look like <code>~ 0.2 + 0.3 * p["a"] + q["b"]</code>. 
+See below for examples of model definitions. 
+</p>
+<p>It is important to remember when using this function that <code>chouca</code> only
+supports models where the probabilities depend on constant parameters, the global
+proportion of each state in the landscape, and the local proportion of cells around
+a given cell. In other words, all transition probabilities should have the following 
+functional form: 
+</p>
+<p style="text-align: center;"><code class="reqn">a_0 + \sum_{k=1}^S g_k(q_k) + s(q, q) + s(p, q) + s(q, q)</code>
+</p>
+
+<p>where <code class="reqn">a_0</code> is a constant, <code class="reqn">g_k</code> are univariate functions of <code class="reqn">q_k</code>, 
+the proportions of neighbors of a cell in state k, and <code class="reqn">q</code> is the vector 
+containing all the <code class="reqn">q_k</code> for k between <code class="reqn">1</code> and <code class="reqn">S</code>, the total number of
+states in the model. Similarly, <code class="reqn">p</code> is the length-<code class="reqn">S</code> vector containing the
+proportion of cells in each state in the whole grid. <code class="reqn">s</code> above is the sum, defined 
+for two vectors <code class="reqn">x = (x_1, ..., x_S)</code> and <code class="reqn">y = (y_1, ..., y_S)</code> as 
+</p>
+<p style="text-align: center;"><code class="reqn"> 
+  a_1 x_1^{\alpha_1} y_1^{\beta_1} + 
+  a_2 x_1^{\alpha_2} y_2^{\beta_2} + 
+  a_3 x_1^{\alpha_3} y_3^{\beta_3} + 
+  a_4 x_2^{\alpha_3} y_1^{\beta_3} + 
+  a_4 x_2^{\alpha_3} y_2^{\beta_3} + 
+  \dots + 
+  a_K x_S^{\alpha_K} y_S^{\beta_K}
+</code>
+</p>
+
+<p>where the <code class="reqn">a_k</code>, <code class="reqn">\alpha_k</code> and <code class="reqn">\beta_k</code> are constants for all <code class="reqn">k</code>, 
+and <code class="reqn">K</code> is the total number of terms (equal to <code class="reqn">S^2</code>). Note that 
+<code class="reqn">\alpha_K</code> and <code class="reqn">\beta_K</code> are capped to 5. This can be overriden using
+<code>options(chouca.degmax = n)</code>, but we do not recommend changing it as higher 
+values typically make the package slow and/or leads to numerical instabilities.
+The functions <code class="reqn">g_k</code> above can be any univariate functions of <code class="reqn">q_k</code>, so
+<code>chouca</code> effectively supports any type of transition rule involving the 
+neighborhood of a cell, including some 'threshold' rules that involve a single state 
+(and only one). For example, a rule such as "more than
+5 neighbors in a given state make a cell switch from state A to B" is OK, but
+combining states may not be supported, such as "more than 5
+neighbors in state A *and* 2 in state B means a cell switches from A to B". When in
+doubt, just write your model, and <code>chouca</code> will tell you if it cannot run it
+accurately by running model checks.
+</p>
+<p>Model checks are controlled by the argument <code>check_model</code>. When set to "quick" 
+or "full", a check is performed to make sure the functional form above is able to
+accurately represent probabilities of transitions in the model, with "full" enabling
+more extensive testing, and "none" removing it entirely. Coefficients in the formula 
+above are rounded down to zero when below <code>epsilon</code>. This may be an issue if 
+your transition probabilities are close to zero: consider reducing <code>epsilon</code> to 
+a smaller value in this case, or adjusting your model parameters. 
+</p>
+<p>When space does not wrap around (<code>wrap = FALSE</code>), cells in the corners
+or in the edges will have a lower number of neighbors. The proportions
+of cells in a given state <code class="reqn">k</code>, <code class="reqn">q_k</code>, will thus be computed with a reduced
+number of cells. For example, a cell in a corner will have only 2 neighbors
+when using a 4x4 neighborhood, so <code class="reqn">q_k</code> is computed using only two cells, and 
+can be only equal to 0, 0.5 or 1. 
+</p>
+<p>To run a model once it is defined, the function <code>run_camodel</code> can be
+used, or <code>run_meanfield</code> for a mean-field approximation. An initial
+landscape for a simulation can be created using <code>generate_initmat</code>.
+</p>
+<p>You can update a model definition with new parameters (all of them or a subset)
+using the <code>update</code> method. The model graph with the 
+different states and transitions can be displayed using the <code>plot</code> method 
+(this requires the package igraph).
+</p>
+
+
+<h3>Value</h3>
+
+<p>This function returns a <code>list</code> object with class <code>ca_model</code>, with 
+the following named components. Please note that most are for internal use and may 
+change with package updates. 
+</p>
+
+<dl>
+<dt><code>transitions</code></dt>
+<dd>
+<p>the list of transitions of the model, as returned 
+by <code>transition</code> </p>
+</dd>
+<dt><code>nstates</code></dt>
+<dd>
+<p>the number of states of the model</p>
+</dd>
+<dt><code>parms</code></dt>
+<dd>
+<p>the parameter values used for the model</p>
+</dd>
+<dt>
+<code>beta_0</code>,<code>beta_q</code>, <code>beta_pp</code>, <code>beta_pq</code>, <code>beta_qq</code>
+</dt>
+<dd> 
+<p>internal tables used to represent probabilities of transitions when running
+simulations, these tables are for internal use and probably not interesting for 
+end users, but more information is provided in the package source code</p>
+</dd>
+<dt><code>wrap</code></dt>
+<dd>
+<p>Whether the model uses a toric space that wraps around the edge</p>
+</dd>
+<dt><code>neighbors</code></dt>
+<dd>
+<p>The type of neighborhood (4 or 8)</p>
+</dd>
+<dt><code>epsilon</code></dt>
+<dd>
+<p>The <code>epsilon</code> values used in the model definition, below 
+which transition probabilities are assumed to be zero</p>
+</dd>
+<dt><code>xpoints</code></dt>
+<dd>
+<p>(for internal use only) The number of values used to 
+represent the proportion of neighbors of a cell in each state</p>
+</dd>
+<dt>
+<code>max_error</code>, <code>max_rel_error</code>
+</dt>
+<dd>
+<p>vector of numeric values containing 
+the maximum error and maximum relative error on each transition probability</p>
+</dd>
+<dt><code>fixed_neighborhood</code></dt>
+<dd>
+<p>flag equal to <code>TRUE</code> when cells have
+a fixed number of neighbors</p>
+</dd>
+</dl>
+<h3>Functions</h3>
+
+
+<ul><li> <p><code>transition()</code>: 
+</p>
+</li></ul>
+<h3>See Also</h3>
+
+<p>run_camodel, run_meanfield, generate_initmat, run_meanfield,
+update.ca_model, ca_library
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Redefine Kubo's 1996 forest gap model
+kubo &lt;- camodel(
+  transition(from = "TREE",
+             to   = "EMPTY",
+             prob = ~ d + delta * q["EMPTY"] ),
+  transition(from = "EMPTY",
+             to   = "TREE",
+             prob = ~ alpha),
+  parms = list(d = 0.125,
+               delta = 0.5,
+               alpha = 0.2),
+  all_states = c("EMPTY", "TREE"),
+  neighbors = 4,
+  wrap = TRUE
+)
+
+# Display it as a graph
+plot(kubo)
+
+# A fun plant model
+mod &lt;- camodel(
+  transition("plant", "empty", ~ death * ( 1 - (2*q["plant"]-1)^2) ),
+  transition("empty", "plant", ~ q["plant"]^2 ),
+  all_states = c("empty", "plant"),
+  wrap = TRUE,
+  neighbors = 4,
+  parms = list(death = 0.2496)
+)
+
+
+# Conway's Game of Life
+mod &lt;- camodel(
+  transition("LIVE", "DEAD", ~ q["LIVE"] &lt; (2/8) | q["LIVE"] &gt; (3/8)),
+  transition("DEAD", "LIVE", ~ q["LIVE"] == (3/8)),
+  wrap = TRUE,
+  neighbors = 8,
+  all_states = c("DEAD", "LIVE")
+)
+
+# A spiral-generating rock-paper-scissor model
+mod &lt;- camodel(
+  transition(from = "r", to = "p", ~ q["p"] &gt; 0.25 ),
+  transition(from = "p", to = "c", ~ q["c"] &gt; 0.25 ),
+  transition(from = "c", to = "r", ~ q["r"] &gt; 0.25 ),
+  parms = list(prob = 1),
+  wrap = TRUE,
+  neighbors = 8
+)
+
+# Display the model as a graph
+plot(mod)
+
+# Running the above model (see also the help files for the relevant functions)
+init &lt;- generate_initmat(mod, c(r = 1/3, p = 1/3, c = 1/3), nrow = 128)
+out &lt;- run_camodel(mod, init, times = seq(0, 128))
+plot(out)
+
+# Update a model definition using update()
+mod &lt;- camodel(
+  transition("plant", "empty", ~ m),
+  transition("empty", "plant", ~ r * q["plant"] * ( 1 - q["plant"] ) ),
+  all_states = c("empty", "plant"),
+  wrap = TRUE,
+  neighbors = 4,
+  parms = list(m = 0.35, r = 0.4)
+)
+
+mod_updated &lt;- update(mod, parms = list(m = 0.05, r = 1))
+init &lt;- generate_initmat(mod_updated, c(plant = 0.8, empty = 0.2), nrow = 128)
+out &lt;- run_camodel(mod_updated, init, times = seq(0, 128))
+plot(out)
+image(out)
+
+# You can also specify only part of the parameters, the others will be
+# kept to their original values
+mod_updated &lt;- update(mod, parms = list(m = 0.035))
+
+</code></pre>
+
+
+</div>

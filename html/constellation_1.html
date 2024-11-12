@@ -1,0 +1,198 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>bundle</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Identify bundle items that occur around a given event</h2>
+
+<h3>Description</h3>
+
+<p>A function that reads in a data frame of incident events along with multiple
+time series data frames of bundle items and calculates whether or not each
+bundle item occurs within a defined time window around the incident event.
+The user must provide names for each bundle item, define the time window
+around the incident events to consider, a name for the incident event, and
+variables to use to join the different tables. Lastly, the user can specify
+whether to return all instances that each bundle item occurs around the
+incident event, or whether to pull only the first or last instant for each
+bundle item.
+All time series data frames must contain columns for joining the tables (
+join_key) and time stamps (time_var). The time_var column must be class 
+POSIXct in all the data frames.
+This function can ingest an arbitrary number of data frames for different
+bundle items around an incident event.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">bundle(events, ..., bundle_names, window_hours_pre, window_hours_post, join_key,
+  time_var, event_name, mult = c("all", "first", "last"))
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>events</code></td>
+<td>
+<p>A time series data frame of incident events. The bundle events
+are searched for around a given time window of these events. The events
+data frame must include the columns 'join_key' and 'time_var'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>An arbitrary number of time series data frames that each include
+the columns 'join_key' and 'time_var'. Each data frame consists of a bundle
+item that is important to find around the specified events.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bundle_names</code></td>
+<td>
+<p>A vector of strings specifying the name of each
+event. The order of strings in the vector should align with the order of
+data frames passed in '...'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>window_hours_pre</code></td>
+<td>
+<p>A single numeric or vector of numerics speficying
+. the number of hours before the events in the events data frame that each
+bundle item is considered relevant. If a single numeric is passed, that
+time window before the events is applied to all bundle items.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>window_hours_post</code></td>
+<td>
+<p>A single numeric or vector of numerics speficying
+. the number of hours after the events in the events data frame that each
+bundle item is considered relevant. If a single numeric is passed, that
+time window after the events is applied to all bundle items.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>join_key</code></td>
+<td>
+<p>A string name of the column to join all time series data
+frames</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_var</code></td>
+<td>
+<p>A string name of the time stamp column in all time series
+data frames. The class of time_var must be POSIXct in all data frames.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>event_name</code></td>
+<td>
+<p>A string name of the events in the events data frame</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mult</code></td>
+<td>
+<p>A string specifying whether to return the first, last, or all
+instance(s) of every bundle item occurring within the specified time window
+of events. The default value is all.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A data.frame, data.table with a time stamp for every event of
+interest, columns for the start and end of the time window of interest,
+and columns for every bundle item. The value in bundle item columns is
+the timestamp (time_var) that the bundle item is observed within the given
+window.
+</p>
+
+
+<h3>Imported functions</h3>
+
+<p>foverlaps() from data.table and general data.table syntax
+</p>
+
+
+<h3>Errors</h3>
+
+<p>This function returns errors for:
+</p>
+
+<ul>
+<li>
+<p> missing arguments (only the mult argument has a default value)
+</p>
+</li>
+<li>
+<p> passing arguments with invalid classes (events and bundle items must
+be data frames, bundle_names must be a string, window_hours_pre and
+window_hours_post must be numerics, and event_name must be a string)
+</p>
+</li>
+<li>
+<p> passing an invalid mult value
+</p>
+</li>
+<li>
+<p> passing join_key or time_var values that are not column names in all
+time series data frames
+</p>
+</li>
+<li>
+<p> passing an invalid number of window_hours_pre or window_hours_post
+values (1 or the number of bundle data frames).
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(data.table)
+temp &lt;- as.data.table(vitals[VARIABLE == "TEMPERATURE"])
+pulse &lt;- as.data.table(vitals[VARIABLE == "PULSE"])
+resp &lt;- as.data.table(vitals[VARIABLE == "RESPIRATORY_RATE"])
+
+temp[, RECORDED_TIME := as.POSIXct(RECORDED_TIME,
+  format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")]
+pulse[, RECORDED_TIME := as.POSIXct(RECORDED_TIME,
+  format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")]
+resp[, RECORDED_TIME := as.POSIXct(RECORDED_TIME,
+  format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")]
+
+# Pass single window_hours_pre
+# All instances of bundle items within time window of event
+bundle(temp, pulse, resp,
+    bundle_names = c("PLATELETS", "INR"), window_hours_pre = 24,
+    window_hours_post = c(6, 6), join_key = "PAT_ID",
+    time_var = "RECORDED_TIME", event_name = "CREATININE", mult = "all")
+# Pass different window_hours_pre for each bundle time series data frame
+# All instances of bundle items within time window of event
+bundle(temp, pulse, resp,
+    bundle_names = c("PLATELETS", "INR"), window_hours_pre = c(24, 12),
+    window_hours_post = c(6, 6), join_key = "PAT_ID",
+    time_var = "RECORDED_TIME", event_name = "CREATININE", mult = "all")
+# Pass different window_hours_pre for each bundle time series data frame
+# First instance of each bundle item within time window of event
+bundle(temp, pulse, resp,
+    bundle_names = c("PLATELETS", "INR"), window_hours_pre = c(24, 12),
+    window_hours_post = c(6, 6), join_key = "PAT_ID",
+    time_var = "RECORDED_TIME", event_name = "CREATININE", mult = "first")
+# Pass different window_hours_pre for each bundle time series data frame
+# Last instance of each bundle item within time window of event
+bundle(temp, pulse, resp,
+    bundle_names = c("PLATELETS", "INR"), window_hours_pre = c(24, 12),
+    window_hours_post = c(6, 6), join_key = "PAT_ID",
+    time_var = "RECORDED_TIME", event_name = "CREATININE", mult = "last")
+
+</code></pre>
+
+
+</div>

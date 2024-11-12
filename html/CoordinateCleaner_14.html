@@ -1,0 +1,220 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cc_outl</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Identify Geographic Outliers in Species Distributions</h2>
+
+<h3>Description</h3>
+
+<p>Removes out or flags records that are outliers in geographic space according
+to the method defined via the <code>method</code> argument. Geographic outliers
+often represent erroneous coordinates, for example due to data entry errors,
+imprecise geo-references, individuals in horticulture/captivity.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cc_outl(
+  x,
+  lon = "decimalLongitude",
+  lat = "decimalLatitude",
+  species = "species",
+  method = "quantile",
+  mltpl = 5,
+  tdi = 1000,
+  value = "clean",
+  sampling_thresh = 0,
+  verbose = TRUE,
+  min_occs = 7,
+  thinning = FALSE,
+  thinning_res = 0.5
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>data.frame. Containing geographical coordinates and species names.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lon</code></td>
+<td>
+<p>character string. The column with the longitude coordinates.
+Default = “decimalLongitude”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lat</code></td>
+<td>
+<p>character string. The column with the latitude coordinates.
+Default = “decimalLatitude”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>species</code></td>
+<td>
+<p>character string. The column with the species name. Default =
+“species”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>character string.  Defining the method for outlier selection.
+See details. One of “distance”, “quantile”, “mad”.
+Default = “quantile”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mltpl</code></td>
+<td>
+<p>numeric. The multiplier of the interquartile range
+(<code>method == 'quantile'</code>) or median absolute deviation (<code>method ==
+'mad'</code>)to identify outliers. See details.  Default = 5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tdi</code></td>
+<td>
+<p>numeric.  The minimum absolute distance (<code>method ==
+'distance'</code>) of a record to all other records of a species to be identified
+as outlier, in km. See details. Default = 1000.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>value</code></td>
+<td>
+<p>character string.  Defining the output value. See value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sampling_thresh</code></td>
+<td>
+<p>numeric. Cut off threshold for the sampling
+correction. Indicates the quantile of sampling in which outliers should be
+ignored. For instance, if <code>sampling_thresh</code> == 0.25, records in the
+25
+(no sampling correction).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>logical. If TRUE reports the name of the test and the number
+of records flagged.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min_occs</code></td>
+<td>
+<p>Minimum number of geographically unique datapoints needed for
+a species to be tested. This is necessary for reliable outlier estimation.
+Species with fewer than min_occs records will not be tested and the output
+value will be 'TRUE'. Default is to 7. If <code>method == 'distance'</code>,
+consider a lower threshold.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thinning</code></td>
+<td>
+<p>forces a raster approximation for the distance calculation.
+This is routinely used for species with more than 10,000 records for
+computational reasons, but can be enforced for smaller datasets, which is
+recommended when sampling is very uneven.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thinning_res</code></td>
+<td>
+<p>The resolution for the spatial thinning in decimal
+degrees. Default = 0.5.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The method for outlier identification depends on the <code>method</code> argument.
+If “quantile”: a boxplot method is used and records are flagged as
+outliers if their <em>mean</em> distance to all other records of the same
+species is larger than mltpl * the interquartile range of the mean distance
+of all records of this species. If “mad”: the median absolute
+deviation is used. In this case a record is flagged as outlier, if the
+<em>mean</em> distance to all other records of the same species is larger than
+the median of the mean distance of all points plus/minus the mad of the mean
+distances of all records of the species * mltpl. If “distance”:
+records are flagged as outliers, if the <em>minimum</em> distance to the next
+record of the species is &gt; <code>tdi</code>. For species with records from &gt; 10000
+unique locations a random sample of 1000 records is used for the distance
+matrix calculation. The test skips species with fewer than <code>min_occs</code>,
+geographically unique records.
+</p>
+<p>The likelihood of occurrence records being erroneous outliers is linked to
+the sampling effort in any given location. To account for this, the
+sampling_cor option fetches the number of occurrence records available from
+www.gbif.org, per country as a proxy of sampling effort. The outlier test
+(the mean distance) for each records is than weighted by the log transformed
+number of records per square kilometre in this country. See for
+<a href="https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13152">https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13152</a>
+an example and further explanation of the outlier test.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Depending on the ‘value’ argument, either a <code>data.frame</code>
+containing the records considered correct by the test (“clean”) or a
+logical vector (“flagged”), with TRUE = test passed and FALSE = test
+failed/potentially problematic . Default = “clean”.
+</p>
+
+
+<h3>Note</h3>
+
+<p>See <a href="https://ropensci.github.io/CoordinateCleaner/">https://ropensci.github.io/CoordinateCleaner/</a> for more
+details and tutorials.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other Coordinates: 
+<code>cc_aohi()</code>,
+<code>cc_cap()</code>,
+<code>cc_cen()</code>,
+<code>cc_coun()</code>,
+<code>cc_dupl()</code>,
+<code>cc_equ()</code>,
+<code>cc_gbif()</code>,
+<code>cc_inst()</code>,
+<code>cc_iucn()</code>,
+<code>cc_sea()</code>,
+<code>cc_urb()</code>,
+<code>cc_val()</code>,
+<code>cc_zero()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+x &lt;- data.frame(species = letters[1:10],
+                decimalLongitude = runif(100, -180, 180),
+                decimalLatitude = runif(100, -90,90))
+
+cc_outl(x)
+cc_outl(x, method = "quantile", value = "flagged")
+cc_outl(x, method = "distance", value = "flagged", tdi = 10000)
+cc_outl(x, method = "distance", value = "flagged", tdi = 1000)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,130 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>confSAM</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Permutation-based confidence bounds for the false discovery proportion</h2>
+
+<h3>Description</h3>
+
+<p>Computes a confidence upper bound for the False Discovery Proportion (FDP). The input required is a matrix containing test statistics (or p-values) for (randomly) permuted versions of the data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">  confSAM(p, PM, includes.id=TRUE, cutoff=0.01, reject="small", alpha=0.05,
+          method="simple",  ncombs=1000)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p>A vector containing the p-values for the original (unpermuted) data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PM</code></td>
+<td>
+<p>A matrix (with <code>length(p)</code> columns) containing for each permutation the p-values corresponding to the permuted version of the data. If <code>PM</code> contains the original values <code>p</code>, then they should be in the first row of PM.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>includes.id</code></td>
+<td>
+<p>Set this to <code>FALSE</code> if PM does not contain the original p-values <code>p</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cutoff</code></td>
+<td>
+<p>A number or a vector of length <code>length(p)</code>. In the first case all hypotheses with test statistics exceeding <code>cutoff</code> are rejected. In the second case there is a separate cut-off for each hypothesis.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reject</code></td>
+<td>
+<p>If <code>reject="small"</code>, then all hypotheses with test statistics (p-values) smaller than <code>cutoff</code> are rejected.
+If <code>reject="larger"</code>, then all hypotheses with test statistics larger than <code>cutoff</code> are rejected.
+If <code>reject="absolute"</code>, then all hypotheses with test statistics with absolute value larger than <code>cutoff</code> are rejected.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>1-alpha is the desired confidence level of the bounds.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>If <code>method="simple"</code>, then a basic (fast) bound for V (the number of false positives) is computed.
+If <code>method="full"</code>, then a (computationally intensive) closed testing-based bound for V is computed. This is usually infeasible when the number of rejections is large.
+If <code>method="approx"</code>, then an approximation of the closed testing-based bound for V is computed. The resulting bound may be anti-conservative if <code>ncombs</code> is too small.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncombs</code></td>
+<td>
+<p>Only applies when <code>method="approx"</code>. It is the number of random combinations that the approximation method checks. Larger values of ncombs give more reliable results.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A vector with three values is returned. The first value is the number if rejections. The second value is a basic median unbiased estimate of the number of false positives V. This estimate coincides with the simple upper bound for alpha=0.5.  The third value is a (1-alpha)-confidence upper bound for V (it depends on the argument <code>method</code> which bound this is.)</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#This is a fast example. It is recommended to take w and ncombs larger in practice.
+set.seed(423)
+m &lt;- 100   #number of hypotheses
+n &lt;- 10    #the amount of subjects is 2n (n cases, n controls).
+w &lt;- 50   #number of random permutations. Here we take w small for computational speed
+
+X &lt;- matrix(rnorm((2*n)*m), 2*n, m)
+X[1:n,1:50] &lt;- X[1:n,1:50]+1.5 # the first 50 hypotheses are false
+#(increased mean for the first n individuals).
+
+y &lt;- c(numeric(n)+1,numeric(n)-1)
+Y &lt;- t(replicate(w, sample(y, size=2*n, replace=FALSE)))
+Y[1,] &lt;- y  #add identity permutation
+
+pvalues &lt;- matrix(nrow=w,ncol=m)
+for(j in 1:w){
+  for(i in 1:m){
+    pvalues[j,i] &lt;- t.test( X[Y[j,]==1,i], X[Y[j,]==-1,i] ,
+                            alternative="two.sided" )$p.value
+  }
+}
+
+## number of rejections:
+confSAM(p=pvalues[1,], PM=pvalues, cutoff=0.05, alpha=0.1, method="simple")[1]
+
+## basic median unbiased estimate of #false positives:
+confSAM(p=pvalues[1,], PM=pvalues, cutoff=0.05, alpha=0.1, method="simple")[2]
+
+## basic (1-alpha)-upper bound for #false positives:
+confSAM(p=pvalues[1,], PM=pvalues, cutoff=0.05, alpha=0.1, method="simple")[3]
+
+## potentially smaller (1-alpha)-upper bound for #false positives:
+## (taking 'ncombs' much larger recommended)
+confSAM(p=pvalues[1,], PM=pvalues, cutoff=0.05, alpha=0.1, method="approx",
+        ncombs=50)[3]
+
+
+## actual number of false positives:
+sum(pvalues[1,51:100]&lt;0.05)
+
+</code></pre>
+
+
+</div>

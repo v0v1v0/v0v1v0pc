@@ -1,0 +1,263 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>gbm_star</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fitting STAR Gradient Boosting Machines via EM algorithm</h2>
+
+<h3>Description</h3>
+
+<p>Compute the MLEs and log-likelihood for the Gradient Boosting Machines (GBM) STAR model.
+The STAR model requires a *transformation* and an *estimation function* for the conditional mean
+given observed data. The transformation can be known (e.g., log or sqrt) or unknown
+(Box-Cox or estimated nonparametrically) for greater flexibility.
+The estimator in this case is a GBM.
+Standard function calls including <code>fitted</code> and <code>residuals</code> apply.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">gbm_star(
+  y,
+  X,
+  X.test = NULL,
+  transformation = "np",
+  y_max = Inf,
+  sd_init = 10,
+  tol = 10^-10,
+  max_iters = 1000,
+  n.trees = 100,
+  interaction.depth = 1,
+  shrinkage = 0.1,
+  bag.fraction = 1
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p><code>n x 1</code> vector of observed counts</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p><code>n x p</code> matrix of predictors</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X.test</code></td>
+<td>
+<p><code>m x p</code> matrix of out-of-sample predictors</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>transformation</code></td>
+<td>
+<p>transformation to use for the latent data; must be one of
+</p>
+
+<ul>
+<li>
+<p> "identity" (identity transformation)
+</p>
+</li>
+<li>
+<p> "log" (log transformation)
+</p>
+</li>
+<li>
+<p> "sqrt" (square root transformation)
+</p>
+</li>
+<li>
+<p> "np" (nonparametric transformation estimated from empirical CDF)
+</p>
+</li>
+<li>
+<p> "pois" (transformation for moment-matched marginal Poisson CDF)
+</p>
+</li>
+<li>
+<p> "neg-bin" (transformation for moment-matched marginal Negative Binomial CDF)
+</p>
+</li>
+<li>
+<p> "box-cox" (box-cox transformation with learned parameter)
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y_max</code></td>
+<td>
+<p>a fixed and known upper bound for all observations; default is <code>Inf</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sd_init</code></td>
+<td>
+<p>add random noise for EM algorithm initialization scaled by <code>sd_init</code>
+times the Gaussian MLE standard deviation; default is 10</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol</code></td>
+<td>
+<p>tolerance for stopping the EM algorithm; default is 10^-10;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_iters</code></td>
+<td>
+<p>maximum number of EM iterations before stopping; default is 1000</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.trees</code></td>
+<td>
+<p>Integer specifying the total number of trees to fit.
+This is equivalent to the number of iterations and the number of basis functions in the additive expansion.
+Default is 100.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interaction.depth</code></td>
+<td>
+<p>Integer specifying the maximum depth of each tree
+(i.e., the highest level of variable interactions allowed).
+A value of 1 implies an additive model, a value of 2 implies a model with up to 2-way interactions, etc.
+Default is 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>shrinkage</code></td>
+<td>
+<p>a shrinkage parameter applied to each tree in the expansion.
+Also known as the learning rate or step-size reduction; 0.001 to 0.1 usually work, but a smaller learning rate typically requires more trees.
+Default is 0.1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bag.fraction</code></td>
+<td>
+<p>the fraction of the training set observations randomly selected to propose the next tree in the expansion.
+This introduces randomnesses into the model fit. If bag.fraction &lt; 1 then running the same model twice will result in similar but different fits.
+Default is 1 (for a deterministic prediction).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>STAR defines a count-valued probability model by
+(1) specifying a Gaussian model for continuous *latent* data and
+(2) connecting the latent data to the observed data via a
+*transformation and rounding* operation. The Gaussian model in
+this case is a GBM.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a list with the following elements:
+</p>
+
+<ul>
+<li> <p><code>fitted.values</code>: the fitted values at the MLEs (training)
+</p>
+</li>
+<li> <p><code>fitted.values.test</code>: the fitted values at the MLEs (testing)
+</p>
+</li>
+<li> <p><code>g.hat</code> a function containing the (known or estimated) transformation
+</p>
+</li>
+<li> <p><code>sigma.hat</code> the MLE of the standard deviation
+</p>
+</li>
+<li> <p><code>mu.hat</code> the MLE of the conditional mean (on the transformed scale)
+</p>
+</li>
+<li> <p><code>z.hat</code> the estimated latent data (on the transformed scale) at the MLEs
+</p>
+</li>
+<li> <p><code>residuals</code> the Dunn-Smyth residuals (randomized)
+</p>
+</li>
+<li> <p><code>residuals_rep</code> the Dunn-Smyth residuals (randomized) for 10 replicates
+</p>
+</li>
+<li> <p><code>logLik</code> the log-likelihood at the MLEs
+</p>
+</li>
+<li> <p><code>logLik0</code> the log-likelihood at the MLEs for the *unrounded* initialization
+</p>
+</li>
+<li> <p><code>lambda</code> the Box-Cox nonlinear parameter
+</p>
+</li>
+<li> <p><code>gbmObj</code>: the object returned by gbm() at the MLEs
+</p>
+</li>
+<li>
+<p> and other parameters that
+(1) track the parameters across EM iterations and
+(2) record the model specifications
+</p>
+</li>
+</ul>
+<h3>Note</h3>
+
+<p>Infinite latent data values may occur when the transformed
+Gaussian model is highly inadequate. In that case, the function returns
+the *indices* of the data points with infinite latent values, which are
+significant outliers under the model. Deletion of these indices and
+re-running the model is one option, but care must be taken to ensure
+that (i) it is appropriate to treat these observations as outliers and
+(ii) the model is adequate for the remaining data points.
+</p>
+
+
+<h3>References</h3>
+
+<p>Kowal, D. R., &amp; Wu, B. (2021).
+Semiparametric count data regression for self‐reported mental health.
+<em>Biometrics</em>. <a href="https://doi.org/10.1111/biom.13617">doi:10.1111/biom.13617</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Simulate data with count-valued response y:
+sim_dat = simulate_nb_friedman(n = 100, p = 10)
+y = sim_dat$y; X = sim_dat$X
+
+# EM algorithm for STAR (using the log-link)
+fit_em = gbm_star(y = y, X = X,
+                 transformation = 'log')
+
+# Evaluate convergence:
+plot(fit_em$logLik_all, type='l', main = 'GBM-STAR-log', xlab = 'Iteration', ylab = 'log-lik')
+
+# Fitted values:
+y_hat = fitted(fit_em)
+plot(y_hat, y);
+
+# Residuals:
+plot(residuals(fit_em))
+qqnorm(residuals(fit_em)); qqline(residuals(fit_em))
+
+# Log-likelihood at MLEs:
+fit_em$logLik
+
+</code></pre>
+
+
+</div>

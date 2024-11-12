@@ -1,0 +1,195 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ard_categorical</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Categorical ARD Statistics</h2>
+
+<h3>Description</h3>
+
+<p>Compute Analysis Results Data (ARD) for categorical summary statistics.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ard_categorical(data, ...)
+
+## S3 method for class 'data.frame'
+ard_categorical(
+  data,
+  variables,
+  by = dplyr::group_vars(data),
+  strata = NULL,
+  statistic = everything() ~ c("n", "p", "N"),
+  denominator = NULL,
+  fmt_fn = NULL,
+  stat_label = everything() ~ default_stat_labels(),
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>(<code>data.frame</code>)<br>
+a data frame</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Arguments passed to methods.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>variables</code></td>
+<td>
+<p>(<code>tidy-select</code>)<br>
+columns to include in summaries. Default is <code>everything()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by, strata</code></td>
+<td>
+<p>(<code>tidy-select</code>)<br>
+columns to tabulate by/stratify by for tabulation.
+Arguments are similar, but with an important distinction:
+</p>
+<p><code>by</code>: results are tabulated by <strong>all combinations</strong> of the columns specified,
+including unobserved combinations and unobserved factor levels.
+</p>
+<p><code>strata</code>: results are tabulated by <strong>all <em>observed</em> combinations</strong> of the
+columns specified.
+</p>
+<p>Arguments may be used in conjunction with one another.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>statistic</code></td>
+<td>
+<p>(<code>formula-list-selector</code>)<br>
+a named list, a list of formulas,
+or a single formula where the list element one or more of  <code>c("n", "N", "p")</code>
+(or the RHS of a formula).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>denominator</code></td>
+<td>
+<p>(<code>data.frame</code>, <code>integer</code>)<br>
+Specify this <em>optional</em> argument to change the denominator,
+e.g. the <code>"N"</code> statistic. Default is <code>NULL</code>. See below for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fmt_fn</code></td>
+<td>
+<p>(<code>formula-list-selector</code>)<br>
+a named list, a list of formulas,
+or a single formula where the list element is a named list of functions
+(or the RHS of a formula),
+e.g. <code style="white-space: pre;">⁠list(mpg = list(mean = \(x) round(x, digits = 2) |&gt; as.character()))⁠</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stat_label</code></td>
+<td>
+<p>(<code>formula-list-selector</code>)<br>
+a named list, a list of formulas, or a single formula where
+the list element is either a named list or a list of formulas defining the
+statistic labels, e.g. <code>everything() ~ list(n = "n", p = "pct")</code> or
+<code>everything() ~ list(n ~ "n", p ~ "pct")</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>an ARD data frame of class 'card'
+</p>
+
+
+<h3>Denominators</h3>
+
+<p>By default, the <code>ard_categorical()</code> function returns the statistics <code>"n"</code>, <code>"N"</code>, and
+<code>"p"</code>, where little <code>"n"</code> are the counts for the variable levels, and big <code>"N"</code> is
+the number of non-missing observations. The default calculation for the
+percentage is merely <code>p = n/N</code>.
+</p>
+<p>However, it is sometimes necessary to provide a different <code>"N"</code> to use
+as the denominator in this calculation. For example, in a calculation
+of the rates of various observed adverse events, you may need to update the
+denominator to the number of enrolled subjects.
+</p>
+<p>In such cases, use the <code>denominator</code> argument to specify a new definition
+of <code>"N"</code>, and subsequently <code>"p"</code>.
+The argument expects one of the following inputs:
+</p>
+
+<ul>
+<li>
+<p> a data frame. Any columns in the data frame that overlap with the <code>by</code>/<code>strata</code>
+columns will be used to calculate the new <code>"N"</code>.
+</p>
+</li>
+<li>
+<p> an integer. This single integer will be used as the new <code>"N"</code>
+</p>
+</li>
+<li>
+<p> a string: one of <code>"column"</code>, <code>"row"</code>, or <code>"cell"</code>. <code>"column"</code> is equivalent
+to <code>denominator=NULL</code>. <code>"row"</code> gives 'row' percentages where <code>by</code>/<code>strata</code>
+columns are the 'top' of a cross table, and the variables are the rows.
+<code>"cell"</code> gives percentages where the denominator is the number of non-missing
+rows in the source data frame.
+</p>
+</li>
+<li>
+<p> a structured data frame. The data frame will include columns from <code>by</code>/<code>strata</code>.
+The last column must be named <code>"...ard_N..."</code>. The integers in this column will
+be used as the updated <code>"N"</code> in the calculations.
+</p>
+</li>
+</ul>
+<h3>Other Statistics</h3>
+
+<p>In some cases, you may need other kinds of statistics for categorical variables.
+Despite the name, <code>ard_continuous()</code> can be used to obtain these statistics.
+</p>
+<p>In the example below, we calculate the mode of a categorical variable.
+</p>
+<div class="sourceCode r"><pre>get_mode &lt;- function(x) {
+  table(x) |&gt; sort(decreasing = TRUE) |&gt; names() |&gt; getElement(1L)
+}
+
+ADSL |&gt;
+  ard_continuous(
+    variables = AGEGR1,
+    statistic = list(AGEGR1 = list(mode = get_mode))
+  )
+#&gt; {cards} data frame: 1 x 8
+#&gt;   variable   context stat_name stat_label  stat fmt_fn
+#&gt; 1   AGEGR1 continuo…      mode       mode 65-80   &lt;fn&gt;
+#&gt; i 2 more variables: warning, error
+</pre></div>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">ard_categorical(ADSL, by = "ARM", variables = "AGEGR1")
+
+ADSL |&gt;
+  dplyr::group_by(ARM) |&gt;
+  ard_categorical(
+    variables = "AGEGR1",
+    statistic = everything() ~ "n"
+  )
+</code></pre>
+
+
+</div>

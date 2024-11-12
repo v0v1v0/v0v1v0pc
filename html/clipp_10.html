@@ -1,0 +1,258 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>pedigree_loglikelihood</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate the log-likelihoods of pedigrees</h2>
+
+<h3>Description</h3>
+
+<p>For one or more pedigrees, this function calculates the natural logarithm of
+the pedigree likelihood that is on page 117 of (Lange, 2002), given inputs
+that correspond to the terms in this formula.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">pedigree_loglikelihood(
+  dat,
+  geno_freq,
+  trans,
+  penet,
+  monozyg = NULL,
+  sum_loglik = TRUE,
+  ncores = 1,
+  load_balancing = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>dat</code></td>
+<td>
+<p>A data frame with rows corresponding to people and columns
+corresponding to the following variables (other variables can be included
+but will be ignored), which will be coerced to <code>character</code> type:
+</p>
+
+<ul>
+<li> <p><code>family</code> (optional), an identifier for each person's family, constant
+within families.  If this variable is not supplied then <code>dat</code> will be
+treated as a single pedigree.
+</p>
+</li>
+<li> <p><code>indiv</code>, an individual identifier for each person.  If there are any
+duplicated identifiers in the dataset then the family and an underscore
+(<code style="white-space: pre;">⁠_⁠</code>) will be prepended to all identifiers, and if any duplicates remain
+after this then the function will stop executing, with an error message.
+</p>
+</li>
+<li> <p><code>mother</code>, the individual identifier of each person's mother, or missing
+(<code>NA</code>) for founders.
+</p>
+</li>
+<li> <p><code>father</code>, the individual identifier of each person's father, or missing
+(<code>NA</code>) for founders.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>geno_freq</code></td>
+<td>
+<p>A vector of strictly positive numbers that sum to <code>1</code>.
+If the possible genotypes of the underlying genetic model are
+<code>1:length(geno_freq)</code> then <code>geno_freq[j]</code> is interpreted as the population
+frequency of genotype <code>j</code>, so <code>geno_freq</code> is essentially the
+function <code>Prior</code> in the pedigree likelihood on page 117 of (Lange, 2002).
+For certain genetic models that often occur in applications, these genotype
+frequencies can be calculated by <code>geno_freq_monogenic</code>,
+<code>geno_freq_phased</code>, etc.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trans</code></td>
+<td>
+<p>An <code>ngeno^2</code> by <code>ngeno</code> matrix of non-negative numbers whose rows
+all sum to <code>1</code>, where <code>ngeno = length(geno_freq)</code> is the number of possible
+genotypes. The rows of <code>trans</code> correspond to joint parental genotypes and
+the columns correspond to offspring genotypes.  If the possible genotypes
+are <code>1:length(geno_freq)</code> then the element
+<code>trans[ngeno * gm + gf - ngeno, go]</code> is interpreted as the conditional
+probability that a person has genotype <code>go</code>, given that his or her
+biological mother and father have genotypes <code>gm</code> and <code>gf</code>, respectively.
+So <code>trans</code> is essentially the transmission function <code>Tran</code> on page 117 of
+(Lange, 2002).  For certain genetic models that often occur in applications,
+this transmission matrix can be calculated by <code>trans_monogenic</code>,
+<code>trans_phased</code>, etc.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>penet</code></td>
+<td>
+<p>An <code>nrow(dat)</code> by <code>length(geno_freq)</code> matrix of non-negative
+numbers. The element <code>penet[i,j]</code> is interpreted as the conditional
+probability (or probability density) of the phenotype of the person
+corresponding to row <code>i</code> of <code>dat</code>, given that his or her genotype is <code>j</code>
+(where the possible genotypes are <code>1:length(geno_freq)</code>).
+Therefore, <code>penet</code> is essentially the penetrance function <code>Pen</code> on page 117
+of (Lange, 2002).  If any row of <code>penet</code> consists entirely of zeroes then
+the likelihood is <code>0</code>, so the returned log-likelihood will be <code>-Inf</code>.
+Note that genotype data can be incorporated into <code>penet</code> by regarding
+observed genotypes as part of the phenotype, i.e. by regarding observed
+genotypes as (possibly noisy) measurements of the underlying true genotypes.
+For example, if the observed genotype of person <code>i</code> is <code>1</code>
+(and if genotype measurement error is negligible) then <code>penet[i,j]</code>
+should be <code>0</code> for <code>j != 1</code> and <code>penet[i,1]</code> should be the same as if
+person <code>i</code> were ungenotyped.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>monozyg</code></td>
+<td>
+<p>An optional list that can be used to specify genetically
+identical persons, such as monozygotic twins, monozygotic triplets,
+a monozygotic pair within a set of dizygotic triplets, etc.
+Each element of the list should be a vector containing the individual
+identifiers of a group of genetically identical persons, e.g. if <code>dat</code>
+contains six sets of monozygotic twins and one set of monozygotic triplets
+then <code>monozyg</code> will be a list with seven elements, one element a vector of length
+three and the other six elements all vectors of length two. The order of the list and
+the orders within its elements do not affect the output of the function.
+Each group of genetically identical persons should contain two or more
+persons, the groups should not overlap, and all persons in each group must
+have the same (non-missing) parents.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sum_loglik</code></td>
+<td>
+<p>A logical flag.  Return a named vector giving the
+log-likelihood of each family if <code>sum_loglik</code> is <code>FALSE</code>, or return the sum
+of these log-likelihoods if <code>sum_loglik</code> is <code>TRUE</code> (the default).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncores</code></td>
+<td>
+<p>The number of cores to be used, with <code>ncores = 1</code> (the
+default) corresponding to non-parallel computing.  When <code>ncores &gt; 1</code>,
+the <code>parallel</code> package is used to parallelize the calculation by dividing
+the pedigrees among the different cores.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>load_balancing</code></td>
+<td>
+<p>A logical flag.  When <code>ncores &gt; 1</code>, parallelization is
+achieved either with the function <code>parallel::parLapply</code> (if <code>load_balancing</code>
+is <code>FALSE</code>) or with the load-balancing function <code>parallel::parLapplyLB</code>
+(if <code>load_balancing</code> is <code>TRUE</code>, the default). The load-balancing version
+will usually, but not always, be faster.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function provides a fast and general implementation of the
+Elston-Stewart algorithm to calculate the log-likelihoods of potentially
+large and complex pedigrees.  General references for the Elston-Stewart
+algorithm are (Elston &amp; Stewart, 1971), (Lange &amp; Elston, 1975) and
+(Cannings et al., 1978).
+</p>
+<p>Each family within <code>dat</code> should be a complete pedigree, meaning that each
+person should either have both parental identifiers missing (if a founder)
+or both non-missing (if a non-founder), and each (non-missing) mother or
+father should have a corresponding row of <code>dat</code>.
+</p>
+<p>Observed genotypes should be incorporated into <code>penet</code>, as described above.
+</p>
+<p>The function can handle pedigree loops, such as those
+caused by inbreeding or by two sisters having children with two brothers
+from an unrelated family (see (Totir et al., 2009) for a precise definition),
+though pedigrees with more than a few loops could greatly reduce the speed of
+the calculation.
+</p>
+<p>In <code>geno_freq</code>, <code>trans</code> and <code>penet</code>, the order of the possible genotypes
+must match, in the sense that the genotype that corresponds to element <code>j</code>
+of <code>geno_freq</code> must also correspond to column <code>j</code> of <code>trans</code> and <code>penet</code>,
+for each <code>j</code> in <code>1:length(geno_freq)</code>.
+</p>
+<p>Sex-specific genetics, such as X-linked genes or genetic loci with sex-specific
+recombination fractions, can be modelled by letting genotypes <code>1:nm</code> be
+the possible male genotypes and letting <code>(nm+1):(nm+nf)</code> be the possible
+female genotypes, where <code>nm</code> and <code>nf</code> are the number of possible genotypes
+for males and females, respectively.  Then, for example, <code>penet[i,j]</code> will
+be <code>0</code> if <code>j %in% 1:nm</code> and row <code>i</code> of <code>dat</code> corresponds to a female, and
+<code>penet[i,j]</code> will be <code>0</code> if <code>j %in% (nm+1):(nm+nf)</code> and row <code>i</code> of
+<code>dat</code> corresponds to a male.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Either a named vector giving the log-likelihood of each family
+or the sum of these log-likelihoods, depending on <code>sum_loglik</code> (see above).
+</p>
+
+
+<h3>References</h3>
+
+<p>Cannings C, Thompson E, Skolnick M. Probability functions
+on complex pedigrees. Advances in Applied Probability, 1978;10(1):26-61.
+</p>
+<p>Elston RC, Stewart J. A general model for the genetic analysis of pedigree
+data. Hum Hered. 1971;21(6):523-542.
+</p>
+<p>Lange K.  Mathematical and Statistical Methods for Genetic Analysis
+(second edition). Springer, New York. 2002.
+</p>
+<p>Lange K, Elston RC. Extensions to pedigree analysis I. Likehood calculations
+for simple and complex pedigrees. Hum Hered. 1975;25(2):95-105.
+</p>
+<p>Totir LR, Fernando RL, Abraham J. An efficient algorithm to compute marginal
+posterior genotype probabilities for every member of a pedigree with loops.
+Genet Sel Evol. 2009;41(1):52.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Load pedigree files and penetrance matrices
+data("dat_small", "penet_small", "dat_large", "penet_large")
+
+# Settings for a single biallelic locus in Hardy-Weinberg equilibrium
+# and with a minor allele frequency of 10%
+geno_freq &lt;- geno_freq_monogenic(c(0.9, 0.1))
+trans &lt;- trans_monogenic(2)
+
+# In dat_small, ora024 and ora027 are identical twins, and so are aey063 and aey064
+monozyg_small &lt;- list(c("ora024", "ora027"), c("aey063", "aey064"))
+
+# Calculate the log-likelihoods for 10 families, each with approximately
+# 100 family members
+pedigree_loglikelihood(
+  dat_small, geno_freq, trans, penet_small, monozyg_small, sum_loglik = FALSE, ncores = 2
+)
+
+# Calculate the log-likelihood for one family with approximately 10,000 family members
+# Note:  this calculation should take less than a minute on a standard desktop computer
+# Note:  parallelization would achieve nothing here because there is only one family
+str(dat_large)
+
+system.time(
+  ll &lt;- pedigree_loglikelihood(dat_large, geno_freq, trans, penet_large)
+)
+ll
+
+
+</code></pre>
+
+
+</div>

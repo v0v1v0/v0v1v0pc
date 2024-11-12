@@ -1,0 +1,200 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cluster.im.glm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Cluster-Adjusted Confidence Intervals And p-Values For GLM</h2>
+
+<h3>Description</h3>
+
+<p>Computes p-values and confidence intervals for GLM models based on cluster-specific model estimation (Ibragimov and Muller 2010). A separate model is estimated in each cluster, and then p-values and confidence intervals are computed based on a t/normal distribution of the cluster-specific estimates.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cluster.im.glm(
+  mod,
+  dat,
+  cluster,
+  ci.level = 0.95,
+  report = TRUE,
+  drop = FALSE,
+  truncate = FALSE,
+  return.vcv = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>mod</code></td>
+<td>
+<p>A model estimated using <code>glm</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dat</code></td>
+<td>
+<p>The data set used to estimate <code>mod</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cluster</code></td>
+<td>
+<p>A formula of the clustering variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ci.level</code></td>
+<td>
+<p>What confidence level should CIs reflect?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>report</code></td>
+<td>
+<p>Should a table of results be printed to the console?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop</code></td>
+<td>
+<p>Should clusters within which a model cannot be estimated be dropped?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>truncate</code></td>
+<td>
+<p>Should outlying cluster-specific beta estimates be excluded?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return.vcv</code></td>
+<td>
+<p>Should a VCV matrix and the means of cluster-specific coefficient estimates be returned?</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list with the elements
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>p.values</code></td>
+<td>
+<p>A matrix of the estimated p-values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ci</code></td>
+<td>
+<p>A matrix of confidence intervals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vcv.hat</code></td>
+<td>
+<p>Optional: A cluster-level variance-covariance matrix for coefficient estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta.bar</code></td>
+<td>
+<p>Optional: A vector of means for cluster-specific coefficient estimates.</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>Confidence intervals are centered on the cluster averaged estimate, which can diverge from original model estimates under several circumstances (e.g., if clusters have different numbers of observations). Consequently, confidence intervals may not be centered on original model estimates. If drop = TRUE, any cluster for which all coefficients cannot be estimated will be automatically dropped from the analysis. If truncate = TRUE, any cluster for which any coefficient is more than 6 times the interquartile range from the cross-cluster mean will also be dropped as an outlier.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Justin Esarey
+</p>
+
+
+<h3>References</h3>
+
+<p>Esarey, Justin, and Andrew Menger. 2017. "Practical and Effective Approaches to Dealing with Clustered Data." <em>Political Science Research and Methods</em> forthcoming: 1-35. &lt;URL:http://jee3.web.rice.edu/cluster-paper.pdf&gt;.
+</p>
+<p>Ibragimov, Rustam, and Ulrich K. Muller. 2010. "t-Statistic Based Correlation and Heterogeneity Robust Inference." <em>Journal of Business &amp; Economic Statistics</em> 28(4): 453-468. &lt;DOI:10.1198/jbes.2009.08046&gt;.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+
+#####################################################################
+# example one: predict whether respondent has a university degree
+#####################################################################
+
+require(effects)
+data(WVS)
+logit.model &lt;- glm(degree ~ religion + gender + age, data=WVS, family=binomial(link="logit"))
+summary(logit.model)
+
+# compute cluster-adjusted p-values
+clust.im.p &lt;- cluster.im.glm(logit.model, WVS, ~ country, report = T)
+
+############################################################################
+# example two: linear model of whether respondent has a university degree
+#              with interaction between gender and age + country FEs
+############################################################################
+
+WVS$degree.n &lt;- as.numeric(WVS$degree)
+WVS$gender.n &lt;- as.numeric(WVS$gender)
+WVS$genderXage &lt;- WVS$gender.n * WVS$age
+lin.model &lt;- glm(degree.n ~ gender.n + age + genderXage + religion + as.factor(country), data=WVS)
+
+# compute marginal effect of male gender on probability of obtaining a university degree
+# using conventional standard errors
+age.vec &lt;- seq(from=18, to=90, by=1)
+me.age &lt;- coefficients(lin.model)[2] + coefficients(lin.model)[4]*age.vec
+plot(me.age ~ age.vec, type="l", ylim=c(-0.1, 0.1), xlab="age", 
+     ylab="ME of male gender on Pr(university degree)")
+se.age &lt;- sqrt( vcov(lin.model)[2,2] + vcov(lin.model)[4,4]*(age.vec)^2 + 
+                2*vcov(lin.model)[2,4]*age.vec)
+ci.h &lt;- me.age + qt(0.975, lower.tail=T, df=lin.model$df.residual) * se.age
+ci.l &lt;- me.age - qt(0.975, lower.tail=T, df=lin.model$df.residual) * se.age
+lines(ci.h ~ age.vec, lty=2)
+lines(ci.l ~ age.vec, lty=2)
+
+
+# cluster on country, compute CIs for marginal effect of gender on degree attainment
+# drop the FEs (absorbed into cluster-level coefficients)
+lin.model.n &lt;- glm(degree.n ~ gender.n + age + genderXage + religion, data=WVS)
+clust.im.result &lt;- cluster.im.glm(lin.model.n, WVS, ~ country, report = T, return.vcv = T)
+# compute ME using average of cluster-level estimates (CIs center on this)
+me.age.im &lt;- clust.im.result$beta.bar[2] + clust.im.result$beta.bar[4]*age.vec
+se.age.im &lt;- sqrt( clust.im.result$vcv[2,2] + clust.im.result$vcv[4,4]*(age.vec)^2 +
+                   2*clust.im.result$vcv[2,4]*age.vec)
+# center the CIs on the ME using average of cluster-level estimates
+# important: divide by sqrt(G) to convert SE of cluster-level estimates 
+#            into SE of the mean, where G = number of clusters
+G &lt;- length(unique(WVS$country))
+ci.h.im &lt;- me.age.im + qt(0.975, lower.tail=T, df=(G-1)) * se.age.im/sqrt(G)
+ci.l.im &lt;- me.age.im - qt(0.975, lower.tail=T, df=(G-1)) * se.age.im/sqrt(G)
+plot(me.age.im ~ age.vec, type="l", ylim=c(-0.2, 0.2), xlab="age", 
+     ylab="ME of male gender on Pr(university degree)")
+lines(ci.h.im ~ age.vec, lty=2)
+lines(ci.l.im ~ age.vec, lty=2)
+# for comparison, here's the ME estimate and CIs from the baseline model
+lines(me.age ~ age.vec, lty=1, col="gray")
+lines(ci.h ~ age.vec, lty=3, col="gray")
+lines(ci.l ~ age.vec, lty=3, col="gray")
+
+
+## End(Not run)
+</code></pre>
+
+
+</div>

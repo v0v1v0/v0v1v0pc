@@ -1,0 +1,322 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ctmm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Specify, fit, and select continuous-time movement models</h2>
+
+<h3>Description</h3>
+
+<p>These functions allow one to propose hypothetical movement models (with initial estimates), fit those models to the data, and select among those models via an information criterion.
+The fitting functions wrap around <code>optim</code> and <code>ctmm.loglike</code> to fit continuous-time movement models to 2D animal tracking data as described in Fleming et al (2014) and Fleming et al (2015), and Fleming et al (2017).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ctmm(tau=NULL,omega=FALSE,isotropic=FALSE,range=TRUE,circle=FALSE,error=FALSE,
+     axes=c("x","y"),...)
+
+ctmm.loglike(data,CTMM,REML=FALSE,profile=TRUE,zero=0,verbose=FALSE,compute=TRUE,...)
+
+ctmm.fit(data,CTMM=ctmm(),method="pHREML",COV=TRUE,control=list(),trace=FALSE)
+
+ctmm.select(data,CTMM,verbose=FALSE,level=1,IC="AICc",MSPE="position",trace=FALSE,cores=1,
+            ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>tau</code></td>
+<td>
+<p>Array of autocorrelation timescales (explained below).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>omega</code></td>
+<td>
+<p>Frequency (<code class="reqn">2\pi/period</code>) of oscillatory range crossings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>isotropic</code></td>
+<td>
+<p>A Boolean denoting whether or not the animal's covariance is circular or elliptical.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>range</code></td>
+<td>
+<p>A Boolean denoting whether or not the movement model has a finite range.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>circle</code></td>
+<td>
+<p>(<code class="reqn">2\pi</code> divided by) the period it takes the animal to stochastically circle its mean location.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>error</code></td>
+<td>
+<p>A Boolean denoting whether or not to use annotated telemetry error estimates or an estimate of the error's standard deviation if the data are not annotated with error estimates or when <code class="reqn">HDOP=1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>axes</code></td>
+<td>
+<p>Spatial dimensions of the movement model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p> Timeseries data represented as a <code>telemetry</code> object. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CTMM</code></td>
+<td>
+<p> A <code>ctmm</code> movement-model object containing the initial parameter guesses conforming to the basic structure of the model hypothesis. <code>ctmm.select</code> can accept a list of such objects.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>REML</code></td>
+<td>
+<p>Use residual maximum likelihood if <code>TRUE</code>. Not recommended.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>profile</code></td>
+<td>
+<p>Analytically solve for as many covariance parameters as possible.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>zero</code></td>
+<td>
+<p>Calculates <code class="reqn">log(likelihood) - zero</code>, instead of just <code class="reqn">log(likelihood)</code>, in a way that maintains numerical precision if the constant <code>zero</code> is close to the log likelihood. Used internally by <code>ctmm.fit</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Return additional information. See "Value" below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>compute</code></td>
+<td>
+<p>Only return computational information if <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Fitting method to use: <code>"ML"</code>, <code>"HREML"</code>, <code>"pREML"</code>, <code>"pHREML"</code>, or <code>"REML"</code>. See "Description" below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>COV</code></td>
+<td>
+<p>Estimate the autocorrelation parameter covariance matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>An optional argument list for <code>optimizer</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>Report progress updates. Can be among <code>0:3</code> with increasing detail.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>level</code></td>
+<td>
+<p>Attempt to simplify a model if a feature's non-existence falls within this level of confidence interval.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>IC</code></td>
+<td>
+<p>Information criterion used for selection. Can be <code>"AICc"</code>, <code>"AIC"</code>, <code>"BIC"</code>, <code>"LOOCV"</code>, <code>"HSCV"</code>, or none (<code>NA</code>). AICc is approximate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MSPE</code></td>
+<td>
+<p>Reject non-stationary features that increase the mean square predictive error of <code>"position"</code>, <code>"velocity"</code>, or not (<code>NA</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cores</code></td>
+<td>
+<p>Maximum number of models to fit in parallel. cores=0 will use all cores, while cores&lt;0 will reserve abs(cores).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments passed to <code>ctmm.fit</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Model fitting and selection first requires a prototype model with guesstimated parameters (i.e., Brownian motion with a particular diffusion rate).
+The initial <code>ctmm</code> parameter guess can be generated by the output of <code>ctmm.guess</code>, <code>variogram.fit</code> or manually specified with the function <code>ctmm(...)</code>, where the argument <code>tau</code> is explained below and additional model options described in <code>vignette("ctmm")</code>.
+</p>
+<p>By default, <code>tau</code> (<code class="reqn">\tau</code>) is an ordered array of autocorrelation timescales.
+If <code>length(tau)==0</code>, then an IID bi-variate Gaussian model is fit to the data.
+If <code>length(tau)==1</code>, then an Ornstein-Uhlenbeck (OU) model (Brownian motion restricted to a finite home range) is fit the data, where <code>tau</code> is the position autocorrelation timescale. <code>tau=Inf</code> then yields Brownian motion (BM).
+If <code>length(tau)==2</code>, then the OUF model (continuous-velocity motion restricted to a finite home range) is fit to the data, where <code>tau[1]</code> is again the position autocorrelation timescale and <code>tau[2]</code> is the velocity autocorrelation timescale. <code>tau[1]=Inf</code> then yields integrated Ornstein-Uhlenbeck (IOU) motion, which is a spatially unrestricted continuous-velocity process.
+</p>
+<p>Two new models were introduced in ctmm version 0.5.2 for the case of <code>tau[1]==tau[2]</code>, which can happen with short tracks of data. When <code>tau[1]==tau[2]</code> and <code>omega==0</code>, the model is categorized as OUf—a special case of OUF—and the two <code>tau</code> parameters are treated as identical. On the other hand, when <code>tau[1]==tau[2]</code> and <code>omega&gt;0</code>, an oscillatory model is implemented, which we refer to as OU<code class="reqn">\Omega</code>.
+</p>
+<p>The potential fitting methods—maximum likelihood (<code>ML</code>), residual maximum likelihood (<code>REML</code>), perturbative REML (<code>pREML</code>), hybrid REML (<code>HREML</code>), and perturbative hybrid REML (<code>pHREML</code>)—are described in Fleming et al (2019). In general, <code>pHREML</code> is the best method, though when parameter estimates lie near boundaries it can fail, in which case <code>ctmm.fit</code> will fall back to <code>HREML</code>, as reported by the <code>method</code> slot of the resulting fit object.
+</p>
+<p>The <code>control</code> list can take the following arguments, with defaults shown:
+</p>
+
+<dl>
+<dt><code>method="pNewton"</code></dt>
+<dd>
+<p>The partial-Newton method of <code>optimizer</code> is default. See <code>optim</code> for alternative methods in multiple dimensions.</p>
+</dd>
+<dt><code>precision=1/2</code></dt>
+<dd>
+<p>Fraction of machine numerical precision to target in the maximized likelihood value. MLEs will necessarily have half this precision. On most computers, <code>precision=1</code> is approximately 16 decimal digits of precision for the likelihood and 8 for the MLEs.</p>
+</dd>
+<dt><code>maxit=.Machine$integer.max</code></dt>
+<dd>
+<p>Maximum number of iterations allowed for optimization.</p>
+</dd>
+</dl>
+<p>Model selection in <code>ctmm.select</code> proceeds in two phases. If there are a large number of parameters that must be fit numerically (such as when error is modeled), then the target model (argument <code>CTMM</code>) is worked toward by first fitting simpler, compatible models. The second phase proceeds by attempting to simplify the autocorrelation model and complexify the deterministic (trend) model until the information criterion fails to improve. The intent of working in these directions is to improve numerical convergence and avoid fitting trends to autocorrelation.
+Note that simpler models in a nested hierarchy will only be attempted if they appear credible, which can be adjusted with the <code>level</code> argument. <code>level=1</code> will, therefore, always attempt a simpler model.
+</p>
+<p>The leave-one-out cross validation IC, <code>IC="LOOCV"</code>, is (-2 times) the sum of log-likelihoods of the validation data, after fitting to and conditioning on the training data. This information criterion is intended for small amounts of data where AIC/BIC are not valid, and where the questions of interest are targeted at the finest scales of the data, such as speed or occurrence. Unlike other model-selection criteria, the computational complexity of LOOCV is <code class="reqn">O(n^2)</code>, which is very slow for sample sizes on the order of 10-100 thousand locations. Furthermore, as autocorrelation in the validation data is ignored, this information criterion is not valid for making inferences at scales coarser than the sampling interval, such as home range.
+</p>
+<p>The half-sample cross validation IC, <code>IC="HSCV"</code>, is (-2 times) the sum of log-likelihoods of the validation data, after fitting to and conditioning on the training data consisting of the first (and second) halves of the data when split temporally. This information criterion is intended for when few range crossings are observed and AIC/BIC may not be valid.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The function <code>ctmm</code> returns a prototype <code>ctmm</code> movement-model object.
+By default, <code>ctmm.loglike</code> returns the log-likelihood of the model <code>CTMM</code>.
+<code>ctmm.fit</code> (and <code>ctmm.loglike</code> with <code>verbose=TRUE</code>) returns the estimated <code>ctmm</code> movement-model object with all of the components of <code>CTMM</code> plus the components listed below.
+<code>ctmm.select</code> returns the best model by default, or the sorted list of attempted models if <code>verbose=TRUE</code>, with the best model being first in the list.
+</p>
+
+<dl>
+<dt><code>AICc</code></dt>
+<dd>
+<p>The approximate corrected Akaike information criterion for multivariate distributions with variable numbers of unknown mean and (structured) covariance parameters (Burnham &amp; Anderson, Eq. 7.91). This formula is only exact for IID data.</p>
+</dd>
+<dt><code>loglike</code></dt>
+<dd>
+<p>The log-likelihood.</p>
+</dd>
+<dt><code>sigma</code></dt>
+<dd>
+<p>The maximum likelihood variance/covariance estimate (possibly debiased). For the endlessly diffusing BM and IOU processes, this is instead the diffusion rate estimate.</p>
+</dd>
+<dt><code>mu</code></dt>
+<dd>
+<p>The maximum likelihood stationary mean vector estimate.</p>
+</dd>
+<dt><code>COV.mu</code></dt>
+<dd>
+<p>The covariance matrix of the <code>mu</code> estimate, assuming that the covariance estimate is correct.</p>
+</dd>
+<dt><code>DOF.mu</code></dt>
+<dd>
+<p>The effective number of degrees of freedom in the estimate of <code>mu</code>, assuming that the autocorrelation model is correct. This can be much smaller than <code>length(data$t)</code> if the data are autocorrelated.</p>
+</dd>
+<dt><code>COV</code></dt>
+<dd>
+<p>Covariance of the autocovariance parameter estimate vector <code>c(sigma,tau,circle)</code>, as derived (asymptotically) from the <code>hessian</code> of the log-likelihood function, and where <code>sigma</code> is parameterized in terms of its largest variance <code>major</code>, the ratio of the smallest to largest variance <code>minor</code>, and <code>angle</code> of orientation. Typically, <code>sigma</code>'s <code>major</code> parameter is extremely correlated to <code>tau[1]</code>, and sequential components of <code>tau</code> are slightly correlated.</p>
+</dd>
+</dl>
+<h3>Warnings</h3>
+
+<p>The warning "MLE is near a boundary or optim() failed" indicates that you should be using <code>ctmm.select</code> rather than <code>ctmm.fit</code>, because some features are not well supported by the data.
+</p>
+<p>The warning "pREML failure: indefinite ML Hessian" is normal if some autocorrelation parameters cannot be well resolved.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The default optimization method in <code>ctmm</code> v0.5.7 and above is <code>optimizer</code>'s <code>"pNewton"</code>. Annecdotally, on these problems, <code>optimizer</code>'s <code>pNewton</code> method generally outperforms <code>optim</code>'s <code>"Nelder-Mead"</code>, which generally outperforms <code>optim</code>'s <code>"BFGS"</code> and <code>"L-BFGS-B"</code> methods. With default arguments, <code>"pNewton"</code> is about half as fast as <code>"Nelder-Mead"</code>, but is resolving about twice as much numerical precision by default.
+</p>
+<p>The AICs/BICs of endlessly diffusing models like BM and IOU cannot be easily compared to the AICs/BICs of range resident models like bivariate Gaussian, OU, and OUF, as their joint likelihood functions are infinitely different. Endlessly diffusing models have to be conditioned off of an initial state, which we derive in <code>ctmm</code> by taking the large range limit of a range-restricted process. I.e., BM is the limit OU(<code>Inf</code>) and IOU(<code>tau</code>) is the limit OUF(<code>Inf</code>,<code>tau</code>). Using comparable likelihood functions gives up statistical efficiency and the objective prior. Moreover, comparing conditional likelihoods—with the objective prior taken from the joint likelihood—does not appear to select the true model with a likelihood ratio test. Different criteria must be used to select between range resident and endlessly diffusing movement models.
+</p>
+<p>Prior to v0.3.6, the univariate AICc formula was (mis)used, with the full parameter count treated as degrees of freedom in the mean. As of v.0.3.6, the mean and autocovariance parameters are treated separately in the approximate multivariate AICc formula (Burnham &amp; Anderson, Eq. 7.91). Still, this improved formula is only exact for IID data.
+</p>
+<p>Prior to v0.3.2, <code>ctmm.select</code> would consider every possible model.
+This is no longer feasible with current versions of <code>ctmm</code>, as the number of possible models has grown too large.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> C. H. Fleming and G. Péron. </p>
+
+
+<h3>References</h3>
+
+<p>K. P. Burnham, D. R. Anderson,
+“Model Selection and Multimodel Inference: A Practical Information-Theoretic Approach”,
+Springer, 2nd edition (2003).
+</p>
+<p>C. H. Fleming, J. M. Calabrese, T. Mueller, K.A. Olson, P. Leimgruber, W. F. Fagan,
+“From fine-scale foraging to home ranges: A semi-variance approach to identifying movement modes across spatiotemporal scales”,
+The American Naturalist, 183:5, E154-E167 (2014) <a href="https://doi.org/10.1086/675504">doi:10.1086/675504</a>.
+</p>
+<p>C. H. Fleming, Y. Subaşı, J. M. Calabrese,
+“A maximum-entropy description of animal movement”,
+Physical Review E, 91, 032107 (2015) <a href="https://doi.org/10.1103/PhysRevE.91.032107">doi:10.1103/PhysRevE.91.032107</a>.
+</p>
+<p>C. H. Fleming, D. Sheldon, E. Gurarie, W. F. Fagan, S. LaPoint, J. M. Calabrese,
+“Kálmán filters for continuous-time movement models”,
+Ecological Informatics, 40, 8-21 (2017) <a href="https://doi.org/10.1016/j.ecoinf.2017.04.008">doi:10.1016/j.ecoinf.2017.04.008</a>.
+</p>
+<p>C. H. Fleming, M. J. Noonan, E. P. Medici, J. M. Calabrese,
+“Overcoming the challenge of small effective sample sizes in home-range estimation”,
+Methods in Ecology and Evolution 10:10, 1679-1689 (2019) <a href="https://doi.org/10.1111/2041-210X.13270">doi:10.1111/2041-210X.13270</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code>ctmm.boot</code>, <code>ctmm.guess</code>, <code>optimizer</code>, <code>summary.ctmm</code>, <code>variogram.fit</code>. </p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Load package and data
+library(ctmm)
+data(buffalo)
+DATA &lt;- buffalo$Cilla
+
+GUESS &lt;- ctmm.guess(DATA,interactive=FALSE)
+# in general, you want to run ctmm.select instead
+FIT &lt;- ctmm.fit(DATA,GUESS)
+
+# some human-readable information
+summary(FIT)
+</code></pre>
+
+
+</div>

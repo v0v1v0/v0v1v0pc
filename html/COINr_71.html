@@ -1,0 +1,124 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>impute_panel</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Impute panel data</h2>
+
+<h3>Description</h3>
+
+<p>Given a data frame of panel data, with a time-index column <code>time_col</code> and a unit ID column <code>unit_col</code>, imputes other
+columns using the entry from the latest available time point.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">impute_panel(
+  iData,
+  time_col = NULL,
+  unit_col = NULL,
+  cols = NULL,
+  imp_type = NULL,
+  max_time = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>iData</code></td>
+<td>
+<p>A data frame of indicator data, containing a time index column <code>time_col</code>, a unit code column <code>unit_col</code>,
+and other numerical columns to be imputed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_col</code></td>
+<td>
+<p>The name of a column found in <code>iData</code> to be used as the time index column. Must point to a numeric column.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>unit_col</code></td>
+<td>
+<p>The name of a column found in <code>iData</code> to be used as the unit code/ID column. Must point to a character column.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cols</code></td>
+<td>
+<p>Optionally, a character vector of names of columns to impute. If <code>NULL</code> (default), all columns apart from <code>time_col</code> and
+<code>unit_col</code> will be imputed where possible.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>imp_type</code></td>
+<td>
+<p>One of <code>"latest"</code> <code>"constant"</code> or <code>"linear"</code>. In the first case, missing points are imputed with the last non-<code>NA</code> observation for each
+time series, up to <code>max_time</code>. For <code>"constant"</code> or <code>"linear"</code>, missing points are imputed using <code>stats::approx()</code>, passing  <code>"constant"</code> or <code>"linear"</code> to the
+<code>method</code> argument, and points outside of the range of observed values are replaced with the nearest non-<code>NA</code> point.
+This is equivalent to <code>rule = 2</code> in <code>stats::approx()</code> for each time series. The difference between <code>"latest"</code> and <code>"constant"</code> is that
+the latter allows control over the maximum number of time points to impute backwards (using <code>max_time</code>) whereas the former
+doesn't. Additionally, <code>"constant"</code> will impute outside of the observed range of values at the beginning of the time series, whereas <code>"latest"</code> won't.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_time</code></td>
+<td>
+<p>The maximum number of time points to look backwards to impute from. E.g. if <code>max_time = 1</code>, if an
+<code>NA</code> is found at time <code class="reqn">t</code>, it will only look for a replacement value at <code class="reqn">t-1</code> but not in any time points before that.
+By default, searches all time points available.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This presumes that there are multiple observations for each unit code, i.e. one per time point. It then searches for any missing values in the target year, and replaces them with the equivalent points
+from previous time points. It will replace using the most recently available point or using linear interpolation: see <code>imp_type</code> argument.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list containing:
+</p>
+
+<ul>
+<li> <p><code>.$iData_imp</code>: An <code>iData</code> format data frame with missing data imputed using previous time points (where possible).
+</p>
+</li>
+<li> <p><code>.$DataT</code>: A data frame in the same format as <code>iData</code>, where each entry shows which time point each data point
+came from.
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Copy example panel data
+iData_p &lt;- ASEM_iData_p
+
+# we introduce two NAs: one for NZ in 2022 in LPI indicator
+iData_p$LPI[iData_p$uCode == "NZ" &amp; iData_p$Time == 2022] &lt;-  NA
+# one for AT, also in 2022, but for Flights indicator
+iData_p$Flights[iData_p$uCode == "AT" &amp; iData_p$Time == 2022] &lt;- NA
+
+# impute: target only the two columns where NAs introduced
+l_imp &lt;- impute_panel(iData_p, cols = c("LPI", "Flights"))
+# get imputed df
+iData_imp &lt;- l_imp$iData_imp
+
+# check the output is what we expect: both NAs introduced should now have 2021 values
+iData_imp$LPI[iData_imp$uCode == "NZ" &amp; iData_imp$Time == 2022] ==
+  ASEM_iData_p$LPI[ASEM_iData_p$uCode == "NZ" &amp; ASEM_iData_p$Time == 2021]
+
+iData_imp$Flights[iData_imp$uCode == "AT" &amp; iData_imp$Time == 2022] ==
+  ASEM_iData_p$Flights[ASEM_iData_p$uCode == "AT" &amp; ASEM_iData_p$Time == 2021]
+
+</code></pre>
+
+
+</div>

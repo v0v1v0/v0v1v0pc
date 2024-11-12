@@ -1,0 +1,224 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CST_MultiEOF</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>EOF analysis of multiple variables</h2>
+
+<h3>Description</h3>
+
+<p>This function performs EOF analysis over multiple variables,
+accepting in input a list of CSTools objects. Based on Singular Value 
+Decomposition. For each field the EOFs are computed and the corresponding PCs 
+are standardized (unit variance, zero mean); the minimum number of principal 
+components needed to reach the user-defined variance is retained. The function 
+weights the input data for the latitude cosine square root.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CST_MultiEOF(
+  datalist,
+  lon_dim = "lon",
+  lat_dim = "lat",
+  time_dim = "ftime",
+  sdate_dim = "sdate",
+  var_dim = "var",
+  neof_max = 40,
+  neof_composed = 5,
+  minvar = 0.6,
+  lon_lim = NULL,
+  lat_lim = NULL,
+  ncores = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>datalist</code></td>
+<td>
+<p>A list of objects of the class 's2dv_cube', containing the 
+variables to be analysed. Each data object in the list is expected to have 
+an element named <code>$data</code> with at least two spatial dimensions named 
+"lon" and "lat", a dimension "ftime" and a dimension "sdate". Latitudinal 
+dimension accepted names: 'lat', 'lats', 'latitude', 'y', 'j', 'nav_lat'. 
+Longitudinal dimension accepted names: 'lon', 'lons','longitude', 'x', 'i', 
+'nav_lon'. NAs can exist but it should be consistent along 'time_dim'. That 
+is, if one grid point has NAs for each variable, all the time steps at this 
+point should be NAs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lon_dim</code></td>
+<td>
+<p>A character string indicating the name of the longitudinal 
+dimension. By default, it is set to 'lon'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lat_dim</code></td>
+<td>
+<p>A character string indicating the name of the latitudinal 
+dimension. By default, it is set to 'lat'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_dim</code></td>
+<td>
+<p>A character string indicating the name of the temporal 
+dimension. By default, it is set to 'time'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sdate_dim</code></td>
+<td>
+<p>A character string indicating the name of the start date 
+dimension. By default, it is set to 'sdate'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var_dim</code></td>
+<td>
+<p>A character string indicating the name of the variable 
+dimension. By default, it is set to 'var'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>neof_max</code></td>
+<td>
+<p>Maximum number of single eofs considered in the first 
+decomposition.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>neof_composed</code></td>
+<td>
+<p>Number of composed eofs to return in output.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minvar</code></td>
+<td>
+<p>Minimum variance fraction to be explained in first decomposition.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lon_lim</code></td>
+<td>
+<p>Vector with longitudinal range limits for the EOF calculation 
+for all input variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lat_lim</code></td>
+<td>
+<p>Vector with latitudinal range limits for the EOF calculation 
+for all input variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncores</code></td>
+<td>
+<p>An integer indicating the number of cores to use for parallel 
+computation. The default value is NULL.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list containing:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>coeff</code></td>
+<td>
+
+<p>An 's2dv_cube' with the data element being an array of principal components 
+with dimensions 'time_dim', 'sdate_dim', number of eof, rest of the 
+dimensions of 'data' except 'lon_dim' and 'lat_dim'. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>variance</code></td>
+<td>
+
+<p>An 's2dv_cube' with the data element being an array of explained variances 
+with dimensions 'eof' and the rest of the dimensions of 'data' except 
+'time_dim', 'sdate_dim', 'lon_dim' and 'lat_dim'.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eof_pattern</code></td>
+<td>
+
+<p>An 's2dv_cube' with the data element being an array of EOF patterns obtained 
+by regression with dimensions: 'eof' and the rest of the dimensions of 
+'data' except 'time_dim' and 'sdate_dim'.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mask</code></td>
+<td>
+
+<p>An 's2dv_cube' with the data element being an array of the mask with 
+dimensions ('lon_dim', 'lat_dim', rest of the dimensions of 'data' except 
+'time_dim'). It is made from 'data', 1 for the positions that 'data' has 
+value and NA for the positions that 'data' has NA. It is used to replace NAs 
+with 0s for EOF calculation and mask the result with NAs again after the 
+calculation.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coordinates</code></td>
+<td>
+
+<p>Longitudinal and latitudinal coordinates vectors.
+</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Jost von Hardenberg - ISAC-CNR, <a href="mailto:j.vonhardenberg@isac.cnr.it">j.vonhardenberg@isac.cnr.it</a>
+</p>
+<p>Paolo Davini - ISAC-CNR, <a href="mailto:p.davini@isac.cnr.it">p.davini@isac.cnr.it</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">seq &lt;- 1 : (2 * 3 * 4 * 5 * 6 * 8)
+mod1 &lt;- sin( 0.7 + seq )^2 + cos( seq ^ 2 * 1.22  )
+dim(mod1) &lt;- c(dataset = 2, member = 3, sdate = 4, ftime = 5, lat = 6, 
+              lon = 8)
+mod2 &lt;- sin( seq * 2 ) ^ 3 + cos( seq ^ 2 )
+dim(mod2) &lt;- c(dataset = 2, member = 3, sdate = 4, ftime = 5, lat = 6, 
+              lon = 8)
+lon &lt;- seq(0, 35, 5)
+lat &lt;- seq(0, 25, 5)
+exp1 &lt;- list(data = mod1, coords = list(lat = lat, lon = lon))
+exp2 &lt;- list(data = mod2, coords = list(lat = lat, lon = lon))
+attr(exp1, 'class') &lt;- 's2dv_cube'
+attr(exp2, 'class') &lt;- 's2dv_cube'
+d = as.POSIXct(c("2017/01/01", "2017/01/02", "2017/01/03", "2017/01/04", 
+                "2017/01/05", "2018/01/01", "2018/01/02", "2018/01/03",
+                "2018/01/04", "2018/01/05", "2019/01/01", "2019/01/02", 
+                "2019/01/03", "2019/01/04", "2019/01/05", "2020/01/01", 
+                "2020/01/02", "2020/01/03", "2020/01/04", "2020/01/05"))
+exp1$attrs$Dates = d
+exp2$attrs$Dates = d
+
+cal &lt;- CST_MultiEOF(datalist = list(exp1, exp2), neof_composed = 2)
+</code></pre>
+
+
+</div>

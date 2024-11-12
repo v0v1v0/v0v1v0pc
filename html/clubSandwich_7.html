@@ -1,0 +1,138 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>constraint_matrices</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create constraint matrices</h2>
+
+<h3>Description</h3>
+
+<p>Helper functions to create common types of constraint matrices,
+for use with <code>Wald_test</code> to conduct Wald-type tests of linear
+contrasts from a fitted regression model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">constrain_zero(constraints, coefs, reg_ex = FALSE)
+
+constrain_equal(constraints, coefs, reg_ex = FALSE)
+
+constrain_pairwise(constraints, coefs, reg_ex = FALSE, with_zero = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>constraints</code></td>
+<td>
+<p>Set of constraints to test. Can be logical (using
+<code>TRUE</code> to specify which coefficients to constrain), integer (specify
+the index of coefficients to constrain), character (specify the names of
+the coefficients to constrain), or a regular expression.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coefs</code></td>
+<td>
+<p>Vector of coefficient estimates, used to determine the column
+dimension of the constraint matrix. Can be omitted if the function is
+called inside <code>Wald_test()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reg_ex</code></td>
+<td>
+<p>Logical indicating whether <code>constraints</code> should be
+interpreted as a regular expression. Defaults to <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>with_zero</code></td>
+<td>
+<p>Logical indicating whether coefficients should also be
+compared to zero. Defaults to <code>FALSE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Constraints can be specified as character vectors, regular
+expressions (with <code>reg_ex = TRUE</code>), integer vectors, or logical
+vectors.
+</p>
+<p><code>constrain_zero()</code> Creates a matrix that constrains a specified set of
+coefficients to all be equal to zero.
+</p>
+<p><code>constrain_equal()</code> Creates a matrix that constrains a specified set
+of coefficients to all be equal.
+</p>
+<p><code>constrain_pairwise()</code> Creates a list of constraint matrices
+consisting of all pairwise comparisons between a specified set of
+coefficients. If <code>with_zero = TRUE</code>, then the list will also include a
+set of constraint matrices comparing each coefficient to zero.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A matrix or list of matrices encoding the specified set of
+constraints.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>Wald_test</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+if (requireNamespace("carData", quietly = TRUE)) withAutoprint({
+
+data(Duncan, package = "carData")
+Duncan$cluster &lt;- sample(LETTERS[1:8], size = nrow(Duncan), replace = TRUE)
+
+Duncan_fit &lt;- lm(prestige ~ 0 + type + income + type:income + type:education, data=Duncan)
+# Note that type:income terms are interactions because main effect of income is included
+# but type:education terms are separate slopes for each unique level of type
+
+Duncan_coefs &lt;- coef(Duncan_fit)
+
+# The following are all equivalent
+constrain_zero(constraints = c("typeprof:income","typewc:income"), 
+               coefs = Duncan_coefs)
+constrain_zero(constraints = ":income", coefs = Duncan_coefs, 
+               reg_ex = TRUE)
+constrain_zero(constraints = 5:6, coefs = Duncan_coefs)
+constrain_zero(constraints = c(FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE), 
+               coefs = Duncan_coefs)
+
+# The following are all equivalent
+constrain_equal(c("typebc:education","typeprof:education","typewc:education"), 
+                Duncan_coefs)
+constrain_equal(":education", Duncan_coefs, reg_ex = TRUE)
+constrain_equal(7:9, Duncan_coefs)
+constrain_equal(c(FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE), 
+                Duncan_coefs)
+
+# Test pairwise equality of the education slopes
+constrain_pairwise(":education", Duncan_coefs,
+                   reg_ex = TRUE)
+
+# Test pairwise equality of the income slopes, plus compare against zero
+constrain_pairwise(":income", Duncan_coefs, 
+                   reg_ex = TRUE, with_zero = TRUE)
+                   
+})
+
+</code></pre>
+
+
+</div>

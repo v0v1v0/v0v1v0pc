@@ -1,0 +1,135 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>build_gn_seq</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Help function to build the sequence of gn candidates in ctmleGeneral</h2>
+
+<h3>Description</h3>
+
+<p>This function helps building gn candidates for ctmleGeneral. It returns gn_candidates_cv,
+gn_candidates, and folds, which could be directly applied to ctmleGeneral.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">build_gn_seq(A, W, SL.library, folds, verbose = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>A</code></td>
+<td>
+<p>binary treatment indicator, 1 - treatment, 0 - control</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>W</code></td>
+<td>
+<p>vector, matrix, or dataframe containing baseline covariates for Q bar</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SL.library</code></td>
+<td>
+<p>a vector of the names of the estimators for ctmle
+(need to be prepared in the format for SL, see more details in SuperLearner package),
+The theory of ctmle requires the estimators are ordered by the model complexity,
+with the last one be a consistent estimator.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>folds</code></td>
+<td>
+<p>The list of indices for the ctmle cross-validation step</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>A boolean. If print out the training log for Super Learne</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>gn_candidates_cv matrix or dataframe, each column stand for a estimate of
+propensity score. Estimate in the column with larger index should have smaller empirical loss
+</p>
+<p>gn_candidates matrix or dataframe, each column stand for a the cross-validated estimate.
+For example, the (i,j)-th element is the predicted propensity score by j-th estimator,
+for i-th observation, when it is in the validation set
+</p>
+<p>folds The list of indices for the ctmle cross-validation step
+</p>
+<p>details The SuperLearner object used to generate gn_candidates_cv
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">N &lt;- 1000
+p = 100
+V = 5
+Wmat &lt;- matrix(rnorm(N * p), ncol = p)
+gcoef &lt;- matrix(c(-1,-1,rep(-(3/((p)-2)),(p)-2)),ncol=1)
+
+W &lt;- as.data.frame(Wmat)
+g &lt;- 1/(1+exp(Wmat%*%gcoef / 3))
+A &lt;- rbinom(N, 1, prob = g)
+
+folds &lt;-by(sample(1:N,N), rep(1:V, length=N), list)
+
+lasso_fit &lt;- cv.glmnet(x = as.matrix(W), y = A, alpha = 1, nlambda = 100, nfolds = 10)
+lasso_lambdas &lt;- lasso_fit$lambda[lasso_fit$lambda &lt;= lasso_fit$lambda.min][1:5]
+# Build template for glmnet
+SL.glmnet_new &lt;- function (Y, X, newX, family, obsWeights, id, alpha = 1,
+                          nlambda = 100, lambda = 0,...)
+{
+    # browser()
+    if (!is.matrix(X)) {
+          X &lt;- model.matrix(~-1 + ., X)
+         newX &lt;- model.matrix(~-1 + ., newX)
+   }
+   fit &lt;- glmnet::glmnet(x = X, y = Y,
+                         lambda = lambda,
+                         family = family$family, alpha = alpha)
+   pred &lt;- predict(fit, newx = newX, type = "response")
+     fit &lt;- list(object = fit)
+   class(fit) &lt;- "SL.glmnet"
+   out &lt;- list(pred = pred, fit = fit)
+   return(out)
+}
+
+# Use a sequence of estimator to build gn sequence:
+SL.cv1lasso &lt;- function (... , alpha = 1, lambda = lasso_lambdas[1]){
+   SL.glmnet_new(... , alpha = alpha, lambda = lambda)
+}
+
+SL.cv2lasso &lt;- function (... , alpha = 1, lambda = lasso_lambdas[2]){
+    SL.glmnet_new(... , alpha = alpha, lambda = lambda)
+}
+
+SL.cv3lasso &lt;- function (... , alpha = 1, lambda = lasso_lambdas[3]){
+    SL.glmnet_new(... , alpha = alpha, lambda = lambda)
+}
+
+SL.cv4lasso &lt;- function (... , alpha = 1, lambda = lasso_lambdas[4]){
+     SL.glmnet_new(... , alpha = alpha, lambda = lambda)
+}
+
+SL.library = c('SL.cv1lasso', 'SL.cv2lasso', 'SL.cv3lasso', 'SL.cv4lasso', 'SL.glm')
+
+gn_seq &lt;- build_gn_seq(A = A, W = W, SL.library = SL.library, folds = folds)
+
+gn_seq$gn_candidates_cv
+gn_seq$gn_candidates
+</code></pre>
+
+
+</div>

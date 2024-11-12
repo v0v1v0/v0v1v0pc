@@ -1,0 +1,155 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>influences.PR</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>influences.PR</h2>
+
+<h3>Description</h3>
+
+<p>Computes the influences on the pure risk in the time interval [Tau1, Tau2] and
+for a given covariate profile x, from that on the log-relative hazard and
+cumulative baseline hazard. Can take calibration of the design weights into
+account.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">influences.PR(beta, Lambda0.Tau1Tau2, x = NULL, infl.beta,
+infl.Lambda0.Tau1Tau2, calibrated = NULL, infl2.beta = NULL,
+infl2.Lambda0.Tau1Tau2 = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>beta</code></td>
+<td>
+<p>vector of length <code class="reqn">p</code> with log-relative hazard values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Lambda0.Tau1Tau2</code></td>
+<td>
+<p>cumulative baseline hazard in [Tau1, Tau2].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>vector of length <code class="reqn">p</code>, specifying the covariate profile considered for the
+pure risk. Default is (0,...,0).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>infl.beta</code></td>
+<td>
+<p>matrix with the overall influences on the log-relative hazard
+estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>infl.Lambda0.Tau1Tau2</code></td>
+<td>
+<p>vector with the overall influences on the
+cumulative baseline hazard estimate in [Tau1, Tau2].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>calibrated</code></td>
+<td>
+<p>are calibrated weights used for the estimation of the
+parameters? If <code>calibrated = TRUE</code>, the arguments below need to be
+provided. Default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>infl2.beta</code></td>
+<td>
+<p>matrix with the phase-two influences on the log-relative
+hazard estimates. Needs to be provided if <code>missing.data = TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>infl2.Lambda0.Tau1Tau2</code></td>
+<td>
+<p>vector with the phase-two influences on the
+cumulative baseline hazard estimate in [Tau1, Tau2]. Needs to be provided
+if <code>missing.data = TRUE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>influences.PR</code> works for estimation from a case-cohort with design weights
+or calibrated weights (case-cohort consisting of the subcohort and cases not in
+the subcohort, i.e., case-cohort obtained from two phases of sampling).
+</p>
+<p>If covariate information is missing for certain individuals in the phase-two data
+(i.e., case-cohort obtained from three phases of sampling), use <code>influences.PR.missingdata</code>.
+</p>
+<p><code>influences</code> uses the influence formulas provided in Etievant and Gail
+(2024).
+</p>
+<p>If <code>calibrated = FALSE</code>, the infuences are only provided for the individuals
+in the case-cohort. If <code>calibrated = TRUE</code>, the influences are provided for
+all the individuals in the cohort.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>infl.Pi.x.Tau1Tau2.hat</code>: vector with the overall influences on the pure risk estimate in [Tau1, Tau2] and for covariate profile <code>x</code>.
+</p>
+<p><code>infl2.Pi.x.Tau1Tau2.hat</code>: vector with the phase-two influences on the pure risk estimate in [Tau1, Tau2] and for covariate profile <code>x</code>.
+Returned if <code>calibrated = TRUE</code>.
+</p>
+<p><code>Pi.x.Tau1Tau2.hat</code>: pure risk estimate in [Tau1, Tau2] and for covariate profile <code>x</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Etievant, L., Gail, M. H. (2024). Cox model inference for relative hazard and pure risk from stratified weight-calibrated case-cohort data. Lifetime Data Analysis, 30, 572-599.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>estimation</code>, <code>estimation.CumBH</code>, <code>estimation.PR</code>,
+<code>influences</code>, <code>influences.RH</code>, <code>influences.CumBH</code>,
+<code>influences.missingdata</code>, <code>influences.RH.missingdata</code>,
+<code>influences.CumBH.missingdata</code>, <code>influences.PR.missingdata</code>,
+<code>robustvariance</code> and  <code>variance</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+  data(dataexample.stratified, package="CaseCohortCoxSurvival")
+  cohort &lt;- dataexample.stratified$cohort
+  casecohort &lt;- cohort[which(cohort$status == 1 |
+                       cohort$subcohort == 1),] # the stratified case-cohort
+  casecohort$weights &lt;- casecohort$strata.n / casecohort$strata.m
+  casecohort$weights[which(casecohort$status == 1)] &lt;- 1
+
+  Tau1 &lt;- 0
+  Tau2 &lt;- 8
+  x &lt;- c(-1, 1, -0.6) # given covariate profile for the pure risk
+
+  # Estimation using the stratified case cohort with design weights
+  mod &lt;- coxph(Surv(event.time, status) ~ X1 + X2 + X3, data = casecohort,
+               weight = weights, id = id, robust = TRUE)
+  est &lt;- influences(mod, Tau1 = Tau1, Tau2 = Tau2, x = x)
+
+  # print the influences on the pure risk estimate
+  # est$infl.Pi.x.Tau1Tau2
+</code></pre>
+
+
+</div>

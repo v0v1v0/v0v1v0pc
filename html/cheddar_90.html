@@ -1,0 +1,152 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>LumpNodes</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Lump nodes</h2>
+
+<h3>Description</h3>
+
+<p>A function that lumps together nodes in a <code>Community</code>.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">LumpNodes(community, 
+          lump, 
+          title = NULL, 
+          weight.by = 'N')</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>community</code></td>
+<td>
+<p>an object of class <code>Community</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lump</code></td>
+<td>
+<p>a vector of of length <code>NumberOfNodes</code> containing names of 
+lumped nodes. Nodes with the same value of <code>lump</code> will be merged.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>title</code></td>
+<td>
+<p>the title of the new <code>Community</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weight.by</code></td>
+<td>
+<p>the name of a column by which to compute weighted mean of 
+numeric values.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If <code>weight.by</code> is not <code>NULL</code> and it is the name of 
+a node property, it is used to compute weighted means of all the other 
+numeric node properties. The arithmetic mean of <code>weight.by</code> is 
+computed. 
+If <code>weight.by</code> is <code>NULL</code> or is not the name of a node property, 
+the arithmetic mean is computed for each numeric node property.
+Node properties that are characters or logicals are aggregated by joining 
+unique values with a ‘,’. Empty character strings are ignored.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A new object of class <code>Community</code>.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Lawrence Hudson</p>
+
+
+<h3>See Also</h3>
+
+<p><code>LumpTrophicSpecies</code>, 
+<code>IsIsolatedNode</code>, <code>IsolatedNodes</code>, 
+<code>NPS</code>, <code>weighted.mean</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(TL84)
+
+# Lump together isolated nodes in TL84
+length(which(IsIsolatedNode(TL84)))  # 6 isolated species
+IsolatedNodes(TL84)                  # Names of isolated nodes
+
+lump &lt;- NP(TL84, 'node')             # Existing node names
+
+# Give isolated nodes the same lump value
+lump[IsolatedNodes(TL84)] &lt;- 'Isolated nodes lumped together'
+TL84.lumped &lt;- LumpNodes(TL84, lump)
+
+NumberOfNodes(TL84)         # 56 nodes in unlumped web
+NumberOfNodes(TL84.lumped)  # 51 nodes in lumped web
+
+IsolatedNodes(TL84.lumped)  # A single node
+
+
+# This trivial example shows that no nodes are lumped if values in lump are 
+# unique to each node
+lump &lt;- NP(TL84, 'node')
+identical(TL84, LumpNodes(TL84, lump, title=CP(TL84, 'title')))
+
+
+# Ythan Estuary contains two species that are split in to adult and 
+# juvenile forms. The example below lumps these in to single species.
+data(YthanEstuary)
+
+# The names of nodes in YthanEstuary
+lump &lt;- NP(YthanEstuary, 'node')
+
+# European flounder:
+# "Platichthys flesus" and "Platichthys flesus (juvenile)"
+# Lump these in to one node
+lump["Platichthys flesus (juvenile)"==lump] &lt;- "Platichthys flesus"
+
+# Common eider:
+# "Somateria mollissima" and "Somateria mollissima (juvenile)"
+# Lump these in to one node
+lump["Somateria mollissima (juvenile)"==lump] &lt;- "Somateria mollissima"
+YthanEstuary.lumped &lt;- LumpNodes(YthanEstuary, lump)
+
+
+# Examine the computed means for Somateria mollissima
+# Arithmetic mean of N is 2592
+NP(YthanEstuary.lumped, 'N')['Somateria mollissima']
+mean(NP(YthanEstuary, 'N')[c("Somateria mollissima (juvenile)", 
+                             "Somateria mollissima")])
+
+# N-weighted mean of M is 1637.018
+NP(YthanEstuary.lumped, 'M')['Somateria mollissima']
+weighted.mean(NP(YthanEstuary, 'M')[c("Somateria mollissima (juvenile)", 
+                                    "Somateria mollissima")], 
+              NP(YthanEstuary, 'N')[c("Somateria mollissima (juvenile)", 
+                                    "Somateria mollissima")], )
+
+
+# Plot the original community and the community with lumped nodes
+par(mfrow=c(1,2))
+plot(YthanEstuary, highlight.nodes=c("Platichthys flesus", 
+                                     "Platichthys flesus (juvenile)", 
+                                     "Somateria mollissima", 
+                                     "Somateria mollissima (juvenile)"))
+plot(YthanEstuary.lumped, highlight.nodes=c("Platichthys flesus", 
+                                            "Somateria mollissima"))
+</code></pre>
+
+
+</div>

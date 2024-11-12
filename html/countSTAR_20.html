@@ -1,0 +1,277 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>genMCMC_star</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generalized MCMC Algorithm for STAR</h2>
+
+<h3>Description</h3>
+
+<p>Run the MCMC algorithm for STAR given
+</p>
+
+<ol>
+<li>
+<p> a function to initialize model parameters; and
+</p>
+</li>
+<li>
+<p> a function to sample (i.e., update) model parameters.
+</p>
+</li>
+</ol>
+<p>The transformation can be known (e.g., log or sqrt) or unknown
+(Box-Cox or estimated nonparametrically) for greater flexibility.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">genMCMC_star(
+  y,
+  sample_params,
+  init_params,
+  transformation = "np",
+  y_max = Inf,
+  nsave = 5000,
+  nburn = 5000,
+  nskip = 0,
+  save_y_hat = FALSE,
+  verbose = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p><code>n x 1</code> vector of observed counts</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sample_params</code></td>
+<td>
+<p>a function that inputs data <code>y</code> and a named list <code>params</code> containing
+</p>
+
+<ol>
+<li> <p><code>mu</code>: the <code>n x 1</code> vector of conditional means (fitted values)
+</p>
+</li>
+<li> <p><code>sigma</code>: the conditional standard deviation
+</p>
+</li>
+<li> <p><code>coefficients</code>: a named list of parameters that determine <code>mu</code>
+</p>
+</li>
+</ol>
+<p>and outputs an updated list <code>params</code> of samples from the full conditional posterior
+distribution of <code>coefficients</code> and <code>sigma</code> (and updates <code>mu</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>init_params</code></td>
+<td>
+<p>an initializing function that inputs data <code>y</code>
+and initializes the named list <code>params</code> of <code>mu</code>, <code>sigma</code>, and <code>coefficients</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>transformation</code></td>
+<td>
+<p>transformation to use for the latent data; must be one of
+</p>
+
+<ul>
+<li>
+<p> "identity" (identity transformation)
+</p>
+</li>
+<li>
+<p> "log" (log transformation)
+</p>
+</li>
+<li>
+<p> "sqrt" (square root transformation)
+</p>
+</li>
+<li>
+<p> "np" (nonparametric transformation estimated from empirical CDF)
+</p>
+</li>
+<li>
+<p> "pois" (transformation for moment-matched marginal Poisson CDF)
+</p>
+</li>
+<li>
+<p> "neg-bin" (transformation for moment-matched marginal Negative Binomial CDF)
+</p>
+</li>
+<li>
+<p> "box-cox" (box-cox transformation with learned parameter)
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y_max</code></td>
+<td>
+<p>a fixed and known upper bound for all observations; default is <code>Inf</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsave</code></td>
+<td>
+<p>number of MCMC iterations to save</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nburn</code></td>
+<td>
+<p>number of MCMC iterations to discard</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nskip</code></td>
+<td>
+<p>number of MCMC iterations to skip between saving iterations,
+i.e., save every (nskip + 1)th draw</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save_y_hat</code></td>
+<td>
+<p>logical; if TRUE, compute and save the posterior draws of
+the expected counts, E(y), which may be slow to compute</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>logical; if TRUE, print time remaining</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>STAR defines a count-valued probability model by
+(1) specifying a Gaussian model for continuous *latent* data and
+(2) connecting the latent data to the observed data via a
+*transformation and rounding* operation.
+</p>
+<p>Posterior and predictive inference is obtained via a Gibbs sampler
+that combines (i) a latent data augmentation step (like in probit regression)
+and (ii) an existing sampler for a continuous data model.
+</p>
+<p>There are several options for the transformation. First, the transformation
+can belong to the *Box-Cox* family, which includes the known transformations
+'identity', 'log', and 'sqrt', as well as a version in which the Box-Cox parameter
+is inferred within the MCMC sampler ('box-cox'). Second, the transformation
+can be estimated (before model fitting) using the empirical distribution of the
+data <code>y</code>. Options in this case include the empirical cumulative
+distribution function (CDF), which is fully nonparametric ('np'), or the parametric
+alternatives based on Poisson ('pois') or Negative-Binomial ('neg-bin')
+distributions. For the parametric distributions, the parameters of the distribution
+are estimated using moments (means and variances) of <code>y</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a list with at least the following elements:
+</p>
+
+<ul>
+<li> <p><code>post.pred</code>: draws from the posterior predictive distribution of <code>y</code>
+</p>
+</li>
+<li> <p><code>post.sigma</code>: draws from the posterior distribution of <code>sigma</code>
+</p>
+</li>
+<li> <p><code>post.log.like.point</code>: draws of the log-likelihood for each of the <code>n</code> observations
+</p>
+</li>
+<li> <p><code>WAIC</code>: Widely-Applicable/Watanabe-Akaike Information Criterion
+</p>
+</li>
+<li> <p><code>p_waic</code>: Effective number of parameters based on WAIC
+</p>
+</li>
+<li> <p><code>post.lambda</code>: draws from the posterior distribution of <code>lambda</code>
+(NULL unless <code>transformation='box-cox'</code>)
+</p>
+</li>
+<li> <p><code>fitted.values</code>: the posterior mean of the conditional expectation of the counts <code>y</code>
+(<code>NULL</code> if <code>save_y_hat=FALSE</code>)
+</p>
+</li>
+<li> <p><code>post.fitted.values</code>: posterior draws of the conditional mean of the counts <code>y</code>
+(<code>NULL</code> if <code>save_y_hat=FALSE</code>)
+</p>
+</li>
+</ul>
+<p>If the coefficients list from <code>init_params</code> and <code>sample_params</code> contains a named element <code>beta</code>,
+e.g. for linear regression, then the function output contains
+</p>
+
+<ul>
+<li> <p><code>coefficients</code>: the posterior mean of the beta coefficients
+</p>
+</li>
+<li> <p><code>post.beta</code>: draws from the posterior distribution of <code>beta</code>
+</p>
+</li>
+<li> <p><code>post.othercoefs</code>: draws from the posterior distribution of any other sampled coefficients, e.g. variance terms
+</p>
+</li>
+</ul>
+<p>If no <code>beta</code> exists in the parameter coefficients, then the output list just contains
+</p>
+
+<ul>
+<li> <p><code>coefficients</code>: the posterior mean of all coefficients
+</p>
+</li>
+<li> <p><code>post.beta</code>: draws from the posterior distribution of all coefficients
+</p>
+</li>
+</ul>
+<p>Additionally, if <code>init_params</code> and <code>sample_params</code> have output <code>mu_test</code>, then the sampler will output
+<code>post.predtest</code>, which contains draws from the posterior predictive distribution at test points.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Simulate data with count-valued response y:
+sim_dat = simulate_nb_lm(n = 100, p = 5)
+y = sim_dat$y; X = sim_dat$X
+
+# STAR: log-transformation:
+fit_log = genMCMC_star(y = y,
+                         sample_params = function(y, params) sample_lm_gprior(y, X, params),
+                         init_params = function(y) init_lm_gprior(y, X),
+                         transformation = 'log')
+# Posterior mean of each coefficient:
+coef(fit_log)
+
+# WAIC for STAR-log:
+fit_log$WAIC
+
+# MCMC diagnostics:
+plot(as.ts(fit_log$post.beta[,1:3]))
+
+# Posterior predictive check:
+hist(apply(fit_log$post.pred, 1,
+           function(x) mean(x==0)), main = 'Proportion of Zeros', xlab='');
+abline(v = mean(y==0), lwd=4, col ='blue')
+
+</code></pre>
+
+
+</div>

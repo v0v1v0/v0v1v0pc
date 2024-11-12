@@ -1,0 +1,357 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cdgd1_manual</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Perform conditional decomposition with nuisance functions estimated beforehand</h2>
+
+<h3>Description</h3>
+
+<p>This function gives user full control over the estimation of the nuisance functions.
+For the unconditional decomposition, ten nuisance functions need to be estimated.
+The nuisance functions should be estimated using cross-fitting if Donsker class is not assumed.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cdgd1_manual(
+  Y,
+  D,
+  G,
+  YgivenGXQ.Pred_D0,
+  YgivenGXQ.Pred_D1,
+  DgivenGXQ.Pred,
+  Y0givenQ.Pred_G0,
+  Y0givenQ.Pred_G1,
+  Y1givenQ.Pred_G0,
+  Y1givenQ.Pred_G1,
+  DgivenQ.Pred_G0,
+  DgivenQ.Pred_G1,
+  GgivenQ.Pred,
+  data,
+  alpha = 0.05
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Y</code></td>
+<td>
+<p>Outcome. The name of a numeric variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>D</code></td>
+<td>
+<p>Treatment status. The name of a binary numeric variable taking values of 0 and 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>G</code></td>
+<td>
+<p>Advantaged group membership. The name of a binary numeric variable taking values of 0 and 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>YgivenGXQ.Pred_D0</code></td>
+<td>
+<p>A numeric vector of predicted Y values given X, G, and D=0. Vector length=nrow(data).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>YgivenGXQ.Pred_D1</code></td>
+<td>
+<p>A numeric vector of predicted Y values given X, G, and D=1. Vector length=nrow(data).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>DgivenGXQ.Pred</code></td>
+<td>
+<p>A numeric vector of predicted D values given X and G. Vector length=nrow(data).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Y0givenQ.Pred_G0</code></td>
+<td>
+<p>A numeric vector of predicted Y(0) values given Q and G=0. Vector length=nrow(data).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Y0givenQ.Pred_G1</code></td>
+<td>
+<p>A numeric vector of predicted Y(0) values given Q and G=0. Vector length=nrow(data).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Y1givenQ.Pred_G0</code></td>
+<td>
+<p>A numeric vector of predicted Y(1) values given Q and G=0. Vector length=nrow(data).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Y1givenQ.Pred_G1</code></td>
+<td>
+<p>A numeric vector of predicted Y(1) values given Q and G=1. Vector length=nrow(data).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>DgivenQ.Pred_G0</code></td>
+<td>
+<p>A numeric vector of predicted D values given Q and G=0. Vector length=nrow(data).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>DgivenQ.Pred_G1</code></td>
+<td>
+<p>A numeric vector of predicted D values given Q and G=0. Vector length=nrow(data).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>GgivenQ.Pred</code></td>
+<td>
+<p>A numeric vector of predicted G values given Q. Vector length=nrow(data).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data frame.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>1-alpha confidence interval.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A dataframe of estimates.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># This example will take a minute to run.
+
+data(exp_data)
+
+Y="outcome"
+D="treatment"
+G="group_a"
+X="confounder"
+Q="Q"
+data=exp_data
+
+set.seed(1)
+
+### estimate the nuisance functions with cross-fitting
+sample1 &lt;- sample(nrow(data), floor(nrow(data)/2), replace=FALSE)
+sample2 &lt;- setdiff(1:nrow(data), sample1)
+
+### outcome regression model
+
+message &lt;- utils::capture.output( YgivenDGXQ.Model.sample1 &lt;-
+  caret::train(stats::as.formula(paste(Y, paste(D,G,Q,paste(X,collapse="+"),sep="+"), sep="~")),
+               data=data[sample1,], method="ranger",
+               trControl=caret::trainControl(method="cv"),
+               tuneGrid=expand.grid(mtry=c(2,4),splitrule=c("variance"),min.node.size=c(50,100))) )
+message &lt;- utils::capture.output( YgivenDGXQ.Model.sample2 &lt;-
+  caret::train(stats::as.formula(paste(Y, paste(D,G,Q,paste(X,collapse="+"),sep="+"), sep="~")),
+               data=data[sample2,], method="ranger",
+               trControl=caret::trainControl(method="cv"),
+               tuneGrid=expand.grid(mtry=c(2,4),splitrule=c("variance"),min.node.size=c(50,100))) )
+
+### propensity score model
+data[,D] &lt;- as.factor(data[,D])
+levels(data[,D]) &lt;- c("D0","D1")  # necessary for caret implementation of ranger
+
+message &lt;- utils::capture.output( DgivenGXQ.Model.sample1 &lt;-
+    caret::train(stats::as.formula(paste(D, paste(G,Q,paste(X,collapse="+"),sep="+"), sep="~")),
+                 data=data[sample1,], method="ranger",
+                 trControl=caret::trainControl(method="cv", classProbs=TRUE),
+                 tuneGrid=expand.grid(mtry=c(1,2),splitrule=c("gini"),min.node.size=c(50,100))) )
+message &lt;- utils::capture.output( DgivenGXQ.Model.sample2 &lt;-
+    caret::train(stats::as.formula(paste(D, paste(G,Q,paste(X,collapse="+"),sep="+"), sep="~")),
+                 data=data[sample2,], method="ranger",
+                 trControl=caret::trainControl(method="cv", classProbs=TRUE),
+                 tuneGrid=expand.grid(mtry=c(1,2),splitrule=c("gini"),min.node.size=c(50,100))) )
+
+data[,D] &lt;- as.numeric(data[,D])-1
+
+### cross-fitted predictions
+YgivenGXQ.Pred_D0 &lt;- YgivenGXQ.Pred_D1 &lt;- DgivenGXQ.Pred &lt;- rep(NA, nrow(data))
+
+pred_data &lt;- data
+pred_data[,D] &lt;- 0
+YgivenGXQ.Pred_D0[sample2] &lt;- stats::predict(YgivenDGXQ.Model.sample1,
+    newdata = pred_data[sample2,])
+YgivenGXQ.Pred_D0[sample1] &lt;- stats::predict(YgivenDGXQ.Model.sample2,
+    newdata = pred_data[sample1,])
+
+pred_data &lt;- data
+pred_data[,D] &lt;- 1
+YgivenGXQ.Pred_D1[sample2] &lt;- stats::predict(YgivenDGXQ.Model.sample1,
+    newdata = pred_data[sample2,])
+YgivenGXQ.Pred_D1[sample1] &lt;- stats::predict(YgivenDGXQ.Model.sample2,
+    newdata = pred_data[sample1,])
+
+pred_data &lt;- data
+DgivenGXQ.Pred[sample2] &lt;- stats::predict(DgivenGXQ.Model.sample1,
+    newdata = pred_data[sample2,], type="prob")[,2]
+DgivenGXQ.Pred[sample1] &lt;- stats::predict(DgivenGXQ.Model.sample2,
+    newdata = pred_data[sample1,], type="prob")[,2]
+
+### Estimate E(Y_d | Q,g)
+YgivenGXQ.Pred_D1_ncf &lt;- YgivenGXQ.Pred_D0_ncf &lt;- DgivenGXQ.Pred_ncf &lt;- rep(NA, nrow(data))
+# ncf stands for non-cross-fitted
+
+pred_data &lt;- data
+pred_data[,D] &lt;- 1
+YgivenGXQ.Pred_D1_ncf[sample1] &lt;- stats::predict(YgivenDGXQ.Model.sample1,
+    newdata = pred_data[sample1,])
+YgivenGXQ.Pred_D1_ncf[sample2] &lt;- stats::predict(YgivenDGXQ.Model.sample2,
+    newdata = pred_data[sample2,])
+
+pred_data &lt;- data
+pred_data[,D] &lt;- 0
+YgivenGXQ.Pred_D0_ncf[sample1] &lt;- stats::predict(YgivenDGXQ.Model.sample1,
+    newdata = pred_data[sample1,])
+YgivenGXQ.Pred_D0_ncf[sample2] &lt;- stats::predict(YgivenDGXQ.Model.sample2,
+    newdata = pred_data[sample2,])
+
+DgivenGXQ.Pred_ncf[sample1] &lt;- stats::predict(DgivenGXQ.Model.sample1,
+    newdata = pred_data[sample1,], type="prob")[,2]
+DgivenGXQ.Pred_ncf[sample2] &lt;- stats::predict(DgivenGXQ.Model.sample2,
+    newdata = pred_data[sample2,], type="prob")[,2]
+
+# IPOs for modelling E(Y_d | Q,g)
+IPO_D0_ncf &lt;- (1-data[,D])/(1-DgivenGXQ.Pred_ncf)/mean((1-data[,D])/(1-DgivenGXQ.Pred_ncf))*
+    (data[,Y]-YgivenGXQ.Pred_D0_ncf) + YgivenGXQ.Pred_D0_ncf
+IPO_D1_ncf &lt;- data[,D]/DgivenGXQ.Pred_ncf/mean(data[,D]/DgivenGXQ.Pred_ncf)*
+    (data[,Y]-YgivenGXQ.Pred_D1_ncf) + YgivenGXQ.Pred_D1_ncf
+
+data_temp &lt;- data[,c(G,Q)]
+data_temp$IPO_D0_ncf &lt;- IPO_D0_ncf
+data_temp$IPO_D1_ncf &lt;- IPO_D1_ncf
+
+message &lt;- utils::capture.output( Y0givenGQ.Model.sample1 &lt;-
+    caret::train(stats::as.formula(paste("IPO_D0_ncf", paste(G,Q,sep="+"), sep="~")),
+                 data=data_temp[sample1,], method="ranger",
+                 trControl=caret::trainControl(method="cv"),
+                 tuneGrid=expand.grid(mtry=1,splitrule=c("variance"),min.node.size=c(25,50))) )
+message &lt;- utils::capture.output( Y0givenGQ.Model.sample2 &lt;-
+    caret::train(stats::as.formula(paste("IPO_D0_ncf", paste(G,Q,sep="+"), sep="~")),
+                 data=data_temp[sample2,], method="ranger",
+                 trControl=caret::trainControl(method="cv"),
+                 tuneGrid=expand.grid(mtry=1,splitrule=c("variance"),min.node.size=c(25,50))) )
+message &lt;- utils::capture.output( Y1givenGQ.Model.sample1 &lt;-
+    caret::train(stats::as.formula(paste("IPO_D1_ncf", paste(G,Q,sep="+"), sep="~")),
+                 data=data_temp[sample1,], method="ranger",
+                 trControl=caret::trainControl(method="cv"),
+                 tuneGrid=expand.grid(mtry=1,splitrule=c("variance"),min.node.size=c(25,50))) )
+message &lt;- utils::capture.output( Y1givenGQ.Model.sample2 &lt;-
+    caret::train(stats::as.formula(paste("IPO_D1_ncf", paste(G,Q,sep="+"), sep="~")),
+                 data=data_temp[sample2,], method="ranger",
+                 trControl=caret::trainControl(method="cv"),
+                 tuneGrid=expand.grid(mtry=1,splitrule=c("variance"),min.node.size=c(25,50))) )
+
+Y0givenQ.Pred_G0 &lt;- Y0givenQ.Pred_G1 &lt;- Y1givenQ.Pred_G0 &lt;- Y1givenQ.Pred_G1 &lt;- rep(NA, nrow(data))
+
+pred_data &lt;- data
+pred_data[,G] &lt;- 1
+# cross-fitting is used
+Y0givenQ.Pred_G1[sample2] &lt;- stats::predict(Y0givenGQ.Model.sample1, newdata = pred_data[sample2,])
+Y0givenQ.Pred_G1[sample1] &lt;- stats::predict(Y0givenGQ.Model.sample2, newdata = pred_data[sample1,])
+Y1givenQ.Pred_G1[sample2] &lt;- stats::predict(Y1givenGQ.Model.sample1, newdata = pred_data[sample2,])
+Y1givenQ.Pred_G1[sample1] &lt;- stats::predict(Y1givenGQ.Model.sample2, newdata = pred_data[sample1,])
+
+pred_data &lt;- data
+pred_data[,G] &lt;- 0
+# cross-fitting is used
+Y0givenQ.Pred_G0[sample2] &lt;- stats::predict(Y0givenGQ.Model.sample1, newdata = pred_data[sample2,])
+Y0givenQ.Pred_G0[sample1] &lt;- stats::predict(Y0givenGQ.Model.sample2, newdata = pred_data[sample1,])
+Y1givenQ.Pred_G0[sample2] &lt;- stats::predict(Y1givenGQ.Model.sample1, newdata = pred_data[sample2,])
+Y1givenQ.Pred_G0[sample1] &lt;- stats::predict(Y1givenGQ.Model.sample2, newdata = pred_data[sample1,])
+
+### Estimate E(D | Q,g')
+data[,D] &lt;- as.factor(data[,D])
+levels(data[,D]) &lt;- c("D0","D1")  # necessary for caret implementation of ranger
+
+message &lt;- utils::capture.output( DgivenGQ.Model.sample1 &lt;-
+    caret::train(stats::as.formula(paste(D, paste(G,Q,sep="+"), sep="~")),
+                 data=data[sample1,], method="ranger",
+                 trControl=caret::trainControl(method="cv", classProbs=TRUE),
+                 tuneGrid=expand.grid(mtry=1,splitrule=c("gini"),min.node.size=c(25,50))) )
+message &lt;- utils::capture.output( DgivenGQ.Model.sample2 &lt;-
+    caret::train(stats::as.formula(paste(D, paste(G,Q,sep="+"), sep="~")),
+                 data=data[sample2,], method="ranger",
+                 trControl=caret::trainControl(method="cv", classProbs=TRUE),
+                 tuneGrid=expand.grid(mtry=1,splitrule=c("gini"),min.node.size=c(25,50))) )
+
+data[,D] &lt;- as.numeric(data[,D])-1
+
+DgivenQ.Pred_G0 &lt;- DgivenQ.Pred_G1 &lt;- rep(NA, nrow(data))
+
+pred_data &lt;- data
+pred_data[,G] &lt;- 0
+DgivenQ.Pred_G0[sample2] &lt;- stats::predict(DgivenGQ.Model.sample1,
+    newdata = pred_data[sample2,], type="prob")[,2]
+DgivenQ.Pred_G0[sample1] &lt;- stats::predict(DgivenGQ.Model.sample2,
+    newdata = pred_data[sample1,], type="prob")[,2]
+
+pred_data &lt;- data
+pred_data[,G] &lt;- 1
+DgivenQ.Pred_G1[sample2] &lt;- stats::predict(DgivenGQ.Model.sample1,
+   newdata = pred_data[sample2,], type="prob")[,2]
+DgivenQ.Pred_G1[sample1] &lt;- stats::predict(DgivenGQ.Model.sample2,
+   newdata = pred_data[sample1,], type="prob")[,2]
+
+### Estimate p_g(Q)=Pr(G=g | Q)
+data[,G] &lt;- as.factor(data[,G])
+levels(data[,G]) &lt;- c("G0","G1")  # necessary for caret implementation of ranger
+
+message &lt;- utils::capture.output( GgivenQ.Model.sample1 &lt;-
+    caret::train(stats::as.formula(paste(G, paste(Q,sep="+"), sep="~")),
+                 data=data[sample1,], method="ranger",
+                 trControl=caret::trainControl(method="cv", classProbs=TRUE),
+                 tuneGrid=expand.grid(mtry=1,splitrule=c("gini"),min.node.size=c(25,50))) )
+message &lt;- utils::capture.output( GgivenQ.Model.sample2 &lt;-
+    caret::train(stats::as.formula(paste(G, paste(Q,sep="+"), sep="~")),
+                 data=data[sample2,], method="ranger",
+                 trControl=caret::trainControl(method="cv", classProbs=TRUE),
+                 tuneGrid=expand.grid(mtry=1,splitrule=c("gini"),min.node.size=c(25,50))) )
+
+data[,G] &lt;- as.numeric(data[,G])-1
+
+GgivenQ.Pred &lt;- rep(NA, nrow(data))
+GgivenQ.Pred[sample2] &lt;- stats::predict(GgivenQ.Model.sample1,
+    newdata = data[sample2,], type="prob")[,2]
+GgivenQ.Pred[sample1] &lt;- stats::predict(GgivenQ.Model.sample2,
+    newdata = data[sample1,], type="prob")[,2]
+
+
+results &lt;- cdgd1_manual(Y=Y,D=D,G=G,
+                        YgivenGXQ.Pred_D0=YgivenGXQ.Pred_D0,
+                        YgivenGXQ.Pred_D1=YgivenGXQ.Pred_D1,
+                        DgivenGXQ.Pred=DgivenGXQ.Pred,
+                        Y0givenQ.Pred_G0=Y0givenQ.Pred_G0,
+                        Y0givenQ.Pred_G1=Y0givenQ.Pred_G1,
+                        Y1givenQ.Pred_G0=Y1givenQ.Pred_G0,
+                        Y1givenQ.Pred_G1=Y1givenQ.Pred_G1,
+                        DgivenQ.Pred_G0=DgivenQ.Pred_G0,
+                        DgivenQ.Pred_G1=DgivenQ.Pred_G1,
+                        GgivenQ.Pred=GgivenQ.Pred,
+                        data,alpha=0.05)
+
+results
+</code></pre>
+
+
+</div>

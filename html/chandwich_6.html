@@ -1,0 +1,310 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>compare_models</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Comparison of nested models</h2>
+
+<h3>Description</h3>
+
+<p>Compares nested models using the adjusted likelihood ratio test statistic
+(ALRTS) described in Section 3.5 of Chandler and Bate (2007). The nesting
+must result from the simple constraint that a subset of the parameters of
+the larger model is held fixed.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">compare_models(
+  larger,
+  smaller = NULL,
+  approx = FALSE,
+  type = c("vertical", "cholesky", "spectral", "none"),
+  fixed_pars = NULL,
+  fixed_at = rep_len(0, length(fixed_pars)),
+  init = NULL,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>larger</code></td>
+<td>
+<p>An object of class <code>"chandwich"</code> returned by
+<code>adjust_loglik</code>.  The larger of the two models.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smaller</code></td>
+<td>
+<p>An object of class <code>"chandwich"</code> returned by
+<code>adjust_loglik</code>.  The smaller of the two models.
+</p>
+<p>If <code>smaller</code> is supplied then the arguments <code>fixed_pars</code> and
+<code>fixed_at</code> described below are ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>approx</code></td>
+<td>
+<p>A logical scalar.  If <code>approx = TRUE</code> then the
+approximation detailed by equations (18)-(20) of Chandler and Bate (2007)
+is used.  This option is available only if <code>smaller</code> is supplied.
+If <code>smaller</code> is not supplied then <code>approx = TRUE</code> is used,
+with no warning.
+</p>
+<p>The approximation doesn't make sense if <code>type = "none"</code>.  If
+<code>type = "none"</code> and <code>approx = TRUE</code> then <code>approx</code> is
+set to <code>FALSE</code> with no warning.
+</p>
+<p>If <code>approx = FALSE</code> then the adjusted likelihood is
+maximised under the restriction imposed by <code>delta</code>, that is,
+equation (17) of Chandler and Bate (2007) is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>A character scalar.  The argument <code>type</code> to the function
+returned by <code>adjust_loglik</code>, that is, the type of adjustment
+made to the independence loglikelihood function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixed_pars</code></td>
+<td>
+<p>A numeric vector.  Indices of the components of the
+<strong>full</strong> parameter vector that are restricted to be equal to the
+value(s) in <code>fixed_at</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixed_at</code></td>
+<td>
+<p>A numeric vector of length 1 or <code>length(fixed_pars)</code>.
+If <code>length(fixed_at) = 1</code> then the components <code>fixed_pars</code>
+of the parameter vector are all fixed at <code>fixed_at</code>.
+If <code>length(fixed_at) = length(fixed_pars)</code> then the component
+<code>fixed_pars[i]</code> is fixed at <code>fixed_at[i]</code> for each <code>i</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>init</code></td>
+<td>
+<p>(Only relevant if <code>approx = FALSE</code>).
+A numeric vector of initial values for use in the search for
+the MLE under the smaller model.  Must have length equal to the number
+of parameters in the smaller of the two models being compared.  If
+<code>init</code> is not supplied, or it is of the wrong length, then
+<code>attr(smaller, "MLE")</code> is used if <code>smaller</code> is supplied and
+<code>attr(larger, "MLE")[-fixed_pars]</code> otherwise.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments to be passed to <code>optim</code>.
+These may include <code>gr</code>, <code>method</code>, <code>lower</code>, <code>upper</code>
+or <code>control</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The smaller of the two models is specified either by supplying
+<code>smaller</code> or <code>fixed_pars</code>.  If both are supplied then
+<code>smaller</code> takes precedence.
+</p>
+<p>For full details see Section 3.5 of Chandler and Bate (2007).
+If <code>approx = FALSE</code> then the a likelihood ratio test of the null
+hypothesis that the smaller model is a valid simplification of the larger
+model is carried out directly using equation (17) of Chandler and Bate
+(2007) based on the adjusted loglikelihood under the larger model,
+returned by <code>adjust_loglik</code>.  This adjusted loglikelihood is
+maximised subject to the constraint that a subset of the parameters
+in the larger model are fixed.  If <code>smaller</code> is supplied
+then this maximisation can be avoided using an approximation
+detailed by equations (18)-(20) of Chandler and Bate (2007), which uses
+the MLE under the smaller model.  The same null distribution (chi-squared
+with degrees of freedom equal to the number of parameters that are fixed)
+is used in both cases.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class "compmod", a list with components
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>alrts</code></td>
+<td>
+<p>the adjusted likelihood ratio test statistic.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>under the null hypothesis that the smaller model is a valid
+simplification of the larger model the adjusted likelihood ratio
+test statistic has a chi-squared distribution with <code>df</code>
+degrees of freedom.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p_value</code></td>
+<td>
+<p>the p-value associated with the test of the null
+hypothesis.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>larger_mle</code></td>
+<td>
+<p>the MLE of the parameters under the larger model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smaller_mle</code></td>
+<td>
+<p>the MLE of the parameters under the smaller model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>larger_fixed_pars, smaller_fixed_pars</code></td>
+<td>
+<p>Numeric vectors of the
+indices of parameters fixed in the larger and smaller models,
+respectively.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>larger_fixed_at, smaller_fixed_at</code></td>
+<td>
+<p>Numeric vectors of the
+values at which the parameters in <code>larger_fixed_pars</code> and
+<code>smaller_fixed_pars</code> are fixed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>approx</code></td>
+<td>
+<p>the argument <code>approx</code>.</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Chandler, R. E. and Bate, S. (2007). Inference for clustered
+data using the independence loglikelihood. <em>Biometrika</em>,
+<strong>94</strong>(1), 167-183. <a href="https://doi.org/10.1093/biomet/asm015">doi:10.1093/biomet/asm015</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>adjust_loglik</code> to adjust a user-supplied
+loglikelihood function.
+</p>
+<p><code>conf_intervals</code> for confidence intervals for
+individual parameters.
+</p>
+<p><code>conf_region</code> for a confidence region for
+pairs of parameters.
+</p>
+<p><code>print.compmod</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># -------------------------- GEV model, owtemps data -----------------------
+# ------------ following Section 5.2 of Chandler and Bate (2007) -----------
+
+gev_loglik &lt;- function(pars, data) {
+  o_pars &lt;- pars[c(1, 3, 5)] + pars[c(2, 4, 6)]
+  w_pars &lt;- pars[c(1, 3, 5)] - pars[c(2, 4, 6)]
+  if (isTRUE(o_pars[2] &lt;= 0 | w_pars[2] &lt;= 0)) return(-Inf)
+  o_data &lt;- data[, "Oxford"]
+  w_data &lt;- data[, "Worthing"]
+  check &lt;- 1 + o_pars[3] * (o_data - o_pars[1]) / o_pars[2]
+  if (isTRUE(any(check &lt;= 0))) return(-Inf)
+  check &lt;- 1 + w_pars[3] * (w_data - w_pars[1]) / w_pars[2]
+  if (isTRUE(any(check &lt;= 0))) return(-Inf)
+  o_loglik &lt;- log_gev(o_data, o_pars[1], o_pars[2], o_pars[3])
+  w_loglik &lt;- log_gev(w_data, w_pars[1], w_pars[2], w_pars[3])
+  return(o_loglik + w_loglik)
+}
+
+# Initial estimates (method of moments for the Gumbel case)
+sigma &lt;- as.numeric(sqrt(6 * diag(var(owtemps))) / pi)
+mu &lt;- as.numeric(colMeans(owtemps) - 0.57722 * sigma)
+init &lt;- c(mean(mu), -diff(mu) / 2, mean(sigma), -diff(sigma) / 2, 0, 0)
+
+# Log-likelihood adjustment of the full model
+par_names &lt;- c("mu[0]", "mu[1]", "sigma[0]", "sigma[1]", "xi[0]", "xi[1]")
+large &lt;- adjust_loglik(gev_loglik, data = owtemps, init = init,
+         par_names = par_names)
+
+# Log-likelihood adjustment of some smaller models: xi[1] = 0 etc
+
+medium &lt;- adjust_loglik(larger = large, fixed_pars = "xi[1]")
+small &lt;- adjust_loglik(larger = medium, fixed_pars = c("sigma[1]", "xi[1]"))
+
+# Tests
+
+# Test xi1 = 0 (2 equivalent ways), vertical adjustment
+compare_models(large, fixed_pars = "xi[1]")
+compare_models(large, medium)
+# Test xi1 = 0, using approximation
+compare_models(large, medium, approx = TRUE)
+
+# Horizontal adjustments
+compare_models(large, medium, type = "cholesky")$p_value
+compare_models(large, medium, type = "spectral")$p_value
+# No adjustment (independence loglikelihood)
+compare_models(large, medium, type = "none")$p_value
+
+# Test sigma1 = 0 for model with xi1 = 0
+compare_models(medium, small)
+# Test sigma1 = xi1 = 0
+compare_models(large, small)
+
+# --------- Misspecified Poisson model for negative binomial data ----------
+
+# ... following Section 5.1 of the "Object-Oriented Computation of Sandwich
+# Estimators" vignette of the sandwich package
+# https://cran.r-project.org/web/packages/sandwich/vignettes/sandwich-OOP.pdf
+
+# Simulate data
+set.seed(123)
+x &lt;- rnorm(250)
+y &lt;- rnbinom(250, mu = exp(1 + x), size = 1)
+# Fit misspecified Poisson model
+fm_pois &lt;- glm(y ~ x + I(x^2), family = poisson)
+summary(fm_pois)$coefficients
+
+# Contributions to the independence loglikelihood
+pois_glm_loglik &lt;- function(pars, y, x) {
+  log_mu &lt;- pars[1] + pars[2] * x + pars[3] * x ^ 2
+  return(dpois(y, lambda = exp(log_mu), log = TRUE))
+}
+pars &lt;- c("alpha", "beta", "gamma")
+pois_quad &lt;- adjust_loglik(pois_glm_loglik, y = y, x = x, par_names = pars)
+summary(pois_quad)
+
+pois_lin &lt;- adjust_loglik(larger = pois_quad, fixed_pars = "gamma")
+
+# Test the significance of the quadratic term
+compare_models(pois_quad, pois_lin)$p_value
+compare_models(pois_quad, pois_lin, approx = TRUE)$p_value
+</code></pre>
+
+
+</div>

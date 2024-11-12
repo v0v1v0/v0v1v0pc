@@ -1,0 +1,194 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cvTool</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Low-level function for cross-validation</h2>
+
+<h3>Description</h3>
+
+<p>Basic function to estimate the prediction error of a model via (repeated) 
+<code class="reqn">K</code>-fold cross-validation.  The model is thereby specified by an 
+unevaluated function call to a model fitting function.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cvTool(
+  call,
+  data = NULL,
+  x = NULL,
+  y,
+  cost = rmspe,
+  folds,
+  names = NULL,
+  predictArgs = list(),
+  costArgs = list(),
+  envir = parent.frame()
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>an unevaluated function call for fitting a model (see 
+<code>call</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a data frame containing the variables required for fitting the 
+models.  This is typically used if the model in the function call is 
+described by a <code>formula</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a numeric matrix containing the predictor variables.  This is 
+typically used if the function call for fitting the models requires the 
+predictor matrix and the response to be supplied as separate arguments.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>a numeric vector or matrix containing the response.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cost</code></td>
+<td>
+<p>a cost function measuring prediction loss.  It should expect 
+the observed values of the response to be passed as the first argument and 
+the predicted values as the second argument, and must return either a 
+non-negative scalar value, or a list with the first component containing 
+the prediction error and the second component containing the standard 
+error.  The default is to use the root mean squared prediction error 
+(see <code>cost</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>folds</code></td>
+<td>
+<p>an object of class <code>"cvFolds"</code> giving the folds of the 
+data for cross-validation (as returned by <code>cvFolds</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>names</code></td>
+<td>
+<p>an optional character vector giving names for the arguments 
+containing the data to be used in the function call (see “Details”).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predictArgs</code></td>
+<td>
+<p>a list of additional arguments to be passed to the 
+<code>predict</code> method of the fitted models.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>costArgs</code></td>
+<td>
+<p>a list of additional arguments to be passed to the 
+prediction loss function <code>cost</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>envir</code></td>
+<td>
+<p>the <code>environment</code> in which to evaluate the 
+function call for fitting the models (see <code>eval</code>).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>(Repeated) <code class="reqn">K</code>-fold cross-validation is performed in the following 
+way.  The data are first split into <code class="reqn">K</code> previously obtained blocks of 
+approximately equal size (given by <code>folds</code>).  Each of the <code class="reqn">K</code> data 
+blocks is left out once to fit the model, and predictions are computed for 
+the observations in the left-out block with the <code>predict</code> 
+method of the fitted model.  Thus a prediction is obtained for each 
+observation.
+</p>
+<p>The response variable and the obtained predictions for all observations are 
+then passed to the prediction loss function <code>cost</code> to estimate the 
+prediction error.  For repeated cross-validation (as indicated by 
+<code>folds</code>), this process is replicated and the estimated prediction 
+errors from all replications are returned.
+</p>
+<p>Furthermore, if the response is a vector but the 
+<code>predict</code> method of the fitted models returns a matrix, 
+the prediction error is computed for each column.  A typical use case for 
+this behavior would be if the <code>predict</code> method returns 
+predictions from an initial model fit and stepwise improvements thereof.
+</p>
+<p>If <code>data</code> is supplied, all variables required for fitting the models 
+are added as one argument to the function call, which is the typical 
+behavior of model fitting functions with a <code>formula</code> 
+interface.  In this case, a character string specifying the argument name 
+can be passed via <code>names</code> (the default is to use <code>"data"</code>).  
+</p>
+<p>If <code>x</code> is supplied, on the other hand, the predictor matrix and the 
+response are added as separate arguments to the function call.  In this 
+case, <code>names</code> should be a character vector of length two, with the 
+first element specifying the argument name for the predictor matrix and the 
+second element specifying the argument name for the response (the default is 
+to use <code>c("x", "y")</code>).  It should be noted that <code>data</code> takes 
+precedence over <code>x</code> if both are supplied.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If only one replication is requested and the prediction loss 
+function <code>cost</code> also returns the standard error, a list is returned, 
+with the first component containing the estimated prediction errors and the 
+second component the corresponding estimated standard errors.
+</p>
+<p>Otherwise the return value is a numeric matrix in which each column contains 
+the respective estimated prediction errors from all replications.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Andreas Alfons
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cvFit</code>, <code>cvTuning</code>, <code>cvFolds</code>, 
+<code>cost</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library("robustbase")
+data("coleman")
+set.seed(1234)  # set seed for reproducibility
+
+# set up function call for an MM regression model
+call &lt;- call("lmrob", formula = Y ~ .)
+# set up folds for cross-validation
+folds &lt;- cvFolds(nrow(coleman), K = 5, R = 10)
+
+# perform cross-validation
+cvTool(call, data = coleman, y = coleman$Y, cost = rtmspe, 
+    folds = folds, costArgs = list(trim = 0.1))
+</code></pre>
+
+
+</div>

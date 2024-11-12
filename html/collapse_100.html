@@ -1,0 +1,480 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>collapse-package</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2> 
+Advanced and Fast Data Transformation
+</h2>
+
+<h3>Description</h3>
+
+<p><em>collapse</em> is a C/C++ based package for data transformation and statistical computing in R. Its aims are:
+</p>
+
+<ul>
+<li>
+<p> To facilitate complex data transformation, exploration and computing tasks in R.
+</p>
+</li>
+<li>
+<p> To help make R code fast, flexible, parsimonious and programmer friendly. 
+
+</p>
+</li>
+</ul>
+<p>It is made compatible with the <em>tidyverse</em>, <em>data.table</em>, <em>sf</em>, <em>units</em>, <em>xts/zoo</em>, and the <em>plm</em> approach to panel data.
+</p>
+
+
+<h3>Getting Started</h3>
+
+<p>Read the short <a href="https://sebkrantz.github.io/collapse/articles/collapse_documentation.html">vignette</a> on documentation resources, and check out the built in documentation.  
+
+</p>
+
+
+<h3>Details</h3>
+
+
+<p><em>collapse</em> provides an integrated suite of statistical and data manipulation functions that greatly extend and enhance the capabilities of base R. In a nutshell, <em>collapse</em> provides:
+</p>
+
+<ul>
+<li>
+<p> Fast C/C++ based (grouped, weighted) computations embedded in highly optimized R code.
+</p>
+</li>
+<li>
+<p> More complex statistical, time series / panel data and recursive (list-processing) operations.
+</p>
+</li>
+<li>
+<p> A flexible and generic approach supporting and preserving many R objects. 
+</p>
+</li>
+<li>
+<p> Optimized programming in standard and non-standard evaluation.
+</p>
+</li>
+</ul>
+<p>The statistical functions in <em>collapse</em> are S3 generic with core methods for vectors, matrices and data frames, and internally support grouped and weighted computations carried out in C/C++. 
+
+
+</p>
+
+
+
+
+
+
+
+<p>Additional methods and C-level features enable broad based compatibility with <em>dplyr</em> (grouped tibble), <em>data.table</em>, <em>sf</em> and <em>plm</em> panel data classes. Functions and core methods seek to preserve object attributes (including column attributes such as variable labels), ensuring flexibility and effective workflows with a very broad range of R objects (including most time-series classes). See also the <a href="https://sebkrantz.github.io/collapse/articles/collapse_object_handling.html">vignette</a> on <em>collapse</em>'s handling of R objects.
+</p>
+<p>Missing values are efficiently skipped at C/C++ level. The package default is <code>na.rm = TRUE</code>. This can be changed using <code>set_collapse(na.rm = FALSE)</code>. Missing weights are generally supported. 
+</p>
+
+
+<p><em>collapse</em> installs with a built-in hierarchical documentation facilitating the use of the package. 
+</p>
+
+
+
+
+<p>The package is coded both in C and C++ and built with <em>Rcpp</em>, but also uses C/C++ functions from <em>data.table</em>, <em>kit</em>, <em>fixest</em>, <em>weights</em>, <em>stats</em> and <em>RcppArmadillo / RcppEigen</em>. 
+
+</p>
+
+
+<h3>Author(s)</h3>
+
+ 
+<p><b>Maintainer</b>: Sebastian Krantz <a href="mailto:sebastian.krantz@graduateinstitute.ch">sebastian.krantz@graduateinstitute.ch</a>
+</p>
+<p>Other contributors from packages <em>collapse</em> utilizes:
+</p>
+
+<ul>
+<li>
+<p> Matt Dowle, Arun Srinivasan and contributors worldwide (<em>data.table</em>)
+</p>
+</li>
+<li>
+<p> Dirk Eddelbuettel and contributors worldwide (<em>Rcpp</em>, <em>RcppArmadillo</em>, <em>RcppEigen</em>)
+</p>
+</li>
+<li>
+<p> Morgan Jacob (<em>kit</em>)
+</p>
+</li>
+<li>
+<p> Laurent Berge (<em>fixest</em>)
+</p>
+</li>
+<li>
+<p> Josh Pasek (<em>weights</em>)
+</p>
+</li>
+<li>
+<p> R Core Team and contributors worldwide (<em>stats</em>)
+</p>
+</li>
+</ul>
+<p>I thank many people from diverse fields for helpful answers on Stackoverflow, Joris Meys for encouraging me and helping to set up the <a href="https://github.com/SebKrantz/collapse">GitHub repository</a> for <em>collapse</em>, and many other people for feature requests and helpful suggestions.
+</p>
+
+
+<h3>Developing / Bug Reporting</h3>
+
+
+<ul>
+<li>
+<p> Please report issues at <a href="https://github.com/SebKrantz/collapse/issues">https://github.com/SebKrantz/collapse/issues</a>.
+</p>
+</li>
+<li>
+<p> Please send pull-requests to the 'development' branch of the repository.
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Note: this set of examples is is certainly non-exhaustive and does not
+## showcase many recent features, but remains a very good starting point
+
+## Let's start with some statistical programming
+v &lt;- iris$Sepal.Length
+d &lt;- num_vars(iris)    # Saving numeric variables
+f &lt;- iris$Species      # Factor
+
+# Simple statistics
+fmean(v)               # vector
+fmean(qM(d))           # matrix (qM is a faster as.matrix)
+fmean(d)               # data.frame
+
+# Preserving data structure
+fmean(qM(d), drop = FALSE)     # Still a matrix
+fmean(d, drop = FALSE)         # Still a data.frame
+
+# Weighted statistics, supported by most functions...
+w &lt;- abs(rnorm(fnrow(iris)))
+fmean(d, w = w)
+
+# Grouped statistics...
+fmean(d, f)
+
+# Groupwise-weighted statistics...
+fmean(d, f, w)
+
+# Simple Transformations...
+head(fmode(d, TRA = "replace"))    # Replacing values with the mode
+head(fmedian(d, TRA = "-"))        # Subtracting the median
+head(fsum(d, TRA = "%"))           # Computing percentages
+head(fsd(d, TRA = "/"))            # Dividing by the standard-deviation (scaling), etc...
+
+# Weighted Transformations...
+head(fnth(d, 0.75, w = w, TRA = "replace"))  # Replacing by the weighted 3rd quartile
+
+# Grouped Transformations...
+head(fvar(d, f, TRA = "replace"))  # Replacing values with the group variance
+head(fsd(d, f, TRA = "/"))         # Grouped scaling
+head(fmin(d, f, TRA = "-"))        # Setting the minimum value in each species to 0
+head(fsum(d, f, TRA = "/"))        # Dividing by the sum (proportions)
+head(fmedian(d, f, TRA = "-"))     # Groupwise de-median
+head(ffirst(d, f, TRA = "%%"))     # Taking modulus of first group-value, etc. ...
+
+# Grouped and weighted transformations...
+head(fsd(d, f, w, "/"), 3)         # weighted scaling
+head(fmedian(d, f, w, "-"), 3)     # subtracting the weighted group-median
+head(fmode(d, f, w, "replace"), 3) # replace with weighted statistical mode
+
+## Some more advanced transformations...
+head(fbetween(d))                             # Averaging (faster t.: fmean(d, TRA = "replace"))
+head(fwithin(d))                              # Centering (faster than: fmean(d, TRA = "-"))
+head(fwithin(d, f, w))                        # Grouped and weighted (same as fmean(d, f, w, "-"))
+head(fwithin(d, f, w, mean = 5))              # Setting a custom mean
+head(fwithin(d, f, w, theta = 0.76))          # Quasi-centering i.e. d - theta*fbetween(d, f, w)
+head(fwithin(d, f, w, mean = "overall.mean")) # Preserving the overall mean of the data
+head(fscale(d))                               # Scaling and centering
+head(fscale(d, mean = 5, sd = 3))             # Custom scaling and centering
+head(fscale(d, mean = FALSE, sd = 3))         # Mean preserving scaling
+head(fscale(d, f, w))                         # Grouped and weighted scaling and centering
+head(fscale(d, f, w, mean = 5, sd = 3))       # Custom grouped and weighted scaling and centering
+head(fscale(d, f, w, mean = FALSE,            # Preserving group means
+            sd = "within.sd"))                # and setting group-sd to fsd(fwithin(d, f, w), w = w)
+head(fscale(d, f, w, mean = "overall.mean",   # Full harmonization of group means and variances,
+            sd = "within.sd"))                # while preserving the level and scale of the data.
+
+head(get_vars(iris, 1:2))                      # Use get_vars for fast selecting, gv is shortcut
+head(fhdbetween(gv(iris, 1:2), gv(iris, 3:5))) # Linear prediction with factors and covariates
+head(fhdwithin(gv(iris, 1:2), gv(iris, 3:5)))  # Linear partialling out factors and covariates
+ss(iris, 1:10, 1:2)                            # Similarly fsubset/ss for fast subsetting rows
+
+# Simple Time-Computations..
+head(flag(AirPassengers, -1:3))                # One lead and three lags
+head(fdiff(EuStockMarkets,                     # Suitably lagged first and second differences
+      c(1, frequency(EuStockMarkets)), diff = 1:2))
+head(fdiff(EuStockMarkets, rho = 0.87))        # Quasi-differences (x_t - rho*x_t-1)
+head(fdiff(EuStockMarkets, log = TRUE))        # Log-differences
+head(fgrowth(EuStockMarkets))                  # Exact growth rates (percentage change)
+head(fgrowth(EuStockMarkets, logdiff = TRUE))  # Log-difference growth rates (percentage change)
+# Note that it is not necessary to use factors for grouping.
+fmean(gv(mtcars, -c(2,8:9)), mtcars$cyl) # Can also use vector (internally converted using qF())
+fmean(gv(mtcars, -c(2,8:9)),
+      gv(mtcars, c(2,8:9)))              # or a list of vector (internally grouped using GRP())
+g &lt;- GRP(mtcars, ~ cyl + vs + am)        # It is also possible to create grouping objects
+print(g)                                 # These are instructive to learn about the grouping,
+plot(g)                                  # and are directly handed down to C++ code
+fmean(gv(mtcars, -c(2,8:9)), g)          # This can speed up multiple computations over same groups
+fsd(gv(mtcars, -c(2,8:9)), g)
+
+# Factors can efficiently be created using qF()
+f1 &lt;- qF(mtcars$cyl)                     # Unlike GRP objects, factors are checked for NA's
+f2 &lt;- qF(mtcars$cyl, na.exclude = FALSE) # This can however be avoided through this option
+class(f2)                                # Note the added class
+
+library(microbenchmark)
+microbenchmark(fmean(mtcars, f1), fmean(mtcars, f2)) # A minor difference, larger on larger data
+
+with(mtcars, finteraction(cyl, vs, am))  # Efficient interactions of vectors and/or factors
+finteraction(gv(mtcars, c(2,8:9)))       # .. or lists of vectors/factors
+
+# Simple row- or column-wise computations on matrices or data frames with dapply()
+dapply(mtcars, quantile)                 # column quantiles
+dapply(mtcars, quantile, MARGIN = 1)     # Row-quantiles
+  # dapply preserves the data structure of any matrices / data frames passed
+  # Some fast matrix row/column functions are also provided by the matrixStats package
+# Similarly, BY performs grouped comptations
+BY(mtcars, f2, quantile)
+BY(mtcars, f2, quantile, expand.wide = TRUE)
+# For efficient (grouped) replacing and sweeping out computed statistics, use TRA()
+sds &lt;- fsd(mtcars)
+head(TRA(mtcars, sds, "/"))     # Simple scaling (if sd's not needed, use fsd(mtcars, TRA = "/"))
+
+microbenchmark(TRA(mtcars, sds, "/"), sweep(mtcars, 2, sds, "/")) # A remarkable performance gain..
+
+sds &lt;- fsd(mtcars, f2)
+head(TRA(mtcars, sds, "/", f2)) # Groupd scaling (if sd's not needed: fsd(mtcars, f2, TRA = "/"))
+
+# All functions above perserve the structure of matrices / data frames
+# If conversions are required, use these efficient functions:
+mtcarsM &lt;- qM(mtcars)                      # Matrix from data.frame
+head(qDF(mtcarsM))                         # data.frame from matrix columns
+head(mrtl(mtcarsM, TRUE, "data.frame"))    # data.frame from matrix rows, etc..
+head(qDT(mtcarsM, "cars"))                 # Saving row.names when converting matrix to data.table
+head(qDT(mtcars, "cars"))                  # Same use a data.frame
+ 
+## Now let's get some real data and see how we can use this power for data manipulation
+head(wlddev) # World Bank World Development Data: 216 countries, 61 years, 5 series (columns 9-13)
+
+# Starting with some discriptive tools...
+namlab(wlddev, class = TRUE)           # Show variable names, labels and classes
+fnobs(wlddev)                          # Observation count
+pwnobs(wlddev)                         # Pairwise observation count
+head(fnobs(wlddev, wlddev$country))    # Grouped observation count
+fndistinct(wlddev)                     # Distinct values
+descr(wlddev)                          # Describe data
+varying(wlddev, ~ country)             # Show which variables vary within countries
+qsu(wlddev, pid = ~ country,           # Panel-summarize columns 9 though 12 of this data
+    cols = 9:12, vlabels = TRUE)       # (between and within countries)
+qsu(wlddev, ~ region, ~ country,       # Do all of that by region and also compute higher moments
+    cols = 9:12, higher = TRUE)        # -&gt; returns a 4D array
+qsu(wlddev, ~ region, ~ country, cols = 9:12,
+    higher = TRUE, array = FALSE) |&gt;                           # Return as a list of matrices..
+unlist2d(c("Variable","Trans"), row.names = "Region") |&gt; head()# and turn into a tidy data.frame
+pwcor(num_vars(wlddev), P = TRUE)                           # Pairwise correlations with p-value
+pwcor(fmean(num_vars(wlddev), wlddev$country), P = TRUE)    # Correlating country means
+pwcor(fwithin(num_vars(wlddev), wlddev$country), P = TRUE)  # Within-country correlations
+psacf(wlddev, ~country, ~year, cols = 9:12)                 # Panel-data Autocorrelation function
+pspacf(wlddev, ~country, ~year, cols = 9:12)                # Partial panel-autocorrelations
+psmat(wlddev, ~iso3c, ~year, cols = 9:12) |&gt; plot()         # Convert panel to 3D array and plot
+
+## collapse offers a few very efficent functions for data manipulation:
+# Fast selecting and replacing columns
+series &lt;- get_vars(wlddev, 9:12)     # Same as wlddev[9:12] but 2x faster
+series &lt;- fselect(wlddev, PCGDP:ODA) # Same thing: &gt; 100x faster than dplyr::select
+get_vars(wlddev, 9:12) &lt;- series     # Replace, 8x faster wlddev[9:12] &lt;- series + replaces names
+fselect(wlddev, PCGDP:ODA) &lt;- series # Same thing
+
+# Fast subsetting
+head(fsubset(wlddev, country == "Ireland", -country, -iso3c))
+head(fsubset(wlddev, country == "Ireland" &amp; year &gt; 1990, year, PCGDP:ODA))
+ss(wlddev, 1:10, 1:10) # This is an order of magnitude faster than wlddev[1:10, 1:10]
+
+# Fast transforming
+head(ftransform(wlddev, ODA_GDP = ODA / PCGDP, ODA_LIFEEX = sqrt(ODA) / LIFEEX))
+settransform(wlddev, ODA_GDP = ODA / PCGDP, ODA_LIFEEX = sqrt(ODA) / LIFEEX) # by reference
+head(ftransform(wlddev, PCGDP = NULL, ODA = NULL, GINI_sum = fsum(GINI)))
+head(ftransformv(wlddev, 9:12, log))                   # Can also transform with lists of columns
+head(ftransformv(wlddev, 9:12, fscale, apply = FALSE)) # apply = FALSE invokes fscale.data.frame
+settransformv(wlddev, 9:12, fscale, apply = FALSE)     # Changing the data by reference
+ftransform(wlddev) &lt;- fscale(gv(wlddev, 9:12))         # Same thing (using replacement method)
+
+library(magrittr) # Same thing, using magrittr
+wlddev %&lt;&gt;% ftransformv(9:12, fscale, apply = FALSE)
+wlddev %&gt;% ftransform(gv(., 9:12) |&gt;              # With compound pipes: Scaling and lagging
+                        fscale() |&gt; flag(0:2, iso3c, year)) |&gt; head()
+
+# Fast reordering
+head(roworder(wlddev, -country, year))
+head(colorder(wlddev, country, year))
+
+# Fast renaming
+head(frename(wlddev, country = Ctry, year = Yr))
+setrename(wlddev, country = Ctry, year = Yr)     # By reference
+head(frename(wlddev, tolower, cols = 9:12))
+
+# Fast grouping
+fgroup_by(wlddev, Ctry, decade) |&gt; fgroup_vars() |&gt; head()
+rm(wlddev)                                       # .. but only works with collapse functions
+
+## Now lets start putting things together
+wlddev |&gt; fsubset(year &gt; 1990, region, income, PCGDP:ODA) |&gt;
+  fgroup_by(region, income) |&gt; fmean()         # Fast aggregation using the mean
+
+# Same thing using dplyr manipulation verbs
+library(dplyr)
+wlddev |&gt; filter(year &gt; 1990) |&gt; select(region, income, PCGDP:ODA) |&gt;
+  group_by(region,income) |&gt; fmean()       # This is already a lot faster than summarize_all(mean)
+
+wlddev |&gt; fsubset(year &gt; 1990, region, income, PCGDP:POP) |&gt;
+  fgroup_by(region, income) |&gt; fmean(POP)     # Weighted group means
+
+wlddev |&gt; fsubset(year &gt; 1990, region, income, PCGDP:POP) |&gt;
+  fgroup_by(region, income) |&gt; fsd(POP)       # Weighted group standard deviations
+
+wlddev |&gt; na_omit(cols = "POP") |&gt; fgroup_by(region, income) |&gt;
+  fselect(PCGDP:POP) |&gt; fnth(0.75, POP)       # Weighted group third quartile
+
+wlddev |&gt; fgroup_by(country) |&gt; fselect(PCGDP:ODA) |&gt;
+  fwithin() |&gt; head()                         # Within transformation
+wlddev |&gt; fgroup_by(country) |&gt; fselect(PCGDP:ODA) |&gt;
+  fmedian(TRA = "-") |&gt; head()                # Grouped centering using the median
+# Replacing data points by the weighted first quartile:
+wlddev |&gt; na_omit(cols = "POP") |&gt; fgroup_by(country) |&gt;
+  fselect(country, year, PCGDP:POP) %&gt;%
+  ftransform(fselect(., -country, -year) |&gt;
+             fnth(0.25, POP, "fill")) |&gt; head()
+
+wlddev |&gt; fgroup_by(country) |&gt; fselect(PCGDP:ODA) |&gt; fscale() |&gt; head() # Standardizing
+wlddev |&gt; fgroup_by(country) |&gt; fselect(PCGDP:POP) |&gt;
+   fscale(POP) |&gt; head()  # Weighted..
+
+wlddev |&gt; fselect(country, year, PCGDP:ODA) |&gt;  # Adding 1 lead and 2 lags of each variable
+  fgroup_by(country) |&gt; flag(-1:2, year) |&gt; head()
+wlddev |&gt; fselect(country, year, PCGDP:ODA) |&gt;  # Adding 1 lead and 10-year growth rates
+  fgroup_by(country) |&gt; fgrowth(c(0:1,10), 1, year) |&gt; head()
+
+# etc...
+
+# Aggregation with multiple functions
+wlddev |&gt; fsubset(year &gt; 1990, region, income, PCGDP:ODA) |&gt;
+  fgroup_by(region, income) %&gt;% {
+    add_vars(fgroup_vars(., "unique"),
+             fmedian(., keep.group_vars = FALSE) |&gt; add_stub("median_"),
+             fmean(., keep.group_vars = FALSE) |&gt; add_stub("mean_"),
+             fsd(., keep.group_vars = FALSE) |&gt; add_stub("sd_"))
+  } |&gt; head()
+
+# Transformation with multiple functions
+wlddev |&gt; fselect(country, year, PCGDP:ODA) |&gt;
+  fgroup_by(country) %&gt;% {
+    add_vars(fdiff(., c(1,10), 1, year) |&gt; flag(0:2, year),  # Sequence of lagged differences
+             ftransform(., fselect(., PCGDP:ODA) |&gt; fwithin() |&gt; add_stub("W.")) |&gt;
+               flag(0:2, year, keep.ids = FALSE))            # Sequence of lagged demeaned vars
+  } |&gt; head()
+
+# With ftransform, can also easily do one or more grouped mutations on the fly..
+settransform(wlddev, median_ODA = fmedian(ODA, list(region, income), TRA = "fill"))
+
+settransform(wlddev, sd_ODA = fsd(ODA, list(region, income), TRA = "fill"),
+                     mean_GDP = fmean(PCGDP, country, TRA = "fill"))
+
+wlddev %&lt;&gt;% ftransform(fmedian(list(median_ODA = ODA, median_GDP = PCGDP),
+                               list(region, income), TRA = "fill"))
+
+# On a groped data frame it is also possible to grouped transform certain columns
+# but perform aggregate operatins on others:
+wlddev |&gt; fgroup_by(region, income) %&gt;%
+    ftransform(gmedian_GDP = fmedian(PCGDP, GRP(.), TRA = "replace"),
+               omedian_GDP = fmedian(PCGDP, TRA = "replace"),  # "replace" preserves NA's
+               omedian_GDP_fill = fmedian(PCGDP)) |&gt; tail()
+
+rm(wlddev)
+
+## For multi-type data aggregation, the function collap() offers ease and flexibility
+# Aggregate this data by country and decade: Numeric columns with mean, categorical with mode
+head(collap(wlddev, ~ country + decade, fmean, fmode))
+
+# taking weighted mean and weighted mode:
+head(collap(wlddev, ~ country + decade, fmean, fmode, w = ~ POP, wFUN = fsum))
+
+# Multi-function aggregation of certain columns
+head(collap(wlddev, ~ country + decade,
+            list(fmean, fmedian, fsd),
+            list(ffirst, flast), cols = c(3,9:12)))
+
+# Customized Aggregation: Assign columns to functions
+head(collap(wlddev, ~ country + decade,
+            custom = list(fmean = 9:10, fsd = 9:12, flast = 3, ffirst = 6:8)))
+
+# For grouped data frames use collapg
+wlddev |&gt; fsubset(year &gt; 1990, country, region, income, PCGDP:ODA) |&gt;
+  fgroup_by(country) |&gt; collapg(fmean, ffirst) |&gt;
+  ftransform(AMGDP = PCGDP &gt; fmedian(PCGDP, list(region, income), TRA = "fill"),
+             AMODA = ODA &gt; fmedian(ODA, income, TRA = "replace_fill")) |&gt; head()
+
+## Additional flexibility for data transformation tasks is offerend by tidy transformation operators
+# Within-transformation (centering on overall mean)
+head(W(wlddev, ~ country, cols = 9:12, mean = "overall.mean"))
+# Partialling out country and year fixed effects
+head(HDW(wlddev, PCGDP + LIFEEX ~ qF(country) + qF(year)))
+# Same, adding ODA as continuous regressor
+head(HDW(wlddev, PCGDP + LIFEEX ~ qF(country) + qF(year) + ODA))
+# Standardizing (scaling and centering) by country
+head(STD(wlddev, ~ country, cols = 9:12))
+# Computing 1 lead and 3 lags of the 4 series
+head(L(wlddev, -1:3, ~ country, ~year, cols = 9:12))
+# Computing the 1- and 10-year first differences
+head(D(wlddev, c(1,10), 1, ~ country, ~year, cols = 9:12))
+head(D(wlddev, c(1,10), 1:2, ~ country, ~year, cols = 9:12))     # ..first and second differences
+# Computing the 1- and 10-year growth rates
+head(G(wlddev, c(1,10), 1, ~ country, ~year, cols = 9:12))
+# Adding growth rate variables to dataset
+add_vars(wlddev) &lt;- G(wlddev, c(1, 10), 1, ~ country, ~year, cols = 9:12, keep.ids = FALSE)
+get_vars(wlddev, "G1.", regex = TRUE) &lt;- NULL # Deleting again
+
+# These operators can conveniently be used in regression formulas:
+# Using a Mundlak (1978) procedure to estimate the effect of OECD on LIFEEX, controlling for PCGDP
+lm(LIFEEX ~ log(PCGDP) + OECD + B(log(PCGDP), country),
+   wlddev |&gt; fselect(country, OECD, PCGDP, LIFEEX) |&gt; na_omit())
+
+# Adding 10-year lagged life-expectancy to allow for some convergence effects (dynamic panel model)
+lm(LIFEEX ~ L(LIFEEX, 10, country) + log(PCGDP) + OECD + B(log(PCGDP), country),
+   wlddev |&gt; fselect(country, OECD, PCGDP, LIFEEX) |&gt; na_omit())
+
+# Tranformation functions and operators also support indexed data classes:
+wldi &lt;- findex_by(wlddev, country, year)
+head(W(wldi$PCGDP))                      # Country-demeaning
+head(W(wldi, cols = 9:12))
+head(W(wldi$PCGDP, effect = 2))          # Time-demeaning
+head(W(wldi, effect = 2, cols = 9:12))
+head(HDW(wldi$PCGDP))                    # Country- and time-demeaning
+head(HDW(wldi, cols = 9:12))
+head(STD(wldi$PCGDP))                    # Standardizing by country
+head(STD(wldi, cols = 9:12))
+head(L(wldi$PCGDP, -1:3))                # Panel-lags
+head(L(wldi, -1:3, 9:12))
+head(G(wldi$PCGDP))                      # Panel-Growth rates
+head(G(wldi, 1, 1, 9:12))
+
+lm(Dlog(PCGDP) ~ L(Dlog(LIFEEX), 0:3), wldi)   # Panel data regression
+rm(wldi)
+
+# Remove all objects used in this example section
+rm(v, d, w, f, f1, f2, g, mtcarsM, sds, series, wlddev)
+</code></pre>
+
+
+</div>

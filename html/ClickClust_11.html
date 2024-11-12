@@ -1,0 +1,144 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>click.var</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2> Variance-covariance matrix estimation</h2>
+
+<h3>Description</h3>
+
+<p>Estimates the variance-covariance matrix for model parameter estimates.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">click.var(X, y = NULL, alpha, beta = NULL, gamma, z)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X </code></td>
+<td>
+<p> dataset array (p x p x n) </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y </code></td>
+<td>
+<p> vector of initial states (length n) </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha </code></td>
+<td>
+<p> vector of mixing proportions (length K)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta </code></td>
+<td>
+<p> matrix of initial state probabilities (K x p)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gamma </code></td>
+<td>
+<p> array of transition probabilities (p x p x K)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z </code></td>
+<td>
+<p> matrix of posterior probabilities (n x K)</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Returns an estimated variance-covariance matrix for model parameter estimates.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Melnykov, V.</p>
+
+
+<h3>References</h3>
+
+<p>Melnykov, V. (2016) Model-Based Biclustering of Clickstream Data, Computational Statistics and Data Analysis, 93, 31-45.
+</p>
+<p>Melnykov, V. (2016) ClickClust: An R Package for Model-Based Clustering of Categorical Sequences, Journal of Statistical Software, 74, 1-34.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>click.EM</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+set.seed(123)
+
+n.seq &lt;- 200
+
+p &lt;- 5
+K &lt;- 2
+mix.prop &lt;- c(0.3, 0.7)
+
+
+TP1 &lt;- matrix(c(0.20, 0.10, 0.15, 0.15, 0.40,
+                0.20, 0.20, 0.20, 0.20, 0.20,
+                0.15, 0.10, 0.20, 0.20, 0.35,
+                0.15, 0.10, 0.20, 0.20, 0.35,
+                0.30, 0.30, 0.10, 0.10, 0.20), byrow = TRUE, ncol = p)
+
+TP2 &lt;- matrix(c(0.15, 0.15, 0.20, 0.20, 0.30,
+                0.20, 0.10, 0.30, 0.30, 0.10,
+                0.25, 0.20, 0.15, 0.15, 0.25,
+                0.25, 0.20, 0.15, 0.15, 0.25,
+                0.10, 0.30, 0.20, 0.20, 0.20), byrow = TRUE, ncol = p)
+
+
+TP &lt;- array(rep(NA, p * p * K), c(p, p, K))
+TP[,,1] &lt;- TP1
+TP[,,2] &lt;- TP2
+
+
+# DATA SIMULATION
+
+A &lt;- click.sim(n = n.seq, int = c(10, 50), alpha = mix.prop, gamma = TP)
+C &lt;- click.read(A$S)
+
+
+# EM ALGORITHM
+
+M2 &lt;- click.EM(X = C$X, y = C$y, K = 2)
+
+
+# VARIANCE ESTIMATION
+
+V &lt;- click.var(X = C$X, y = C$y, alpha = M2$alpha, beta = M2$beta,
+               gamma = M2$gamma, z = M2$z)
+
+# 95% confidence intervals for all model parameters
+
+Estimate &lt;- c(M2$alpha[-K], as.vector(t(M2$beta[,-p])),
+              as.vector(apply(M2$gamma[,-p,], 3, t)))
+
+Lower &lt;- Estimate - qnorm(0.975) * sqrt(diag(V))
+Upper &lt;- Estimate + qnorm(0.975) * sqrt(diag(V))
+
+cbind(Estimate, Lower, Upper)
+
+</code></pre>
+
+
+</div>

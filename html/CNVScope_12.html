@@ -1,0 +1,158 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>getAsymmetricBlockIndices</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Get Block Indices from an asymmetric (or symmetric) matrix.</h2>
+
+<h3>Description</h3>
+
+<p>This function segments a matrix, including asymmetric matrices using multiple imputation (MI) techniques and a segmentation algorithm to generate breakpoints for column and row.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">getAsymmetricBlockIndices(
+  genomicmatrix = NULL,
+  algorithm = "HiCseg",
+  nb_change_max = 100,
+  distrib = "G",
+  model = "D",
+  MI_strategy = "average",
+  transpose = T
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>genomicmatrix</code></td>
+<td>
+<p>the large, whole matrix from which blocks are taken</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>algorithm</code></td>
+<td>
+<p>Algorithm to be used: HiCseg or jointSeg.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nb_change_max</code></td>
+<td>
+<p>the maximal number of changepoints, passed to HiCseg (if this algorithm is used). Note: HiCseg doesn't actually obey this limit. Rather, use it as a parameter to increase/decrease segmentation extent.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>distrib</code></td>
+<td>
+<p>Passed to Hicseg_linkC_R, from their documentation: Distribution of the data: "B" is for Negative Binomial distribution, "P" is for the Poisson distribution and "G" is for the Gaussian distribution."</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>Passed on to HiCseg_linkC_R: "Type of model: "D" for block-diagonal and "Dplus" for the extended block-diagonal model."</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MI_strategy</code></td>
+<td>
+<p>strategy to make the matrix temporarily symmetric. "average" adds a number of values equal to the average of the matrix, while copy copies part of the matrix to the shorter side, making a square matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>transpose</code></td>
+<td>
+<p>transpose the matrix and output the breakpoints? Some segmentation algorithms (e.g. HiCseg) produces different results when used against the transposed version of the matrix, as it expects symmetry. This allows the output of additional breakpoints Users can choose to take intersect() or union() on the results to get conserved changepoints or additional changepoints, depending on need.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An output list of the following:
+</p>
+<p>breakpoints_col A vector of breakpoints for the columns.
+</p>
+<p>breakpoints_row A vector of breakpoints for the rows.
+</p>
+<p>breakpoints_col A vector of breakpoints for columns on the transposed genomic matrix.
+</p>
+<p>breakpoints_row A vector of breakpoints for the rows on the transposed genomic matrix.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+load(system.file("extdata","nbl_result_matrix_sign_small.rda",package = "CNVScope")) 
+submatrix_tiny&lt;-nbl_result_matrix_sign_small
+tiny_test&lt;-getAsymmetricBlockIndices(submatrix_tiny,nb_change_max=10,algorithm="jointSeg")
+## Not run: 
+submatrix_wide&lt;-submatrix_tiny[1:5,]
+submatrix_narrow&lt;-submatrix_tiny[,1:5]
+wide_test&lt;-getAsymmetricBlockIndices(submatrix_wide,distrib = "G",model = "Dplus",
+ nb_change_max = 1e4)
+ #the below work, but the time to run all of these would be greater than 10 seconds..
+random_wide&lt;-matrix(runif(n = 400*200),ncol=400,nrow=200)
+random_narrow&lt;-matrix(runif(n = 400*200),ncol=200,nrow=400)
+random_wide_test_avg&lt;-getAsymmetricBlockIndices(random_wide,
+ distrib = "G",model = "Dplus",nb_change_max = 1e4)
+random_narrow_test_avg&lt;-getAsymmetricBlockIndices(random_narrow,
+ distrib = "G",model = "Dplus",nb_change_max = 1e4)
+random_wide_test_copy&lt;-getAsymmetricBlockIndices(random_wide,
+ distrib = "G",model = "Dplus",nb_change_max = 1e4,MI_strategy = "copy")
+random_narrow_test_copy&lt;-getAsymmetricBlockIndices(random_narrow,
+ distrib = "G",model = "Dplus",nb_change_max = 1e4,MI_strategy = "copy")
+genomicmatrix=random_narrow
+nb_change_max=100
+model = "D"
+distrib = "G"
+MI_strategy="copy"
+#question-- does it pick different breakpoints if transposed first?
+#Answer: yes, at least in Dplus model.
+rm(genomicmatrix)
+rm(model)
+rm(distrib)
+rm(MI_strategy)
+random_wide_test_copy&lt;-getAsymmetricBlockIndices(genomicmatrix = random_wide,
+                                                 distrib = "G",
+                                     model = "Dplus",nb_change_max = 1e2,MI_strategy = "copy")
+random_narrow_test_copy&lt;-getAsymmetricBlockIndices(random_narrow,distrib = "G",
+                                                   model = "Dplus",
+                                                   nb_change_max = 1e2,MI_strategy = "copy")
+random_wide_test_copy_t&lt;-getAsymmetricBlockIndices(genomicmatrix = t(random_wide),
+                                                  distrib = "G",model = "Dplus",
+                                                  nb_change_max = 1e2,MI_strategy = "copy")
+random_narrow_test_copy_t&lt;-getAsymmetricBlockIndices(genomicmatrix = t(random_narrow),
+                                                    distrib = "G",model = "Dplus",
+                                                    nb_change_max = 1e2,MI_strategy = "copy")
+length(intersect(random_wide_test_copy$breakpoints_col,
+random_wide_test_copy_t$breakpoints_row))/length(unique(c(random_wide_test_copy$breakpoints_col,
+random_wide_test_copy_t$breakpoints_row)))
+random_wide_test_copy_with_transpose&lt;-getAsymmetricBlockIndices(genomicmatrix = random_wide,
+ distrib = "G",model = "Dplus",nb_change_max = 1e2,MI_strategy = "copy",transpose = T)
+random_narrow_test_copy_with_transpose&lt;-getAsymmetricBlockIndices(genomicmatrix = random_narrow,
+ distrib = "G",model = "Dplus",nb_change_max = 1e2,MI_strategy = "copy",transpose = T)
+random_narrow_test_copy_with_transpose&lt;-getAsymmetricBlockIndices(genomicmatrix = random_narrow,
+ distrib = "G",model = "Dplus",nb_change_max = 1e2,MI_strategy = "copy",transpose = T)
+conserved_breakpoints_col&lt;-intersect(random_narrow_test_copy_with_transpose$breakpoints_col,
+ random_narrow_test_copy_with_transpose$t_breakpoints_row)
+conserved_breakpoints_row&lt;-intersect(random_narrow_test_copy_with_transpose$breakpoints_row,
+ random_narrow_test_copy_with_transpose$t_breakpoints_col)
+random_wide_test_copy_with_transpose&lt;-getAsymmetricBlockIndices(genomicmatrix = random_wide,
+ distrib = "G",model = "Dplus",nb_change_max = 1e2,MI_strategy = "copy",transpose = T)
+conserved_breakpoints_col&lt;-intersect(random_wide_test_copy_with_transpose$breakpoints_col,
+ random_wide_test_copy_with_transpose$t_breakpoints_row)
+conserved_breakpoints_row&lt;-intersect(random_wide_test_copy_with_transpose$breakpoints_row,
+ random_wide_test_copy_with_transpose$t_breakpoints_col)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

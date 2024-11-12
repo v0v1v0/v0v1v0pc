@@ -1,0 +1,189 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>coat</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Conditional Method Agreement Trees (COAT)</h2>
+
+<h3>Description</h3>
+
+<p>Tree models capturing the dependence of method agreement on covariates.
+The classic Bland-Altman analysis is used for modeling method agreement
+while the covariate dependency can be learned either nonparametrically
+via conditional inference trees (CTree) or using model-based recursive
+partitioning (MOB).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">coat(
+  formula,
+  data,
+  subset,
+  na.action,
+  weights,
+  means = FALSE,
+  type = c("ctree", "mob"),
+  minsize = 10L,
+  minbucket = minsize,
+  minsplit = NULL,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>symbolic description of the model of type <code>y1 + y2 ~ x1 + ... + xk</code>.
+The left-hand side should specify a pair of measurements (<code>y1</code> and <code>y2</code>) for the Bland-Altman analysis.
+The right-hand side can specify any number of potential split variables for the tree.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data, subset, na.action</code></td>
+<td>
+<p>arguments controlling the formula processing
+via <code>model.frame</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>optional numeric vector of weights (case/frequency weights, by default).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>means</code></td>
+<td>
+<p>logical. Should the intra-individual mean values of measurements
+be included as potential split variable?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>character string specifying the type of tree to be fit. Either <code>"ctree"</code> (default) or <code>"mob"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minsize, minbucket</code></td>
+<td>
+<p>integer. The minimum number of observations in a subgroup.
+Only one of the two arguments should be used (see also below).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minsplit</code></td>
+<td>
+<p>integer. The minimum number of observations to consider splitting.
+Must be at least twice the minimal subgroup size (<code>minsplit</code> or <code>minbucket</code>).
+If set to <code>NULL</code> (the default) it is set to be at least 2.5 times the minimal
+subgroup size.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>further control arguments, either passed to <code>ctree_control</code>
+or <code>mob_control</code>, respectively.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Conditional method agreement trees (COAT) employ unbiased
+recursive partitioning in order to detect and model dependency on covariates
+in the classic Bland-Altman analysis. One of two recursive partitioning techniques
+can be used to find subgroups defined by splits in covariates to a pair
+of measurements, either nonparametric conditional inference trees (CTree)
+or parametric model-based trees (MOB). In both cases, each subgroup is associated
+with two parameter estimates: the mean of the measurement difference (“Bias”)
+and the corresponding sample standard deviation (“SD”) which can be
+used to construct the limits of agreement (i.e., the corresponding confidence intervals).
+</p>
+<p>The minimum number of observations in a subgroup defaults to 10,
+so that the mean and variance of the measurement differences can be estimated
+reasonably for the Bland-Altman analysis. The default can be changed with
+with the argument <code>minsize</code> or, equivalently, <code>minbucket</code>.
+(The different names stem from slightly different conventions in the underlying
+tree functions.) Consequently, the minimum number of observations to consider
+splitting (<code>minsplit</code>) must be, at the very least, twice the minimum number
+of observations per subgroup (which would allow only one possible split, though).
+By default, <code>minsplit</code> is 2.5 times <code>minsize</code>.
+Users are encouraged to consider whether for their application it is sensible
+to increase or decrease these defaults. Finally, further control parameters
+can be specified through the <code>...</code> argument, see
+<code>ctree_control</code> and <code>mob_control</code>,
+respectively, for details.
+</p>
+<p>In addition to the standard specification of the two response measurements in the
+formula via <code>y1 + y2 ~ ...</code>, it is also possible to use <code>y1 - y2 ~ ...</code>.
+The latter may be more intuitive for users that think of it as a model for the
+difference of two measurements. Finally <code>cbind(y1, y2) ~ ...</code> also works.
+Internally, all of these are processed in the same way, namely as a bivariate
+dependent variable that can then be modeled and plotted appropriately.
+</p>
+<p>To add the means of the measurement pair as a potential splitting variable,
+there are also different equivalent strategies. The standard specification would
+be via the <code>means</code> argument: <code>y1 + y2 ~ x1 + ..., means = TRUE</code>.
+Alternatively, the user can also extend the formula argument via
+<code>y1 + y2 ~ x1 + ... + means(y1, y2)</code>.
+</p>
+<p>The SD is estimated by the usual sample standard deviation in each subgroup,
+i.e., divided by the sample size <code class="reqn">n - 1</code>. Note that the inference in the
+MOB algorithm internally uses the maximum likelihood estimate (divided by <code class="reqn">n</code>)
+instead so the the fluctuation tests for parameter instability can be applied.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Object of class <code>coat</code>, inheriting either from <code>constparty</code> (if <code>ctree</code>
+is used) or <code>modelparty</code> (if <code>mob</code> is used).
+</p>
+
+
+<h3>References</h3>
+
+<p>Karapetyan S, Zeileis A, Henriksen A, Hapfelmeier A (2023).
+“Tree Models for Assessing Covariate-Dependent Method Agreement.”
+arXiv 2306.04456, <em>arXiv.org E-Print Archive</em>.
+<a href="https://doi.org/10.48550/arXiv.2306.04456">doi:10.48550/arXiv.2306.04456</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## package and data (reshaped to wide format)
+library("coat")
+data("scint", package = "MethComp")
+scint_wide &lt;- reshape(scint, v.names = "y", timevar = "meth", idvar = "item", direction = "wide")
+
+## coat based on ctree() without and with mean values of paired measurements as predictor
+tr1 &lt;- coat(y.DTPA + y.DMSA ~ age + sex, data = scint_wide)
+tr2 &lt;- coat(y.DTPA + y.DMSA ~ age + sex, data = scint_wide, means = TRUE)
+
+## display
+print(tr1)
+plot(tr1)
+
+print(tr2)
+plot(tr2)
+
+## tweak various graphical arguments of the panel function (just for illustration):
+## different colors, nonparametric bootstrap percentile confidence intervals, ...
+plot(tr1, tp_args = list(
+  xscale = c(0, 150), linecol = "deeppink",
+  confint = TRUE, B = 250, cilevel = 0.5, cicol = "gold"
+))
+</code></pre>
+
+
+</div>

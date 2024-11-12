@@ -1,0 +1,139 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ShareRatioElasticities</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute share ratio elasticities for CoDa models</h2>
+
+<h3>Description</h3>
+
+<p>In CoDa models with compositional dependent variable (Y) share ratio elasticities (SRE)
+allow to interpret the influence of compositional explanatory variables (X).
+The interpretation is analogous to usual elasticities:
+</p>
+
+<ul>
+<li>
+<p> When the share ratio of X increases by 1% the share ratio of Y increases by SRE%
+</p>
+</li>
+<li>
+<p> The main difference to usual elasticities that, since X is compositional
+the change of X musts be specified in terms of a direction in the simplex.
+</p>
+</li>
+</ul>
+<h3>Usage</h3>
+
+<pre><code class="language-R">ShareRatioElasticities(object, Xvar, Xdir = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>an object of class "lmCoDa"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Xvar</code></td>
+<td>
+<p>a character indicating the name of the explanatory variable that changes</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Xdir</code></td>
+<td>
+<p>a numeric vector, a single character, or <code>NULL</code>:
+</p>
+
+<ul>
+<li>
+<p> if numeric <code>Xdir</code> is taken as a fixed direction in the simplex
+</p>
+</li>
+<li>
+<p> if character <code>Xdir</code> is interpreted as one summit of the X composition and converted to the fixed direction towards this summit
+</p>
+</li>
+<li>
+<p> if <code>NULL</code> the share ratio elasticities are computed for variable directions corresponding the example in Dargel and Thomas-Agnan (2024 Lukas Dargel &amp; Christine Thomas-Agnan (2024) The link between multiplicative competitive interaction models and compositional data regression with a total, Journal of Applied Statistics, DOI: 10.1080/02664763.2024.2329923 )
+</p>
+</li>
+</ul>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>More details on this interpretation can be found in Dargel and Thomas-Agnan (2024) and in the accompanying vignette.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a data.frame
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Lukas Dargel
+</p>
+
+
+<h3>References</h3>
+
+
+<ul><li>
+<p> Dargel, Lukas and Christine Thomas-Agnan, “Pairwise share ratio interpretations of compositional regression models”, Computational Statistics &amp; Data Analysis 195 (2024), p. 107945
+</p>
+</li></ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+### XY-compositional model
+res &lt;- lmCoDa(
+  ilr(cbind(left, right, extreme_right)) ~
+  ilr(cbind(Educ_BeforeHighschool, Educ_Highschool, Educ_Higher)),
+  data =  head(election, 20))
+
+## Focus on changes in the education composition
+educ_comp &lt;- "cbind(Educ_BeforeHighschool, Educ_Highschool, Educ_Higher)"
+
+## case 1
+## changes towards the summit "Educ_Higher" as (fixed) direction
+SRE1 &lt;- ShareRatioElasticities(res, Xvar = educ_comp, Xdir = "Educ_Higher")
+
+SRE1[1,]
+# Result: SRE=Inf
+# cannot be interpreted because, for this direction,
+# the relative change in the share ratio of X (Highschool / BeforeHighschool) is zero
+SRE1[7,]
+# Result: SRE=0.9
+# when the ratio of X (Higher / BeforeHighschool) increases by 1%
+# the ratio of Y (right / left) increases by about 0.9%
+
+## case 2
+## numeric vector as (fixed) direction
+SRE2 &lt;- ShareRatioElasticities(res, Xvar = educ_comp, Xdir = exp(c(0,0,1)))
+identical(SRE1,SRE2) # exp(c(0,0,1)) is the direction that points to the third summit
+
+## case 3
+## variable directions with Xdir = NULL
+## In this case the direction depends components used for the share ratio of X
+## In particular the component of X in the numerator grows
+## by the same rate as the denominator decreases
+SRE3 &lt;- ShareRatioElasticities(res, Xvar = educ_comp, Xdir = NULL)
+SRE3[1,]
+# Result: SRE=-2.8
+# when the ratio of X (Highschool / BeforeHighschool) increases by 1%
+# the ratio of Y (right / left) decreases by about -2.8%
+</code></pre>
+
+
+</div>

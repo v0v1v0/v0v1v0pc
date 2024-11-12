@@ -1,0 +1,116 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CASMI.selectFeatures</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+<span class="pkg">CASMI</span>-Based Feature Selection</h2>
+
+<h3>Description</h3>
+
+<p>Selects the most relevant features toward an outcome. It automatically learns the number of features to be selected, and the selected features are ranked. The method automatically handles the feature redundancy issue. (synonyms of "feature": "variable" "factor" "attribute") <br>
+For more information, please refer to the corresponding publication: Shi, J., Zhang, J. and Ge, Y. (2019), "<span class="pkg">CASMI</span>—An Entropic Feature Selection Method in Turing’s Perspective" &lt;doi:10.3390/e21121179&gt;
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CASMI.selectFeatures(
+  data,
+  feature.na.handle = "stepwise",
+  alpha.filter = 0.1,
+  alpha = 0.05,
+  intermediate.steps = TRUE,
+  kappa.star.cap = 1,
+  feature.num.cap = ncol(data)
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>data frame (features as columns and observations as rows). The outcome variable (Y) MUST be the last column. It requires at least one features and only one outcome. Both the features (Xs) and the outcome (Y) MUST be discrete (if not naturally discrete, you may try the 'autoBin.binary' function in the same package).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>feature.na.handle</code></td>
+<td>
+<p>options for handling NA values in the data. There are three options: '"stepwise", "na.omit", "NA as a category"'. 'feature.na.handle = "stepwise"' excludes NA rows only when a particular variable is being calculated. For example, suppose we have data(Feature1: A, NA, B; Feature2: C, D, E; Feature3: F, G, H; Outcome: O, P, Q); the second observation will be excluded only when a particular step includes Feature1, but will not be excluded when a step calculates among Feature2, Feature3, and the Outcome. This option is designed to take advantage of a maximum number of data points. 'feature.na.handle = "na.omit"' excludes observations with any NA values at the beginning of the analysis. 'feature.na.handle = "NA as a category"' regards the NA value as a new category. This is designed to be used when NA values in the data have a consistent meaning instead of being missing values. For example, in survey data asking for comments, each NA value might consistently mean "no opinion." By default, 'feature.na.handle = "stepwise"'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha.filter</code></td>
+<td>
+<p>level of significance for the mutual information test of independence in step 1 of the features selection (initial screening). The smaller the alpha.filter, the fewer the features sent to step 2 (&lt;doi:10.3390/e21121179&gt;). By default, 'alpha.filter = 0.1'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>level of significance for the confidence intervals in final results. By default, 'alpha = 0.05'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>intermediate.steps</code></td>
+<td>
+<p>output the intermediate process. By default, 'intermediate.steps = TRUE'. Set to 'FALSE' for showing only summary results.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kappa.star.cap</code></td>
+<td>
+<p>a threshold of 'kappa*' for pausing the feature selection process. The program will automatically pause at the first feature of which the 'kappa*' value exceeds the kappa.star.cap threshold. By default, 'kappa.star.cap = 1.0', which is the maximum possible value. A lower value may result in fewer final features but less computing time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>feature.num.cap</code></td>
+<td>
+<p>the maximum number of features to be selected. A lower value may result in fewer final features but less computing time.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>'CASMI.selectFeatures()' returns selected features and relevant information, including the estimated Kappa* for all selected features ('$KappaStar') and the corresponding confidence interval ('$KappaStarCI'). The selected features are ranked. The Standardized Mutual Information using the z estimator ('SMIz') and the corresponding confidence interval ('SMIz.Low' for lower bound, 'SMIz.Upr' for upper bound) are given for each selected feature ('Var.Idx' for column index, 'Var.Name' for column name). The p-value from the mutual information test of independence using the z estimator ('p.MIz') is given for each selected feature.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Generate a toy dataset: "data"
+## Features 1 and 3 are associated with Y, while feature 2 is irrelevant.
+## The outcome variable Y must be discrete and be the LAST column. Features must be discrete.
+n &lt;- 10000
+set.seed(1)
+x1 &lt;- rbinom(n, 3, 0.5) + 0.2
+set.seed(2)
+x2 &lt;- rbinom(n, 2, 0.8) + 0.5
+set.seed(3)
+x3 &lt;- rbinom(n, 5, 0.3)
+set.seed(4)
+error &lt;- round(runif(n, min=-1, max=1))
+y &lt;- x1 + x3 + error
+data &lt;- data.frame(cbind(x1, x2, x3, y))
+colnames(data) &lt;- c("feature1", "feature2", "feature3", "Y")
+
+## Select features and provide relevant results for the toy dataset "data"
+CASMI.selectFeatures(data)
+
+## For showing only the summary results
+CASMI.selectFeatures(data, intermediate.steps = FALSE)
+
+## Adjust 'feature.num.cap' for including fewer features.
+## A lower 'feature.num.cap' value may result in fewer final features but less computing time.
+## For example, if needing only the top one feature based on the toy dataset:
+CASMI.selectFeatures(data, feature.num.cap = 1)
+
+
+</code></pre>
+
+
+</div>

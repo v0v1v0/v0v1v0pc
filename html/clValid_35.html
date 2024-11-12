@@ -1,0 +1,168 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>stability</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Stability Measures</h2>
+
+<h3>Description</h3>
+
+<p>Calculates the stability measures the average proportion of non-overlap (APN),
+the average distance (AD), the average distance between means (ADM),
+and the figure of merit (FOM).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">stability(mat, Dist=NULL, del, cluster, clusterDel, method="euclidean")
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>mat</code></td>
+<td>
+<p>The data matrix of the clustered observations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Dist</code></td>
+<td>
+<p>The distance matrix (as a matrix or dist object) of the
+clustered observations.  If NULL then <code>method</code> is used with
+<code>mat</code> to determine the distance matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>del</code></td>
+<td>
+<p>An integer indicating which column was removed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cluster</code></td>
+<td>
+<p>An integer vector indicating the cluster partitioning
+based on all the data</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clusterDel</code></td>
+<td>
+<p>An integer vector indicating the cluster
+partitioning based on the data with column <code>del</code> removed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>The metric used to determine the distance
+matrix.  Not used if <code>distance</code> is provided.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The stability measures evaluate the stability of a clustering result by comparing it
+with the clusters obtained by removing one column at a time.
+These measures include the average proportion of non-overlap (APN),
+the average distance (AD), the average distance between means (ADM),
+and the figure of merit (FOM).  The APN, AD, and ADM are all based on the
+cross-classification table of the original clustering with the
+clustering based on the removal of one column.  The APN measures the
+average proportion of observations not placed in the same cluster under both
+cases, while the AD measures the average distance between observations placed
+in the same cluster under both cases and the ADM measures the average
+distance between cluster centers for observations placed in the same cluster
+under both cases.  The FOM measures the average intra-cluster variance
+of the deleted column, where the clustering is based on the remaining
+(undeleted) columns.  In all cases the average is taken over all the
+deleted columns, and all measures should be minimized.
+For details see the package vignette.
+</p>
+<p>NOTE: The <code>stability</code> function only calculates these measures for
+the particular column specified by <code>del</code> removed.  To get the
+overall scores, the user must average the measures
+corresponding to each removed column.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a numeric vector with the APN, AD, ADM, and FOM measures
+corresponding to the particular column that was
+removed.  
+</p>
+
+
+<h3>Note</h3>
+
+<p>The main function for cluster validation is <code>clValid</code>, and
+users should call this function directly if possible.
+</p>
+<p>To get the overall values, the stability measures
+corresponding to each removed column should be averaged (see the
+examples below).  
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Guy Brock, Vasyl Pihur, Susmita Datta, Somnath Datta</p>
+
+
+<h3>References</h3>
+
+<p>Datta, S. and Datta, S. (2003).
+Comparisons and validation of statistical clustering techniques for microarray gene expression data.
+Bioinformatics 19(4): 459-466.  
+</p>
+
+
+<h3>See Also</h3>
+
+<p>For a description of the function 'clValid' see <code>clValid</code>.
+</p>
+<p>For a description of the class 'clValid' and all available methods see
+<code>clValidObj</code> or <code>clValid-class</code>.
+</p>
+<p>For additional help on the other validation measures see
+<code>connectivity</code>,   <code>dunn</code>,
+<code>BSI</code>, and 
+<code>BHI</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data(mouse)
+express &lt;- mouse[1:25,c("M1","M2","M3","NC1","NC2","NC3")]
+rownames(express) &lt;- mouse$ID[1:25]
+## hierarchical clustering
+Dist &lt;- dist(express,method="euclidean")
+clusterObj &lt;- hclust(Dist, method="average")
+nc &lt;- 4 ## number of clusters      
+cluster &lt;- cutree(clusterObj,nc)
+
+stab &lt;- matrix(0,nrow=ncol(express),ncol=4)
+colnames(stab) &lt;- c("APN","AD","ADM","FOM")
+
+## Need loop over all removed samples
+for (del in 1:ncol(express)) {
+  matDel &lt;- express[,-del]               
+  DistDel &lt;- dist(matDel,method="euclidean")
+  clusterObjDel &lt;- hclust(DistDel, method="average")
+  clusterDel &lt;- cutree(clusterObjDel,nc)
+  stab[del,] &lt;- stability(express, Dist, del, cluster, clusterDel)
+}
+colMeans(stab)
+
+</code></pre>
+
+
+</div>

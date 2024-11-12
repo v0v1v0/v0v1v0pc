@@ -1,0 +1,421 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fwi</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fire Weather Index System</h2>
+
+<h3>Description</h3>
+
+<p><code>fwi</code> is used to calculate the outputs of the Canadian
+Forest Fire Weather Index (FWI) System for one day or one fire season based
+on noon local standard time (LST) weather observations of temperature,
+relative humidity, wind speed, and 24-hour rainfall, as well as the previous
+day's fuel moisture conditions. This function could be used for either one
+weather station or for multiple weather stations.
+</p>
+<p>The Canadian Forest Fire Weather Index (FWI) System is a major subsystem of
+the Canadian Forest Fire Danger Rating System, which also includes Canadian
+Forest Fire Behavior Prediction (FBP) System. The modern FWI System was
+first issued in 1970 and is the result of work by numerous researchers from
+across Canada. It evolved from field research which began in the 1930's and
+regional fire hazard and fire danger tables developed from that early
+research.
+</p>
+<p>The modern System (Van Wagner 1987) provides six output indices which
+represent fuel moisture and potential fire behavior in a standard pine
+forest fuel type. Inputs are a daily noon observation of fire weather, which
+consists of screen-level air temperature and relative humidity, 10 meter
+open wind speed and 24 accumulated precipitation.
+</p>
+<p>The first three outputs of the system (the Fire Fuel Moisture Code (ffmc),
+the Duff Moisture Code (dmc), and the Drought Code (dc)) track moisture in
+different layers of the fuel making up the forest floor. Their calculation
+relies on the daily fire weather observation and also, importantly, the
+moisture code value from the previous day as they are in essence bookkeeping
+systems tracking the amount of moisture (water) in to and out of the layer.
+It is therefore important that when calculating FWI System outputs over an
+entire fire season, an uninterrupted daily weather stream is provided; one
+day is the assumed time step in the models and thus missing data must be
+filled in.
+</p>
+<p>The next three outputs of the System are relative (unitless) indicators of
+aspects of fire behavior potential: spread rate (the Initial Spread Index,
+isi), fuel consumption (the Build-up Index, bui) and fire intensity per unit
+length of fire front (the Fire Weather Index, fwi).  This final index, the
+fwi, is the component of the System used to establish the daily fire danger
+level for a region and communicated to the public.  This final index can be
+transformed to the Daily Severity Rating (dsr) to provide a more
+reasonably-scaled estimate of fire control difficulty.
+</p>
+<p>Both the Duff Moisture Code (dmc) and Drought Code (dc) are influenced by
+day length (see Van Wagner 1987). Day length adjustments for different
+ranges in latitude can be used (as described in Lawson and Armitage 2008
+(<a href="https://cfs.nrcan.gc.ca/pubwarehouse/pdfs/29152.pdf">https://cfs.nrcan.gc.ca/pubwarehouse/pdfs/29152.pdf</a>)) and are included
+in this R function; latitude must be positive in the northern hemisphere and
+negative in the southern hemisphere.
+</p>
+<p>The default initial (i.e., "start-up") fuel moisture code values (FFMC=85,
+DMC=6, DC=15) provide a reasonable set of conditions for most springtime
+conditions in Canada, the Northern U.S., and Alaska. They are not suitable
+for particularly dry winters and are presumably not appropriate for
+different parts of the world.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fwi(
+  input,
+  init = data.frame(ffmc = 85, dmc = 6, dc = 15, lat = 55),
+  batch = TRUE,
+  out = "all",
+  lat.adjust = TRUE,
+  uppercase = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>input</code></td>
+<td>
+<p>A dataframe containing input variables of daily weather
+observations taken at noon LST. Variable names have to be the same as in the
+following list, but they are case insensitive. The order in which the input
+variables are entered is not important.
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<var>id</var> </td>
+<td style="text-align: left;"> (optional)
+</td>
+<td style="text-align: left;"> Unique identifier of a weather</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> station or spatial point (no restriction on</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> data type); required when <code>batch=TRUE</code>
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>lat</var> </td>
+<td style="text-align: left;"> (recommended) </td>
+<td style="text-align: left;"> Latitude (decimal degree, default=55)</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>long</var> </td>
+<td style="text-align: left;"> (optional) </td>
+<td style="text-align: left;"> Longitude (decimal degree)</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>yr</var> </td>
+<td style="text-align: left;"> (optional) </td>
+<td style="text-align: left;"> Year of observation;
+required when <code>batch=TRUE</code>
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>mon</var> </td>
+<td style="text-align: left;"> (recommended) </td>
+<td style="text-align: left;"> Month of the year
+   (integer 1-12, default=7)</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>day</var> </td>
+<td style="text-align: left;"> (optional) </td>
+<td style="text-align: left;"> Dayof the month (integer); required when
+   <code>batch=TRUE</code>
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>temp</var> </td>
+<td style="text-align: left;"> (required) </td>
+<td style="text-align: left;"> Temperature (centigrade)</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>rh</var> </td>
+<td style="text-align: left;"> (required) </td>
+<td style="text-align: left;"> Relative humidity (%)</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>ws</var> </td>
+<td style="text-align: left;"> (required) </td>
+<td style="text-align: left;"> 10-m height wind speed (km/h)</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>prec</var> </td>
+<td style="text-align: left;"> (required) </td>
+<td style="text-align: left;"> 24-hour rainfall (mm)</td>
+</tr>
+<tr>
+<td style="text-align: left;"> </td>
+</tr>
+</table>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>init</code></td>
+<td>
+<p>A data.frame or vector contains either the initial values for
+FFMC, DMC, and DC or the same variables that were calculated for the
+previous day and will be used for the current day's calculation. The
+function also accepts a vector if the initial or previous day FWI values is
+for only one weather station (a warning message comes up if a single set of
+initial values is used for multiple weather stations). Defaults are the
+standard initial values for FFMC, DMC, and DC defined as the following:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<b>Variable</b> </td>
+<td style="text-align: left;"> <b>Description</b> </td>
+<td style="text-align: left;"> <b>Default</b> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>ffmc</var>
+   </td>
+<td style="text-align: left;"> Previous day Fine Fuel Moisture Code (FFMC; unitless) </td>
+<td style="text-align: left;"> 85 </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>dmc</var> </td>
+<td style="text-align: left;"> Previous day Duff Moisture Code (DMC; unitless)</td>
+<td style="text-align: left;"> 6 </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>dc</var> </td>
+<td style="text-align: left;"> Previous Day Drought Code (DC; unitless) </td>
+<td style="text-align: left;"> 15</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<var>lat</var> </td>
+<td style="text-align: left;"> Latitude of the weather station (<em>Optional</em>) </td>
+<td style="text-align: left;"> 55 </td>
+</tr>
+</table>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>batch</code></td>
+<td>
+<p>Whether the computation is iterative or single step, default is
+TRUE. When <code>batch=TRUE</code>, the function will calculate daily FWI System
+outputs for one weather station over a period of time chronologically with
+the initial conditions given (<code>init</code>) applied only to the first day of
+calculation. If multiple weather stations are processed, an additional "id"
+column is required in the input to label different stations, and the data
+needs to be sorted by date/time and "id".  If <code>batch=FALSE</code>, the
+function calculates only one time step (1 day) base on either the initial
+start values or the previous day's FWI System variables, which should also
+be assigned to <code>init</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>out</code></td>
+<td>
+<p>The function offers two output options, <code>out="all"</code> will
+produce a data frame that includes both the input and the FWI System
+outputs; <code>out="fwi"</code> will generate a data frame with only the FWI
+system components.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lat.adjust</code></td>
+<td>
+<p>The function offers options for whether day length
+adjustments should be applied to the calculations.  The default value is
+"TRUE".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>uppercase</code></td>
+<td>
+<p>Output in upper cases or lower cases would be decided by
+this argument. Default is TRUE.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>fwi</code> returns a dataframe which includes both the input and the
+FWI System variables as described below:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>Input Variables </code></td>
+<td>
+<p>Including temp, rh, ws, and prec with id, long, lat,
+yr, mon, or day as optional.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ffmc </code></td>
+<td>
+<p>Fine Fuel Moisture Code</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dmc </code></td>
+<td>
+<p>Duff Moisture Code</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dc </code></td>
+<td>
+<p>Drought Code</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>isi </code></td>
+<td>
+<p>Initial Spread Index</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bui </code></td>
+<td>
+<p>Buildup Index</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fwi </code></td>
+<td>
+<p>Fire Weather Index</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dsr </code></td>
+<td>
+<p>Daily Severity Rating</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Xianli Wang, Alan Cantin, Marc-André Parisien, Mike Wotton, Kerry
+Anderson, and Mike Flannigan
+</p>
+
+
+<h3>References</h3>
+
+<p>1. Van Wagner, C.E. and T.L. Pickett. 1985. Equations and
+FORTRAN program for the Canadian Forest Fire Weather Index System. Can. For.
+Serv., Ottawa, Ont. For. Tech. Rep. 33. 18 p.
+<a href="https://cfs.nrcan.gc.ca/pubwarehouse/pdfs/19973.pdf">https://cfs.nrcan.gc.ca/pubwarehouse/pdfs/19973.pdf</a>
+</p>
+<p>2. Van Wagner, C.E. 1987. Development and structure of the Canadian forest
+fire weather index system. Forest Technology Report 35. (Canadian Forestry
+Service: Ottawa). <a href="https://cfs.nrcan.gc.ca/pubwarehouse/pdfs/19927.pdf">https://cfs.nrcan.gc.ca/pubwarehouse/pdfs/19927.pdf</a>
+</p>
+<p>3.  Lawson, B.D. and O.B. Armitage. 2008. Weather guide for the Canadian
+Forest Fire Danger Rating System. Nat. Resour. Can., Can. For. Serv., North.
+For. Cent., Edmonton, AB.
+<a href="https://cfs.nrcan.gc.ca/pubwarehouse/pdfs/29152.pdf">https://cfs.nrcan.gc.ca/pubwarehouse/pdfs/29152.pdf</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fbp</code>, <code>fwiRaster</code>, <code>gfmc</code>,
+<code>hffmc</code>, <code>hffmcRaster</code>, <code>sdmc</code>,
+<code>overwinter_drought_code</code>, <code>fire_season</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+library(cffdrs)
+# The test data is a standard test
+# dataset for FWI system (Van Wagner and Pickett 1985)
+data("test_fwi")
+# Show the data, which is already sorted by time:
+head(test_fwi)
+# long  lat	yr	mon	day	temp	rh	ws	prec
+# -100	40	1985	4	  13	17	  42	25	0
+# -100	40	1985	4	  14	20	  21	25	2.4
+# -100	40	1985	4	  15	8.5	  40	17	0
+# -100	40	1985	4	  16	6.5	  25	6	0
+# -100	40	1985	4	  17	13	  34	24	0
+
+## (1) FWI System variables for a single weather station:
+# Using the default initial values and batch argument,
+# the function calculate FWI variables chronically:
+fwi.out1 &lt;- fwi(test_fwi)
+# Using a different set of initial values:
+fwi.out2 &lt;- fwi(
+  test_fwi,
+  init = data.frame(ffmc = 80, dmc = 10, dc = 16, lat = 50)
+)
+# This could also be done as the following:
+fwi.out2 &lt;- fwi(test_fwi, init = data.frame(80, 10, 6, 50))
+# Or:
+fwi.out2 &lt;- fwi(test_fwi, init = c(80, 10, 6, 50))
+# Latitude could be ignored, and the default value (55) will
+# be used:
+fwi.out2 &lt;- fwi(test_fwi, init = data.frame(80, 10, 6))
+
+## (2) FWI for one or multiple stations in a single day:
+# Change batch argument to FALSE, fwi calculates FWI
+# components based on previous day's fwi outputs:
+
+fwi.out3 &lt;- fwi(test_fwi, init = fwi.out1, batch = FALSE)
+# Using a suite of initials, assuming variables from fwi.out1
+# are the initial values for different records.
+init_suite &lt;- fwi.out1[, c("FFMC", "DMC", "DC", "LAT")]
+# Calculating FWI variables for one day but with multiple
+# stations. Because the calculations is for one time step,
+# batch=FALSE:
+fwi.out4 &lt;- fwi(test_fwi, init = init_suite, batch = FALSE)
+
+## (3) FWI for multiple weather stations over a period of time:
+# Assuming there are 4 weather stations in the test dataset, and they are
+# ordered by day:
+test_fwi$day &lt;- rep(1:(nrow(test_fwi) / 4), each = 4)
+test_fwi$id &lt;- rep(1:4, length(unique(test_fwi$day)))
+# Running the function with the same default initial inputs, will receive a
+# warning message, but that is fine:
+fwi(test_fwi)
+
+## (4) Daylength adjustment:
+# Change latitude values where the monthly daylength adjustments
+# are different from the standard ones
+test_fwi$lat &lt;- 22
+# With daylength adjustment
+fwi(test_fwi)[1:3, ]
+# Without daylength adjustment
+fwi(test_fwi, lat.adjust = FALSE)[1:3, ]
+
+</code></pre>
+
+
+</div>

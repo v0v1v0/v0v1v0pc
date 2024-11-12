@@ -1,0 +1,179 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>prop.cint</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Confidence interval for proportion based on frequency counts (corpora)</h2>
+
+<h3>Description</h3>
+
+<p>This function computes a confidence interval for a population proportion from
+the corresponding frequency count in a sample.  It either uses the Clopper-Pearson
+method (inverted exact binomial test) or the Wilson score method (inversion of a
+z-score test, with or without continuity correction).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">
+prop.cint(k, n, method = c("binomial", "z.score"), correct = TRUE, p.adjust=FALSE,
+          conf.level = 0.95, alternative = c("two.sided", "less", "greater"))
+
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p>frequency of a type in the corpus (or an integer vector of
+frequencies)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>number of tokens in the corpus, i.e. sample size (or an
+integer vector specifying the sizes of different samples)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>a character string specifying whether to compute
+a Clopper-Pearson confidence interval (<code>binomial</code>) or
+a Wilson score interval (<code>z.score</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>correct</code></td>
+<td>
+<p>if <code>TRUE</code>, apply Yates' continuity correction for
+the z-score test (default)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p.adjust</code></td>
+<td>
+<p>if <code>TRUE</code>, apply a Bonferroni correction to ensure
+a family-wise confidence level over all tests carried out in a single
+function call (i.e. the length of <code>k</code>). Alternatively, the desired 
+family size can be specified instead of <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conf.level</code></td>
+<td>
+<p>the desired confidence level (defaults to 95%)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alternative</code></td>
+<td>
+<p>a character string specifying the alternative
+hypothesis, yielding a two-sided (<code>two.sided</code>, default), lower
+one-sided (<code>less</code>) or upper one-sided (<code>greater</code>)
+confidence interval</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The confidence intervals computed by this function correspond to those
+returned by <code>binom.test</code> and <code>prop.test</code>,
+respectively.  However, <code>prop.cint</code> accepts vector arguments,
+allowing many confidence intervals to be computed with a single
+function call in a computationally efficient manner.
+</p>
+<p>The <b>Clopper-Pearson</b> confidence interval (<code>binomial</code>) is
+obtained by inverting the exact binomial test at significance level
+<code class="reqn">\alpha</code> = 1 - <code>confidence.level</code>.
+In the two-sided case, the p-value of the test is computed using the
+“central” method Fay (2010: 53), i.e. as twice the tail probability
+of the matching tail. This corresponds to the algorithm originally proposed
+by Clopper &amp; Pearson (1934).
+</p>
+<p>The limits of the confidence interval are computed in an efficient and
+numerically robust manner via (the inverse of) the incomplete Beta function.
+</p>
+<p>The <b>Wilscon score</b> confidence interval (<code>z.score</code>) is computed
+by solving the equation of the z-score test </p>
+<p style="text-align: center;"><code class="reqn">%
+    \frac{k - np}{\sqrt{n p (1-p)}} = A </code>
+</p>
+
+<p>for <code class="reqn">p</code>, where <code class="reqn">A</code> is the <code class="reqn">z</code>-value corresponding
+to the chosen confidence level (e.g. <code class="reqn">\pm 1.96</code> for a
+two-sided test with 95% confidence).  This leads to the quadratic
+equation </p>
+<p style="text-align: center;"><code class="reqn">%
+    p^2 (n + A^2) + p (-2k - A^2) + \frac{k^2}{n} = 0 </code>
+</p>
+
+<p>whose two solutions correspond to the lower and upper boundary of
+the confidence interval.
+</p>
+<p>When Yates' continuity correction is applied, the value <code class="reqn">k</code> in the
+numerator of the <code class="reqn">z</code>-score equation has to be replaced by
+<code class="reqn">k^*</code>, with <code class="reqn">k^* = k - 1/2</code> for the
+<em>lower</em> boundary of the confidence interval (where <code class="reqn">k &gt; np</code>)
+and <code class="reqn">k^* = k + 1/2</code> for the <em>upper</em> boundary of
+the confidence interval (where <code class="reqn">k &lt; np</code>).  In each case, the
+corresponding solution of the quadratic equation has to be chosen
+(i.e., the solution with <code class="reqn">k &gt; np</code> for the lower boundary and vice
+versa).
+</p>
+<p>If a <b>Bonferroni</b> correction is applied, the significance level <code class="reqn">\alpha</code>
+of the underlying test is divided by the number <code class="reqn">m</code> of tests carried out
+(specified explicitly by the user or given implicitly by <code>length(k)</code>):
+<code class="reqn">\alpha' = \alpha / m</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame with two columns, labelled <code>lower</code> for the lower
+boundary and <code>upper</code> for the upper boundary of the confidence
+interval.  The number of rows is determined by the length of the
+longest input vector (<code>k</code>, <code>n</code> and <code>conf.level</code>).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Stephanie Evert (<a href="https://purl.org/stephanie.evert">https://purl.org/stephanie.evert</a>)</p>
+
+
+<h3>References</h3>
+
+<p>Clopper, C. J. &amp; Pearson, E. S. (1934). The use of confidence or fiducial limits illustrated in the case of the binomial. <em>Biometrika</em>, <b>26</b>(4), 404-413.
+</p>
+<p>Fay, Michael P. (2010). Two-sided exact tests and matching confidence intervals for discrete data. <em>The R Journal</em>, <b>2</b>(1), 53-58.
+</p>
+<p><a href="https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval">https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>z.score.pval</code>, <code>prop.test</code>,
+<code>binom.pval</code>, <code>binom.test</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Clopper-Pearson confidence interval
+binom.test(19, 100)
+prop.cint(19, 100, method="binomial")
+
+# Wilson score confidence interval
+prop.test(19, 100)
+prop.cint(19, 100, method="z.score")
+</code></pre>
+
+
+</div>

@@ -1,0 +1,152 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>acfParams</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>The function computes (and by default plots) estimates of the autocovariance
+or autocorrelation function for the different parameters of the model. This
+is a wrapper for coda::acf.</h2>
+
+<h3>Description</h3>
+
+<p>The function computes (and by default plots) estimates of the autocovariance
+or autocorrelation function for the different parameters of the model. This
+is a wrapper for coda::acf.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">acfParams(
+  res,
+  params = c("w", "xi", "xi0", "psi", "G", "E", "eta"),
+  only_non_trivial_clusters = TRUE,
+  lag.max = NULL,
+  type = c("correlation", "covariance", "partial"),
+  plot = TRUE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>res</code></td>
+<td>
+<p>An object of class <code>COMIX</code> or <code>tidyChainCOMIX</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>params</code></td>
+<td>
+<p>A character vector naming the parameters to compute and plot 
+the autocorrelation plots for.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>only_non_trivial_clusters</code></td>
+<td>
+<p>Logical, if <code>TRUE</code> only compute and/or
+plot the autocorrelation for the clusters that are estimated to be non-empty.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lag.max</code></td>
+<td>
+<p>maximum lag at which to calculate the autocorrelation. See more
+details at ?acf.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>Character string giving the type of autocorrelation to be 
+computed. See more details at ?acf.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot</code></td>
+<td>
+<p>Logical. If <code>TRUE</code> (the default) the autocorrelation is 
+plotted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Other arguments passed to <code>acf</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An <code>acfParamsCOMIX</code> object which is a named list,
+with a named element for each requested parameter. Each element is 
+an object of class <code>acf</code> (from the <code>coda</code> package).
+#' @examples
+library(COMIX)
+# Number of observations for each sample (row) and cluster (column):
+njk &lt;- 
+matrix(
+c(
+150, 300,
+250, 200
+),
+nrow = 2,
+byrow = TRUE
+)
+</p>
+<p># Dimension of data:
+p &lt;- 3
+</p>
+<p># Scale and skew parameters for first cluster:
+Sigma1 &lt;- matrix(0.5, nrow = p, ncol = p) + diag(0.5, nrow = p)
+alpha1 &lt;- rep(0, p)
+alpha1[1] &lt;- -5
+# location parameter for first cluster in first sample:
+xi11 &lt;- rep(0, p)
+# location parameter for first cluster in second sample (aligned with first):
+xi21 &lt;- rep(0, p)
+</p>
+<p># Scale and skew parameters for second cluster:
+Sigma2 &lt;- matrix(-1/3, nrow = p, ncol = p) + diag(1 + 1/3, nrow = p)
+alpha2 &lt;- rep(0, p)
+alpha2[2] &lt;- 5
+# location parameter for second cluster in first sample:
+xi12 &lt;- rep(3, p)
+# location parameter for second cluster in second sample (misaligned with first):
+xi22 &lt;- rep(4, p)
+</p>
+<p># Sample data:
+set.seed(1)
+Y &lt;- 
+rbind(
+sn::rmsn(njk[1, 1], xi = xi11, Omega = Sigma1, alpha = alpha1),
+sn::rmsn(njk[1, 2], xi = xi12, Omega = Sigma2, alpha = alpha2),
+sn::rmsn(njk[2, 1], xi = xi21, Omega = Sigma1, alpha = alpha1),
+sn::rmsn(njk[2, 2], xi = xi22, Omega = Sigma2, alpha = alpha2)
+)
+</p>
+<p>C &lt;- c(rep(1, rowSums(njk)[1]), rep(2, rowSums(njk)[2]))
+</p>
+<p>prior &lt;- list(zeta = 1, K = 10)
+pmc &lt;- list(naprt = 5, nburn = 200, nsave = 200) # Reasonable usage
+pmc &lt;- list(naprt = 5, nburn = 2, nsave = 5) # Minimal usage for documentation
+# Fit the model:
+res &lt;- comix(Y, C, pmc = pmc, prior = prior)
+</p>
+<p># Relabel to resolve potential label switching issues:
+res_relab &lt;- relabelChain(res)
+effssz &lt;- effectiveSampleSize(res_relab, "w")
+# Or:
+tidy_chain &lt;- tidyChain(res_relab, "w")
+acf_w &lt;- acfParams(tidy_chain, "w")
+</p>
+<p># (see vignette for a more detailed example)
+</p>
+
+
+</div>

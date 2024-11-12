@@ -1,0 +1,389 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cnn</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>CNN</h2>
+
+<h3>Description</h3>
+
+<p>fits a custom convolutional neural network.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cnn(
+  X,
+  Y = NULL,
+  architecture,
+  loss = c("mse", "mae", "softmax", "cross-entropy", "gaussian", "binomial", "poisson"),
+  optimizer = c("sgd", "adam", "adadelta", "adagrad", "rmsprop", "rprop"),
+  lr = 0.01,
+  alpha = 0.5,
+  lambda = 0,
+  validation = 0,
+  batchsize = 32L,
+  burnin = 10,
+  shuffle = TRUE,
+  epochs = 100,
+  early_stopping = NULL,
+  lr_scheduler = NULL,
+  custom_parameters = NULL,
+  device = c("cpu", "cuda", "mps"),
+  plot = TRUE,
+  verbose = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>predictor: array with dimension 3, 4 or 5 for 1D-, 2D- or 3D-convolutions, respectively. The first dimension are the samples, the second dimension the channels and the third - fifth dimension are the input dimensions</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Y</code></td>
+<td>
+<p>response: vector, factor, numerical matrix or logical matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>architecture</code></td>
+<td>
+<p>'citoarchitecture' object created by <code>create_architecture</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>loss</code></td>
+<td>
+<p>loss after which network should be optimized. Can also be distribution from the stats package or own function, see details</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimizer</code></td>
+<td>
+<p>which optimizer used for training the network, for more adjustments to optimizer see <code>config_optimizer</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lr</code></td>
+<td>
+<p>learning rate given to optimizer</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>add L1/L2 regularization to training  <code class="reqn">(1 - \alpha) * |weights| + \alpha ||weights||^2</code> will get added for each layer. Must be between 0 and 1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>strength of regularization: lambda penalty, <code class="reqn">\lambda * (L1 + L2)</code> (see alpha)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>validation</code></td>
+<td>
+<p>percentage of data set that should be taken as validation set (chosen randomly)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>batchsize</code></td>
+<td>
+<p>number of samples that are used to calculate one learning rate step</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>burnin</code></td>
+<td>
+<p>training is aborted if the trainings loss is not below the baseline loss after burnin epochs</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>shuffle</code></td>
+<td>
+<p>if TRUE, data in each batch gets reshuffled every epoch</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>epochs</code></td>
+<td>
+<p>epochs the training goes on for</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>early_stopping</code></td>
+<td>
+<p>if set to integer, training will stop if loss has gotten higher for defined number of epochs in a row, will use validation loss if available.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lr_scheduler</code></td>
+<td>
+<p>learning rate scheduler created with <code>config_lr_scheduler</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>custom_parameters</code></td>
+<td>
+<p>List of parameters/variables to be optimized. Can be used in a custom loss function. See Vignette for example.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>device</code></td>
+<td>
+<p>device on which network should be trained on.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot</code></td>
+<td>
+<p>plot training loss</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>print training and validation loss of epochs</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>an S3 object of class <code>"citocnn"</code> is returned. It is a list containing everything there is to know about the model and its training process.
+The list consists of the following attributes:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>net</code></td>
+<td>
+<p>An object of class "nn_sequential" "nn_module", originates from the torch package and represents the core object of this workflow.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>The original function call</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>loss</code></td>
+<td>
+<p>A list which contains relevant information for the target variable and the used loss function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>Contains data used for training the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>List of weights for each training epoch</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use_model_epoch</code></td>
+<td>
+<p>Integer, which defines which model from which training epoch should be used for prediction.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>loaded_model_epoch</code></td>
+<td>
+<p>Integer, shows which model from which epoch is loaded currently into model$net.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model_properties</code></td>
+<td>
+<p>A list of properties of the neural network, contains number of input nodes, number of output nodes, size of hidden layers, activation functions, whether bias is included and if dropout layers are included.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>training_properties</code></td>
+<td>
+<p>A list of all training parameters that were used the last time the model was trained. It consists of learning rate, information about an learning rate scheduler, information about the optimizer, number of epochs, whether early stopping was used, if plot was active, lambda and alpha for L1/L2 regularization, batchsize, shuffle, was the data set split into validation and training, which formula was used for training and at which epoch did the training stop.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>losses</code></td>
+<td>
+<p>A data.frame containing training and validation losses of each epoch</p>
+</td>
+</tr>
+</table>
+<h3>Convolutional neural networks:</h3>
+
+<p>Convolutional Neural Networks (CNNs) are a specialized type of neural network designed for processing structured grid data, such as images.
+The characterizing parts of the architecture are convolutional layers, pooling layers and fully-connected (linear) layers:
+</p>
+
+<ul>
+<li>
+<p> Convolutional layers are the core building blocks of CNNs. They consist of filters (also called kernels), which are small, learnable matrices. These filters slide over the input data to perform element-wise multiplication, producing feature maps that capture local patterns and features. Multiple filters are used to detect different features in parallel. They help the network learn hierarchical representations of the input data by capturing low-level features (edges, textures) and gradually combining them (in subsequent convolutional layers) to form higher-level features.
+</p>
+</li>
+<li>
+<p> Pooling layers are used to downsample the spatial dimensions of the feature maps while retaining important information. Max pooling is a common pooling operation, where the maximum value in a local region of the input is retained, reducing the size of the feature maps.
+</p>
+</li>
+<li>
+<p> Fully-connected (linear) layers connect every neuron in one layer to every neuron in the next layer. These layers are found at the end of the network and are responsible for combining high-level features to make final predictions.
+</p>
+</li>
+</ul>
+<h3>Loss functions / Likelihoods</h3>
+
+<p>We support loss functions and likelihoods for different tasks:</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+   Name </td>
+<td style="text-align: left;"> Explanation </td>
+<td style="text-align: left;"> Example / Task </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   mse </td>
+<td style="text-align: left;"> mean squared error </td>
+<td style="text-align: left;"> Regression, predicting continuous values </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   mae </td>
+<td style="text-align: left;"> mean absolute error </td>
+<td style="text-align: left;"> Regression, predicting continuous values </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   softmax </td>
+<td style="text-align: left;"> categorical cross entropy </td>
+<td style="text-align: left;"> Multi-class, species classification </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   cross-entropy </td>
+<td style="text-align: left;"> categorical cross entropy </td>
+<td style="text-align: left;"> Multi-class, species classification </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   gaussian </td>
+<td style="text-align: left;"> Normal likelihood </td>
+<td style="text-align: left;"> Regression, residual error is also estimated (similar to <code>stats::lm()</code>) </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   binomial </td>
+<td style="text-align: left;"> Binomial likelihood </td>
+<td style="text-align: left;"> Classification/Logistic regression, mortality </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   Poisson </td>
+<td style="text-align: left;"> Poisson likelihood </td>
+<td style="text-align: left;"> Regression, count data, e.g. species abundances </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+</td>
+</tr>
+</table>
+<h3>Training and convergence of neural networks</h3>
+
+<p>Ensuring convergence can be tricky when training neural networks. Their training is sensitive to a combination of the learning rate (how much the weights are updated in each optimization step), the batch size (a random subset of the data is used in each optimization step), and the number of epochs (number of optimization steps). Typically, the learning rate should be decreased with the size of the neural networks (amount of learnable parameters). We provide a baseline loss (intercept only model) that can give hints about an appropriate learning rate:
+</p>
+<p><img src="../help/figures/learningrates.jpg" alt="Learning rates"></p>
+<p>If the training loss of the model doesn't fall below the baseline loss, the learning rate is either too high or too low. If this happens, try higher and lower learning rates.
+</p>
+<p>A common strategy is to try (manually) a few different learning rates to see if the learning rate is on the right scale.
+</p>
+<p>See the troubleshooting vignette (<code>vignette("B-Training_neural_networks")</code>) for more help on training and debugging neural networks.
+</p>
+
+
+<h3>Finding the right architecture</h3>
+
+<p>As with the learning rate, there is no definitive guide to choosing the right architecture for the right task. However, there are some general rules/recommendations: In general, wider, and deeper neural networks can improve generalization - but this is a double-edged sword because it also increases the risk of overfitting. So, if you increase the width and depth of the network, you should also add regularization (e.g., by increasing the lambda parameter, which corresponds to the regularization strength). Furthermore, in <a href="https://arxiv.org/abs/2306.10551">Pichler &amp; Hartig, 2023</a>, we investigated the effects of the hyperparameters on the prediction performance as a function of the data size. For example, we found that the <code>selu</code> activation function outperforms <code>relu</code> for small data sizes (&lt;100 observations).
+</p>
+<p>We recommend starting with moderate sizes (like the defaults), and if the model doesn't generalize/converge, try larger networks along with a regularization that helps minimize the risk of overfitting (see <code>vignette("B-Training_neural_networks")</code> ).
+</p>
+
+
+<h3>Overfitting</h3>
+
+<p>Overfitting means that the model fits the training data well, but generalizes poorly to new observations. We can use the validation argument to detect overfitting. If the validation loss starts to increase again at a certain point, it often means that the models are starting to overfit your training data:
+</p>
+<p><img src="../help/figures/overfitting.jpg" alt="Overfitting"></p>
+<p><strong>Solutions</strong>:
+</p>
+
+<ul>
+<li>
+<p> Re-train with epochs = point where model started to overfit
+</p>
+</li>
+<li>
+<p> Early stopping, stop training when model starts to overfit, can be specified using the <code style="white-space: pre;">⁠early_stopping=…⁠</code> argument
+</p>
+</li>
+<li>
+<p> Use regularization (dropout or elastic-net, see next section)
+</p>
+</li>
+</ul>
+<h3>Regularization</h3>
+
+<p>Elastic Net regularization combines the strengths of L1 (Lasso) and L2 (Ridge) regularization. It introduces a penalty term that encourages sparse weight values while maintaining overall weight shrinkage. By controlling the sparsity of the learned model, Elastic Net regularization helps avoid overfitting while allowing for meaningful feature selection. We advise using elastic net (e.g. lambda = 0.001 and alpha = 0.2).
+</p>
+<p>Dropout regularization helps prevent overfitting by randomly disabling a portion of neurons during training. This technique encourages the network to learn more robust and generalized representations, as it prevents individual neurons from relying too heavily on specific input patterns. Dropout has been widely adopted as a simple yet effective regularization method in deep learning.
+In the case of 2D and 3D inputs whole feature maps are disabled. Since the torch package doesn't currently support feature map-wise dropout for 1D inputs, instead random neurons in the feature maps are disabled similar to dropout in linear layers.
+</p>
+<p>By utilizing these regularization methods in your neural network training with the cito package, you can improve generalization performance and enhance the network's ability to handle unseen data. These techniques act as valuable tools in mitigating overfitting and promoting more robust and reliable model performance.
+</p>
+
+
+<h3>Custom Optimizer and Learning Rate Schedulers</h3>
+
+<p>When training a network, you have the flexibility to customize the optimizer settings and learning rate scheduler to optimize the learning process. In the cito package, you can initialize these configurations using the <code>config_lr_scheduler</code> and <code>config_optimizer</code> functions.
+</p>
+<p><code>config_lr_scheduler</code> allows you to define a specific learning rate scheduler that controls how the learning rate changes over time during training. This is beneficial in scenarios where you want to adaptively adjust the learning rate to improve convergence or avoid getting stuck in local optima.
+</p>
+<p>Similarly, the <code>config_optimizer</code> function enables you to specify the optimizer for your network. Different optimizers, such as stochastic gradient descent (SGD), Adam, or RMSprop, offer various strategies for updating the network's weights and biases during training. Choosing the right optimizer can significantly impact the training process and the final performance of your neural network.
+</p>
+
+
+<h3>Training on graphic cards</h3>
+
+<p>If you have an NVIDIA CUDA-enabled device and have installed the CUDA toolkit version 11.3 and cuDNN 8.4, you can take advantage of GPU acceleration for training your neural networks. It is crucial to have these specific versions installed, as other versions may not be compatible.
+For detailed installation instructions and more information on utilizing GPUs for training, please refer to the <a href="https://torch.mlverse.org/docs/articles/installation.html">mlverse: 'torch' documentation</a>.
+</p>
+<p>Note: GPU training is optional, and the package can still be used for training on CPU even without CUDA and cuDNN installations.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Armin Schenk, Maximilian Pichler
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>predict.citocnn</code>, <code>plot.citocnn</code>,  <code>coef.citocnn</code>, <code>print.citocnn</code>, <code>summary.citocnn</code>, <code>continue_training</code>, <code>analyze_training</code>
+</p>
+
+
+</div>

@@ -1,0 +1,100 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>penguin_xgb_pred</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Penguins xgb model predictions and shap values</h2>
+
+<h3>Description</h3>
+
+<p>Predictions and shapviz attribution of an xgb model of Penguin data
+classifying penguin species.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">penguin_xgb_pred
+
+penguin_xgb_shap
+</code></pre>
+
+
+<h3>Format</h3>
+
+<p><code>penguin_xgb_pred</code> is a n=333 length vector of the prediction of an
+xgb model predicting the number of the factor level of the species of penguin.
+<code>penguin_xgb_shap</code> is a (333 x 4) data frame of the shapviz SHAP attribution of
+the xgb model for each observation.
+</p>
+<p><strong>Replicating</strong>
+</p>
+<div class="sourceCode"><pre>library(cheem)
+library(xgboost)
+library(shapviz)
+set.seed(135)
+
+## Classification setup
+X    &lt;- spinifex::penguins_na.rm[, 1:4]
+Y    &lt;- spinifex::penguins_na.rm$species
+clas &lt;- spinifex::penguins_na.rm$species
+
+## Model and predict
+peng_train    &lt;- data.matrix(X) %&gt;%
+  xgb.DMatrix(label = Y)
+peng_xgb_fit  &lt;- xgboost(data = peng_train, max.depth = 3, nrounds = 5)
+penguin_xgb_pred &lt;- predict(peng_xgb_fit, newdata = peng_train)
+
+## shapviz
+penguin_xgb_shap &lt;- shapviz(peng_xgb_fit, X_pred = peng_train, X = X)
+penguin_xgb_shap &lt;- penguin_xgb_shap$S
+
+if(F){ ## Don't accidentally save
+  save(penguin_xgb_pred, file = "./data/penguin_xgb_pred.rda")
+  save(penguin_xgb_shap, file = "./data/penguin_xgb_shap.rda")
+  #usethis::use_data(penguin_xgb_pred)
+  #usethis::use_data(penguin_xgb_shap)
+}
+</pre></div>
+<p>An object of class <code>matrix</code> (inherits from <code>array</code>) with 333 rows and 4 columns.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(cheem)
+
+## Classification setup
+X    &lt;- spinifex::penguins_na.rm[, 1:4]
+Y    &lt;- spinifex::penguins_na.rm$species
+clas &lt;- spinifex::penguins_na.rm$species
+
+## Precomputed predictions and shap attribtion
+str(penguin_xgb_pred)
+str(penguin_xgb_shap)
+
+## Cheem
+peng_chm &lt;- cheem_ls(X, Y, penguin_xgb_shap, penguin_xgb_pred, clas,
+                     label = "Penguins, xgb, shapviz")
+
+## Save for use with shiny app (expects an rds file)
+if(FALSE){ ## Don't accidentally save.
+  saveRDS(peng_chm, "./chm_peng_xgb_shapviz.rds")
+  run_app() ## Select the saved rds file from the data dropdown.
+}
+
+## Cheem visuals
+if(interactive()){
+  prim &lt;- 1
+  comp &lt;- 2
+  global_view(peng_chm, primary_obs = prim, comparison_obs = comp)
+  bas &lt;- sug_basis(penguin_xgb_shap, prim, comp)
+  mv  &lt;- sug_manip_var(penguin_xgb_shap, primary_obs = prim, comp)
+  ggt &lt;- radial_cheem_tour(peng_chm, basis = bas, manip_var = mv)
+  animate_plotly(ggt)
+}
+</code></pre>
+
+
+</div>

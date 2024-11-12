@@ -1,0 +1,169 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>medlateweight</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Causal mediation analysis with instruments for treatment and mediator based on weighting</h2>
+
+<h3>Description</h3>
+
+<p>Causal mediation analysis (evaluation of natural direct and indirect effects) with instruments for a binary treatment and a continuous mediator based on weighting as suggested in Frölich and Huber (2017),  Theorem 1.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">medlateweight(
+  y,
+  d,
+  m,
+  zd,
+  zm,
+  x,
+  trim = 0.1,
+  csquared = FALSE,
+  boot = 1999,
+  cminobs = 40,
+  bwreg = NULL,
+  bwm = NULL,
+  logit = FALSE,
+  cluster = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Dependent variable, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+<p>Treatment, must be binary (either 1 or 0), must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>m</code></td>
+<td>
+<p>Mediator(s),must be a continuous scalar, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>zd</code></td>
+<td>
+<p>Instrument for the treatment,  must be binary (either 1 or 0), must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>zm</code></td>
+<td>
+<p>Instrument for the mediator, must contain at least one continuous element, may be a scalar or a vector, must not contain missings. If no user-specified bandwidth is provided for the regressors when estimating the conditional cumulative distribution function F(M|Z2,X), i.e. if <code>bwreg=NULL</code>, then <code>zm</code> must be exclusively numeric.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Pre-treatment confounders, may be a scalar or a vector, must not contain missings. If no user-specified bandwidth is provided for the regressors when estimating the conditional cumulative distribution function F(M|Z2,X), i.e. if <code>bwreg=NULL</code>, then <code>x</code> must be exclusively numeric.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trim</code></td>
+<td>
+<p>Trimming rule for discarding observations with extreme weights. Discards observations whose relative weight would exceed the value in <code>trim</code> in the estimation of any of the potential outcomes. Default is 0.1 (i.e. a maximum weight of 10 percent per observation).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>csquared</code></td>
+<td>
+<p>If TRUE, then not only the control function C, but also its square is used as regressor in any estimated function that conditions on C. Default is FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>boot</code></td>
+<td>
+<p>Number of bootstrap replications for estimating standard errors. Default is 1999.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cminobs</code></td>
+<td>
+<p>Minimum number of observations to compute the control function C, see the numerator of equation (7) in Frölich and Huber (2017). A larger value increases boundary bias when estimating the control function for lower values of M, but reduces the variance. Default is 40, but should be adapted to sample size and the number of variables in Z2 and X.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bwreg</code></td>
+<td>
+<p>Bandwidths for <code>zm</code> and <code>x</code> in the estimation of the conditional cumulative distribution function F(M|Z2,X) based on the np package by Hayfield and Racine (2008). The length of the numeric vector must correspond to the joint number of elements in <code>zm</code> and <code>x</code> and will be used both in the original sample for effect estimation and in bootstrap samples to compute standard errors. If set to <code>NULL</code>, then the rule of thumb is used for bandwidth calculation, see the np package for details. In the latter case, all elements in the regressors must be numeric. Default is <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bwm</code></td>
+<td>
+<p>Bandwidth for <code>m</code> in the estimation of the conditional cumulative distribution function F(M|Z2,X) based on the np package by Hayfield and Racine (2008). Must be scalar and will be used both in the original sample for effect estimation and in bootstrap samples to compute standard errors. If set to <code>NULL</code>, then the rule of thumb is used for bandwidth calculation, see the np package for details. Default is <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logit</code></td>
+<td>
+<p>If FALSE, probit regression is used for any propensity score estimation. If TRUE, logit regression is used. Default is FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cluster</code></td>
+<td>
+<p>A cluster ID for block or cluster bootstrapping when units are clustered rather than iid. Must be numerical. Default is NULL (standard bootstrap without clustering).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Estimation of causal mechanisms (natural direct and indirect effects) of a binary treatment among treatment compliers based on distinct instruments for the treatment and the mediator. The treatment and its instrument are assumed to be binary, while the mediator and its instrument are assumed to be continuous, see Theorem 1 in Frölich and Huber (2017). The instruments are assumed to be conditionally valid given a set of observed confounders. A control function is used to tackle mediator endogeneity. Standard errors are obtained by bootstrapping the effects.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A medlateweight object contains two components, <code>results</code> and <code>ntrimmed</code>:
+</p>
+<p><code>results</code>: a 3x7 matrix containing the effect estimates in the first row ("effects"), standard errors in the second row ("se"), and p-values in the third row ("p-value").
+The first column provides the total effect, namely the local average treatment effect (LATE) on the compliers.
+The second and third columns provide the direct effects under treatment and control, respectively ("dir.treat", "dir.control").
+The fourth and fifth columns provide the indirect effects under treatment and control, respectively ("indir.treat", "indir.control").
+The sixth and seventh columns provide the parametric direct and indirect effect estimates ("dir.para", "indir.para") without intercation terms, respectively. For the parametric estimates, probit or logit specifications are used for the treatment model and OLS specifications for the mediator and outcome models.
+</p>
+<p><code>ntrimmed</code>: number of discarded (trimmed) observations due to large weights.
+</p>
+
+
+<h3>References</h3>
+
+<p>Frölich, M. and Huber, M. (2017): "Direct and indirect treatment effects: Causal chains and mediation analysis with instrumental variables", Journal of the Royal Statistical Society Series B, 79, 1645–1666.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># A little example with simulated data (3000 observations)
+## Not run: 
+n=3000; sigma=matrix(c(1,0.5,0.5,0.5,1,0.5,0.5,0.5,1),3,3)
+e=(rmvnorm(n,rep(0,3),sigma))
+x=rnorm(n)
+zd=(0.5*x+rnorm(n)&gt;0)*1
+d=(-1+0.5*x+2*zd+e[,3]&gt;0)
+zm=0.5*x+rnorm(n)
+m=(0.5*x+2*zm+0.5*d+e[,2])
+y=0.5*x+d+m+e[,1]
+# The true direct and indirect effects on compliers are equal to 1 and 0.5, respectively
+medlateweight(y,d,m,zd,zm,x,trim=0.1,csquared=FALSE,boot=19,cminobs=40,
+bwreg=NULL,bwm=NULL,logit=FALSE)
+## End(Not run)
+</code></pre>
+
+
+</div>

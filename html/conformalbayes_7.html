@@ -1,0 +1,107 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>predictive_interval.conformal</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Jackknife(+) predictive intervals</h2>
+
+<h3>Description</h3>
+
+<p>Construct finite-sample calibrated predictive intervals for Bayesian models,
+following the approach in Barber et al. (2021). By default, the intervals will also reflect the
+relative uncertainty in the Bayesian model, using the locally-weighted
+conformal methods of Lei et al. (2018).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'conformal'
+predictive_interval(object, probs = 0.9, plus = NULL, local = TRUE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>A fitted model which has been passed through <code>loo_conformal()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>probs</code></td>
+<td>
+<p>The coverage probabilities to calculate intervals for.
+Empirically, the coverage rate of the constructed intervals will generally
+match these probabilities, but the theoretical guarantee for a probability
+of <code class="reqn">1-\alpha</code> is only for coverage of at least <code class="reqn">1-2\alpha</code>, and
+only if <code>plus=TRUE</code> (below).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plus</code></td>
+<td>
+<p>If <code>TRUE</code>, construct jackknife+ intervals, which have a
+theoretical guarantee. These require higher computational costs, which
+scale with both the number of training and prediction points. Defaults to
+<code>TRUE</code> when both of these numbers are less than 500.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>local</code></td>
+<td>
+<p>If <code>TRUE</code> (the default), perform locally-weighted conformal
+inference. This will inflate the width of the predictive intervals by a
+constant amount across all predictions, preserving the relative amount of
+uncertainty captured by the model. If <code>FALSE</code>, all predictive intervals
+will have (nearly) the same width.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments to the <code>posterior_predict()</code> method for <code>object</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A matrix with the number of rows matching the number of predictions.
+Columns will be labeled with a percentile corresponding to <code>probs</code>; e.g. if
+<code>probs=0.9</code> the columns will be <code style="white-space: pre;">⁠5%⁠</code> and <code style="white-space: pre;">⁠95%⁠</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Barber, R. F., Candes, E. J., Ramdas, A., &amp; Tibshirani, R. J. (2021).
+Predictive inference with the jackknife+. <em>The Annals of Statistics, 49</em>(1),
+486-507.
+</p>
+<p>Lei, J., G’Sell, M., Rinaldo, A., Tibshirani, R. J., &amp; Wasserman, L. (2018).
+Distribution-free predictive inference for regression. <em>Journal of the
+American Statistical Association, 113</em>(523), 1094-1111.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">if (requireNamespace("rstanarm", quietly=TRUE)) suppressWarnings({
+    library(rstanarm)
+    # fit a simple linear regression
+    m = stan_glm(mpg ~ disp + cyl, data=mtcars,
+        chains=1, iter=1000,
+        control=list(adapt_delta=0.999), refresh=0)
+
+    m = loo_conformal(m)
+    # make predictive intervals
+    predictive_interval(m)
+})
+
+</code></pre>
+
+
+</div>

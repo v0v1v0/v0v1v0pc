@@ -1,0 +1,167 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>parameter</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Model Parameters</h2>
+
+<h3>Description</h3>
+
+<p>These functions add parameters to a model. Parameters can either
+be used in features, or added directly to a model using the plus operator.
+The value of parameters can be specified in the simulation command
+(for <code>par_named</code> and <code>par_range</code>), sampled from a prior
+distribution (<code>par_prior</code>) or can be derived from other parameters
+(<code>par_expr</code>).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">par_expr(expr)
+
+par_const(constant)
+
+par_named(name)
+
+par_range(name, lower, upper)
+
+par_prior(name, prior)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>expr</code></td>
+<td>
+<p>An R expression.
+This allows to define a parameter using an R expression.
+It can contain other named parameters (e.g. <code>2 * a</code> will create an
+parameter that is twice the value of an existing parameter <code>a</code>).
+Make sure that the expression always evaluates
+to a valid parameter value (a single numeric in almost all cases).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>constant</code></td>
+<td>
+<p>An R expression.
+The constant value of the parameter.
+Different to <code>expr</code>, the expression is evaluated immediately and
+can not depend on other named parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p>Character. The name of the parameter. Must be unique in a model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lower</code></td>
+<td>
+<p>A numeric. The lower boundary of the parameter's range.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>upper</code></td>
+<td>
+<p>A numeric. The upper boundary of the parameter's range.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior</code></td>
+<td>
+<p>An expression. Evaluation this expression should give
+a sample from the prior distribution you want for the parameter.
+For example using <code>rnorm(1)</code> gives a standard normal prior.</p>
+</td>
+</tr>
+</table>
+<h3>Functions</h3>
+
+
+<ul>
+<li> <p><code>par_expr()</code>: Creates a parameter with value determined by evaluating an expression.
+</p>
+</li>
+<li> <p><code>par_const()</code>: Creates an parameter that is equal to a fixed value.
+Different to <code>par_expr</code>, the value is evaluated on parameter creation.
+</p>
+</li>
+<li> <p><code>par_named()</code>: Creates an parameter whose value is specified via the
+<code>pars</code> argument in <code>simulate.coalmodel</code>.
+</p>
+</li>
+<li> <p><code>par_range()</code>: Creates an parameter that can take a range of possible
+values.
+Similar to <code>par_named</code>, the value of the parameter
+used in a simulation is set via the <code>pars</code> argument.
+This is primarily intended for creating model parameters for
+<span class="pkg">jaatha</span>.
+</p>
+</li>
+<li> <p><code>par_prior()</code>: Creates a named parameter with a prior
+distribution. Before each simulation, the expression for the prior
+is evaluated. The resulting value can be used in
+<code>par_expr</code> under the chosen name.
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Paul Staab
+</p>
+
+
+<h3>See Also</h3>
+
+<p>For parameters that variate between the loci in a model:
+<code>par_variation</code>, <code>par_zero_inflation</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># A parameter (here for the mutation rate) that is always
+# equal to '5':
+model_base &lt;- coal_model(20, 1) +
+  sumstat_nucleotide_div()
+
+model &lt;- model_base +
+  feat_mutation(par_const(5))
+simulate(model)
+
+# With using a prior:
+model &lt;- model_base +
+  feat_mutation(par_prior("theta", rnorm(1, 5, .1)))
+simulate(model)
+
+# Using a named parater:
+model &lt;- model_base +
+  feat_mutation(par_named("theta"))
+simulate(model, pars = c(theta = 5))
+
+# or similarly a ranged parameter:
+model &lt;- model_base +
+  feat_mutation(par_range("theta", 1, 10))
+simulate(model, pars = c(theta = 5))
+
+# Expressions can be used to derive parameters from
+# other parameters:
+model &lt;- model_base +
+  par_named("theta_half") +
+  feat_mutation(par_expr(theta_half * 2))
+simulate(model, pars = c(theta_half = 2.5))
+
+model &lt;- model_base +
+  par_named("theta_log") +
+  feat_mutation(par_expr(exp(theta_log)))
+simulate(model, pars = c(theta_log = log(5)))
+</code></pre>
+
+
+</div>

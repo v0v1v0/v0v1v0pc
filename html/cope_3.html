@@ -1,0 +1,178 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ComputeCope</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute CoPE sets.</h2>
+
+<h3>Description</h3>
+
+<p>Computes CoPE sets for the data Y using the algorithm from Sommerfeld, Sain
+and Schwartzman (2015).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ComputeCope(Z, level, X = NULL, w = NULL, correlation = NULL,
+  corpar = NULL, groups = NULL, V = NULL, alpha = 0.1, N = 1000,
+  mu = NULL, mask = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Z</code></td>
+<td>
+<p>A list with components "x", "y" and "z". Here, x and y are the 
+coordinates of the grid on which the data is observed and z is an 
+array with dimensions c(length(x),length(y),n), containing the
+data. n is the number of observations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>level</code></td>
+<td>
+<p>The level of interest.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>The design matrix of the linear model. If NULL, it is set to 
+matrix(rep(1,dim(Y)[3]),ncol=1) corresponding to i.i.d. data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>A vector of length nrow(X) indicating the desired linear combination
+of coefficients to be used in inference, i.e., t(w) 
+NULL, the default is c(1, rep(0, ncol(X) - 1)).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>correlation</code></td>
+<td>
+<p>Type of correlation assumed for the spatially indexed 
+indexed linear models. This is a string that is passed to
+the function gls from the nlme package. Defaults to NULL 
+which corresponds to i.i.d. errors.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>corpar</code></td>
+<td>
+<p>A list of parameters passed to the correlation function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>groups</code></td>
+<td>
+<p>A factor vector describing groups that are used in the <code>correlation</code> function.  Should have the same length as <code>X</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>V</code></td>
+<td>
+<p>A 4-dimensional array containing the covariance matrix associated with each element of <code>Z$z</code>.  See Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>The significance level. Inclusion for CoPE sets holds with 
+probability 1-alpha.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>N</code></td>
+<td>
+<p>The number of bootstrap realizations to generate for determining
+the threshold.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mu</code></td>
+<td>
+<p>The true parameter function. Use the default NULL if unknown.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mask</code></td>
+<td>
+<p>Pixels outside the mask (i.e. where mask is == NA) are ignored.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>V</code> argument is a 4-dimensional array containing the covariance 
+matrices associated with <code>Z$z</code>.  Specifically, <code>V[i,j,,]</code> is the 
+covariance matrix of the data in <code>Z$z[i,j,]</code>.  If <code>V</code> is specified, 
+then the covariance matrix in each element of the array is used to transform 
+<code>X</code> and the appropriate element of <code>Z$z</code> before fitting the linear 
+model.  This is used in place of estimating the covariance matrix withing the 
+<code>nlme::gls</code> function.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class cope. A list containing the following
+</p>
+
+<ul>
+<li>
+<p>x, y: The grid coordinates from the input.
+</p>
+</li>
+<li>
+<p>mu, level, tau, X, N, alpha, mask: 
+The corresponding values from the input.
+</p>
+</li>
+<li>
+<p>mu_hat, norm_est: The estimatot for mu and its normalized version.
+</p>
+</li>
+<li>
+<p>a_MB, a_MB_true, a_Tay, a_Tay_true: Thresholds for the CoPE sets 
+determined using the multiplier bootstrap or Taylor's method and the 
+estimated or the true contour, respectively.
+</p>
+</li>
+<li>
+<p>incl_MB, incl_MB_true, incl_Tay, incl_Tay_true: Booleans indicating 
+whether inclusion of the excursion set in the upper CoPE set and inclusion
+of the lower CoPE set in the excursion set holds, when CoPE sets are
+determined by a_MB, a_MB_true, a_Tay or a_Tay_true, respectively. Only 
+available if mu is given.
+</p>
+</li>
+</ul>
+<h3>References</h3>
+
+<p>M. Sommerfeld, S. Sain and A. Schwartzman. Confidence regions for 
+excursion sets in asymptotically Gaussian
+random fields, with an application to climate. Preprint, 2015.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># An example using the ToyNoise and ToySignal of this package.
+## Not run: 
+n = 30
+Data = ToyNoise1(n = n)
+Data$z = Data$z + rep(ToySignal()$z, n)
+CopeSet = ComputeCope(Data,level=4/3, mu=ToySignal()$z)
+PlotCope(CopeSet)
+## End(Not run)
+</code></pre>
+
+
+</div>

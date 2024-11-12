@@ -1,0 +1,137 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Wald_test</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Test parameter constraints in a fitted linear regression model</h2>
+
+<h3>Description</h3>
+
+<p><code>Wald_test</code> reports Wald-type tests of linear contrasts from a fitted
+linear regression model, using a sandwich estimator for the
+variance-covariance matrix and a small sample correction for the p-value.
+Several different small-sample corrections are available.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">Wald_test(obj, constraints, vcov, test = "HTZ", tidy = FALSE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>obj</code></td>
+<td>
+<p>Fitted model for which to calculate Wald tests.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>constraints</code></td>
+<td>
+<p>List of one or more constraints to test. See details and
+examples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vcov</code></td>
+<td>
+<p>Variance covariance matrix estimated using <code>vcovCR</code> or a
+character string specifying which small-sample adjustment should be used to
+calculate the variance-covariance.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test</code></td>
+<td>
+<p>Character vector specifying which small-sample correction(s) to
+calculate. The following corrections are available: <code>"chi-sq"</code>,
+<code>"Naive-F"</code>, <code>"Naive-Fp"</code>, <code>"HTA"</code>, <code>"HTB"</code>, <code>"HTZ"</code>, <code>"EDF"</code>,
+<code>"EDT"</code>. Default is <code>"HTZ"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tidy</code></td>
+<td>
+<p>Logical value controlling whether to tidy the test results. If
+<code>constraints</code> is a list with multiple constraints, the result will
+be coerced into a data frame when <code>tidy = TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments passed to <code>vcovCR</code>, which are only
+needed if <code>vcov</code> is a character string.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Constraints can be specified directly as q X p matrices or
+indirectly through <code>constrain_equal</code>,
+<code>constrain_zero</code>, or <code>constrain_pairwise</code>
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of test results.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>vcovCR</code>, <code>constrain_equal</code>,
+<code>constrain_zero</code>, <code>constrain_pairwise</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+if (requireNamespace("carData", quietly = TRUE)) withAutoprint({
+
+data(Duncan, package = "carData")
+Duncan$cluster &lt;- sample(LETTERS[1:8], size = nrow(Duncan), replace = TRUE)
+
+Duncan_fit &lt;- lm(prestige ~ 0 + type + income + type:income + type:education, data=Duncan)
+# Note that type:income terms are interactions because main effect of income is included
+# but type:education terms are separate slopes for each unique level of type
+
+# Test equality of intercepts
+Wald_test(Duncan_fit,
+          constraints = constrain_equal(1:3),
+          vcov = "CR2", cluster = Duncan$cluster)
+
+# Test equality of type-by-education slopes
+Wald_test(Duncan_fit,
+          constraints = constrain_equal(":education", reg_ex = TRUE),
+          vcov = "CR2", cluster = Duncan$cluster)
+
+# Pairwise comparisons of type-by-education slopes
+Wald_test(Duncan_fit,
+          constraints = constrain_pairwise(":education", reg_ex = TRUE),
+          vcov = "CR2", cluster = Duncan$cluster)
+
+# Test type-by-income interactions
+Wald_test(Duncan_fit,
+          constraints = constrain_zero(":income", reg_ex = TRUE),
+          vcov = "CR2", cluster = Duncan$cluster)
+
+# Pairwise comparisons of type-by-income interactions
+Wald_test(Duncan_fit,
+          constraints = constrain_pairwise(":income", reg_ex = TRUE, with_zero = TRUE),
+          vcov = "CR2", cluster = Duncan$cluster)
+          
+})
+
+</code></pre>
+
+
+</div>

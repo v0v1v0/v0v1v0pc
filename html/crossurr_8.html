@@ -1,0 +1,212 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>xf_surrogate</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>A function for estimating the proportion of treatment effect explained using cross-fitting.</h2>
+
+<h3>Description</h3>
+
+<p>A function for estimating the proportion of treatment effect explained using cross-fitting.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">xf_surrogate(
+  ds,
+  x = NULL,
+  s,
+  y,
+  a,
+  K = 5,
+  outcome_learners = NULL,
+  ps_learners = outcome_learners,
+  interaction_model = TRUE,
+  trim_at = 0.05,
+  outcome_family = gaussian(),
+  mthd = "superlearner",
+  n_ptb = 0,
+  ncores = parallel::detectCores() - 1,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>ds</code></td>
+<td>
+<p>a <code>data.frame</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>names of all covariates in <code>ds</code> that should be included to control for confounding (eg. age, sex, etc). Default is <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>s</code></td>
+<td>
+<p>names of surrogates in <code>ds</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>name of the outcome in <code>ds</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>a</code></td>
+<td>
+<p>treatment variable name (eg. groups). Expect a binary variable made of <code>1</code>s and <code>0</code>s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K</code></td>
+<td>
+<p>number of folds for cross-fitting. Default is <code>5</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outcome_learners</code></td>
+<td>
+<p>string vector indicating learners to be used for estimation of the outcome function (e.g., <code>"SL.ridge"</code>). See the SuperLearner package for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ps_learners</code></td>
+<td>
+<p>string vector indicating learners to be used for estimation of the propensity score function (e.g., <code>"SL.ridge"</code>). See the SuperLearner package for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interaction_model</code></td>
+<td>
+<p>logical indicating whether outcome functions for treated and control should be estimated separately. Default is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trim_at</code></td>
+<td>
+<p>threshold at which to trim propensity scores. Default is <code>0.05</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outcome_family</code></td>
+<td>
+<p>default is <code>'gaussian'</code> for continuous outcomes. Other choice is <code>'binomial'</code> for binary outcomes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mthd</code></td>
+<td>
+<p>selected regression method. Default is <code>'superlearner'</code>, which uses the <code>SuperLearner</code> package for estimation. Other choices include <code>'lasso'</code> (which uses <code>glmnet</code>), <code>'sis'</code> (which uses <code>SIS</code>), <code>'cal'</code> (which uses <code>RCAL</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_ptb</code></td>
+<td>
+<p>Number of perturbations. Default is <code>0</code> which means asymptotic standard errors are used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncores</code></td>
+<td>
+<p>number of cpus used for parallel computations. Default is <code>parallel::detectCores()-1</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional parameters (in particular for super_learner)</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a <code>tibble</code> with columns: </p>
+
+<ul>
+<li> <p><code>R</code>: estimate of the proportion of treatment effect explained, equal to 1 - <code>deltahat_s</code>/<code>deltahat</code>.
+</p>
+</li>
+<li> <p><code>R_se</code> standard error for the PTE.
+</p>
+</li>
+<li> <p><code>deltahat_s</code>: residual treatment effect estimate.
+</p>
+</li>
+<li> <p><code>deltahat_s_se</code>: standard error for the residual treatment effect.
+</p>
+</li>
+<li> <p><code>pi_o</code>: estimate of the proportion of overlap.
+</p>
+</li>
+<li> <p><code>R_o</code>: PTE only in the overlap region.
+</p>
+</li>
+<li> <p><code>R_o_se</code>: the standard error for <code>R_o</code>.
+</p>
+</li>
+<li> <p><code>deltahat_s_o</code>: residual treatment effect in overlap region,
+</p>
+</li>
+<li> <p><code>deltahat_s_se_o</code>: standard error for <code>deltahat_s_o</code>.
+</p>
+</li>
+<li> <p><code>deltahat</code>: overall treatment effect estimate.
+</p>
+</li>
+<li> <p><code>deltahat_se</code>: standard error for overall treatment effect estimate.
+</p>
+</li>
+<li> <p><code>delta_diff</code>: difference between the treatment effects, equal to the numerator of PTE.
+</p>
+</li>
+<li> <p><code>dd_se</code>: standard error for <code>delta_diff</code>
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+n &lt;- 300
+p &lt;- 50
+q &lt;- 2
+wds &lt;- sim_data(n = n, p = p)
+
+if(interactive()){
+ sl_est &lt;- xf_surrogate(ds = wds,
+   x = paste('x.', 1:q, sep =''),
+   s = paste('s.', 1:p, sep =''),
+   a = 'a',
+   y = 'y',
+   K = 4,
+   trim_at = 0.01,
+   mthd = 'superlearner',
+   outcome_learners = c("SL.mean","SL.lm", "SL.svm", "SL.ridge"),
+   ps_learners = c("SL.mean", "SL.glm", "SL.svm", "SL.lda"),
+   ncores = 1)
+
+ lasso_est &lt;- xf_surrogate(ds = wds,
+   x = paste('x.', 1:q, sep =''),
+   s = paste('s.', 1:p, sep =''),
+   a = 'a',
+   y = 'y',
+   K = 4,
+   trim_at = 0.01,
+   mthd = 'lasso',
+   ncores = 1)
+}
+
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,377 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ST.CARclustrends</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fit a spatio-temporal generalised linear mixed model to data, with a clustering 
+of temporal trend functions and a temporally common spatial surface.
+</h2>
+
+<h3>Description</h3>
+
+<p>Fit a spatio-temporal generalised linear mixed model to areal unit data, where the 
+response variable can be binomial or Poisson. The linear predictor is modelled by 
+known covariates, a temoporally common spatial surface, and a mixture of temporal 
+trend functions. The spatial component is modelled by the conditional autoregressive 
+(CAR) prior proposed by Leroux et al. (2000). The temporal trend functions are 
+user-specified and are fixed parametric forms (e.g. linear, step-change) or 
+constrained shapes (e.g. monotonically increasing). Further details are given 
+in Napier et al. (2018) and in the vignette accompanying this package. Inference 
+is conducted in a Bayesian setting using Metropolis coupled Markov chain Monte 
+Carlo (MCMCMC) simulation. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">    ST.CARclustrends(formula, family, data=NULL, trials=NULL, W, burnin, n.sample,
+    thin=1, trends=NULL, changepoint=NULL, knots=NULL, prior.mean.beta=NULL,
+    prior.var.beta=NULL, prior.mean.gamma=NULL, prior.var.gamma=NULL,
+    prior.lambda=NULL, prior.tau2=NULL, Nchains=4, verbose=TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+
+<p>A formula using the syntax of the lm() function. However, due to identifiability 
+issues covariates are not allowed. So the only elements allowed on the right side
+of the formula are an intercept term and an offset term using the offset() 
+function. The response variable and the offset (if specified) should be vectors 
+of length (KN)*1, where K is the number of spatial units and N is the number of 
+time periods. Each vector should be ordered so that the first K data points are 
+the set of all K spatial locations at time 1, the next K are the set of spatial 
+locations for time 2 and so on.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+
+<p>One of either "binomial" or"poisson", which respectively specify a binomial 
+likelihood model with a logistic link function, or a Poisson likelihood model 
+with a log link function.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+
+<p>An optional data.frame containing the variables in the formula.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trials</code></td>
+<td>
+
+<p>A vector the same length and in the same order as the response containing the 
+total number of trials for each area and time period. Only used if family="binomial".     
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>W</code></td>
+<td>
+<p>A non-negative K by K neighbourhood matrix (where K is the number of 
+spatial units). Typically a binary specification is used, where the jkth 
+element equals one if areas (j, k) are spatially close (e.g. share a common 
+border) and is zero otherwise. The matrix can be non-binary, but each row must 
+contain at least one non-zero entry.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>burnin</code></td>
+<td>
+
+<p>The number of MCMC samples to discard as the burn-in period.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.sample</code></td>
+<td>
+
+<p>The number of MCMC samples to generate.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thin</code></td>
+<td>
+
+<p>The level of thinning to apply to the MCMC samples to reduce their temporal 
+autocorrelation. Defaults to 1 (no thinning).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trends</code></td>
+<td>
+
+<p>A vector containing the temporal trend functions to include in the model, which 
+include: constant ("Constant""); linear decreasing ("LD"); linear increasing 
+("LI"); Known change point, where the trend can increase towards the change point 
+before subsequently decreasing ("CP"); or decrease towards the change point before 
+subsequently increasing ("CT"); and monotonic cubic splines which are decreasing 
+("MD") or increasing ("MI"). At least two trends have to be selected, with the 
+constant trend always included. To avoid identifiability problems only one of "LI" 
+or "MI" can be included at a given time (similarily for "LD" and "MD").
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>changepoint</code></td>
+<td>
+
+<p>A scalar indicating the position of the change point should one of the change point 
+trend functions be included in the trends vector, i.e. if "CP" or "CT" is specified.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>knots</code></td>
+<td>
+
+<p>A scalar indicating the number of knots to use should one of the monotonic cubic 
+splines trend functions be included in the trends vector, i.e. if "MD" or "MI" is 
+specified.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.mean.beta</code></td>
+<td>
+
+<p>A vector of prior means for the regression parameters beta (Gaussian priors are 
+assumed). Defaults to a vector of zeros.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.var.beta</code></td>
+<td>
+
+<p>A vector of prior variances for the regression parameters beta (Gaussian priors 
+are assumed). Defaults to a vector with values 100,000.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.mean.gamma</code></td>
+<td>
+
+<p>A vector of prior means for the temporal trend parameters (Gaussian priors are 
+assumed). Defaults to a vector of zeros.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.var.gamma</code></td>
+<td>
+
+<p>A vector of prior variances for the temporal trend parameters (Gaussian priors 
+are assumed). Defaults to a vector with values 100,000.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.lambda</code></td>
+<td>
+
+<p>A vector of prior samples sizes for the Dirichlet prior controlling the 
+probabilities that each trend function is chosen. The vector should be the same 
+length as the trends vector and defaults to a vector of ones.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.tau2</code></td>
+<td>
+
+<p>The prior shape and scale in the form of c(shape, scale) for an Inverse-Gamma(shape, scale) 
+prior for the random effect variances tau2. Defaults to c(1, 0.01).  
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Nchains</code></td>
+<td>
+
+<p>The number of parallel Markov chains to be used in the Metropolis coupled Markov 
+chain Monte Carlo (MCMCMC) simulations. Defaults to 4.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+
+<p>Logical, should the function update the user on its progress.  
+</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>summary.results </code></td>
+<td>
+<p>A summary table of the parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>samples </code></td>
+<td>
+<p>A list containing the MCMC samples from the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitted.values </code></td>
+<td>
+<p>A vector of fitted values for each area and time period.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>residuals </code></td>
+<td>
+<p>A matrix with 2 columns where each column is a type of 
+residual and each row relates to an area and time period. The types are "response" 
+(raw), and "pearson".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelfit </code></td>
+<td>
+<p>Model fit criteria including the Deviance Information Criterion 
+(DIC) and its corresponding estimated effective number of parameters (p.d), the Log 
+Marginal Predictive Likelihood (LMPL), the Watanabe-Akaike Information Criterion 
+(WAIC) and its corresponding estimated number of effective parameters (p.w), and
+the loglikelihood.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>accept </code></td>
+<td>
+<p>The acceptance probabilities for the parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>localised.structure </code></td>
+<td>
+<p>A list containing two elements. The first is "trends",
+which is a vector the same length and in the same order as the number of areas. 
+The kth element specifies which trend area k has been allocated to based on the 
+posterior mode. The second element is "trend.probs", which is a matrix containing 
+the probabilities associated with each trend for each areal unit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula </code></td>
+<td>
+<p>The formula (as a text string) for the response, covariate and 
+offset parts of the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model </code></td>
+<td>
+<p>A text string describing the model fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X </code></td>
+<td>
+<p>The design matrix of covariates.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Gary Napier
+</p>
+
+
+<h3>References</h3>
+
+<p>Leroux, B., Lei, X., and Breslow, N. (2000). Estimation of disease rates in small 
+areas: A new mixed model for spatial dependence, Chapter Statistical Models in 
+Epidemiology, the Environment and Clinical Trials, Halloran, M and Berry, D (eds),
+pp. 135-178. Springer-Verlag, New York.
+</p>
+<p>Napier, G., Lee, D., Robertson, C., and Lawson, A. (2019). A Bayesian space-time 
+model for clustering areal units based on their disease trends, Biostatistics,
+20, 681-697.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">##################################################
+#### Run the model on simulated data on a lattice
+##################################################
+#### Load libraries
+library(truncnorm)
+library(gtools)
+
+
+#### set up the regular lattice    
+x.easting &lt;- 1:10
+x.northing &lt;- 1:10
+Grid &lt;- expand.grid(x.easting, x.northing)
+K &lt;- nrow(Grid)
+N &lt;- 10
+N.all &lt;- N * K
+
+#### set up spatial neighbourhood matrix W
+distance &lt;- as.matrix(dist(Grid))
+W &lt;-array(0, c(K,K))
+W[distance==1] &lt;-1 	
+
+
+#### Create the spatial covariance matrix
+Q.W &lt;- 0.99 * (diag(apply(W, 2, sum)) - W) + 0.01 * diag(rep(1,K))
+Q.W.inv &lt;- solve(Q.W)
+  
+           
+#### Simulate the elements in the linear predictor and the data
+beta &lt;- 0.01
+gamma &lt;- 0.7
+phi &lt;- mvrnorm(n=1, mu=rep(0,K), Sigma=(0.01 * Q.W.inv))
+
+lambda &lt;- rep(1/2, 2)
+w &lt;- t(rmultinom(K, 1, lambda))
+
+Y &lt;- matrix(NA, nrow = K, ncol = N)
+for (i in 1:N)
+{
+  LP &lt;- beta + w[, 2] * (gamma * i) + phi
+  mean &lt;- exp(LP)
+  Y[, i] &lt;- rpois(n=K, lambda=mean)
+ }
+Y &lt;- as.numeric(Y)
+
+
+#### Run the model
+## Not run: model &lt;- ST.CARclustrends(formula=Y~1, family="poisson", W=W, burnin=10000, 
+n.sample=50000, trends=c("Constant", "LI"))
+## End(Not run)
+
+
+#### Toy example for checking
+model &lt;- ST.CARclustrends(formula=Y~1, family="poisson", W=W, burnin=10, 
+n.sample=50, trends=c("Constant", "LI"))
+</code></pre>
+
+
+</div>

@@ -1,0 +1,406 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>MackChainLadder</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2> Mack Chain-Ladder Model </h2>
+
+<h3>Description</h3>
+
+<p>The Mack chain-ladder model forecasts future claims developments
+based on a historical cumulative claims development triangle and estimates
+the standard error around those.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">MackChainLadder(Triangle, weights = 1, alpha=1, est.sigma="log-linear",
+tail=FALSE, tail.se=NULL, tail.sigma=NULL, mse.method="Mack")
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Triangle</code></td>
+<td>
+<p>cumulative claims triangle.  Assume columns are the development
+period, use transpose otherwise.
+A (mxn)-matrix <code class="reqn">C_{ik}</code> 
+which is filled for <code class="reqn">k \leq n+1-i; i=1,\ldots,m; m\geq n </code>, see
+<code>qpaid</code> for how to use (mxn)-development triangles with
+m&lt;n, say higher development period frequency (e.g quarterly) than
+origin period frequency (e.g accident years).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p> weights. Default: 1, which sets the weights for all
+triangle entries to 1. Otherwise specify weights as a matrix of the same
+dimension as <code>Triangle</code> with all weight entries in [0; 1].
+Hence, any entry set to 0 or <code>NA</code> eliminates that age-to-age factor 
+from inclusion in the model. See also 'Details'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>'weighting' parameters.
+Default: 1 for all development periods; alpha=1 gives the historical 
+chain-ladder age-to-age factors, alpha=0 gives the straight average of the
+observed individual development factors and alpha=2 is the result of
+an ordinary regression of <code class="reqn">C_{i,k+1}</code> against <code class="reqn">C_{i,k}</code> with
+intercept 0, see also 'Details' below, <code>chainladder</code> and Mack's 1999 paper</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>est.sigma</code></td>
+<td>
+<p>defines how to estimate <code class="reqn">sigma_{n-1}</code>, the
+variability of the individual age-to-age factors at development time
+<code class="reqn">n-1</code>.
+Default is "log-linear" for a log-linear regression, "Mack" for
+Mack's approximation from his 1999 paper. Alternatively the user can
+provide a numeric value. If the log-linear model appears to be
+inappropriate (p-value &gt; 0.05) the 'Mack' method will be used
+instead and a warning message printed.
+Similarly, if Triangle is so small that log-linear regression is being
+attempted on a vector of only one non-NA average link ratio,
+the 'Mack' method will be used instead and a warning message printed.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tail</code></td>
+<td>
+<p>can be logical or a numeric value.
+If <code>tail=FALSE</code> no tail factor will be applied, if <code>tail=TRUE</code> 
+a tail factor will be estimated via a linear extrapolation of
+<code class="reqn">log(chain-ladder factors - 1)</code>, if <code>tail</code> is a numeric
+value than this value will be used instead.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tail.se</code></td>
+<td>
+<p>defines how the standard error of the tail factor is estimated. Only needed if
+a tail factor &gt; 1 is provided. Default is <code>NULL</code>. If
+<code>tail.se</code> is <code>NULL</code>, <code>tail.se</code> is estimated via
+"log-linear" regression, if <code>tail.se</code> is a numeric
+value than this value will be used instead.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tail.sigma</code></td>
+<td>
+<p>defines how to estimate individual tail variability. Only needed if
+a tail factor &gt; 1 is provided.
+Default is <code>NULL</code>. If <code>tail.sigma</code> is <code>NULL</code>,
+<code>tail.sigma</code> 
+is estimated via "log-linear" regression, if <code>tail.sigma</code> is a numeric
+value than this value will be used instead</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mse.method</code></td>
+<td>
+
+<p>method used for the recursive estimate of the parameter risk component 
+of the mean square error.
+Value "Mack" (default) coincides with Mack's formula;
+"Independence" includes the additional cross-product term
+as in Murphy and BBMW. 
+Refer to References below.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Following Mack's 1999 paper let <code class="reqn">C_{ik}</code> denote the cumulative loss 
+amounts of origin period (e.g. accident year) 
+<code class="reqn">i=1,\ldots,m</code>, with losses known for development period
+(e.g. development year) <code class="reqn">k \le n+1-i</code>.
+In order to forecast the amounts <code class="reqn">C_{ik}</code> for
+<code class="reqn">k &gt; n+1-i</code> the Mack chain-ladder-model assumes:
+</p>
+<p style="text-align: center;"><code class="reqn">\mbox{CL1: }  E[ F_{ik}| C_{i1},C_{i2},\ldots,C_{ik} ] = f_k
+    \mbox{ with } F_{ik}=\frac{C_{i,k+1}}{C_{ik}}
+  </code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">\mbox{CL2: }  Var( \frac{C_{i,k+1}}{C_{ik}} | C_{i1},C_{i2},
+    \ldots,C_{ik} ) = \frac{\sigma_k^2}{w_{ik} C^\alpha_{ik}}
+  </code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">\mbox{CL3: }  \{ C_{i1},\ldots,C_{in}\}, \{
+    C_{j1},\ldots,C_{jn}\},\mbox{ are independent for origin period } i
+    \neq j 
+  </code>
+</p>
+
+<p>with <code class="reqn">w_{ik} \in [0;1]</code>, <code class="reqn">\alpha \in \{0,1,2\}</code>.   
+If these assumptions hold, the Mack chain-ladder gives an
+unbiased estimator for IBNR (Incurred But Not Reported) claims.
+</p>
+<p>Here <code class="reqn">w_{ik} are the \code{weights} from above.</code>
+</p>
+<p>The Mack chain-ladder model can be regarded as a special form of a 
+weighted linear regression
+through the origin for each development period:
+<code>lm(y ~ x  + 0, weights=weights/x^(2-alpha))</code>, 
+where <code>y</code> is the vector of claims at development period
+<code class="reqn">k+1</code> and <code>x</code> is  the vector of claims at development period
+<code class="reqn">k</code>. 
+</p>
+<p>It is necessary, before actually applying the model, to check if the main assumptions behind the model (i.e. Calendar Year Effect and Correlation between subsequent Accident Years, see <code>dfCorTest</code>, <code>cyEffTest</code>) are verified.
+</p>
+
+
+<h3>Value</h3>
+
+<p>MackChainLadder returns a list with the following elements
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>matched call</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Triangle</code></td>
+<td>
+<p>input triangle of cumulative claims</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FullTriangle</code></td>
+<td>
+<p>forecasted full triangle</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Models</code></td>
+<td>
+<p>linear regression models for each development period</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+<p>chain-ladder age-to-age factors</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f.se</code></td>
+<td>
+<p>standard errors of the chain-ladder age-to-age factors f
+(assumption CL1)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>F.se</code></td>
+<td>
+<p>standard errors of the true chain-ladder age-to-age factors
+<code class="reqn">F_{ik}</code> (square root of the variance in assumption CL2)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sigma</code></td>
+<td>
+<p>sigma parameter in CL2</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Mack.ProcessRisk</code></td>
+<td>
+<p>variability in the projection of future losses
+not explained by the variability of the link ratio estimators (unexplained variation)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Mack.ParameterRisk</code></td>
+<td>
+<p>variability in the projection of future
+losses explained by the variability of the link-ratio estimators
+alone (explained variation)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Mack.S.E</code></td>
+<td>
+<p>total variability in the projection of future losses
+by the chain-ladder method; the square root of the mean square error
+of the chain-ladder estimate: <code class="reqn">\mbox{Mack.S.E.}^2 = \mbox{Mack.ProcessRisk}^2 +
+    \mbox{Mack.ParameterRisk}^2</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Total.Mack.S.E</code></td>
+<td>
+<p>total variability of projected loss for all
+origin years combined</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Total.ProcessRisk</code></td>
+<td>
+<p>vector of process risk estimate of the total 
+of projected loss for all origin years combined by development period</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Total.ParameterRisk</code></td>
+<td>
+<p>vector of parameter risk estimate of the total 
+of projected loss for all origin years combined by development period</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>weights used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>alphas used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tail</code></td>
+<td>
+<p>tail factor used. If tail was set to TRUE the output will
+include the linear model used to estimate the tail factor</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>Additional references for further reading:
+</p>
+<p><cite>England, PD and Verrall, RJ. Stochastic Claims Reserving in
+General Insurance (with discussion), <em>British Actuarial Journal</em>
+8, III. 2002</cite>
+</p>
+<p><cite>Barnett and Zehnwirth. Best estimates for reserves. Proceedings
+of the CAS, LXXXVI I(167), November 2000.</cite>  
+</p>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Markus Gesmann <a href="mailto:markus.gesmann@gmail.com">markus.gesmann@gmail.com</a></p>
+
+
+<h3>References</h3>
+
+<p><cite>Thomas Mack. Distribution-free calculation of the standard error of chain ladder reserve estimates. <em>Astin Bulletin</em>. Vol. 23. No 2. 1993. pp.213:225</cite>
+</p>
+<p><cite>Thomas Mack. The standard error of chain ladder reserve estimates: Recursive calculation and inclusion of a tail factor. <em>Astin Bulletin</em>. Vol. 29. No 2. 1999. pp.361:366</cite>
+</p>
+<p><cite>Murphy, Daniel M. Unbiased Loss Development
+Factors. <em>Proceedings of the Casualty Actuarial Society Casualty
+Actuarial Society</em> - Arlington, Virginia 1994: LXXXI 154-222</cite>
+</p>
+<p><cite>Buchwalder, Bühlmann, Merz, and Wüthrich.
+The Mean Square Error of Prediction in the Chain Ladder Reserving Method
+(Mack and Murphy Revisited).
+<em>Astin Bulletin</em> Vol. 36. 2006. pp.521:542
+</cite>
+</p>
+
+
+<h3>See Also</h3>
+
+<p> See also <code>qpaid</code> for dealing with non-square triangles,  
+<code>chainladder</code> for the underlying chain-ladder method,  
+<code>dfCorTest</code> to check for Calendar Year Effect,
+<code>cyEffTest</code> to check for Development Factor Correlation,
+<code>summary.MackChainLadder</code>,  
+<code>quantile.MackChainLadder</code>,  
+<code>plot.MackChainLadder</code> and 
+<code>residuals.MackChainLadder</code> displaying results, 
+<code>CDR.MackChainLadder</code> for the one year claims development result.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## See the Taylor/Ashe example in Mack's 1993 paper
+GenIns
+plot(GenIns)
+plot(GenIns, lattice=TRUE)
+GNI &lt;- MackChainLadder(GenIns, est.sigma="Mack")
+GNI$f
+GNI$sigma^2
+GNI # compare to table 2 and 3 in Mack's 1993 paper
+plot(GNI)
+plot(GNI, lattice=TRUE)
+
+## Different weights
+## Using alpha=0 will use straight average age-to-age factors 
+MackChainLadder(GenIns, alpha=0)$f
+# You get the same result via:
+apply(GenIns[,-1]/GenIns[,-10],2, mean, na.rm=TRUE)
+
+## Only use the last 5 diagonals, i.e. the last 5 calendar years
+calPeriods &lt;- (row(GenIns) + col(GenIns) - 1)
+(weights &lt;- ifelse(calPeriods &lt;= 5, 0, ifelse(calPeriods &gt; 10, NA, 1)))
+MackChainLadder(GenIns, weights=weights, est.sigma = "Mack")
+
+## Tail
+## See the example in Mack's 1999 paper
+Mortgage
+m &lt;- MackChainLadder(Mortgage)
+round(summary(m)$Totals["CV(IBNR)",], 2) ## 26% in Table 6 of paper
+plot(Mortgage)
+# Specifying the tail and its associated uncertainty parameters
+MRT &lt;- MackChainLadder(Mortgage, tail=1.05, tail.sigma=71, tail.se=0.02, est.sigma="Mack")
+MRT
+plot(MRT, lattice=TRUE)
+# Specify just the tail and the uncertainty parameters will be estimated
+MRT &lt;- MackChainLadder(Mortgage, tail=1.05)
+MRT$f.se[9] # close to the 0.02 specified above
+MRT$sigma[9] # less than the 71 specified above
+# Note that the overall CV dropped slightly
+round(summary(MRT)$Totals["CV(IBNR)",], 2) ## 24%
+# tail parameter uncertainty equal to expected value 
+MRT &lt;- MackChainLadder(Mortgage, tail=1.05, tail.se = .05)
+round(summary(MRT)$Totals["CV(IBNR)",], 2) ## 27%
+
+## Parameter-risk (only) estimate of the total reserve = 3142387
+tail(MRT$Total.ParameterRisk, 1) # located in last (ultimate) element
+#  Parameter-risk (only) CV is about 19%
+tail(MRT$Total.ParameterRisk, 1) / summary(MRT)$Totals["IBNR", ]
+
+## Three terms in the parameter risk estimate
+## First, the default (Mack) without the tail
+m &lt;- MackChainLadder(RAA, mse.method = "Mack")
+summary(m)$Totals["Mack S.E.",]
+## Then, with the third term
+m &lt;- MackChainLadder(RAA, mse.method = "Independence")
+summary(m)$Totals["Mack S.E.",] ## Not significantly greater
+
+## One year claims development results
+M &lt;- MackChainLadder(MW2014, est.sigma="Mack")
+CDR(M)
+
+## For more examples see:
+## Not run: 
+ demo(MackChainLadder)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

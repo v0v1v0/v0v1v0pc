@@ -1,0 +1,252 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>keener</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Keener method</h2>
+
+<h3>Description</h3>
+
+<p>Functions to compute rating and ranking
+using Keener method.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">rate_keener(cr_data, ..., fill = 0, force_nonneg_h2h = TRUE,
+  skew_fun = skew_keener, normalize_fun = normalize_keener, eps = 0.001)
+
+rank_keener(cr_data, ..., fill = 0, force_nonneg_h2h = TRUE,
+  skew_fun = skew_keener, normalize_fun = normalize_keener, eps = 0.001,
+  keep_rating = FALSE, ties = c("average", "first", "last", "random", "max",
+  "min"), round_digits = 7)
+
+skew_keener(x)
+
+normalize_keener(mat, cr_data)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cr_data</code></td>
+<td>
+<p>Competition results in format ready for
+as_longcr().</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Head-to-Head expression (see h2h_mat()).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fill</code></td>
+<td>
+<p>A single value to use instead of NA for missing pairs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>force_nonneg_h2h</code></td>
+<td>
+<p>Whether to force nonnegative values in Head-to-Head
+matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>skew_fun</code></td>
+<td>
+<p>Skew function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>normalize_fun</code></td>
+<td>
+<p>Normalization function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eps</code></td>
+<td>
+<p>Coefficient for forcing irreducibility.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep_rating</code></td>
+<td>
+<p>Whether to keep rating column in ranking output.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ties</code></td>
+<td>
+<p>Value for <code>ties</code> in <code>round_rank()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>round_digits</code></td>
+<td>
+<p>Value for <code>round_digits</code> in <code>round_rank()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Argument for <code>skew_keener()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mat</code></td>
+<td>
+<p>Argument for <code>normalize_keener()</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Keener rating method is based on Head-to-Head matrix of the
+competition results. Therefore it can be used for competitions with
+variable number of players. Its algorithm is as follows:
+</p>
+
+<ol>
+<li>
+<p> Compute Head-to-Head matrix of competition results based on Head-to-Head
+expression supplied in <code>...</code> (see h2h_mat() for
+technical details and section <strong>Design of Head-to-Head values</strong> for design
+details). Head-to-Head values are computed based only on the games between
+players of interest (see Players). Ensure that there are no <code>NA</code>s by using
+<code>fill</code> argument. If <code>force_nonneg_h2h</code> is <code>TRUE</code> then the minimum value is
+subtracted (in case some Head-to-Head value is strictly negative).
+</p>
+</li>
+<li>
+<p> Update raw Head-to-Head values (denoted as S) with the pair-normalization:
+a_ij = (S_ij + 1) / (S_ij + S_ji + 2). This step should make comparing
+different players more reasonable.
+</p>
+</li>
+<li>
+<p> Skew Head-to-Head values with applying <code>skew_fun</code> to them. <code>skew_fun</code>
+should take numeric vector as only argument. It should return skewed vector.
+The default skew function is <code>skew_keener()</code>. This step should make abnormal
+results not very abnormal. To omit this step supply <code>skew_fun = NULL</code>.
+</p>
+</li>
+<li>
+<p> Normalize Head-to-Head values with <code>normalize_fun</code> using <code>cr_data</code>.
+<code>normalize_fun</code> should take Head-to-Head matrix as the first argument and
+<code>cr_data</code> as second. It should return normalized matrix. The default
+normalization is <code>normalize_keener()</code> which divides Head-to-Head value of
+'player1'-'player2' matchup divided by the number of games played by
+'player1' (error is thrown if there are no games). This step should take into
+account possibly not equal number of games played by players. To omit this
+step supply <code>normalize_keener = NULL</code>.
+</p>
+</li>
+<li>
+<p> Add small value to Head-to-Head matrix to ensure its irreducibility. If
+all values are strictly positive then this step is omitted. In other case
+small value is computed as the smallest non-zero Head-to-Head value
+multiplied by <code>eps</code>. This step is done to ensure applicability of
+Perron-Frobenius theorem.
+</p>
+</li>
+<li>
+<p> Compute Perron-Frobenius vector of the resultant matrix, i.e. the strictly
+positive real eigenvector (which values sum to 1) for eigenvalue (which is
+real) of the maximum absolute value. This vector is Keener rating vector.
+</p>
+</li>
+</ol>
+<p>If using <code>normalize_keener()</code> in normalization step, ensure to analyze
+players which actually played games (as division by a number of played games
+is made). If some player didn't play any game, en error is thrown.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>rate_keener()</code> returns a tibble with columns
+<code>player</code> (player identifier) and <code>rating_keener</code> (Keener
+rating). Sum of all ratings should be equal to 1. <strong>Bigger
+value indicates better player performance</strong>.
+</p>
+<p><code>rank_keener()</code> returns a <code>tibble</code> with columns <code>player</code>, <code>rating_keener</code> (if
+<code>keep_rating = TRUE</code>) and <code>ranking_keener</code> (Keener ranking
+computed with <code>round_rank()</code>).
+</p>
+<p><code>skew_keener()</code> returns skewed vector of the same length as <code>x</code>.
+</p>
+<p><code>normalize_keener()</code> returns normalized matrix with the same dimensions as
+<code>mat</code>.
+</p>
+
+
+<h3>Design of Head-to-Head values</h3>
+
+<p>Head-to-Head values in these functions are assumed to follow the property
+which can be <em>equivalently</em> described in two ways:
+</p>
+
+<ul>
+<li>
+<p> In terms of matrix format: <strong>the more Head-to-Head
+value in row <em>i</em> and column <em>j</em> the better player from row <em>i</em> performed than
+player from column <em>j</em></strong>.
+</p>
+</li>
+<li>
+<p> In terms of long format: <strong>the more Head-to-Head
+value the better player1 performed than player2</strong>.
+</p>
+</li>
+</ul>
+<p>This design is chosen because in most competitions the goal is to score
+<strong>more points</strong> and not less. Also it allows for more smooth use of
+h2h_funs from <code>comperes</code> package.
+</p>
+
+
+<h3>Players</h3>
+
+<p><code>comperank</code> offers a possibility to handle certain set of players. It is done
+by having <code>player</code> column (in longcr format) as factor
+with levels specifying all players of interest. In case of factor the result
+is returned only for players from its levels. Otherwise - for all present
+players.
+</p>
+
+
+<h3>References</h3>
+
+<p>James P. Keener (1993) <em>The Perron-Frobenius theorem and the
+ranking of football teams</em>. SIAM Review, 35(1):80–93, 1993.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">rate_keener(ncaa2005, sum(score1))
+
+rank_keener(ncaa2005, sum(score1))
+
+rank_keener(ncaa2005, sum(score1), keep_rating = TRUE)
+
+# Impact of skewing
+rate_keener(ncaa2005, sum(score1), skew_fun = NULL)
+
+# Impact of normalization.
+rate_keener(ncaa2005[-(1:2), ], sum(score1))
+
+rate_keener(ncaa2005[-(1:2), ], sum(score1), normalize_fun = NULL)
+
+</code></pre>
+
+
+</div>

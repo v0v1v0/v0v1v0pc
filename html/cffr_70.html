@@ -1,0 +1,367 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cff_class</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>The <code>cff</code> class</h2>
+
+<h3>Description</h3>
+
+
+
+<h4>The <code>cff</code> class</h4>
+
+<p><a href="https://cran.r-project.org/package=cffr"><strong>cffr</strong></a> implements a S3 object with
+<code>class</code> <code>cff</code>, that it is used to represent the information of a
+<code>CITATION.cff</code> file in <strong>R</strong>.
+</p>
+<p>Under the hood, a <code>cff</code> object is simply a named <code>list</code> to which we added
+additional methods, most notably <code>print</code> and <code>as_cff()</code>.
+</p>
+<div class="sourceCode r"><pre>a_named_list &lt;- list(
+  first = "I", second = "am", third = "a", fourth = "list",
+  fifth = "with", sixth = "names", "none" = NULL
+)
+
+# As cff
+a_cff_object &lt;- as_cff(a_named_list)
+
+class(a_cff_object)
+#&gt; [1] "cff"
+
+a_cff_object
+#&gt; first: I
+#&gt; second: am
+#&gt; third: a
+#&gt; fourth: list
+#&gt; fifth: with
+#&gt; sixth: names
+
+is.list(a_cff_object)
+#&gt; [1] TRUE
+</pre></div>
+<p><code>as_cff()</code> not only converts a <code>list</code> to <code>cff</code> but also removes items (known as
+<code>keys</code> in CFF terminology) that are <code>NULL</code> or <code>NA</code>.
+</p>
+
+
+<h5>Sub-classes</h5>
+
+<p><strong>cffr</strong> implements two special sub-classes of <code>cff</code>, with the aim of
+representing two special types of objects defined in the <a href="https://github.com/citation-file-format/citation-file-format/blob/main/schema-guide.md">CFF Schema</a>:
+</p>
+
+<ul>
+<li> <p><code>definition.person</code> and <code>definition.entity</code>: CFF definition for sub-lists
+representing persons or entities. In <strong>cffr</strong> the sub-class <code>cff_pers_lst</code>
+has been implemented to collect an array of <code>definition.person/entity</code>,
+where each individual person or entity of the array has a sub-class
+<code>cff_pers</code>.
+</p>
+</li>
+<li>
+<p> Similarly, <code>definition.reference</code> is the definition of CFF for collecting
+references to related works and other articles of software used in the
+development of the main work of the CFF file. This is implemented in
+<strong>cffr</strong> as a sub-class named <code>cff_ref_lst</code> for arrays of
+<code>definition.reference</code> where each element of the array has a sub-class named
+<code>cff_ref</code>.
+</p>
+</li>
+</ul>
+<p>These two sub-classes does not provide full valid <code>cff</code> objects, but adapts
+information to the schema required by CFF:
+</p>
+<div class="sourceCode r"><pre># Using the utils::person() function
+
+## Array
+two_persons &lt;- as_cff_person(
+  c(
+    person("A", "person", comment = c(ORCID = "0000-0000-0000-0000")),
+    person("An entity", email = "fake@gmail.com")
+  )
+)
+
+two_persons
+#&gt; - family-names: person
+#&gt;   given-names: A
+#&gt;   orcid: https://orcid.org/0000-0000-0000-0000
+#&gt; - name: An entity
+#&gt;   email: fake@gmail.com
+
+class(two_persons)
+#&gt; [1] "cff_pers_lst" "cff"
+
+# Single element
+
+two_persons[[1]]
+#&gt; family-names: person
+#&gt; given-names: A
+#&gt; orcid: https://orcid.org/0000-0000-0000-0000
+
+class(two_persons[[1]])
+#&gt; [1] "cff_pers" "cff"
+
+# Array of references
+
+cit &lt;- c(citation(), citation("yaml"))
+
+ref_list &lt;- as_cff(cit)
+
+ref_list
+#&gt; - type: manual
+#&gt;   title: 'R: A Language and Environment for Statistical Computing'
+#&gt;   authors:
+#&gt;   - name: R Core Team
+#&gt;   institution:
+#&gt;     name: R Foundation for Statistical Computing
+#&gt;     address: Vienna, Austria
+#&gt;   year: '2024'
+#&gt;   url: https://www.R-project.org/
+#&gt; - type: manual
+#&gt;   title: 'yaml: Methods to Convert R Data to YAML and Back'
+#&gt;   authors:
+#&gt;   - family-names: Garbett
+#&gt;     given-names: Shawn P
+#&gt;   - family-names: Stephens
+#&gt;     given-names: Jeremy
+#&gt;   - family-names: Simonov
+#&gt;     given-names: Kirill
+#&gt;   - family-names: Xie
+#&gt;     given-names: Yihui
+#&gt;   - family-names: Dong
+#&gt;     given-names: Zhuoer
+#&gt;   - family-names: Wickham
+#&gt;     given-names: Hadley
+#&gt;   - family-names: Horner
+#&gt;     given-names: Jeffrey
+#&gt;   - name: reikoch
+#&gt;   - family-names: Beasley
+#&gt;     given-names: Will
+#&gt;   - family-names: O'Connor
+#&gt;     given-names: Brendan
+#&gt;   - family-names: Warnes
+#&gt;     given-names: Gregory R.
+#&gt;   - family-names: Quinn
+#&gt;     given-names: Michael
+#&gt;   - family-names: Kamvar
+#&gt;     given-names: Zhian N.
+#&gt;   - family-names: Gao
+#&gt;     given-names: Charlie
+#&gt;   year: '2024'
+#&gt;   notes: R package version 2.3.10
+#&gt;   url: https://CRAN.R-project.org/package=yaml
+#&gt;   doi: 10.32614/CRAN.package.yaml
+
+class(ref_list)
+#&gt; [1] "cff_ref_lst" "cff"
+
+# Single element
+
+ref_list[[1]]
+#&gt; type: manual
+#&gt; title: 'R: A Language and Environment for Statistical Computing'
+#&gt; authors:
+#&gt; - name: R Core Team
+#&gt; institution:
+#&gt;   name: R Foundation for Statistical Computing
+#&gt;   address: Vienna, Austria
+#&gt; year: '2024'
+#&gt; url: https://www.R-project.org/
+
+class(ref_list[[1]])
+#&gt; [1] "cff_ref" "cff"
+</pre></div>
+
+
+
+
+<h4>Valid <code>cff</code> objects</h4>
+
+<p>Creating a <code>cff</code> object does not ensure its validity according to the <a href="https://github.com/citation-file-format/citation-file-format/blob/main/schema-guide.md">CFF Schema</a>:
+</p>
+<div class="sourceCode r"><pre>class(a_cff_object)
+#&gt; [1] "cff"
+
+cff_validate(a_cff_object)
+#&gt; == Validating cff ==============================================================
+#&gt; x Oops! This &lt;cff&gt; has the following errors:
+#&gt; * cff.authors: is required
+#&gt; * cff["cff-version"]: is required
+#&gt; * cff.message: is required
+#&gt; * cff.title: is required
+</pre></div>
+<p><code>cff_validate()</code> gives minimal messages of what's wrong with our <code>cff</code> and
+(invisibly) returns the result of the validation (<code>TRUE/FALSE</code>).
+</p>
+<p>We can use <code>cff_modify()</code> to add more keys:
+</p>
+<div class="sourceCode r"><pre>cff_valid &lt;- cff_modify(a_cff_object,
+  authors = as_cff_person("{James and James}"),
+  cff_version = "1.2.0",
+  message = "Hi there",
+  title = "My title"
+)
+
+
+# Remove invalid keys
+cff_valid &lt;- as_cff(cff_valid[names(cff_valid) %in% cff_schema_keys()])
+
+cff_valid
+#&gt; authors:
+#&gt; - name: James and James
+#&gt; cff-version: 1.2.0
+#&gt; message: Hi there
+#&gt; title: My title
+
+cff_validate(cff_valid)
+#&gt; == Validating cff ==============================================================
+#&gt; v Congratulations! This &lt;cff&gt; is valid
+</pre></div>
+
+
+
+<h4>Base methods provided by <strong>cffr</strong>
+</h4>
+
+<p><strong>cffr</strong> version 1.0.0 provides additional S3 Methods for common coercing
+functions of the <strong>base</strong> and <strong>utils</strong> package.
+</p>
+
+
+<h5><code>as.data.frame()</code></h5>
+
+<div class="sourceCode r"><pre>minimal_cff &lt;- cff()
+
+minimal_cff
+#&gt; cff-version: 1.2.0
+#&gt; message: If you use this software, please cite it using these metadata.
+#&gt; title: My Research Software
+#&gt; authors:
+#&gt; - family-names: Doe
+#&gt;   given-names: John
+
+as_df &lt;- as.data.frame(minimal_cff)
+
+class(as_df)
+#&gt; [1] "data.frame"
+
+t(as_df)
+#&gt;                         [,1]                                                            
+#&gt; cff_version             "1.2.0"                                                         
+#&gt; message                 "If you use this software, please cite it using these metadata."
+#&gt; title                   "My Research Software"                                          
+#&gt; authors.00.family_names "Doe"                                                           
+#&gt; authors.00.given_names  "John"
+</pre></div>
+
+
+
+<h5><code>c()</code></h5>
+
+<div class="sourceCode r"><pre>new_keys &lt;- c("date-released" = "2020-01-31", abstract = "Minimal example")
+
+c(minimal_cff, new_keys)
+#&gt; cff-version: 1.2.0
+#&gt; message: If you use this software, please cite it using these metadata.
+#&gt; title: My Research Software
+#&gt; authors:
+#&gt; - family-names: Doe
+#&gt;   given-names: John
+#&gt; date-released: '2020-01-31'
+#&gt; abstract: Minimal example
+</pre></div>
+
+
+
+<h5><code>as.list()</code></h5>
+
+<div class="sourceCode r"><pre>as.list(minimal_cff)
+#&gt; $`cff-version`
+#&gt; [1] "1.2.0"
+#&gt; 
+#&gt; $message
+#&gt; [1] "If you use this software, please cite it using these metadata."
+#&gt; 
+#&gt; $title
+#&gt; [1] "My Research Software"
+#&gt; 
+#&gt; $authors
+#&gt; $authors[[1]]
+#&gt; $authors[[1]]$`family-names`
+#&gt; [1] "Doe"
+#&gt; 
+#&gt; $authors[[1]]$`given-names`
+#&gt; [1] "John"
+</pre></div>
+
+
+
+<h5><code>as.person()</code></h5>
+
+<p>Only for <code>cff_pers_lst</code> and <code>cff_pers</code> objects:
+</p>
+<div class="sourceCode r"><pre>as.person(two_persons)
+#&gt; [1] "A person (&lt;https://orcid.org/0000-0000-0000-0000&gt;)"
+#&gt; [2] "An entity &lt;fake@gmail.com&gt;"
+</pre></div>
+
+
+
+<h5><code>toBibtex()</code></h5>
+
+<div class="sourceCode r"><pre># For cff
+toBibtex(minimal_cff)
+#&gt; @Misc{doe,
+#&gt;   title = {My Research Software},
+#&gt;   author = {John Doe},
+#&gt; }
+
+# cff_ref, cff_ref_lst
+toBibtex(cit)
+#&gt; @Manual{,
+#&gt;   title = {R: A Language and Environment for Statistical Computing},
+#&gt;   author = {{R Core Team}},
+#&gt;   organization = {R Foundation for Statistical Computing},
+#&gt;   address = {Vienna, Austria},
+#&gt;   year = {2024},
+#&gt;   url = {https://www.R-project.org/},
+#&gt; }
+#&gt; 
+#&gt; @Manual{,
+#&gt;   title = {yaml: Methods to Convert R Data to YAML and Back},
+#&gt;   author = {Shawn P Garbett and Jeremy Stephens and Kirill Simonov and Yihui Xie and Zhuoer Dong and Hadley Wickham and Jeffrey Horner and {reikoch} and Will Beasley and Brendan O'Connor and Gregory R. Warnes and Michael Quinn and Zhian N. Kamvar and Charlie Gao},
+#&gt;   year = {2024},
+#&gt;   note = {R package version 2.3.10},
+#&gt;   url = {https://CRAN.R-project.org/package=yaml},
+#&gt;   doi = {10.32614/CRAN.package.yaml},
+#&gt; }
+
+# cff_pers, cff_pers_lst
+toBibtex(two_persons)
+#&gt; person, A and {An entity}
+</pre></div>
+
+
+
+
+<h3>References</h3>
+
+
+<ul><li>
+<p> Wickham H (2019). "S3." In <em>Advanced R</em>, 2nd edition.
+Chapman and Hall/CRC. <a href="https://doi.org/10.1201/9781351201315">doi:10.1201/9781351201315</a>,
+<a href="https://adv-r.hadley.nz/s3.html">https://adv-r.hadley.nz/s3.html</a>.
+</p>
+</li></ul>
+<h3>See Also</h3>
+
+<p>Coercing between <strong>R</strong> classes with <strong>S3 Methods</strong>:
+<code>as_bibentry()</code>,
+<code>as_cff()</code>,
+<code>as_cff_person()</code>
+</p>
+
+
+</div>

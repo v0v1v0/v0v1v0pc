@@ -1,0 +1,484 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>communityModel</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create a community (multi-species) occupancy model for JAGS or Nimble</h2>
+
+<h3>Description</h3>
+
+<p>Flexibly creates complete code and input data for community occupancy models for JAGS amd Nimble (both standard occupancy models and Royle-Nichols occupancy models), and automatically sets initial values and parameters to monitor. 
+Supports fixed and random effects of covariates on detection and occupancy probabilities, using both continuous and categorical covariates (both site and site-occasion covariates). 
+</p>
+<p>Optionally includes data augmentation (fully open community, or up to known maximum number of species, or no data augmentation). 
+Allows combination of all these parameters for fast and flexible customization of community occupancy models.
+</p>
+<p>Incidentally, the function can also be used to create model code and input for single-species single-season occupancy models (it is the special case of the community model with only one species). 
+Such a model will run slower than proper single-species model JAGS code due to the additional species loop, but it is possible.
+</p>
+<p>The function returns several derived quantities, e.g. species richness, Bayesian p-values (overall and by species), Freeman-Tukey residuals for actual and simulated data (by station and total). If doing data augmentation, metacommunity size and number of unseen species are returned also.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">communityModel(
+  data_list,
+  model = c("Occupancy", "RN"),
+  occuCovs = list(fixed = NULL, independent = NULL, ranef = NULL),
+  detCovs = list(fixed = NULL, ranef = NULL),
+  detCovsObservation = list(fixed = NULL, ranef = NULL),
+  speciesSiteRandomEffect = list(det = FALSE, occu = FALSE),
+  intercepts = list(det = "fixed", occu = "fixed"),
+  effortCov = "effort",
+  richnessCategories = NULL,
+  augmentation = NULL,
+  modelFile = NULL,
+  nimble = FALSE,
+  keyword_quadratic = "_squared"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data_list</code></td>
+<td>
+<p>list. Contains 3 slots: ylist, siteCovs, obsCovs. ylist is a list of detection histories (can be named), e.g. from <code>detectionHistory</code>. siteCovs is a data.frame with site covariates (optional). obsCovs is a list of site-occasion level covariates (e.g. site-occasion-specific effort, which is also returned by <code>detectionHistory</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>character. "Occupancy" for standard occupancy model,  or "RN" for the occupancy model of Royle and Nichols (2003), which relates probability of detection of the species to the number of individuals available for detection at each station</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>occuCovs</code></td>
+<td>
+<p>list. Up to 3 items named "fixed", "independent", and/or "ranef". Specifies fixed, independent or random effects of covariates on occupancy probability (continuous or categorical covariates). Independent effects are only supported for continuous covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>detCovs</code></td>
+<td>
+<p>list. Up to 3 items named "fixed", "independent", and/or "ranef". Specifies fixed, independent or random effects of covariates on detection probability (continuous or categorical covariates). Independent effects are only supported for continuous covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>detCovsObservation</code></td>
+<td>
+<p>list. Up to 2 items named "fixed" and/or "ranef". Specifies fixed or random effects of observation-level covariates on detection probability  (continuous or categorical covariates - categorical must be coded as character matrix)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>speciesSiteRandomEffect</code></td>
+<td>
+<p>list. Two items named "det" and "occu". If TRUE, adds a random effect of species and station. Only implemented for detection probability.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>intercepts</code></td>
+<td>
+<p>list. Two items named "det" and "occu" for detection and occupancy probability intercepts. Values can be "fixed" (= constant across species), "independent" (= independent estimates for each species), or "ranef" (= random effect of species on intercept).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>effortCov</code></td>
+<td>
+<p>character. Name of list item in <code>data_list$obsCovs</code> which contains effort. This does not include effort as a covariate on detection probability, but only uses NA / not NA information to create binary effort and ensure detection probabilities p are 0 when there was no effort (p will be 0 whereever <code>effortCov</code> is NA).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>richnessCategories</code></td>
+<td>
+<p>character. Name of categorical covariate in <code>data_list$siteCovs</code> for which to calculate separate richness estimates (optional). Can be useful to obtain separate richness estimates for different areas.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>augmentation</code></td>
+<td>
+<p>If NULL, no data augmentation (only use species in <code>data_list$ylist</code>), otherwise named list or vector with total number of (potential) species. Names: "maxknown" or "full". Example: <code>augmentation = c(maxknown = 30)</code> or <code>augmentation = c(full = 30)</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelFile</code></td>
+<td>
+<p>character. Text file name to save model to</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nimble</code></td>
+<td>
+<p>logical. If TRUE, model code will be for Nimble (incompatible with JAGS). If FALSE, model code is for JAGS.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keyword_quadratic</code></td>
+<td>
+<p>character. A suffix in covariate names in the model that indicates a covariate is a quadratic effect of another covariate which does not carry the suffix in its name (e.g. if the covariate is "elevation", the quadratic covariate would be "elevation_squared").</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For examples of implementation, see Vignette 5: Multi-species occupancy models.
+</p>
+<p>Fixed effects of covariates are constant across species, whereas random effect covariates differ between species. Independent effect differ between species and are independent (there is no underlying hyperdistribution).
+Fixed, independent and random effects are allowed for station-level detection and occupancy covariates (a.k.a. site covariates). Fixed and random effects are also allowed for station-occasion level covariates (a.k.a. observation covariates). 
+Currently independent effects are only supported for continuous site covariates, not categorical site covariates or observation-level covariates.
+</p>
+<p>By default, random effects will be by species. It is however possible to use categorical site covariates for grouping (continuous|categorical).
+Furthermore, is is possible to use use nested random effects of species and another categorical site covariate (so that there is a random effect of species and an additional random effect of a categorical covariate within each species).
+</p>
+<p>Derived quantities returned by the model are:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+    <code>Bpvalue</code> </td>
+<td style="text-align: left;"> Bayesian p-value (overall) </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <code>Bpvalue_species</code> </td>
+<td style="text-align: left;"> Bayesian p-value (by species) </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    
+    
+    <code>Nspecies</code> </td>
+<td style="text-align: left;"> Species richness (only in JAGS models)</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <code>Nspecies_station</code> </td>
+<td style="text-align: left;"> Species richness at each sampling locations (only in JAGS models) </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <code>Nspecies_Covariate</code> </td>
+<td style="text-align: left;"> Species richness by categorical covariate (when using <code>richnessCategories</code>, only in JAGS models) </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    
+    
+    <code>R2</code> </td>
+<td style="text-align: left;"> sum of Freeman-Tukey residuals of observed data within each species </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <code>new.R2</code> </td>
+<td style="text-align: left;"> sum of Freeman-Tukey residuals of simulated data within each species </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <code>R3</code> </td>
+<td style="text-align: left;"> Total sum of Freeman-Tukey residuals of observed data </td>
+</tr>
+<tr>
+<td style="text-align: left;"> 
+    <code>new.R3</code> </td>
+<td style="text-align: left;"> Total sum of Freeman-Tukey residuals of simulated data </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <em><code>Ntotal</code></em> </td>
+<td style="text-align: left;"> Total metacommunity size (= observed species + n0) </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <em><code>n0</code></em> </td>
+<td style="text-align: left;"> Number of unseen species in metacommunity </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <em><code>omega</code></em> </td>
+<td style="text-align: left;"> Data augmentation parameter </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <em><code>w</code></em> </td>
+<td style="text-align: left;"> Metacommunity membership indicator for each species
+  </td>
+</tr>
+</table>
+<p>Quantities in <em>italic</em> at the bottom are only returned in full data augmentation. <code>Nspecies</code> and <code>Nspecies_Covariate</code> are only returned in JAGS models (because Nimble models don't explicitly return latent occupancy status z).
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>commOccu</code> object. It is an S4 class containing all information required to run the models. See  <code>commOccu-class</code> for details.
+</p>
+
+
+<h3>Parameter naming convention</h3>
+
+<p>The parameter names are assembled from building blocks. The nomenclature  is as follows:    
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+    <b>Name</b>           </td>
+<td style="text-align: left;"> <b>Refers to</b>  </td>
+<td style="text-align: left;">  <b>Description</b>  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <b><code>alpha</code></b>   </td>
+<td style="text-align: left;"> Submodel          </td>
+<td style="text-align: left;"> detection submodel  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <b><code>beta</code></b>    </td>
+<td style="text-align: left;"> Submodel          </td>
+<td style="text-align: left;"> occupancy submode </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <b><code>0</code></b>       </td>
+<td style="text-align: left;"> Intercept         </td>
+<td style="text-align: left;"> denotes the intercepts (alpha0, beta0)  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <b><code>fixed</code></b>   </td>
+<td style="text-align: left;"> Effect type       </td>
+<td style="text-align: left;"> fixed effects (constant across species)  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <b><code>indep</code></b>   </td>
+<td style="text-align: left;"> Effect type       </td>
+<td style="text-align: left;"> independent effects (separate for each species)  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <b><code>ranef</code></b>   </td>
+<td style="text-align: left;"> Effect type       </td>
+<td style="text-align: left;"> random effects (of species and/or other categorical covariates)  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <b><code>cont</code></b>    </td>
+<td style="text-align: left;"> Covariate type    </td>
+<td style="text-align: left;"> continuous covariates </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <b><code>categ</code></b>   </td>
+<td style="text-align: left;"> Covariate type    </td>
+<td style="text-align: left;"> categorical covariates </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <b><code>mean</code></b>    </td>
+<td style="text-align: left;"> Hyperparameter    </td>
+<td style="text-align: left;"> mean of random effect </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <b><code>sigma</code></b>   </td>
+<td style="text-align: left;"> Hyperparameter    </td>
+<td style="text-align: left;"> standard deviation of random effect </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <b><code>tau</code></b>     </td>
+<td style="text-align: left;"> Hyperparameter    </td>
+<td style="text-align: left;"> precision of random effect (used internally, not returned)
+  </td>
+</tr>
+</table>
+<p>For example, a fixed intercept of occupancy (constant across species) is <b><code>beta0</code></b>, and a fixed intercept of detection probability is <b><code>alpha0</code></b>.
+</p>
+<p>An occupancy probability intercept with a random effect of species is: 
+</p>
+<p><b><code>beta0.mean</code></b> community mean of the occupancy probability intercept
+</p>
+<p><b><code>beta0.sigma</code></b> standard deviation of the community occupancy probability intercept.
+</p>
+<p><b><code>beta0[1]</code></b> occupancy probability intercept of species 1 (likewise for other species). 
+</p>
+<p>For effects of site covariates, the pattern is:
+</p>
+<p><code>submodel.effectType.covariateType.CovariateName.hyperparameter</code>
+</p>
+<p>For example:
+</p>
+<p><b><code>beta.ranef.cont.habitat.mean</code></b> is the mean community effect of the continuous site covariate 'habitat' on occupancy probability.
+</p>
+<p><b><code>beta.ranef.cont.habitat[1]</code></b> is the effect of continuous site covariate 'habitat' on occupancy probability of species 1.
+</p>
+<p>Site-occasion covariates are denoted by ".obs" after the submodel, e.g.: 
+</p>
+<p><b><code>alpha.obs.fixed.cont.effort</code></b> is the fixed effect of the continuous observation-level covariate 'effort' on detection probability
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Juergen Niedballa
+</p>
+
+
+<h3>References</h3>
+
+<p>Kéry, M., and J. A. Royle. "Applied hierarchical modelling in ecology - Modeling distribution, abundance and species richness using R and BUGS." Volume 1: Prelude and Static Models. Elsevier/Academic Press, 2016.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Not run: 
+
+data("camtraps")
+
+# create camera operation matrix
+camop_no_problem &lt;- cameraOperation(CTtable      = camtraps,
+                                    stationCol   = "Station",
+                                    setupCol     = "Setup_date",
+                                    retrievalCol = "Retrieval_date",
+                                    hasProblems  = FALSE,
+                                    dateFormat   = "dmy"
+)
+
+data("recordTableSample")
+
+# make list of detection histories
+DetHist_list &lt;- lapply(unique(recordTableSample$Species), FUN = function(x) {
+  detectionHistory(
+    recordTable         = recordTableSample,
+    camOp                = camop_no_problem,
+    stationCol           = "Station",
+    speciesCol           = "Species",
+    recordDateTimeCol    = "DateTimeOriginal",
+    species              = x,
+    occasionLength       = 7,
+    day1                 = "station",
+    datesAsOccasionNames = FALSE,
+    includeEffort        = TRUE,
+    scaleEffort          = TRUE,
+    timeZone             = "Asia/Kuala_Lumpur"
+  )}
+)
+
+# assign species names to list items
+names(DetHist_list) &lt;- unique(recordTableSample$Species)
+
+# extract detection histories (omit effort matrices)
+ylist &lt;- lapply(DetHist_list, FUN = function(x) x$detection_history)
+
+# create some fake covariates for demonstration
+sitecovs &lt;- camtraps[, c(1:3)]
+sitecovs$elevation &lt;- c(300, 500, 600)   
+
+# scale numeric covariates
+sitecovs[, c(2:4)] &lt;- scale(sitecovs[,-1])
+
+
+# bundle input data for communityModel
+data_list &lt;- list(ylist = ylist,
+                  siteCovs = sitecovs,
+                  obsCovs = list(effort = DetHist_list[[1]]$effort))
+
+
+# create community model for JAGS
+modelfile1 &lt;- tempfile(fileext = ".txt")
+mod.jags &lt;- communityModel(data_list,
+                           occuCovs = list(fixed = "utm_y", ranef = "elevation"),
+                           detCovsObservation = list(fixed = "effort"),
+                           intercepts = list(det = "ranef", occu = "ranef"),
+                           modelFile = modelfile1)
+
+summary(mod.jags)
+
+# fit in JAGS
+fit.jags &lt;- fit(mod.jags,
+                n.iter = 1000,
+                n.burnin = 500,
+                chains = 3)   
+summary(fit.jags)
+
+# response curves (= marginal effect plots)
+plot_effects(mod.jags, 
+             fit.jags, 
+             submodel = "state")
+plot_effects(mod.jags, 
+             fit.jags, 
+             submodel = "det")
+             
+# effect sizes plot
+plot_coef(mod.jags, 
+          fit.jags, 
+          submodel = "state")
+plot_coef(mod.jags, 
+          fit.jags, 
+          submodel = "det")              
+
+# create community model for Nimble
+modelfile2 &lt;- tempfile(fileext = ".txt")
+mod.nimble &lt;- communityModel(data_list,
+                             occuCovs = list(fixed = "utm_x", ranef = "utm_y"),
+                             detCovsObservation = list(fixed = "effort"),
+                             intercepts = list(det = "ranef", occu = "ranef"),
+                             modelFile = modelfile2, 
+                             nimble = TRUE)      # set nimble = TRUE
+
+# load nimbleEcology package 
+# currently necessary to do explicitly, to avoid additional package dependencies
+require(nimbleEcology)
+
+# fit uncompiled model in Nimble
+fit.nimble.uncomp &lt;- fit(mod.nimble, 
+                         n.iter = 10, 
+                         chains = 1)
+
+# fit compiled model in Nimble
+fit.nimble.comp &lt;- fit(mod.nimble, 
+                       n.iter = 5000, 
+                       n.burnin = 2500,
+                       chains = 3, 
+                       compile = TRUE)
+
+# parameter summary statistics
+summary(fit.nimble.comp)
+
+
+# response curves (= marginal effect plots)
+plot_effects(mod.nimble, 
+             fit.nimble.comp, 
+             submodel = "state")
+plot_effects(mod.nimble, 
+             fit.nimble.comp, 
+             submodel = "det")
+
+# effect sizes plot
+plot_coef(mod.nimble, 
+          fit.nimble.comp, 
+          submodel = "state")
+plot_coef(mod.nimble, 
+          fit.nimble.comp, 
+          submodel = "det")   
+
+# traceplots
+plot(fit.nimble.comp)
+
+
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

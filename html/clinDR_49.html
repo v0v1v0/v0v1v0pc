@@ -1,0 +1,223 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>SeEmax</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2> Asymptotic SE for dose response estimates from a
+3- or 4- parameter Emax model </h2>
+
+<h3>Description</h3>
+
+<p>Compute the asymptotic SE for dose response estimates based on the 
+asymptotic variance-covariance matrix from the fit of a 3- or 4-parameter
+Emax model</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">SeEmax(fit, doselev, modType, dref=0, nbase=0, x=NULL, 
+				binary=FALSE, clev=0.9)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>fit</code></td>
+<td>
+<p>Output of <code>nls</code> fit to a 3- or 4-parameter Emax
+model.  The order of the parameters in the fit must be (log(ed50),emax,e0) or
+(log(ed50),lambda,emax,e0).
+Alternatively, fit can be a list with the first element the coefficient
+vector, and the second element the variance-covariance matrix.  List input
+can be used with multiple protocols and baseline covariates (see details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>doselev</code></td>
+<td>
+<p>SEs are evaluated at vector of doses </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modType</code></td>
+<td>
+<p>modType=3,4 for a 3 or 4 parameter model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dref</code></td>
+<td>
+<p>A reference dose (0 by default) for contrasts, but other values 
+can be specified.  If specified, a single reference value must be given.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nbase</code></td>
+<td>
+<p>The number of baseline predictors included in the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>The model is evaluated at baseline covariate values, <code>x</code>.
+If <code>x</code> is a matrix, then each row is a vector of baseline 
+predictors, and the results are for the dose response averaged over
+all of the predictors in <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>binary</code></td>
+<td>
+<p>Emax model on logistic scale, then backtransformed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clev</code></td>
+<td>
+<p>Confidence level for intervals.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The Emax models supported by <code>SeEmax</code> should now be fit using 
+<code>fitEmax</code> and <code>predict.fitEmax</code>.  <code>SeEmax</code> remains available
+primarily for backward compatibility.
+</p>
+<p><code>SeEmax</code> can be used with models that allow different placebo response
+for multiple protocols by selecting the intercept for a specific protocol.  
+Coeficients for baseline covariates can also be included following the intercept.
+The variance-covariance matrix from the full model must be subsetted to match
+the included coeficients (i.e., the rows and columns corresponding to the
+omitted intercepts must be removed).  List input must be used for the more
+general models. 
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a list:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>doselev</code></td>
+<td>
+<p>Doses to evaluate</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dref</code></td>
+<td>
+<p>Differences in response between <code>doselev</code>
+and <code>dref</code> are computed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitpred </code></td>
+<td>
+<p>Estimated dose response at doselev</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sepred</code></td>
+<td>
+<p>SE for estimated dose responses</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitdif</code></td>
+<td>
+<p>Estimated response at doselev minus estimated
+response at placebo</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sedif</code></td>
+<td>
+<p>SE for fitdif estimated differences</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitref</code></td>
+<td>
+<p>Estimated dose response at the reference dose.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seref</code></td>
+<td>
+<p>SE for the estimated dose response at the reference
+dose</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covref</code></td>
+<td>
+<p>The covariance between each estimated response and
+the estimated response at the reference dose.  These covariances can
+be used to compute asymptotic variances of differences after 
+back-transformation (e.g., for logistic regression with binary data).
+</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Neal Thomas </p>
+
+
+<h3>References</h3>
+
+<p>Bates, D. M. and Watts, D. G. (1988) Nonlinear Regression
+Analysis and Its Applications, Wiley
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fitEmax</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Not run: 
+
+## this example changes the random number seed
+doselev&lt;-c(0,5,25,50,100,250)
+n&lt;-c(78,81,81,81,77,80)
+dose&lt;-rep(doselev,n)
+
+### population parameters for simulation
+e0&lt;-2.465375 
+ed50&lt;-67.481113 
+led50&lt;-log(ed50)
+lambda=1.8
+
+dtarget&lt;-100
+diftarget&lt;-9.032497
+emax&lt;-solveEmax(diftarget,dtarget,log(ed50),lambda,e0)
+
+sdy&lt;-7.967897
+pop&lt;-c(led50=led50,lambda=lambda,emax=emax,e0=e0)    
+meanresp&lt;-emaxfun(dose,pop)  
+y&lt;-rnorm(sum(n),meanresp,sdy)
+nls.fit&lt;-nls(y ~ e0 + (emax * dose^lambda)/(dose^lambda + exp(led50*lambda)), 
+                         start = pop, control = nls.control(
+                         maxiter = 100),trace=TRUE,na.action=na.omit)
+
+
+SeEmax(nls.fit,doselev=c(60,120),modType=4)
+SeEmax(list(coef(nls.fit),vcov(nls.fit)),c(60,120),modType=4)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

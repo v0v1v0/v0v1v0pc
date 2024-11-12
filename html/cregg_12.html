@@ -1,0 +1,148 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cj_tidy</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Tidy a conjoint dataset</h2>
+
+<h3>Description</h3>
+
+<p>Coerce a “wide” conjoint dataset into a “long”/“tidy” one for use with cregg
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cj_tidy(data, profile_variables, task_variables, id)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data frame containing a conjoint dataset in “wide” format (see Details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>profile_variables</code></td>
+<td>
+<p>A named list of two-element lists capturing profile-specific variables (either features, or profile-specific outcomes, like rating scales). For each element in the list, the first element contains vectors of feature variable names for the first profile in each decision task (hereafter, profile “A”) and the second element contains vectors of feature variable names for the second profile in each decision task (hereafter, profile “B”). Variables can be specified as character strings or an RHS formula. The names at the highest level are used to name variables in the long/tidy output.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>task_variables</code></td>
+<td>
+<p>A named list of vectors of variables constituting task-level variables (i.e., variables that differ by task but not across profiles within a task). Variables can be specified as character strings or an RHS formula. These could be outcome variables, response times, etc.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id</code></td>
+<td>
+<p>An RHS formula specifying a variable holding respondent identifiers.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>A conjoint survey typically comes to the analyst in a “wide” form, where the number of rows is equal to the number of survey respondents and columns represent choices and features for each choice task and task profile. For example, a design with 1000 respondents and five forced-choice decision tasks, with 6 features each, will have 1000 rows and 5x2x6 feature columns, plus five forced-choice outcome variable columns recording which alternative was selected for each task. To analyse these data, the data frame needs to be reshaped to “long” or “tidy” format, with 1000x5x2 rows, six feature columns, and one outcome column. Multiple outcomes or other task-specific variables would increase the number of columns in the result, as will respondent-varying characteristics which need to be replicated across each decision task and profile.
+</p>
+<p>This a complex operation because variables vary at three levels: respondent, task, and profile. Thus the reshape is not a simple wide-to-long transformation. It instead requires two reshaping steps, one to create a task-level dataset and a further one to create a profile-level dataset. <code>cj_tidy</code> performs this tidying in two steps, through a single function with an easy-to-use API. Users can specify variable names in the <code>wide</code> format using either character vectors of righthand-side (RHS) formulae. They are equivalent but depending on the naming of variables, character vectors can be easier to specify (e.g., using regular expressions for pattern matching).
+</p>
+<p>Particular care is needed to decide whether a particular set of “wide” columns belong in <code>profile_variables</code> or <code>task_variables</code>. This especially applies to outcomes variables. If a variable in the original format records <em>which</em> of the two profiles was chosen (e.g., “left” and “right”), it should go in <code>task_variables</code>. If it records whether a profile was chosen (e.g., for each task there is a “left_chosen” and “right_chosen” variable), then both variables should go in <code>profile_variables</code> as they vary at the profile level. Similarly, one needs to be careful with the output of <code>cj_tidy</code> to ensure that a task-level variable is further recoded to encode which alternative was selected (see examples).
+</p>
+<p>Users may find that it is easier to recode features <em>after</em> using <code>cj_tidy</code> rather than before, as it requires recoding only a number of variables equal to the number of features in the design, rather than recoding all “wide” feature columns before reshaping. Again, however, care should be taken that these variables encode information in the same way so that stacking does not produce a loss of information.
+</p>
+<p>Finally, <code>data</code> should not use the variable names “task”, “pair”, or “profile”, which are the names of metadata columns created by reshaping.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame with rows equal to the number of respondents times the number of tasks times the number of profiles (fixed at 2), to be fed into any other function in the package. The columns will include the names of elements in <code>profile_variables</code> and <code>task_variables</code>, and <code>id</code>, along with an indicator <code>task</code> (from 1 to the number of tasks), <code>pair</code> (an indicator for each task pair from 1 to the number of pairs), <code>profile</code> (a fator indicator for profile, either “A” or “B”), and any other respondent-varying covariates not specified. As such, respondent-varying variables do not need to be specified to <code>cj_tidy</code> at all. 
+</p>
+<p>The returned data frame carries an additional S3 class (“cj_df”) with methods that preserve column attributes. See <code>cj_df</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cj</code>, <code>cj_df</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+data("wide_conjoint")
+
+# character string interface
+## profile_variables
+list1 &lt;- list(
+ feature1 = list(
+     names(wide_conjoint)[grep("^feature1.{1}1", names(wide_conjoint))],
+     names(wide_conjoint)[grep("^feature1.{1}2", names(wide_conjoint))]
+ ),
+ feature2 = list(
+     names(wide_conjoint)[grep("^feature2.{1}1", names(wide_conjoint))],
+     names(wide_conjoint)[grep("^feature2.{1}2", names(wide_conjoint))]
+ ),
+ feature3 = list(
+     names(wide_conjoint)[grep("^feature3.{1}1", names(wide_conjoint))],
+     names(wide_conjoint)[grep("^feature3.{1}2", names(wide_conjoint))]
+ ),
+ rating = list(
+     names(wide_conjoint)[grep("^rating.+1", names(wide_conjoint))],
+     names(wide_conjoint)[grep("^rating.+2", names(wide_conjoint))]
+ )
+)
+## task variables
+list2 &lt;- list(choice = paste0("choice_", letters[1:4]),
+              timing = paste0("timing_", letters[1:4]))
+
+# formula interface
+## profile_variables
+list1 &lt;- list(
+   feature1 = list(
+       ~ feature1a1 + feature1b1 + feature1c1 + feature1d1,
+       ~ feature1a2 + feature1b2 + feature1c2 + feature1d2
+   ),
+   feature2 = list(
+       ~ feature2a1 + feature2b1 + feature2c1 + feature2d1,
+       ~ feature2a2 + feature2b2 + feature2c2 + feature2d2
+   ),
+   feature3 = list(
+       ~ feature3a1 + feature3b1 + feature3c1 + feature3d1,
+       ~ feature3a2 + feature3b2 + feature3c2 + feature3d2
+   ),
+   rating = list(
+       ~ rating_a1 + rating_b1 + rating_c1 + rating_d1,
+       ~ rating_a2 + rating_b2 + rating_c2 + rating_d2
+   )
+)
+# task variables
+list2 &lt;- list(choice = ~ choice_a + choice_b + choice_c + choice_d,
+              timing = ~ timing_a + timing_b + timing_c + timing_d)
+
+
+# perform reshape
+str(long &lt;- cj_tidy(wide_conjoint,
+                    profile_variables = list1,
+                    task_variables = list2,
+                    id = ~ respondent))
+stopifnot(nrow(long) == nrow(wide_conjoint)*4*2)
+
+# recode outcome so it is coded sensibly
+long$chosen &lt;- ifelse((long$profile == "A" &amp; long$choice == 1) | 
+                       (long$profile == "B" &amp; long$choice == 2), 1, 0)
+# use for analysis
+cj(long, chosen ~ feature1 + feature2 + feature3, id = ~ respondent)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

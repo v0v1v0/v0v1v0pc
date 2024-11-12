@@ -1,0 +1,153 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>eval_capture_conditions</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Evaluate and Capture Conditions</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt="[Experimental]"></a><br><strong><code>eval_capture_conditions()</code></strong>
+</p>
+<p>Evaluates an expression while also capturing error and warning conditions.
+Function always returns a named list <code>list(result=, warning=, error=)</code>.
+If there are no errors or warnings, those elements will be <code>NULL</code>.
+If there is an error, the result element will be <code>NULL</code>.
+</p>
+<p>Messages are neither saved nor printed to the console.
+</p>
+<p>Evaluation is done via <code>rlang::eval_tidy()</code>. If errors and warnings are produced
+using the <code>{cli}</code> package, the messages are processed with <code>cli::ansi_strip()</code>
+to remove styling from the message.
+</p>
+<p><strong><code>captured_condition_as_message()</code>/<code>captured_condition_as_error()</code></strong>
+</p>
+<p>These functions take the result from <code>eval_capture_conditions()</code> and return
+errors or warnings as either messages (via <code>cli::cli_inform()</code>) or
+errors (via <code>cli::cli_abort()</code>). These functions handle cases where the
+condition messages may include curly brackets, which would typically cause
+issues when processed with the <code style="white-space: pre;">⁠cli::cli_*()⁠</code> functions.
+</p>
+<p>Functions return the <code>"result"</code> from <code>eval_capture_conditions()</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">eval_capture_conditions(expr, data = NULL, env = caller_env())
+
+captured_condition_as_message(
+  x,
+  message = c("The following {type} occured:", x = "{condition}"),
+  type = c("error", "warning"),
+  envir = rlang::current_env()
+)
+
+captured_condition_as_error(
+  x,
+  message = c("The following {type} occured:", x = "{condition}"),
+  type = c("error", "warning"),
+  call = get_cli_abort_call(),
+  envir = rlang::current_env()
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>expr</code></td>
+<td>
+<p>An expression or
+quosure to evaluate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data frame, or named list or vector. Alternatively, a
+data mask created with <code>as_data_mask()</code> or
+<code>new_data_mask()</code>. Objects in <code>data</code> have priority over those in
+<code>env</code>. See the section about data masking.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>env</code></td>
+<td>
+<p>The environment in which to evaluate <code>expr</code>. This
+environment is not applicable for quosures because they have
+their own environments.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>(<code>captured_condition</code>)<br>
+a captured condition created by <code>eval_capture_conditions()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>message</code></td>
+<td>
+<p>(<code>character</code>)<br>
+message passed to <code>cli::cli_inform()</code> or <code>cli::cli_abort()</code>. The condition
+being printed is saved in an object named <code>condition</code>, which should be
+included in this message surrounded by curly brackets.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>(<code>string</code>)<br>
+the type of condition to return. Must be one of <code>'error'</code> or <code>'warning'</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>envir</code></td>
+<td>
+<p>Environment to evaluate the glue expressions in.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>(<code>environment</code>)<br>
+Execution environment of currently running function. Default is
+<code>get_cli_abort_call()</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a named list
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># function executes without error or warning
+eval_capture_conditions(letters[1:2])
+
+# an error is thrown
+res &lt;- eval_capture_conditions(stop("Example Error!"))
+res
+captured_condition_as_message(res)
+
+# if more than one warning is returned, all are saved
+eval_capture_conditions({
+  warning("Warning 1")
+  warning("Warning 2")
+  letters[1:2]
+})
+
+# messages are not printed to the console
+eval_capture_conditions({
+  message("A message!")
+  letters[1:2]
+})
+</code></pre>
+
+
+</div>

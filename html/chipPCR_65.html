@@ -1,0 +1,153 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fixNA</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Impute missing values into a column of amplification data
+</h2>
+
+<h3>Description</h3>
+
+<p><code>fixNA</code> imputes missing values in a single 
+column of data. The imputation is based on a linear approximation by default. 
+However, the data can also be estimated from an approximation by splines.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S4 method for signature 'numeric,numeric'
+fixNA(x, y, spline = TRUE, verbose = FALSE)
+## S4 method for signature 'matrix,missing'
+fixNA(x, y, spline = TRUE, verbose = FALSE)
+## S4 method for signature 'data.frame,missing'
+fixNA(x, y, spline = TRUE, verbose = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+
+<p><code>x</code> is a vector containing the time or cycle values or data frame/matrix where second 
+column contains missing data.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+
+<p><code>y</code> is a vector containing missing values. Used only if <code>x</code> is 
+also a vector. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>spline</code></td>
+<td>
+
+<p><code>spline</code> if <code>TRUE</code> missing values are imputed by spline approximation as per 
+<code>spline</code>. The default <code>FAlSE</code> is linear a approximation as 
+per <code>approx</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+
+<p><code>verbose</code> defines if the number of missing values should be reported.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Amplification data of experimental systems may contain missing values (NA). 
+The NAs may be caused by detector problems, acquisition error or other 
+assorted problems. There are different ways to handle missing values. One 
+approach is to ignore NAs which is generally acceptable. However, in case of 
+further calculation it is often necessary to handle cases of missing values in 
+a way that the next calculation steps can be performed. Missing values can be 
+eliminated by a imputation. Imputation encompasses various approaches. This 
+includes to calculate a location parameter (e.g., mean, median) or other 
+significant values (e.g., minimum, maximum, modus) of a data column. However, 
+in non-linear processes such as amplification processes its is better to 
+estimate the missing values from a trend. <code>fixNA</code> was empirically tested and relies on a linear 
+trend estimation based on the <code>approx</code> function. This 
+approach is useful but may be problematic on the phases other then background 
+or plateau phases of an amplification reaction. The parameter 
+<code>spline</code> on <code>fixNA</code> enables a trend 
+estimation on splines and may be more appropriate in most scenarios. Other 
+smoothing functions such as the Savitzky-Golay smoothing filter have the 
+intrinsic capability to remove missing values [Savitzky and Golay 1964, 
+Eilers 2003].
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Stefan Roediger, Michal Burdukiewicz
+</p>
+
+
+<h3>References</h3>
+
+<p>Eilers, P. H. C. Anal. Chem. 2003, 75, 3631–3636.
+Savitzky, A.; Golay, M. J. E. Anal. Chem. 1964, 36, 1627–1639  
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>approx</code>, <code>spline</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Simulate a qPCR reaction with AmpSim with for 40 cycles
+res &lt;- AmpSim(cyc = c(1:40))
+# Introduce a missing value in the transition between 
+# the background and the exponential phase
+res.NA &lt;- res
+res.NA[18, 2] &lt;- NA
+
+default.par &lt;- par(no.readonly = TRUE)
+
+par(mfrow = c(2,2))
+plot(res, xlab = "Cycles", ylab = "Fluorescence", type = "b", pch = 20, 
+     main = "Simulation without missing value")
+     abline(v = c(17.5, 18.5), col = "grey")
+     abline(h = c(0.09, 0.14), col = "grey")
+
+res.NA.linear &lt;- fixNA(res.NA[, 1], res.NA[, 2], spline = FALSE, 
+		       verbose = FALSE)
+plot(res.NA.linear, xlab = "Cycles", ylab = "Fluorescence", type = "b", 
+     pch = 20, main = "Simulation with linear imputed\n NA 
+     value during transition")
+     abline(v = c(17.5, 18.5), col = "grey")
+     abline(h = c(0.09, 0.14), col = "grey")
+
+plot(res.NA, xlab = "Cycles", ylab = "Fluorescence", type = "b", pch = 20, 
+     main = "Simulation with missing\n value during transition")
+     abline(v = c(17.5, 18.5), col = "grey")
+     abline(h = c(0.09, 0.14), col = "grey")
+res.NA.spline &lt;- fixNA(res.NA[, 1], res.NA[, 2], spline = TRUE, 
+		       verbose = FALSE)
+plot(res.NA.spline, xlab = "Cycles", ylab = "Fluorescence", type = "b", 
+      pch = 20, main = "Simulation with spline imputed\n NA value 
+      during transition")
+     abline(v = c(17.5, 18.5), col = "grey")
+     abline(h = c(0.09, 0.14), col = "grey")     
+par(default.par)
+</code></pre>
+
+
+</div>

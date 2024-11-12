@@ -1,0 +1,302 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cameraOperation</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create a camera trap station operation matrix</h2>
+
+<h3>Description</h3>
+
+<p>Construct a matrix of daily camera trap station operation for use in
+<code>detectionHistory</code> and <code>spatialDetectionHistory</code>,
+where it is needed for calculating trapping effort per occasion. It is also
+used in <code>surveyReport</code> to calculate the number of trap nights
+durig a survey. If several cameras were deployed per station, the matrix can
+contain camera- or station-specific trap operation information, or
+information about sessions during repeated surveys.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cameraOperation(
+  CTtable,
+  stationCol = "Station",
+  cameraCol,
+  sessionCol,
+  setupCol,
+  retrievalCol,
+  hasProblems = FALSE,
+  byCamera,
+  allCamsOn,
+  camerasIndependent,
+  dateFormat = "ymd",
+  occasionStartTime = 0,
+  writecsv = FALSE,
+  outDir
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>CTtable</code></td>
+<td>
+<p>data.frame containing information about location and trapping
+period of camera trap stations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stationCol</code></td>
+<td>
+<p>character. name of the column specifying Station ID in
+<code>CTtable</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cameraCol</code></td>
+<td>
+<p>character. name of the column specifying Camera ID in
+<code>CTtable</code> (optional). If empty, 1 camera per station is assumed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sessionCol</code></td>
+<td>
+<p>character. name of the column specifying session ID in
+<code>CTtable</code> (optional). Use it for creating multi-session / multi-season
+detection histories (unmarked: <code>unmarkedMultFrame</code>;
+secr: <code>capthist</code> )</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>setupCol</code></td>
+<td>
+<p>character. name of the column containing camera setup dates
+in <code>CTtable</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>retrievalCol</code></td>
+<td>
+<p>character. name of the column containing camera
+retrieval dates in <code>CTtable</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hasProblems</code></td>
+<td>
+<p>logical. If TRUE, function will look for columns
+specifying malfunction periods in <code>CTtable</code> (naming convention:
+<code>ProblemX_from</code> and <code>ProblemX_to</code>, where X is a number)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>byCamera</code></td>
+<td>
+<p>logical. If TRUE, camera operation matrix is computed by
+camera, not by station (requires <code>cameraCol</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>allCamsOn</code></td>
+<td>
+<p>logical. Takes effect only if <code>cameraCol</code> is defined
+and if <code>byCamera</code> is FALSE. If <code>allCamsOn = TRUE</code>, all cameras at
+a station need to be operational for the station to be operational (e.g. 1
+camera out of 2 malfunctioning renders the station inoperational). Output
+values can be 1/0/NA only (all cameras at a station operational/ at least 1
+camera not operational/ no camera set up). If <code>allCamsOn = FALSE</code>, at
+least 1 active camera makes a station operational.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>camerasIndependent</code></td>
+<td>
+<p>logical. Return number of active camera traps by
+station? Only if <code>byCamera</code> is FALSE and <code>allCamsOn</code> is FALSE. If
+<code>camerasIndependent</code> is TRUE, output values will be the number of
+operational cameras at a station. If <code>camerasIndependent</code> is FALSE, the
+value is 1 if at least 1 camera was operational, otherwise 0. In both cases,
+values are NA if no camera was set up.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dateFormat</code></td>
+<td>
+<p>character. The format of columns <code>setupCol</code> and
+<code>retrievalCol</code> (and potential problem columns) in <code>CTtable</code>. Must
+be interpretable by either <code>as.Date</code> or the "orders" argument
+<code>parse_date_time</code> in <span class="pkg">lubridate</span>. Can be a date
+or (since version 2.1) a date-time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>occasionStartTime</code></td>
+<td>
+<p>integer. time of day (the full hour) at which to
+begin occasions. Replaces <code>occasionStartTime</code> from
+<code>detectionHistory</code> and <code>spatialDetectionHistory</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>writecsv</code></td>
+<td>
+<p>logical. Should the camera operation matrix be saved as a
+.csv?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outDir</code></td>
+<td>
+<p>character. Directory into which csv is saved</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>cameraCol</code> is NULL by default, meaning the function assumes there was
+1 camera per station in <code>CTtable</code>. If more than 1 camera was deployed
+per station, <code>cameraCol</code> needs to be specified to identify individual
+cameras within a station. Likewise, <code>sessionCol</code> can be used to if
+camera trap stations were operated during multiple sessions / trapping
+seasons.
+</p>
+<p><code>dateFormat</code> defaults to "YYYY-MM-DD", e.g. "2014-10-31", but can be
+any other date format or date-time also. It can be specified either in the
+format required by <code>strptime</code> or the 'orders' argument in
+<code>parse_date_time</code> in <span class="pkg">lubridate</span>. In the example
+above, "YYYY-MM-DD" would be specified as "%Y-%m-%d" in base R or "ymd"
+in <span class="pkg">lubridate</span>.
+</p>
+<p>Since version 2.1, dateFormat can be a date-time. That makes it possible to
+specify the exact time cameras were set up / retrieved / malfunctioned /
+worked again. This information is used to calculate the daily trapping
+effort more precisely on days with incomplete effort.
+</p>
+<p>Previously, setup and retrival day were counted as 1, indicating a whole day
+of effort on those days. Since version 2.1, setup and retrieval are assumed
+to have happened at 12 noon (resulting in daily effort of 0.5 instead of 1).
+Users can also specify the exact time cameras were set up (by providing a
+date-time in the setup / retrieval / problem columns). See vignette 3 for
+more details.
+</p>
+<p>If <code>hasProblems</code> is TRUE, the function tries to find columns
+<code>ProblemX_from</code> and <code>ProblemX_to</code> in <code>CTtable</code>. <code>X</code> is a
+consecutive number from 1 to n, specifying periods in which a camera or
+station was not operational. If <code>hasProblems</code> is FALSE, cameras are
+assumed to have been operational uninterruptedly from setup to retrieval
+(see <code>camtraps</code> for details).
+</p>
+<p><code>allCamsOn</code> only has an effect if there was more than 1 camera at a
+station. If TRUE, for the station to be considered operational, all cameras
+at a station need to be operational. If FALSE, at least 1 active camera
+renders the station operational. Argument <code>camerasIndependent</code> defines
+if cameras record animals independently (it thus only has an effect if there
+was more than 1 camera at a station). This is the case if an observation at
+one camera does not increase the probability for detection at another camera
+(cameras face different trails at a distance of one another).
+Non-independence occurs if an animal is likely to trigger both camers (as
+would be the case with 2 cameras facing each other).
+</p>
+<p>If <code>camerasIndependent</code> is TRUE, 2 active cameras at a station will
+result in a station operation value of 2 in the resulting matrix, i.e., 2
+independent trap days at 1 station and day. If <code>camerasIndependent</code> is
+FALSE, 2 active cameras will return value 1, i.e., 1 trap night at 1 station
+per day.
+</p>
+<p>Row names depend on the input arguments and contain the station name and
+potentially session and camera names (if <code>sessionCol</code> and/or
+<code>cameraCol</code> are defined).
+</p>
+<p>Naming convention is (since version 1.2) <b>Bold</b> information are from
+the columns <code>stationCol</code>, <code>sessionCol</code> and <code>cameraCol</code> in
+<code>CTtable</code>:
+</p>
+<p><b>Station</b> <br><b>Station</b>__SESS_<b>SessionID</b> <br><b>Station</b>__CAM_<b>CameraID</b> <br><b>Station</b>__SESS_<b>SessionID</b>__CAM_<b>CameraID</b>
+</p>
+<p>Session are designated with prefix "__SESS_", cameras with prefix "__CAM_".
+Therefore, these are reserved words and may not be part of station, session
+or camera names. Here's what it may look like in real life:
+</p>
+<p><b>Station1</b> <br><b>Station1</b>__SESS_<b>2019</b> <br><b>Station1</b>__CAM_<b>1024152</b> <br><b>Station1</b>__SESS_<b>2019</b>__CAM_<b>1024152</b>
+</p>
+<p>Functions detectionHistory and spatialDetectionHistory recognize these and
+use the information accordingly.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A matrix. Row names always indicate Station IDs. If
+<code>sessionCol</code> and/or <code>cameraCol</code> are defined, they are contained in
+the row names also (camera ID only if <code>byCamera = TRUE</code>). Column names
+are dates. <br> Legend: NA: camera(s) not set up, 0: camera(s) not
+operational, 1 (or higher): number of operational camera(s) or an indicator
+for whether the station was operational (depending on
+<code>camerasIndependent</code> and <code>allCamsOn</code>)
+</p>
+
+
+<h3>Note</h3>
+
+<p>Setting <code>camerasIndependent</code> according to the sampling situation
+is important for the functions <code>detectionHistory</code> and
+<code>spatialDetectionHistory</code>, if sampling effort (the number of
+active trap nights in a occasion) is to be computed and returned.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Juergen Niedballa
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+data(camtraps)
+
+# no problems/malfunction
+camop_no_problem &lt;- cameraOperation(CTtable      = camtraps,
+                                    stationCol   = "Station",
+                                    setupCol     = "Setup_date",
+                                    retrievalCol = "Retrieval_date",
+                                    writecsv     = FALSE,
+                                    hasProblems  = FALSE,
+                                    dateFormat   = "dmy"
+)
+
+# with problems/malfunction
+camop_problem &lt;- cameraOperation(CTtable      = camtraps,
+                                 stationCol   = "Station",
+                                 setupCol     = "Setup_date",
+                                 retrievalCol = "Retrieval_date",
+                                 writecsv     = FALSE,
+                                 hasProblems  = TRUE,
+                                 dateFormat   = "dmy"
+)
+
+# with problems/malfunction / dateFormat in strptime format
+camop_problem_lubridate &lt;- cameraOperation(CTtable      = camtraps,
+                                           stationCol   = "Station",
+                                           setupCol     = "Setup_date",
+                                           retrievalCol = "Retrieval_date",
+                                           writecsv     = FALSE,
+                                           hasProblems  = TRUE,
+                                           dateFormat   = "%d/%m/%Y"
+)
+
+camop_no_problem
+camop_problem
+camop_problem_lubridate
+
+</code></pre>
+
+
+</div>

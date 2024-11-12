@@ -1,0 +1,223 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>dist_mat</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Distance matrix estimation</h2>
+
+<h3>Description</h3>
+
+<p>This function estimates the distance matrix separately from Conley standard errors. Such step can be helpful when running multiple Conley standard error estimations
+based on the same distance matrix. A pre-requisite of using this function is that the data must not be modified between applying this function and inserting the
+results into <code>conleyreg</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">dist_mat(
+  data,
+  unit = NULL,
+  time = NULL,
+  lat = NULL,
+  lon = NULL,
+  dist_comp = NULL,
+  dist_cutoff = NULL,
+  crs = NULL,
+  verbose = TRUE,
+  ncores = NULL,
+  par_dim = c("cross-section", "time", "r", "cpp"),
+  sparse = FALSE,
+  batch = TRUE,
+  batch_ram_opt = NULL,
+  dist_round = FALSE,
+  st_distance = FALSE,
+  dist_which = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>input data. Either (i) in non-spatial data frame format (includes tibbles and data tables) with columns denoting coordinates or (ii) in sf format. In
+case of an sf object, all non-point geometry types are converted to spatial points, based on the feature's centroid. When using a non-spatial data frame format
+the with projected, i.e. non-longlat, coordinates, <code>crs</code> must be specified. Note that the projection can influence the computed distances, which is a general
+phenomenon in GIS software and not specific to conleyreg. The computationally fastest option is to use a data table with coordinates in the crs in which
+the distances are to be derived (longlat for spherical and projected for planar), and with time and unit set as keys in the panel case. An sf object as input is
+the slowest option.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>unit</code></td>
+<td>
+<p>the variable identifying the cross-sectional dimension. Only needs to be specified, if data is not cross-sectional. Assumes that units do not change
+their location over time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>the variable identifying the time dimension. Only needs to be specified, if data is not cross-sectional.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lat</code></td>
+<td>
+<p>the variable specifying the latitude</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lon</code></td>
+<td>
+<p>the variable specifying the longitude</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist_comp</code></td>
+<td>
+<p>choice between <code>spherical</code> and <code>planar</code> distance computations. When unspecified, the input data determines the method: longlat uses
+spherical (Haversine) distances, alternatives (projected data) use planar (Euclidean) distances. When inserting projected data but specifying
+<code>dist_comp = "spherical"</code>, the data is transformed to longlat. Combining unprojected data with <code>dist_comp = "planar"</code> transforms the data to an
+azimuthal equidistant format centered at the data's centroid.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist_cutoff</code></td>
+<td>
+<p>the distance cutoff in km. If not specified, the distances matrices contain all bilateral distances. If specified, the cutoff most be as least
+as large as the largest distance cutoff in the Conley standard error corrections in which you use the resulting matrix. If you e.g. specify distance cutoffs of
+100, 200, and 500 km in the subsequent <code>conleyreg</code> calls, <code>dist_cutoff</code> in this function must be set to at least 500. <code>dist_cutoff</code>
+allows to pre-compute distance matrices also in applications where a full distance matrix would not fit into the computer's memory - conditional on that
+<code>sparse = TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>crs</code></td>
+<td>
+<p>the coordinate reference system, if the data is projected. Object of class crs or input string to <code>sf::st_crs</code>. This parameter can be omitted, if
+the data is in longlat format (EPSG: 4326), i.e. not projected. If the projection does not use meters as units, this function converts to units to meters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>logical specifying whether to print messages on intermediate estimation steps. Defaults to <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncores</code></td>
+<td>
+<p>the number of CPU cores to use in the estimations. Defaults to the machine's number of CPUs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>par_dim</code></td>
+<td>
+<p>the dimension along which the function parallelizes in unbalanced panel applications. Can be set to <code>"cross-section"</code> (default) or
+<code>"time"</code>. Use <code>"r"</code> and <code>"cpp"</code> to define parallelization based on the language rather than the dimension. In this function, <code>"r"</code> is
+equivalent to <code>"time"</code> and parallelizes along the time dimension using the parallel package. <code>"cross-section"</code> is equivalent to <code>"cpp"</code> and
+parallelizes along the cross-sectional dimension using OpenMP in C++. Some MAC users do not have access to OpenMP by default. <code>par_dim</code> is then always set to
+<code>"r"</code>. Thus, depending on the application, the function can be notably faster on Windows and Linux than on MACs. When <code>st_distance = TRUE</code>, <code>par_dim</code>
+defaults to <code>"time"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sparse</code></td>
+<td>
+<p>logical specifying whether to use sparse rather than dense (regular) matrices in distance computations. Defaults to <code>FALSE</code>. Only has an effect
+when <code>st_distance = FALSE</code>. Sparse matrices are more efficient than dense matrices, when the distance matrix has a lot of zeros arising from points located
+outside the respective <code>dist_cutoff</code>. It is recommended to keep the default unless the machine is unable to allocate enough memory. The function always uses
+dense matrices when <code>dist_cutoff</code> is not specified.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>batch</code></td>
+<td>
+<p>logical specifying whether distances are inserted into a sparse matrix element by element (<code>FALSE</code>) or all at once as a batch (<code>TRUE</code>).
+Defaults to <code>FALSE</code>. This argument only has an effect when <code>st_distance = FALSE</code> and <code>sparse = TRUE</code>. Batch insertion is faster than element-wise
+insertion, but requires more memory.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>batch_ram_opt</code></td>
+<td>
+<p>the degree to which batch insertion should be optimized for RAM usage. Can be set to one out of the three levels: <code>"none"</code>,
+<code>"moderate"</code> (default), and <code>"heavy"</code>. Higher levels imply lower RAM usage, but also lower speeds.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist_round</code></td>
+<td>
+<p>logical specifying whether to round distances to full kilometers. This further reduces memory consumption and can be a solution when even sparse
+matrices cannot accomodate the data. Note, though, that this rounding introduces a bias.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>st_distance</code></td>
+<td>
+<p>logical specifying whether distances should be computed via <code>sf::st_distance</code> (<code>TRUE</code>) or via conleyreg's internal, computationally
+optimized distance functions (<code>FALSE</code>). The default (<code>FALSE</code>) produces the same distances as <code>sf::st_distance</code> does with S2 enabled. I.e. it uses
+Haversine (great circle) distances for longlat data and Euclidean distances otherwise. Cases in which you might want to set this argument to <code>TRUE</code> are e.g.
+when you want enforce the GEOS approach to computing distances or when you are using a peculiar projection, for which the sf package might include further
+procedures. Cross-sectional parallelization is not available when <code>st_distance = TRUE</code> and the function automatically switches to parallelization along the
+time dimension, if the data is a panel and <code>ncores != 1</code>. Third and fourth dimensions, termed Z and M in sf, are not accounted for in any case. Note that
+<code>sf::st_distance</code> is considerably slower than conleyreg's internal distance functions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist_which</code></td>
+<td>
+<p>the type of distance to use when <code>st_distance = TRUE</code>. If unspecified, the function defaults to great circle distances for longlat data and
+to Euclidean distances otherwise. See <code>sf::st_distance</code> for options.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function runs the distance matrix estimations separately from the Conley standard error correction. You can pass the resulting object to the
+<code>dist_mat</code> argument in <code>conleyreg</code>, skipping the distance matrix computations and various checks in that function. Pre-computing the distance matrix
+is only more efficient than deriving it via <code>conleyreg</code> when estimating various models that use the same distance matrices. The input data must not be
+modified between calling this function and inserting the results into <code>conleyreg</code>. Do not reorder the observations, add or delete variables, or undertake
+any other operation on the data.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns an object of S3 class <code>conley_dist</code>. It contains modified distance matrices, the used <code>dist_cutoff</code>, a sparse matrix identifier, and
+information on the potential panel structure. In the cross-sectional case and the balanced panel case, the distances are stored in one matrix, while in unbalanced
+panel applications, distances come as a list of matrices. The function optimizes the distance matrices with respect to computational performance, setting
+distances beyond <code>dist_cutoff</code> to zero and actual off-diagonal zeros to NaN. Hence, these objects are only to be used in <code>conleyreg</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+# Generate cross-sectional example data
+data &lt;- rnd_locations(100, output_type = "data.frame")
+data$y &lt;- sample(c(0, 1), 100, replace = TRUE)
+data$x1 &lt;- stats::runif(100, -50, 50)
+
+# Compute distance matrix in cross-sectional case
+dm &lt;- dist_mat(data, lat = "lat", lon = "lon")
+
+# Compute distance matrix in panel case
+data$time &lt;- rep(1:10, each = 10)
+data$unit &lt;- rep(1:10, times = 10)
+dm &lt;- dist_mat(data, unit = "unit", time = "time", lat = "lat", lon = "lon")
+
+# Use distance matrix in conleyreg function
+conleyreg(y ~ x1, data, 1000, dist_mat = dm)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

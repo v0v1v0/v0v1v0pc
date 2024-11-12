@@ -1,0 +1,188 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>preference_order</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute the preference order for predictors based on a user-defined function.</h2>
+
+<h3>Description</h3>
+
+<p>This function calculates the preference order of predictors based on a user-provided function that takes a predictor, a response, and a data frame as arguments.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">preference_order(
+  df = NULL,
+  response = NULL,
+  predictors = NULL,
+  f = f_rsquared,
+  encoding_method = "mean",
+  workers = 1
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>(required; data frame) A data frame with numeric and/or character predictors predictors, and optionally, a response variable. Default: NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>response</code></td>
+<td>
+<p>(required, character string) Name of a numeric response variable. Character response variables are ignored. Please, see 'Details' to better understand how providing this argument or not leads to different results when there are character variables in 'predictors'. Default: NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predictors</code></td>
+<td>
+<p>(optional; character vector) character vector with predictor names in 'df'. If omitted, all columns of 'df' are used as predictors. Default:'NULL'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+<p>(optional: function) A function that returns a value representing the relationship between a given predictor and the response. Higher values are ranked higher. The available options are:
+</p>
+
+<ul>
+<li> <p><code>f_rsquared()</code> (default option): returns the R-squared of the correlation between a numeric response and a numeric predictor.
+</p>
+</li>
+<li>
+<p> f_gam_deviance: fits a univariate GAM model between a numeric response and a numeric predictor to return the explained deviance. Requires the package <code>mgcv</code>.
+</p>
+</li>
+<li> <p><code>f_rf_rsquared()</code> also named <code>f_rf_deviance()</code>: fits a univariate random forest model with <code>ranger::ranger()</code> between a numeric response and a numeric predictor to return the R-squared of the observations against the out-of-bag predictions. Requires the package <code>ranger</code>.
+</p>
+</li>
+<li> <p><code>f_logistic_auc_balanced()</code>: fits a logistic univariate GLM of a balanced binary response (0s and 1s) against a numeric predictor to return the Area Under the Curve of the observations against the predictors.
+</p>
+</li>
+<li> <p><code>f_logistic_auc_unbalanced()</code>: fits a quasibinomial univariate GLM with weighted cases of an unbalanced binary response (0s and 1s) against a numeric predictor to return the Area Under the Curve of the observations against the predictors.
+</p>
+</li>
+<li> <p><code>f_gam_auc_balanced()</code>: fits a logistic univariate GAM of a balanced binary response (0s and 1s) against a numeric predictor to return the Area Under the Curve of the observations against the predictors.
+</p>
+</li>
+<li> <p><code>f_gam_auc_unbalanced()</code>: fits a quasibinomial univariate GAM with weighted cases of an unbalanced binary response (0s and 1s) against a numeric predictor to return the Area Under the Curve of the observations against the predictors.
+</p>
+</li>
+<li> <p><code>f_rf_auc_balanced()</code>: fits a random forest model of a balanced binary response (0s and 1s) against a numeric predictor to return the Area Under the Curve of the observations against the predictors.
+</p>
+</li>
+<li> <p><code>f_rf_auc_unbalanced()</code>: fits a random forest model with weighted cases of an unbalanced binary response (0s and 1s) against a numeric predictor to return the Area Under the Curve of the observations against the predictors.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>encoding_method</code></td>
+<td>
+<p>(optional; character string). Name of the target encoding method to convert character and factor predictors to numeric. One of "mean", "rank", "loo", "rnorm" (see <code>target_encoding_lab()</code> for further details). Default: "mean"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>workers</code></td>
+<td>
+<p>(integer) number of workers for parallel execution. Default: 1</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A data frame with the columns "predictor" and "value". The former contains the predictors names in order, ready for the argument <code>preference_order</code> in <code>cor_select()</code>, <code>vif_select()</code> and <code>collinear()</code>. The latter contains the result of the function <code>f</code> for each combination of predictor and response.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Blas M. Benito
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data(
+  vi,
+  vi_predictors
+)
+
+#subset to limit example run time
+vi &lt;- vi[1:1000, ]
+
+#computing preference order
+#with response
+#numeric and categorical predictors in the output
+#as the R-squared between each predictor and the response
+preference.order &lt;- preference_order(
+  df = vi,
+  response = "vi_mean",
+  predictors = vi_predictors,
+  f = f_rsquared,
+  workers = 1
+  )
+
+preference.order
+
+#using it in variable selection with collinear()
+selected.predictors &lt;- cor_select(
+  df = vi,
+  response = "vi_mean", #don't forget the response!
+  predictors = vi_predictors,
+  preference_order = preference.order,
+  max_cor = 0.75
+  )
+
+selected.predictors
+
+#check their correlations
+selected.predictors.cor &lt;- cor_df(
+  df = vi,
+  response = "vi_mean",
+  predictors = selected.predictors
+)
+
+#all correlations below max_cor
+selected.predictors.cor
+
+#USING A CUSTOM FUNCTION
+#custom function to compute RMSE between a predictor and a response
+#x is a predictor name
+#y is a response name
+#df is a data frame with multiple predictors and one response
+#must return a single number, with higher number indicating higher preference
+#notice we use "one minus RMSE" to give higher rank to variables with lower RMSE
+f_rmse &lt;- function(x, y, df){
+
+  xy &lt;- df[, c(x, y)] |&gt;
+    na.omit() |&gt;
+    scale()
+
+  1 - sqrt(mean((xy[, 1] - xy[, 2])^2))
+
+}
+
+preference.order &lt;- preference_order(
+  df = vi,
+  response = "vi_mean",
+  predictors = vi_predictors,
+  f = f_rmse,
+  workers = 1
+)
+
+preference.order
+
+</code></pre>
+
+
+</div>

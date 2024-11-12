@@ -1,0 +1,184 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>calibrateBinary</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calibration for Binary Outputs</h2>
+
+<h3>Description</h3>
+
+<p>The function performs the L2 calibration method for binary outputs.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">calibrateBinary(Xp, yp, Xs1, Xs2, ys, K = 5, lambda = seq(0.001, 0.1,
+  0.005), kernel = c("matern", "exponential")[1], nu = 1.5, power = 1.95,
+  rho = seq(0.05, 0.5, 0.05), sigma = seq(100, 20, -1), lower, upper,
+  verbose = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Xp</code></td>
+<td>
+<p>a design matrix with dimension <code>np</code> by <code>d</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>yp</code></td>
+<td>
+<p>a response vector with length <code>np</code>. The values in the vector are 0 or 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Xs1</code></td>
+<td>
+<p>a design matrix with dimension <code>ns</code> by <code>d</code>. These columns should one-by-one correspond to the columns of <code>Xp</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Xs2</code></td>
+<td>
+<p>a design matrix with dimension <code>ns</code> by <code>q</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ys</code></td>
+<td>
+<p>a response vector with length <code>ns</code>. The values in the vector are 0 or 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K</code></td>
+<td>
+<p>a positive integer specifying the number of folds for fitting kernel logistic regression and generalized Gaussian process. The default is 5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>a vector specifying lambda values at which CV curve will be computed for fitting kernel logistic regression. See <code>cv.KLR</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kernel</code></td>
+<td>
+<p>input for fitting kernel logistic regression. See <code>KLR</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nu</code></td>
+<td>
+<p>input for fitting kernel logistic regression. See <code>KLR</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>power</code></td>
+<td>
+<p>input for fitting kernel logistic regression. See <code>KLR</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rho</code></td>
+<td>
+<p><code>rho</code> value at which CV curve will be computed for fitting kernel logistic regression. See <code>KLR</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sigma</code></td>
+<td>
+<p>a vector specifying values of the tuning parameter <code class="reqn">\sigma</code> at which CV curve will be computed for fitting generalized Gaussian process. See Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lower</code></td>
+<td>
+<p>a vector of size <code>p+q</code> specifying lower bounds of the input space for <code>rbind(Xp,Xs1)</code> and <code>Xs2</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>upper</code></td>
+<td>
+<p>a vector of size <code>p+q</code> specifying upper bounds of the input space for <code>rbind(Xp,Xs1)</code> and <code>Xs2</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>logical. If <code>TRUE</code>, additional diagnostics are printed. The default is <code>TRUE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function performs the L2 calibration method for computer experiments with binary outputs. The input and ouput of physical data are assigned to <code>Xp</code> and <code>yp</code>, and the input and output of computer data are assigned to <code>cbind(Xs1,Xs2)</code> and <code>ys</code>. Note here we separate the input of computer data by <code>Xs1</code> and <code>Xs2</code>, where <code>Xs1</code> is the shared input with <code>Xp</code> and <code>Xs2</code> is the calibration input. The idea of L2 calibration is to find the calibration parameter that minimizes the discrepancy measured by the L2 distance between the underlying probability functions in the physical and computer data. That is, </p>
+<p style="text-align: center;"><code class="reqn">\hat{\theta}=\arg\min_{\theta}\|\hat{\eta}(\cdot)-\hat{p}(\cdot,\theta)\|_{L_2(\Omega)},</code>
+</p>
+<p> where <code class="reqn">\hat{\eta}(x)</code> is the fitted probability function for physical data, and <code class="reqn">\hat{p}(x,\theta)</code> is the fitted probability function for computer data. In this L2 calibration framework, <code class="reqn">\hat{\eta}(x)</code> is fitted by the kernel logistic regression using the input <code>Xp</code> and the output <code>yp</code>. The tuning parameter <code class="reqn">\lambda</code> for the kernel logistic regression can be chosen by k-fold cross-validation, where k is assigned by <code>K</code>. The choices of the tuning parameter are given by the vector <code>lambda</code>. The kernel function for the kernel logistic regression can be given by <code>kernel</code>, where Matern kernel or power exponential kernel can be chosen. The arguments <code>power</code>, <code>nu</code>, <code>rho</code> are the tuning parameters in the kernel functions. See <code>KLR</code>. For computer data, the probability function <code class="reqn">\hat{p}(x,\theta)</code> is fitted by the Bayesian Gaussian process in Williams and Barber (1998) using the input <code>cbind(Xs1,Xs2)</code> and the output <code>ys</code>, where the Gaussian correlation function, </p>
+<p style="text-align: center;"><code class="reqn">R_{\sigma}(\mathbf{x}_i,\mathbf{x}_j)=\exp\{-\sum^{d}_{l=1}\sigma(x_{il}-x_{jl})^2 \},</code>
+</p>
+<p> is used here. The vector <code>sigma</code> is the choices of the tuning parameter <code class="reqn">\sigma</code>, and it will be chosen by k-fold cross-validation. More details can be seen in Sung et al. (unpublished). The arguments <code>lower</code> and <code>upper</code> are lower and upper bounds of the input space, which will be used in scaling the inputs and optimization for <code class="reqn">\theta</code>. If they are not given, the default is the range of each column of <code>rbind(Xp,Xs1)</code>, and <code>Xs2</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a matrix with number of columns <code>q+1</code>. The first <code>q</code> columns are the local (the first row is the global) minimal solutions which are the potential estimates of calibration parameters, and the <code>(q+1)</code>-th column is the corresponding L2 distance.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Chih-Li Sung &lt;iamdfchile@gmail.com&gt;
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>KLR</code> for performing a kernel logistic regression with given <code>lambda</code> and <code>rho</code>. <code>cv.KLR</code> for performing cross-validation to estimate the tuning parameters.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(calibrateBinary)
+
+set.seed(1)
+#####   data from physical experiment   #####
+np &lt;- 10
+xp &lt;- seq(0,1,length.out = np)
+eta_fun &lt;- function(x) exp(exp(-0.5*x)*cos(3.5*pi*x)-1) # true probability function
+eta_x &lt;- eta_fun(xp)
+yp &lt;- rep(0,np)
+for(i in 1:np) yp[i] &lt;- rbinom(1,1, eta_x[i])
+
+#####   data from computer experiment   #####
+ns &lt;- 20
+xs &lt;- matrix(runif(ns*2), ncol=2)  # the first column corresponds to the column of xp
+p_xtheta &lt;- function(x,theta) {
+     # true probability function
+     exp(exp(-0.5*x)*cos(3.5*pi*x)-1) - abs(theta-0.3) *exp(-0.5*x)*cos(3.5*pi*x)
+}
+ys &lt;- rep(0,ns)
+for(i in 1:ns) ys[i] &lt;- rbinom(1,1, p_xtheta(xs[i,1],xs[i,2]))
+
+#####    check the true parameter    #####
+curve(eta_fun, lwd=2, lty=2, from=0, to=1)
+curve(p_xtheta(x,0.3), add=TRUE, col=4)   # true value = 0.3: L2 dist = 0
+curve(p_xtheta(x,0.9), add=TRUE, col=3)   # other value
+
+##### calibration: true parameter is 0.3 #####
+
+calibrate.result &lt;- calibrateBinary(xp, yp, xs[,1], xs[,2], ys)
+print(calibrate.result)
+
+</code></pre>
+
+
+</div>

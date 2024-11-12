@@ -1,0 +1,258 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>sequential_PAF</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Sequential Population Attributable Fractions in a Bayesian Network.</h2>
+
+<h3>Description</h3>
+
+<p>'sequential_PAF' calculates and plots sequential population attributable fractions (PAF) under a Bayesian network structure.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">sequential_PAF(
+  dataframe,
+  model_list_var,
+  weights = 1,
+  in_outDAG,
+  response,
+  NumOrderRiskFactors,
+  addCustom = FALSE,
+  custom = ""
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>dataframe</code></td>
+<td>
+<p>A wide format dataframe containing all the risk factors, confounders, exposures and outcomes within the causal DAG Bayesian network.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model_list_var</code></td>
+<td>
+<p>is a list of models fitted for each of the variables in in_outDAG$outlist based on its parents given in in_outDAG$inlist.
+By default this is set to an empty list. In the default setting, the models are fitted based on the order of the variables input in the parameter in_outArg.
+See the tutorial for more examples. Alternatively, the user can supply their own fitted models here by populating “model_list_var” with their own fitted
+models for each risk factor, mediator, exposure and response variable. But the order of these models must be in the same order of the variables in the
+second list of in_outDAG. See tutorial for further examples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>Column of weights for case control matching listed in the same order as the patients in the data e.g. from tutorial weights = strokedata$weights.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>in_outDAG</code></td>
+<td>
+<p>This defines the causal directed acyclic graph (DAG). A list of length 2. It is defined as a two dimensional list consisting of, firstly, the first
+list, inlist, i.e. a list of the parents of each variable of interest corresponding to its column name in the data. Splines can be included here if they are
+to be modelled as splines. Secondly, the second list, outlist, contains a list of a single name of exposure or risk factor or outcome in form of characters i.e. a list of each variable of interest (risk factors, exposures and outcome) corresponding to its column name in the data. Splines should not be input here, only the column names of the variables of interest in the data. The order at which variables are defined must satisfy (i) It is important that variables are defined in the same order in both lists e.g. the first risk factor defined in outlist has its parents listed first in inlist, the second risk factor defined in outlist has its parents listed secondly in inlist and so on. The package assumes this ordering and will not work if this order is violated. (ii) Note it is important also that the order at which the variables are defined is such that all parents of that variable are defined before it. See example in tutorial.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>response</code></td>
+<td>
+<p>The name of the response column variable within dataframe in text format e.g. "case". The cases should be coded as 1 and the controls as 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>NumOrderRiskFactors</code></td>
+<td>
+<p>is the number of randomly sampled elimination orders (or random permutations of all the risk factors) computing Monte Carlo sequential
+attributable fractions for each random permutation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>addCustom</code></td>
+<td>
+<p>Logical TRUE or FALSE indicating whether a customised interaction term is to be added to the each regression. The interaction term can include
+splines.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>custom</code></td>
+<td>
+<p>text containing the customised interaction term to be added to each regression. The text should be enclosed in inverted commas. Splines can be
+included within the interaction terms. See tutorial for examples.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Patients are listed in rows with variables (i.e. exposure, risk factors, confounders, outcome) listed in columns.
+</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>plot </code></td>
+<td>
+<p> Returns a plot showing the estimated sequential attributable fractions, by position in elimination order. 95 percent confidence intervals are
+plotted so that we can be 95 percent confident the true estimate (that would be calculated from the procedure when the number of simulations m approaches
+infinity) lies in the Monte Carlo interval around the point estimate. The estimates shaded red correspond to a Bayesian network with indirect effects,
+whereas the estimates shaded blue correspond to the Bayesian network with no indirect effects modelled. Note that the Monte Carlo error at position k
+incorporates variation due to random selection of the set of risk factors/exposures that are intervened on in stages 1,...k minus 1, and also variation based
+on the recursive simulation of the disease response. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SAF_summary </code></td>
+<td>
+<p>Returns the data used for the plot containing both the Bayesian network (labelled Bayesian network) with indirect effects modelled and a model
+(labelled usual) with no indirect effects modelled.</p>
+</td>
+</tr>
+</table>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Loads some data (fictional Stroke data from the package 'causalPAF')
+# In this example, we use a small data set called 'strokedata_smallSample' consisting of 5,000
+# rows of fictional patient data. For more accurate results, a larger data set is available
+# called 'strokedata'which contains 16,623 rows of fictional patient data. The methodology
+# applied in the 'causalPAF' package is more accurate the larger the dataset. To use the larger
+# 'strokedata' dataset, simply call
+# stroke_reduced &lt;- strokedata
+stroke_reduced &lt;- strokedata_smallSample
+
+in_phys &lt;- c("subeduc","moteduc","fatduc")
+in_ahei &lt;- c("subeduc","moteduc","fatduc")
+in_nevfcur &lt;- c("subeduc","moteduc","fatduc")
+in_alcohfreqwk &lt;- c("subeduc","moteduc","fatduc")
+in_global_stress2 &lt;- c("subeduc","moteduc","fatduc")
+in_htnadmbp &lt;- c("subeduc","moteduc","fatduc","phys","ahei3tert","nevfcur","alcohfreqwk",
+                 "global_stress2")
+in_apob_apoatert &lt;- c("subeduc","moteduc","fatduc","phys","ahei3tert","nevfcur","alcohfreqwk",
+                      "global_stress2")
+in_whrs2tert &lt;- c("subeduc","moteduc","fatduc","phys","ahei3tert","nevfcur","alcohfreqwk",
+                  "global_stress2")
+in_cardiacrfcat &lt;- c("subeduc","moteduc","fatduc","phys","ahei3tert","nevfcur","alcohfreqwk",
+                     "global_stress2", "apob_apoatert","whrs2tert","htnadmbp")
+in_dmhba1c2 &lt;- c("subeduc","moteduc","fatduc","phys","ahei3tert","nevfcur","alcohfreqwk",
+                  "global_stress2", "apob_apoatert","whrs2tert","htnadmbp")
+in_case &lt;- c("subeduc","moteduc","fatduc","phys","ahei3tert","nevfcur","alcohfreqwk",
+"global_stress2", "apob_apoatert","whrs2tert","htnadmbp","cardiacrfcat","dmhba1c2")
+
+in_out &lt;- list(inlist=list(in_phys,in_ahei,in_nevfcur,in_alcohfreqwk,in_global_stress2,
+               in_htnadmbp, in_apob_apoatert,in_whrs2tert,in_cardiacrfcat,
+               in_dmhba1c2,in_case),
+               outlist=c("phys","ahei3tert","nevfcur","alcohfreqwk","global_stress2",
+                         "htnadmbp","apob_apoatert", "whrs2tert","cardiacrfcat",
+                         "dmhba1c2","case"))
+
+
+
+if(checkMarkovDAG(in_out)$IsMarkovDAG &amp; !checkMarkovDAG(in_out)$Reordered){
+  print("Your in_out DAG is a Markov DAG.")
+} else if( checkMarkovDAG(in_out)$IsMarkovDAG &amp; checkMarkovDAG(in_out)$Reordered ) {
+
+  in_out &lt;- checkMarkovDAG(in_out)[[2]]
+
+  print("Your in_out DAG is a Markov DAG.The checkMarkovDAG function has reordered your
+          in_out list so that all parent variables come before descendants.")
+} else{ print("Your ``in_out'' list is not a Bayesian Markov DAG so the methods in the
+               'causalPAF' package cannot be applied for non Markov DAGs.")}
+
+
+w &lt;- rep(1,nrow(stroke_reduced))
+w[stroke_reduced$case==0] &lt;- 0.9965
+w[stroke_reduced$case==1] &lt;- 0.0035
+
+stroke_reduced$weights &lt;- w
+
+# 'NumOrderRiskFactors' should be set to a large number to ensure accurate results.
+# This can take time to run.
+sequentialPAF &lt;- sequential_PAF( dataframe = stroke_reduced,
+                                 model_list_var = list(),
+                                 weights = w,
+                                 in_outDAG = in_out,
+                                 response = "case",
+                                 NumOrderRiskFactors = 3,
+                                 addCustom = TRUE,
+                                 custom = "regionnn7*ns(eage,df=5)+esex*ns(eage,df=5)" )
+
+
+sequentialPAF$SAF_summary
+
+
+#######################################################################################
+# Alternatively, the user can supply a customised model_list_var parameter as follows:
+# Libraries must be loaded if fitting models outside of the 'causalPAF' R package.
+
+library(MASS)
+library(splines)
+
+
+# model_list_var is a list of models fitted for each of the variables in in_outDAG$outlist based
+# on its parents given in in_outDAG$inlist. By default this is set to an empty list.
+# Alternatively the user can supply their custom fitted, model_list as follows, which should be
+# consistent with the causal structure.
+# Note it is important that model_listArg is defined as a list and in the same order and length
+# as the variables defined in in_outDAG[[2]].
+
+
+model_list &lt;- list(
+ glm(formula = phys ~ subeduc + regionnn7 * ns(eage, df = 5) + esex * ns(eage, df = 5) + moteduc
+  + fatduc, family = "binomial", data = stroke_reduced, weights = weights), # model 1 phys
+ polr(formula = ahei3tert ~ subeduc + regionnn7 * ns(eage, df = 5) + esex * ns(eage, df = 5) +
+ moteduc + fatduc, data = stroke_reduced, weights = weights), # model 2 ahei3tert
+ glm(formula = nevfcur ~ subeduc + regionnn7 * ns(eage, df = 5) + esex * ns(eage, df = 5) +
+ moteduc + fatduc, family = "binomial",data = stroke_reduced, weights = weights), # model 3 nevfcur
+ polr(formula = alcohfreqwk ~ subeduc + regionnn7 * ns(eage, df = 5) + esex * ns(eage, df = 5) +
+ moteduc + fatduc, data = stroke_reduced,weights = weights), # model 4 alcohfreqwk
+ glm(formula = global_stress2 ~ subeduc + regionnn7 * ns(eage,df = 5) + esex * ns(eage, df = 5) +
+ moteduc + fatduc, family = "binomial",data = stroke_reduced,
+ weights = weights), # model 5 global_stress2
+ glm(formula = htnadmbp ~ subeduc + regionnn7 * ns(eage, df = 5) + esex * ns(eage, df = 5) +
+ moteduc + fatduc + phys + ahei3tert + nevfcur + alcohfreqwk + global_stress2,
+ family = "binomial",data = stroke_reduced, weights = weights), # model 6 htnadmbp
+ polr(formula = apob_apoatert ~ regionnn7 * ns(eage, df = 5) + esex * ns(eage, df = 5) +
+ subeduc + moteduc + fatduc + phys + ahei3tert + nevfcur + alcohfreqwk + global_stress2,
+ data = stroke_reduced,weights = weights), # model 7 apob_apoatert
+ polr(formula = whrs2tert ~ regionnn7 * ns(eage, df = 5) + esex * ns(eage, df = 5) + subeduc +
+ moteduc + fatduc + phys + ahei3tert + nevfcur + alcohfreqwk + global_stress2,
+ data = stroke_reduced, weights = weights), # model 8 whrs2tert
+ glm(formula = cardiacrfcat ~ subeduc + regionnn7 * ns(eage, df = 5) + esex * ns(eage, df = 5) +
+ moteduc + fatduc + phys + ahei3tert + nevfcur + alcohfreqwk + global_stress2 + apob_apoatert +
+ whrs2tert + htnadmbp, family = "binomial",
+ data = stroke_reduced, weights = weights), # model 9 cardiacrfcat
+ glm(formula = dmhba1c2 ~ subeduc + regionnn7 * ns(eage, df = 5) + esex * ns(eage, df = 5) +
+ moteduc + fatduc + phys + ahei3tert + nevfcur + alcohfreqwk + global_stress2 + apob_apoatert +
+ whrs2tert + htnadmbp, family = "binomial",
+ data = stroke_reduced, weights = weights), # model 10 dmhba1c2
+ glm(formula = case ~ subeduc + regionnn7 * ns(eage, df = 5) + esex * ns(eage, df = 5) +
+ moteduc + fatduc + phys + ahei3tert + nevfcur + alcohfreqwk + global_stress2 + apob_apoatert +
+ whrs2tert + htnadmbp + cardiacrfcat + dmhba1c2, family = "binomial", data = stroke_reduced,
+ weights = weights) # model 11 case
+ )
+
+
+# 'NumOrderRiskFactors' should be set to a large number to ensure accurate results.
+# This can take time to run.
+ sequentialPAF &lt;- sequential_PAF( dataframe = stroke_reduced,
+                                  model_list_var = model_list,
+                                  weights = stroke_reduced$weights,
+                                  in_outDAG = in_out,
+                                  response = "case",
+                                  NumOrderRiskFactors = 3 )
+
+sequentialPAF$SAF_summary
+
+
+</code></pre>
+
+
+</div>

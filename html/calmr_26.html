@@ -1,0 +1,110 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fit_model</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fit model to data</h2>
+
+<h3>Description</h3>
+
+<p>Obtain MLE estimates for model, given data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fit_model(data, model_function, optimizer_options, file = NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A numeric vector containing data to fit model against.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model_function</code></td>
+<td>
+<p>A function that runs the model and
+returns data.frame of value, organized as in <code>data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimizer_options</code></td>
+<td>
+<p>A list with options for the
+optimizer, as returned by get_optimizer_opts.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>file</code></td>
+<td>
+<p>A path to save the model fit. If the arguments
+to the fit call are found to be identical to those in the file,
+the model just gets loaded.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Extra parameters passed to the optimizer call.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A CalmrFit object
+</p>
+
+
+<h3>Note</h3>
+
+<p>See the calmr_fits vignette for examples
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>get_optimizer_opts()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Make some fake data
+df &lt;- data.frame(g = "g", p1 = "3A&gt;(US)", r1 = TRUE)
+pars &lt;- get_parameters(df, model = "RW1972")
+pars$alphas["US"] &lt;- 0.9
+exper &lt;- make_experiment(df, parameters = pars, model = "RW1972")
+res &lt;- run_experiment(exper, outputs = "rs")
+rs &lt;- results(res)$rs$value
+
+# define model function
+model_fun &lt;- function(p, ex) {
+  np &lt;- parameters(ex)
+  np[[1]]$alphas[] &lt;- p
+  parameters(ex) &lt;- np
+  results(run_experiment(ex))$rs$value
+}
+
+# Get optimizer options
+optim_opts &lt;- get_optimizer_opts(
+  model_pars = names(pars$alphas),
+  ll = rep(.05, 2), ul = rep(.95, 2),
+  optimizer = "optim", family = "identity"
+)
+optim_opts$initial_pars[] &lt;- rep(.6, 2)
+
+fit_model(rs, model_fun, optim_opts,
+  ex = exper, method = "L-BFGS-B",
+  control = list(maxit = 1)
+)
+</code></pre>
+
+
+</div>

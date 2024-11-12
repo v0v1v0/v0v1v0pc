@@ -1,0 +1,149 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>tpc</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Perform causal discovery using the temporal PC algorithm (TPC)</h2>
+
+<h3>Description</h3>
+
+<p>Perform causal discovery using the temporal PC algorithm (TPC)
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">tpc(
+  data,
+  order,
+  sparsity = 10^(-1),
+  test = regTest,
+  suffStat = NULL,
+  output = "tpdag",
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data.frame with data. All variables should be
+assigned to exactly one period by prefixing them with the period name
+(see example below).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>order</code></td>
+<td>
+<p>A character vector with period-prefixes in their
+temporal order (see example below).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sparsity</code></td>
+<td>
+<p>The sparsity level to be used for independence
+testing (i.e. significance level threshold to use for each test).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test</code></td>
+<td>
+<p>A procedure for testing conditional independence.
+The default, <code>regTest</code> uses a regression-based information
+loss test. Another available option is <code>corTest</code> which
+tests for vanishing partial correlations. User supplied functions
+may also be used, see details below about the required syntax.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>suffStat</code></td>
+<td>
+<p>Sufficient statistic. If this argument is supplied, the
+sufficient statistic is not computed from the inputted data. The format and
+contents of the sufficient statistic depends on which test is being used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output</code></td>
+<td>
+<p>One of <code>"tpdag"</code> or <code>"tskeleton"</code>. If
+<code>"skeleton"</code>, a temporal skeleton is constructed and outputted,
+but the edges are not directed. If <code>"tpdag"</code> (the default), a
+the edges are directed, resulting in a temporal partially directed
+acyclic graph.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further optional arguments which are currently not in use.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Note that all independence test procedures implemented
+in the <code>pcalg</code> package may be used, see <code>pc</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>tpdag</code> or <code>tskeleton</code> object. Both return types are
+S3 objects, i.e., lists with entries: <code>$amat</code> (the estimated adjacency
+matrix), <code>$order</code> (character vector with the order, as inputted to
+this function), <code>$psi</code> (the significance level used for testing), and
+<code>$ntests</code> (the number of tests conducted).
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#TPC on included example data, use sparsity psi = 0.01, default test (regression-based
+#information loss):
+data(tpcExample)
+tpc(tpcExample, order = c("child", "youth", "oldage"), sparsity = 0.01)
+
+
+#TPC on included example data, use sparsity psi = 0.01, use test for vanishing partial
+# correlations:
+data(tpcExample)
+tpc(tpcExample, order = c("child", "youth", "oldage"), sparsity = 0.01,
+test = corTest)
+
+
+#TPC on another simulated data set
+
+#Simulate data
+set.seed(123)
+n &lt;- 500
+child_x &lt;- rnorm(n)^2
+child_y &lt;- 0.5*child_x + rnorm(n)
+child_z &lt;- sample(c(0,1), n, replace = TRUE,
+                  prob = c(0.3, 0.7))
+         
+adult_x &lt;- child_x + rnorm(n)
+adult_z &lt;- as.numeric(child_z + rnorm(n) &gt; 0)
+adult_w &lt;- 2*adult_z + rnorm(n)
+adult_y &lt;- 2*sqrt(child_x) + adult_w^2 + rnorm(n)
+
+simdata &lt;- data.frame(child_x, child_y, child_z,
+                      adult_x, adult_z, adult_w,
+                      adult_y)
+
+#Define order
+simorder &lt;- c("child", "adult")
+
+#Perform TPC with sparsity psi = 0.001
+results &lt;- tpc(simdata, order = simorder, sparsity = 10^(-3))
+
+</code></pre>
+
+
+</div>

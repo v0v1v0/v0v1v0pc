@@ -1,0 +1,117 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cnt_path</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Find the shortest path between start and end points within a polygon</h2>
+
+<h3>Description</h3>
+
+<p>Find the shortest path between start and end points within a polygon
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cnt_path(skeleton, start_point, end_point)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>skeleton</code></td>
+<td>
+<p>an output from <code>cnt_skeleton()</code> function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start_point</code></td>
+<td>
+<p>one or more starting points. It should be of the same
+class as the <code>skeleton</code> parameter</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>end_point</code></td>
+<td>
+<p>one ending point of the same class as <code>skeleton</code> and
+<code>start_point</code> parameters.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The following function uses the <code>sfnetworks::st_network_paths()</code> approach to
+connect <code>start_point</code> with <code>end_point</code> by using the
+<code>skeleton</code> of a closed polygon as potential routes.
+</p>
+<p>It is important to note that multiple starting points are permissible,
+but there can only be <strong>one ending point</strong>. Should there be two or more
+ending points, the algorithm will return an error.
+</p>
+<p>Neither starting nor ending points are required to be located
+on the edges of a polygon (i.e., snapped to the boundary);
+they can be positioned wherever possible inside the polygon.
+</p>
+<p>The algorithm identifies the closest nodes of the polygon's skeleton
+to the starting and ending points and then connects them
+using the shortest path possible along the skeleton.
+Therefore, if more precise placement of start and end
+points is necessary, consider executing the <code>cnt_skeleton()</code>
+function with the <code>keep = 1</code> option. In doing so, the resulting
+skeleton may be more detailed, increasing the likelihood that the starting
+and ending points are already situated on the skeleton paths.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a list of <code>sf</code>, <code>sfc</code>, <code>SpatVector</code>
+or <code>geos_geometry</code> class objects of a <code>LINESTRING</code> geometry
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(sf)
+library(geos)
+# Load Polygon and points data
+polygon &lt;-
+  sf::st_read(
+    system.file("extdata/example.gpkg", package = "centerline"),
+    layer = "polygon",
+    quiet = TRUE
+  ) |&gt;
+  geos::as_geos_geometry()
+
+points &lt;-
+  sf::st_read(
+    system.file("extdata/example.gpkg", package = "centerline"),
+    layer = "polygon_points",
+    quiet = TRUE
+  ) |&gt;
+  geos::as_geos_geometry()
+
+# Find polygon's skeleton
+pol_skeleton &lt;- cnt_skeleton(polygon)
+
+# Connect points
+pol_path &lt;-
+  cnt_path(
+    skeleton = pol_skeleton,
+    start_point = points[2],
+    end_point = points[1]
+  )
+
+# Plot
+plot(polygon)
+plot(pol_skeleton, col = "blue", add = TRUE)
+plot(points[1:2], col = "red", add = TRUE)
+plot(pol_path, lwd = 3, add = TRUE)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,183 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>outeropt</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Outer Optimization Functions</h2>
+
+<h3>Description</h3>
+
+<p>Outer optimization; performs profiled estimation.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">outeropt(data,times,pars,coefs,lik,proc,
+      in.meth='nlminb',out.meth='nlminb',
+      control.in=list(),control.out=list(),active=1:length(pars))
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>  Matrix of observed data values. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>times</code></td>
+<td>
+<p> Vector observation times for the data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pars</code></td>
+<td>
+<p> Initial values of parameters to be estimated processes. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coefs</code></td>
+<td>
+<p> Vector giving the current estimate of the coefficients in the spline. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lik</code></td>
+<td>
+ <p><code>lik</code> object defining the observation process. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>proc</code></td>
+<td>
+ <p><code>proc</code> object defining the state process. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>in.meth</code></td>
+<td>
+<p> Inner optimization function currently one of 'nlminb', 'maxNR', 'optim' or 'SplineEst'. The last calls <code>SplineEst.NewtRaph</code>.
+This is fast but has poor convergence.  </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>out.meth</code></td>
+<td>
+<p> Outer optimization function to be used, one of 'optim' (defaults to  BFGS routine in <code>optim</code> unless <code>control.out$meth</code>
+specifies otherwise), 'nlminb', 'maxNR' #, 'trust'
+or 'subplex'. When squared error is being used, 'ProfileGN' and 'nls' can also be given. The former of these calls <code>Profile.GausNewt</code>,
+a fast but naive Gauss-Newton solver. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control.in</code></td>
+<td>
+<p> Control object for inner optimization function. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control.out</code></td>
+<td>
+<p> Control object for outer optimization function. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>active</code></td>
+<td>
+<p> Indices indicating which parameters of <code>pars</code> should be estimated; defaults to all of them.  </p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The outer optimization for parameters looks only at the objective defined by the <code>lik</code>
+object. For every parameter value, <code>coefs</code> are optimized by <code>inneropt</code> and then the value of
+<code>lik</code> for these coefficients is computed.
+</p>
+<p>A number of optimization routines can be used here, some experimentation is recommended.  Libraries
+for these optimization routines are not pre-loaded.   Where these functions take options as explicit arguments
+instead of a list, they should be listed in <code>control.out</code> and will be called by their names.
+</p>
+<p>The routine creates
+temporary files 'curcoefs.tmp' and 'optcoefs.tmp' to update coefficients as <code>pars</code> evolves. These overwrite
+existing files of those names and are deleted before the function terminates.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list containing
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>pars</code></td>
+<td>
+<p>Optimized parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coefs</code></td>
+<td>
+<p>Optimized coefficients at <code>pars</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>res</code></td>
+<td>
+<p>The result of the outer optimization.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>counter</code></td>
+<td>
+<p>A set of parameters and objective values for each successful iteration.</p>
+</td>
+</tr>
+</table>
+<h3>See Also</h3>
+
+<p><code>inneropt</code>, <code>Profile.LS</code>, <code>ProfileSSE</code>, <code>ProfileErr</code>, <code>LS.setup</code>, <code>multinorm.setup</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Not run: 
+data(FhNdata)
+
+knots = seq(0,20,0.2)         # Create a basis
+norder = 3
+nbasis = length(knots) + norder - 2
+range = c(0,20)
+
+bbasis = create.bspline.basis(range=range,nbasis=nbasis,norder=norder,breaks=knots)
+
+lambda = 10000               # Penalty value
+
+DEfd = smooth.basis(FhNtimes,FhNdata,fdPar(bbasis,1,0.5))   # Smooth to estimate
+                                                            # coefficients first
+coefs = DEfd$fd$coefs
+colnames(coefs) = FhNvarnames
+
+profile.obj = LS.setup(pars=FhNpars,coefs=coefs,fn=make.fhn(),basisvals=bbasis,
+      lambda=lambda,times=FhNtimes)
+
+lik = profile.obj$lik
+proc= profile.obj$proc
+
+res = outeropt(data=FhNdata,times=FhNtimes,pars=FhNpars,coefs=coefs,lik=lik,proc=proc,
+    in.meth="nlminb",out.meth="nlminb",control.in=NULL,control.out=NULL)
+
+
+plot(res$coefs,main='outeropt')
+print(blah)
+
+## End(Not run)</code></pre>
+
+
+</div>

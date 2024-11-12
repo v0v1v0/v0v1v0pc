@@ -1,0 +1,156 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>epx</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Effect profiles (EPx values)</h2>
+
+<h3>Description</h3>
+
+<p>Derives one or more EPx/LPx values for the supplied effect scenarios, i.e. it
+calculates the multiplication factors of an exposure profile that cause
+x% of effect. Scenarios are processed in parallel, if possible.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">epx(
+  scenarios,
+  level = c(10, 50),
+  effect_tolerance = 0.001,
+  factor_cutoff = NA,
+  min_factor = 1e-30,
+  max_factor = 1e+30,
+  verbose = FALSE,
+  ep_only = FALSE,
+  long_format = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>scenarios</code></td>
+<td>
+<p>table or vector of <code>EffectScenario</code> objects</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>level</code></td>
+<td>
+<p>effect levels in percent (%), defaults to <code>c(10,50)</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>effect_tolerance</code></td>
+<td>
+<p><code>numeric</code>, minimum absolute accuracy of effect levels</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>factor_cutoff</code></td>
+<td>
+<p>optional <code>numeric</code>, the search for a multiplication factor
+will be cut short if  tried factors exceed this value; the result will report
+the cutoff value as the final EPx value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min_factor</code></td>
+<td>
+<p><code>numeric</code>, if tried factors fall below this threshold, the algorithm
+will halt with an error</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_factor</code></td>
+<td>
+<p><code>numeric</code>, if tried factors exceed this threshold, the algorithm
+will halt with an error</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p><code>logic</code>, if <code>TRUE</code> then infos about model evaluations are displayed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ep_only</code></td>
+<td>
+<p><code>logical</code>, if <code>TRUE</code> then only EPx values are part of the output,
+any contextual information such as <code>EffectScenario</code> objects are left out</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>long_format</code></td>
+<td>
+<p><code>logical</code>, if <code>TRUE</code> then EPx values are returned as
+a table in long format, any contextual information will be duplicated</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments passed on to <code>effect()</code></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>To estimate EPx values, a <em>binary search</em> on multiplication factors is conducted.
+The algorithm can achieve arbitrary precision in terms of effects. The
+same approach is implemented in the <code>morse</code> package in the <code>MFx()</code> function.
+Convergence is often achieved in less than 10 iterations per effect level and
+endpoint.
+</p>
+<p>Internally, a knowledge base of all tried factors and resulting effect levels is
+kept to speed up convergence if more than one endpoint or effect level was
+requested. The algorithm will automatically sweep the range of multiplication
+factors as needed but hard cutoff values are implemented to avoid infinite loops;
+the algorithm will halt with an error message if tried factors are
+smaller than <code>1e-30</code> or greater than <code>1e30</code>.
+</p>
+
+
+<h4>Numerical precision</h4>
+
+<p>The precision of reported <em>EPx</em> values is controlled by the argument
+<code>effect_tolerance</code> and is given as the upper absolute error threshold of
+effects that is deemed acceptable. The default value of <code>0.001</code> ensures that
+a derived <em>EPx</em> will result in an effect of x% ± 0.1. Decreasing the
+<code>effect_tolerance</code> will result in additional model iterations and longer
+runtime. Setting an extremely small tolerance value may lead to a breakdown
+of the algorithm due to the occurrence of extremely small, quasi-random
+numerical errors in simulation results.
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>The original <code>tibble</code> with additional columns named after the request effect levels, e.g. <code>L.EP10.</code>
+If no tibble was used as argument, then a new one is created. The first column <code>scenario</code> will contain
+the supplied <code>EffectScenario</code> objects.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">minnow_sd %&gt;% epx()
+minnow_sd %&gt;% epx(level=c(10,23,42))
+
+# displays infos about tested multiplication factors
+minnow_sd %&gt;% epx(verbose=TRUE)
+
+# return results as a table in wide format
+minnow_sd %&gt;% epx(long_format=TRUE)
+</code></pre>
+
+
+</div>

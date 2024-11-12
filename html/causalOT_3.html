@@ -1,0 +1,179 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>calc_weight</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate causal weights</h2>
+
+<h3>Description</h3>
+
+<p>Estimate causal weights
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">calc_weight(
+  x,
+  z,
+  estimand = c("ATC", "ATT", "ATE"),
+  method = supported_methods(),
+  options = NULL,
+  weights = NULL,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A numeric matrix of covariates. You can also pass an object of class dataHolder or DataSim, which will make argument <code>z</code> not necessary,</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>A binary treatment indicator.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estimand</code></td>
+<td>
+<p>The estimand of interest. One of "ATT","ATC", or "ATE".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>The method to estimate the causal weights. Must be one of the methods returned by <code>supported_methods()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>options</code></td>
+<td>
+<p>The options for the solver. Specific options depend on the solver you will be using and you can use the solver specific options functions as detailed below..</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>The sample weights. Should be <code>NULL</code> or have a weight for each observation in the data. Normalized to sum to one.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Not used at this time.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>We detail some of the particulars of the function arguments below.
+</p>
+
+
+<h4>Causal Optimal Transport (COT)</h4>
+
+<p>This is the.main method of the package. This method relies on various solvers depending on the particular options chosen. Please see cotOptions() for more details.
+</p>
+
+
+
+<h4>Energy Balancing Weights (EnergyBW)</h4>
+
+<p>This is equivalent to COT with an infinite penalty parameter, <code>options(lambda = Inf)</code>. Uses the same solver and options as COT, cotOptions().
+</p>
+
+
+
+<h4>Nearest Neighbor Matching with replacement (NNM)</h4>
+
+<p>This is equivalent to COT with a penalty parameter = 0, <code>options(lambda = 0)</code>. Uses the same solver and options as COT, cotOptions().
+</p>
+
+
+
+<h4>Synthetic Control Method (SCM)</h4>
+
+<p>The SCM method is equivalent to an OT problem from a different angle. See <code>scmOptions()</code>.
+</p>
+
+
+
+<h4>Entropy Balancing Weights (EntropyBW)</h4>
+
+<p>This method balances chosen functions of the covariates specified in the data argument, <code>x</code>. See <code>entBWOptions()</code> for more details. Hainmueller (2012).
+</p>
+
+
+
+<h4>Stable Balancing Weights (SBW)</h4>
+
+<p>Entropy Balancing Weights with a different penalty parameter, proposed by Zuizarreta (2012). See <code>sbwOptions()</code> for more details
+</p>
+
+
+
+<h4>Covariate Balancing Propensity Score (CBPS)</h4>
+
+<p>The CBPS method of Imai and Ratkovic. Options argument is passed to the function CBPS().
+</p>
+
+
+
+<h4>Logistic Regression or Probit Regression</h4>
+
+<p>The main methods historically for implementing inverse probability weights. Options are passed directly to the <code>glm</code> function from <code>R</code>.
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>An object of class causalWeights
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>estimate_effect()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(23483)
+n &lt;- 2^5
+p &lt;- 6
+#### get data ####
+data &lt;- Hainmueller$new(n = n, p = p)
+data$gen_data()
+x &lt;- data$get_x()
+z &lt;- data$get_z()
+
+if (torch::torch_is_installed()) {
+# estimate weights
+weights &lt;- calc_weight(x = x,
+                                 z = z, 
+                                 estimand = "ATE",
+                                 method = "COT",
+                                 options = list(lambda = 0))
+#we can also use the dataSim object directly
+weightsDS &lt;- calc_weight(x = data,
+                                 z = NULL,
+                                 estimand = "ATE",
+                                 method = "COT",
+                                 options = list(lambda = 0))
+all.equal(weights@w0, weightsDS@w0)
+all.equal(weights@w1, weightsDS@w1)
+}
+</code></pre>
+
+
+</div>

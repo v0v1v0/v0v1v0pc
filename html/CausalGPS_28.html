@@ -1,0 +1,163 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>generate_pseudo_pop</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate pseudo population</h2>
+
+<h3>Description</h3>
+
+<p>Generates pseudo population data set based on user-defined causal inference
+approach. The function uses an adaptive approach to satisfies covariate
+balance requirements. The function terminates either by satisfying covariate
+balance or completing the requested number of iteration, whichever comes
+first.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">generate_pseudo_pop(
+  .data,
+  cw_obj,
+  covariate_col_names,
+  covar_bl_trs = 0.1,
+  covar_bl_trs_type = "maximal",
+  covar_bl_method = "absolute"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>.data</code></td>
+<td>
+<p>A data.frame of observation data with <code>id</code> column.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cw_obj</code></td>
+<td>
+<p>An S3 object of counter_weight.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covariate_col_names</code></td>
+<td>
+<p>A list of covariate columns.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covar_bl_trs</code></td>
+<td>
+<p>Covariate balance threshold</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covar_bl_trs_type</code></td>
+<td>
+<p>Type of the covariance balance threshold.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covar_bl_method</code></td>
+<td>
+<p>Covariate balance method.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Returns a pseudo population (gpsm_pspop) object that is generated
+or augmented based on the selected causal inference approach (ci_appr). The
+object includes the following objects:
+</p>
+
+<ul>
+<li>
+<p> params
+</p>
+
+<ul>
+<li>
+<p> ci_appr
+</p>
+</li>
+<li>
+<p> params
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p> pseudo_pop
+</p>
+</li>
+<li>
+<p> adjusted_corr_results
+</p>
+</li>
+<li>
+<p> original_corr_results
+</p>
+</li>
+<li>
+<p> best_gps_used_params
+</p>
+</li>
+<li>
+<p> effect size of generated pseudo population
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+set.seed(967)
+
+m_d &lt;- generate_syn_data(sample_size = 200)
+m_d$id &lt;- seq_along(1:nrow(m_d))
+
+m_xgboost &lt;- function(nthread = 4,
+                      ntrees = 35,
+                      shrinkage = 0.3,
+                      max_depth = 5,
+                      ...) {SuperLearner::SL.xgboost(
+                        nthread = nthread,
+                        ntrees = ntrees,
+                        shrinkage=shrinkage,
+                        max_depth=max_depth,
+                        ...)}
+
+data_with_gps_1 &lt;- estimate_gps(
+  .data = m_d,
+  .formula = w ~ I(cf1^2) + cf2 + I(cf3^2) + cf4 + cf5 + cf6,
+  sl_lib = c("m_xgboost"),
+  gps_density = "normal")
+
+cw_object_matching &lt;- compute_counter_weight(gps_obj = data_with_gps_1,
+                                             ci_appr = "matching",
+                                             bin_seq = NULL,
+                                             nthread = 1,
+                                             delta_n = 0.1,
+                                             dist_measure = "l1",
+                                             scale = 0.5)
+
+pseudo_pop &lt;- generate_pseudo_pop(.data = m_d,
+                                  cw_obj = cw_object_matching,
+                                  covariate_col_names = c("cf1", "cf2",
+                                                          "cf3", "cf4",
+                                                          "cf5", "cf6"),
+                                  covar_bl_trs = 0.1,
+                                  covar_bl_trs_type = "maximal",
+                                  covar_bl_method = "absolute")
+
+
+</code></pre>
+
+
+</div>

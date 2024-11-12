@@ -1,0 +1,181 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>estimateParCondCopula</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimation of parametric conditional copulas</h2>
+
+<h3>Description</h3>
+
+<p>The function <code>estimateParCondCopula</code> computes an estimate
+of the conditional parameters in a conditional parametric copula model, i.e.
+</p>
+<p style="text-align: center;"><code class="reqn">C_{X_1, X_2 | X_3 = x_3} = C_{\theta(x_3)},</code>
+</p>
+
+<p>for some parametric family <code class="reqn">(C_\theta)</code>, some conditional
+parameter <code class="reqn">\theta(x_3)</code>, and a three-dimensional random
+vector <code class="reqn">(X_1, X_2, X_3)</code>. Remember that <code class="reqn">C_{X_1,X_2 | X_3 = x_3}</code>
+denotes the conditional copula of <code class="reqn">X_1</code> and <code class="reqn">X_2</code> given <code class="reqn">X_3 = x_3</code>.
+</p>
+<p>The function <code>estimateParCondCopula_ZIJ</code> is an auxiliary function
+that is called when conditional pseudos-observations are already
+available when one wants to estimate a parametric conditional copula.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">estimateParCondCopula(
+  X1 = NULL,
+  X2 = NULL,
+  X3 = NULL,
+  newX3,
+  family,
+  method = "mle",
+  h,
+  observedX1 = NULL,
+  observedX2 = NULL,
+  observedX3 = NULL
+)
+
+estimateParCondCopula_ZIJ(Z1_J, Z2_J, observedX3, newX3, family, method, h)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X1</code></td>
+<td>
+<p>a vector of <code>n</code> observations
+of the first conditioned variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X2</code></td>
+<td>
+<p>a vector of <code>n</code> observations
+of the second conditioned variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X3</code></td>
+<td>
+<p>a vector of <code>n</code> observations
+of the conditioning variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newX3</code></td>
+<td>
+<p>a vector of new observations of <code class="reqn">X3</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>an integer indicating the parametric family of copulas to be used,
+following the conventions of the VineCopula
+package, see e.g. VineCopula::BiCop.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>the method of estimation of the conditional parameters.
+Can be <code>"mle"</code> for maximum likelihood estimation
+or <code>"itau"</code> for estimation by inversion of Kendall's tau.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>h</code></td>
+<td>
+<p>bandwidth to be chosen</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>observedX1, observedX2, observedX3</code></td>
+<td>
+<p>old parameter names for <code>X1</code>,
+<code>X2</code>, <code>X3</code>. Support for this will be removed at a later version.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Z1_J</code></td>
+<td>
+<p>the conditional pseudos-observations of the first variable,
+i.e. <code class="reqn">\hat F_{1|J}( x_{i,1} | x_J = x_{i,J})</code> for <code class="reqn">i=1,\dots, n</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Z2_J</code></td>
+<td>
+<p>the conditional pseudos-observations of the second variable,
+i.e. <code class="reqn">\hat F_{2|J}( x_{i,2} | x_J = x_{i,J})</code> for <code class="reqn">i=1,\dots, n</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a vector of size <code>length(newX3)</code> containing
+the estimated conditional copula parameters for each value of <code>newX3</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Derumigny, A., &amp; Fermanian, J. D. (2017).
+About tests of the “simplifying” assumption for conditional copulas.
+Dependence Modeling, 5(1), 154-197.
+<a href="https://doi.org/10.1515/demo-2017-0011">doi:10.1515/demo-2017-0011</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>estimateNPCondCopula</code> for estimating a conditional
+copula in a nonparametric setting ( = without parametric assumption on the
+conditional copula).
+<code>simpA.param</code> for a test that this conditional copula is
+constant with respect to the value <code class="reqn">x_3</code> of the conditioning variable.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# We simulate from a conditional copula
+N = 500
+
+X3 = rnorm(n = N, mean = 5, sd = 2)
+conditionalTau = 0.9 * pnorm(X3, mean = 5, sd = 2)
+simCopula = VineCopula::BiCopSim(
+    N=N , family = 1, par = VineCopula::BiCopTau2Par(1 , conditionalTau ))
+X1 = qnorm(simCopula[,1])
+X2 = qnorm(simCopula[,2])
+
+gridnewX3 = seq(2, 8, by = 1)
+conditionalTauNewX3 = 0.9 * pnorm(gridnewX3, mean = 5, sd = 2)
+
+vecEstimatedThetas = estimateParCondCopula(
+  X1 = X1, X2 = X2, X3 = X3,
+  newX3 = gridnewX3, family = 1, h = 0.1)
+
+# Estimated conditional parameters
+vecEstimatedThetas
+# True conditional parameters
+VineCopula::BiCopTau2Par(1 , conditionalTauNewX3 )
+
+# Estimated conditional Kendall's tau
+VineCopula::BiCopPar2Tau(1 , vecEstimatedThetas )
+# True conditional Kendall's tau
+conditionalTauNewX3
+
+
+</code></pre>
+
+
+</div>

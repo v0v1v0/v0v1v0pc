@@ -1,0 +1,84 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>normalize_DI</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Normalize DI values</h2>
+
+<h3>Description</h3>
+
+<p>The DI is normalized by the DI threshold to allow for a more straightforward interpretation.
+A value in the resulting DI larger 1 means that the data are more dissimilar than what has been observed during cross-validation.
+The returned threshold is adjusted accordingly and is, as a consequence, 1.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">normalize_DI(AOA)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table><tr style="vertical-align: top;">
+<td><code>AOA</code></td>
+<td>
+<p>An AOA object</p>
+</td>
+</tr></table>
+<h3>Value</h3>
+
+<p>An object of class <code>aoa</code>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>aoa</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+library(sf)
+library(terra)
+library(caret)
+
+# prepare sample data:
+data(cookfarm)
+dat &lt;- aggregate(cookfarm[,c("VW","Easting","Northing")],
+   by=list(as.character(cookfarm$SOURCEID)),mean)
+pts &lt;- st_as_sf(dat,coords=c("Easting","Northing"))
+pts$ID &lt;- 1:nrow(pts)
+set.seed(100)
+pts &lt;- pts[1:30,]
+studyArea &lt;- rast(system.file("extdata","predictors_2012-03-25.tif",package="CAST"))[[1:8]]
+trainDat &lt;- extract(studyArea,pts,na.rm=FALSE)
+trainDat &lt;- merge(trainDat,pts,by.x="ID",by.y="ID")
+
+# train a model:
+set.seed(100)
+variables &lt;- c("DEM","NDRE.Sd","TWI")
+model &lt;- train(trainDat[,which(names(trainDat)%in%variables)],
+trainDat$VW, method="rf", importance=TRUE, tuneLength=1,
+trControl=trainControl(method="cv",number=5,savePredictions=T))
+
+#...then calculate the AOA of the trained model for the study area:
+AOA &lt;- aoa(studyArea, model)
+plot(AOA)
+plot(AOA$DI)
+
+#... then normalize the DI
+DI_norm &lt;- normalize_DI(AOA)
+plot(DI_norm)
+plot(DI_norm$DI)
+
+
+## End(Not run)
+</code></pre>
+
+
+</div>

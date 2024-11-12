@@ -1,0 +1,136 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>average_curve_lm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate an average curve using <code>lm</code>
+</h2>
+
+<h3>Description</h3>
+
+<p>The user must decide on a single dependent variable (<code>Y</code>) and a
+single independent variable (<code>X</code>). The user will specify a <code>formula</code> with
+the relationship between the dependent and independent variables.
+For a <code>data.frame</code> containing stress-strain (or load-deflection) data for
+more than one coupon, the maximum value of <code>X</code> for each coupon is found and
+the smallest maximum value determines the range over which the curve
+fit is performed: the range is from zero to this value. Only positive
+values of <code>X</code> are considered. For each coupon individually, the data is
+divided into a user-specified number of bins and averaged within each bin.
+The resulting binned/averaged data is then passed to <code>stats::lm()</code> to perform
+the curve fitting.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">average_curve_lm(data, coupon_var, model, n_bins = 100)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a <code>data.frame</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coupon_var</code></td>
+<td>
+<p>the variable for coupon identification</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>a <code>formula</code> for the curve to fit</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_bins</code></td>
+<td>
+<p>the number of bins to average the data inside into before
+fitting</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>When specifying the formula (argument <code>model</code>), there are two things to
+keep in mind. First, based on physical behavior, it is normally desirable
+to set the intercept to zero (e.g. so that there is 0 stress at 0 strain).
+To do this, include a term <code>+0</code> in the formula. Second, when specifying
+a term for a power of the <code>X</code> variable (for example, $X^2$), this needs
+to be wrapped inside the "as-is" operator <code>I()</code>, otherwise, <code>R</code> will
+treat it as an interaction term, rather than an exponent. In other words,
+if you want to include a quadratic term, you need to write <code>I(X^2)</code>
+(replacing <code>X</code> with the appropriate variable from your <code>data.frame</code>).
+</p>
+
+
+<h3>Value</h3>
+
+<p>an object of class <code>average_curve_lm</code> with the following content:
+</p>
+
+<ul>
+<li> <p><code>data</code> the original data provided to the function
+</p>
+</li>
+<li> <p><code>binned_data</code> the data after the binning/averaging operation
+</p>
+</li>
+<li> <p><code>fit_lm</code> the results of the call to <code>lm</code>
+</p>
+</li>
+<li> <p><code>n_bins</code> the number of bins specified by the user
+</p>
+</li>
+<li> <p><code>max_x</code> the upper end of the range used for fitting
+</p>
+</li>
+<li> <p><code>y_var</code> the independent (<code>Y</code>) variable
+</p>
+</li>
+<li> <p><code>x_var</code> the dependent (<code>X</code>) variable
+</p>
+</li>
+</ul>
+<h3>See Also</h3>
+
+<p><code>~</code>, <code>I()</code>, <code>lm()</code>,
+<code>average_curve_optim()</code>, <code>print.average_curve_lm()</code>,
+<code>summary.average_curve_lm()</code>, <code>augment.average_curve_lm()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># using the `pa12_tension` dataset and fitting a cubic polynomial with
+# zero intercept:
+curve_fit &lt;- average_curve_lm(
+  pa12_tension,
+  Coupon,
+  Stress ~ I(Strain) + I(Strain^2) + I(Strain^3) + 0,
+  n_bins = 100
+)
+print(curve_fit)
+## Range: ` Strain ` in  [ 0,  0.1409409 ]
+##
+## Call:
+##   average_curve_lm(data = pa12_tension, coupon_var = Coupon,
+##                    model = Stress ~ I(Strain) + I(Strain^2) + I(Strain^3)
+##                    + 0, n_bins = 100)
+##
+## Coefficients:
+##    I(Strain)   I(Strain^2)   I(Strain^3)
+##        1174         -8783         20586
+
+</code></pre>
+
+
+</div>

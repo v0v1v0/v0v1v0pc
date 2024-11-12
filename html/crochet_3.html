@@ -1,0 +1,123 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>extract</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create an Implementation of [ For Custom Matrix-Like Types</h2>
+
+<h3>Description</h3>
+
+<p><code>extract</code> is a function that converts different index types such as
+negative integer vectors, character vectors, or logical vectors passed to
+the <code>[</code> function as <code>i</code> (e.g. <code>X[i]</code>) or <code>i</code> and
+<code>j</code> (e.g.  <code>X[i, j]</code>) into positive integer vectors. The
+converted indices are provided as the <code>i</code> parameter of
+<code>extract_vector</code> or <code>i</code> and <code>j</code> parameters of
+<code>extract_matrix</code> to facilitate implementing the extraction mechanism
+for custom matrix-like types.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">extract(extract_vector, extract_matrix, allowDoubles = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>extract_vector</code></td>
+<td>
+
+<p>A function in the form of <code>function(x, i, ...)</code> that takes a
+subset of <code>x</code> based on a single index <code>i</code> and returns a
+vector.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extract_matrix</code></td>
+<td>
+
+<p>A function in the form of <code>function(x, i, j, ...)</code> that takes a
+subset of <code>x</code> based on two indices <code>i</code> and <code>j</code> and
+returns a matrix.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>allowDoubles</code></td>
+<td>
+
+<p>If set, indices of type double are not converted to integers if the
+operation would overflow to support matrices with <code>nrow()</code>,
+<code>ncol()</code>, or <code>length()</code> greater than the largest integer that
+can be represented (<code>.Machine$integer.max</code>).
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The custom type must implement methods for <code>length</code>,
+<code>dim</code> and <code>dimnames</code> for this function
+to work.  Implementing methods for <code>nrow</code>,
+<code>ncol</code>, <code>rownames</code>, and
+<code>colnames</code> is not necessary as the default method of
+those generics calls <code>dim</code> or
+<code>dimnames</code> internally.
+</p>
+<p>Optional arguments are supported and will be passed to
+<code>extract_vector</code> and <code>extract_matrix</code> as long as they are named.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A function in the form of <code>function(x, i, j, ..., drop = TRUE)</code> that
+is meant to be used as a method for <code>[</code> for a custom
+type.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>vignette("StringMatrix", package = "crochet")</code> for a vignette
+containing a complete example on how to use <code>extract</code> to implement
+<code>[</code> for a custom type.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">b &lt;- matrix(data = rnorm(25), nrow = 5, ncol = 5)
+dimnames(b) &lt;- list(letters[1:5], letters[1:5])
+
+a &lt;- structure(list(), class = "TestMatrix")
+
+dim.TestMatrix &lt;- function(x) {
+    dim(b)
+}
+
+dimnames.TestMatrix &lt;- function(x) {
+    dimnames(b)
+}
+
+extract_vector &lt;- function(x, i) {
+    # Dispatch to b instead to x for this demo
+    b[i, drop = FALSE]
+}
+
+extract_matrix &lt;- function(x, i, j) {
+    # Dispatch to b instead to x for this demo
+    b[i, j, drop = FALSE]
+}
+
+`[.TestMatrix` &lt;- extract(extract_vector = extract_vector, extract_matrix = extract_matrix)
+</code></pre>
+
+
+</div>

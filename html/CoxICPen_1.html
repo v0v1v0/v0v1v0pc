@@ -1,0 +1,149 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CoxICPen</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Variable Selection for Cox's Model with Interval-Censored Data</h2>
+
+<h3>Description</h3>
+
+<p>Perform variable selection for Cox regression model with interval-censored data by using the methods proposed in Zhao et al. (2020a), Wu et al. (2020) and Zhao et al. (2020b). Can deal with both low-dimensional and high-dimensional data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CoxICPen(LR = LR,
+         x = x,
+         lamb = log(nrow(x))/2-2,
+         beta.initial = rep(0,ncol(x)),
+         pen = "BAR",
+         nfold = 5,
+         BernD = 3,
+         subj.wt = rep(1,nrow(x)))
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>LR</code></td>
+<td>
+<p>An n by 2 matrix that contains interval-censored failure times (L, R]. Please set time point R to "Inf" if a subject is right-censored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>An n by p covariate matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lamb</code></td>
+<td>
+<p>The value of the tuning parameter of the penalty term. Can either be a single value or a vector. Cross-validation will be employed to select the optimal lambda if a vector is provided. Default is log(n)/2-2.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta.initial</code></td>
+<td>
+<p>The initial values for the regression coefficients in the Cox's model. Default is 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pen</code></td>
+<td>
+<p>The penalty function. Choices include "RIDGE", "BAR", "LASSO", "ALASSO", "SCAD", "MCP", "SICA", "SELO". Default is "BAR".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nfold</code></td>
+<td>
+<p>Number of folds for cross-validation. Will be ignored if a single lambda value is provided. Default is 5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>BernD</code></td>
+<td>
+<p>The degree of Bernstein polynomials. Default is 3.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subj.wt</code></td>
+<td>
+<p>Weight for each subject in the likelihood function. Can be used to incorporate case-cohort design. Default is 1 for each subject.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>beta: Penalized estimates of the regression coefficients in the Cox's model.
+</p>
+<p>phi: Estimates of the coefficients in Bernstein Polynomials.
+</p>
+<p>logL: Log likelihood function based on current parameter estimates and lambda value.
+</p>
+<p>Lamb0: Estimate of the cumulative baseline hazard function at each observation time point.
+</p>
+<p>cv.out: Cross-validation outcome for each lambda. Will be NULL if cross-validation is not performed.
+</p>
+
+
+<h3>References</h3>
+
+<p>Zhao, H., Wu, Q., Li, G., Sun, J. (2020a). Simultaneous Estimation and Variable Selection for Interval-Censored Data with Broken Adaptive Ridge Regression. Journal of the American Statistical Association. 115(529):204-216.
+</p>
+<p>Wu, Q., Zhao, H., Zhu, L., Sun, J. (2020). Variable Selection for High-dimensional Partly Linear Additive Cox Model with Application to Alzheimer's disease. Statistics in Medicines.39(23):3120-3134.
+</p>
+<p>Zhao, H., Wu, Q., Gilbert, P. B., Chen, Y. Q., Sun, J. (2020b). A Regularized Estimation Approach for Case-cohort Periodic Follow-up Studies with An Application to HIV Vaccine Trials. Biometrical Journal. 62(5):1176-1191.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Generate an example data
+
+require(foreach)
+
+n &lt;- 300  # Sample size
+p &lt;- 20   # Number of covariates
+
+bet0 &lt;- c(1, -1, 1, -1, rep(0,p-4))  # True values of regression coefficients
+
+set.seed(1)
+x.example &lt;- matrix(rnorm(n*p,0,1),n,p)  # Generate covariates matrix
+
+T.example &lt;- c()
+for (i in 1:n){
+  T.example[i] &lt;- rexp(1,exp(x.example%*%bet0)[i])  # Generate true failure times
+}
+
+timep &lt;- seq(0,3,,10)
+LR.example &lt;- c()
+for (i in 1:n){
+  obsT &lt;- timep*rbinom(10,1,0.5)
+  if (max(obsT) &lt; T.example[i]) {LR.example &lt;- rbind(LR.example,c(max(obsT), Inf))} else {
+    LR.example &lt;- rbind(LR.example,c(max(obsT[obsT&lt;T.example[i]]), min(obsT[obsT&gt;=T.example[i]])))
+  }
+}  # Generate interval-censored failure times
+
+
+# Fit Cox's model with penalized estimation
+
+model1 &lt;- CoxICPen(LR = LR.example, x = x.example, lamb = 100, pen = "RIDGE")
+beta.initial &lt;- model1$beta
+
+model2 &lt;- CoxICPen(LR = LR.example, x = x.example, beta.initial = beta.initial, pen = "BAR")
+model2$beta
+
+#model3 &lt;- CoxICPen(LR = LR.example, x = x.example, lamb = seq(0.1,1,0.1),
+#                   beta.initial = beta.initial, pen = "SELO")
+#model3$beta
+
+</code></pre>
+
+
+</div>

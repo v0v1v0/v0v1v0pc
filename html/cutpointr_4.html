@@ -1,0 +1,202 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>metric_constrain</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Metrics that are constrained by another metric</h2>
+
+<h3>Description</h3>
+
+<p>For example, calculate sensitivity where
+a lower bound (minimal desired value) for specificty can be defined. All returned
+metric values for cutpoints that lead to values of the constraining metric
+below the specified minimum will be zero.
+The inputs must be vectors of equal length.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">metric_constrain(
+  tp,
+  fp,
+  tn,
+  fn,
+  main_metric = sensitivity,
+  constrain_metric = specificity,
+  min_constrain = 0.5,
+  suffix = "_constrain",
+  ...
+)
+
+sens_constrain(
+  tp,
+  fp,
+  tn,
+  fn,
+  constrain_metric = specificity,
+  min_constrain = 0.5,
+  ...
+)
+
+spec_constrain(
+  tp,
+  fp,
+  tn,
+  fn,
+  constrain_metric = sensitivity,
+  min_constrain = 0.5,
+  ...
+)
+
+acc_constrain(
+  tp,
+  fp,
+  tn,
+  fn,
+  constrain_metric = sensitivity,
+  min_constrain = 0.5,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>tp</code></td>
+<td>
+<p>(numeric) number of true positives.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fp</code></td>
+<td>
+<p>(numeric) number of false positives.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tn</code></td>
+<td>
+<p>(numeric) number of true negatives.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fn</code></td>
+<td>
+<p>(numeric) number of false negatives.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>main_metric</code></td>
+<td>
+<p>Metric to be optimized.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>constrain_metric</code></td>
+<td>
+<p>Metric for constraint.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min_constrain</code></td>
+<td>
+<p>Minimum desired value of constrain_metric.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>suffix</code></td>
+<td>
+<p>Character string to be added to the name of main_metric.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>for capturing additional arguments passed by method.</p>
+</td>
+</tr>
+</table>
+<h3>See Also</h3>
+
+<p>Other metric functions: 
+<code>F1_score()</code>,
+<code>Jaccard()</code>,
+<code>abs_d_ppv_npv()</code>,
+<code>abs_d_sens_spec()</code>,
+<code>accuracy()</code>,
+<code>cohens_kappa()</code>,
+<code>cutpoint()</code>,
+<code>false_omission_rate()</code>,
+<code>misclassification_cost()</code>,
+<code>npv()</code>,
+<code>odds_ratio()</code>,
+<code>p_chisquared()</code>,
+<code>plr()</code>,
+<code>ppv()</code>,
+<code>precision()</code>,
+<code>prod_ppv_npv()</code>,
+<code>prod_sens_spec()</code>,
+<code>recall()</code>,
+<code>risk_ratio()</code>,
+<code>roc01()</code>,
+<code>sensitivity()</code>,
+<code>specificity()</code>,
+<code>sum_ppv_npv()</code>,
+<code>sum_sens_spec()</code>,
+<code>total_utility()</code>,
+<code>tpr()</code>,
+<code>tp()</code>,
+<code>youden()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Maximum sensitivity when Positive Predictive Value (PPV) is at least 75%
+library(dplyr)
+library(purrr)
+library(cutpointr)
+cp &lt;- cutpointr(data = suicide, x = dsi, class = suicide,
+method = maximize_metric,
+metric = sens_constrain,
+constrain_metric = ppv,
+min_constrain = 0.75)
+## All metric values (m) where PPV &lt; 0.75 are zero
+plot_metric(cp)
+cp$roc_curve
+## We can confirm that PPV is indeed &gt;= 0.75
+cp %&gt;%
+    add_metric(list(ppv))
+## We can also do so for the complete ROC curve(s)
+cp %&gt;%
+    pull(roc_curve) %&gt;%
+    map(~ add_metric(., list(sensitivity, ppv)))
+
+## Use the metric_constrain function for a combination of any two metrics
+## Estimate optimal cutpoint for precision given a recall of at least 70%
+cp &lt;- cutpointr(data = suicide, x = dsi, class = suicide,
+                subgroup = gender,
+                method = maximize_metric,
+                metric = metric_constrain,
+                main_metric = precision,
+                suffix = "_constrained",
+                constrain_metric = recall,
+                min_constrain = 0.70)
+## All metric values (m) where recall &lt; 0.7 are zero
+plot_metric(cp)
+## We can confirm that recall is indeed &gt;= 0.70 and that precision_constrain
+## is identical to precision for the estimated cutpoint
+cp %&gt;%
+    add_metric(list(recall, precision))
+## We can also do so for the complete ROC curve(s)
+cp %&gt;%
+    pull(roc_curve) %&gt;%
+    map(~ add_metric(., list(recall, precision)))
+</code></pre>
+
+
+</div>

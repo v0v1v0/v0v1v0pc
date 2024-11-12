@@ -1,0 +1,354 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>calc_nreps</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Determine sample sizes for a set of algorithms on a single problem instance</h2>
+
+<h3>Description</h3>
+
+<p>Iteratively calculates the required sample sizes for K algorithms
+on a given problem instance, so that the standard errors of the estimates of
+the pairwise differences in performance is controlled at a predefined level.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">calc_nreps(
+  instance,
+  algorithms,
+  se.max,
+  dif = "simple",
+  comparisons = "all.vs.all",
+  method = "param",
+  nstart = 20,
+  nmax = 1000,
+  seed = NULL,
+  boot.R = 499,
+  ncpus = 1,
+  force.balanced = FALSE,
+  load.folder = NA,
+  save.folder = NA
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>instance</code></td>
+<td>
+<p>a list object containing the definitions of the problem
+instance.
+See Section <code>Instance</code> for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>algorithms</code></td>
+<td>
+<p>a list object containing the definitions of all algorithms.
+See Section <code>Algorithms</code> for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>se.max</code></td>
+<td>
+<p>desired upper limit for the standard error of the estimated
+difference between pairs of algorithms. See Section
+<code style="white-space: pre;">⁠Pairwise Differences⁠</code> for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dif</code></td>
+<td>
+<p>type of difference to be used. Accepts "perc" (for percent
+differences) or "simple" (for simple differences)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>comparisons</code></td>
+<td>
+<p>type of comparisons being performed. Accepts "all.vs.first"
+(in which cases the first object in <code>algorithms</code> is considered to be
+the reference algorithm) or "all.vs.all" (if there is no reference
+and all pairwise comparisons are desired).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>method to use for estimating the standard errors. Accepts
+"param" (for parametric) or "boot" (for bootstrap)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nstart</code></td>
+<td>
+<p>initial number of algorithm runs for each algorithm.
+See Section <code style="white-space: pre;">⁠Initial Number of Observations⁠</code> for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nmax</code></td>
+<td>
+<p>maximum <strong>total</strong> allowed number of runs to execute. Loaded
+results (see <code>load.folder</code> below) do not count towards this
+total.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>seed for the random number generator</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>boot.R</code></td>
+<td>
+<p>number of bootstrap resamples to use (if <code>method == "boot"</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncpus</code></td>
+<td>
+<p>number of cores to use</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>force.balanced</code></td>
+<td>
+<p>logical flag to force the use of balanced sampling for
+the algorithms on each instance</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>load.folder</code></td>
+<td>
+<p>name of folder to load results from. Use either "" or
+"./" for the current working directory. Accepts relative paths.
+Use <code>NA</code> for not saving. <code>calc_nreps()</code> will look for a .RDS file
+with the same name</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save.folder</code></td>
+<td>
+<p>name of folder to save the results. Use either "" or
+"./" for the current working directory. Accepts relative paths.
+Use <code>NA</code> for not saving.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a list object containing the following items:
+</p>
+
+<ul>
+<li> <p><code>instance</code> - alias for the problem instance considered
+</p>
+</li>
+<li> <p><code>Xk</code> - list of observed performance values for all <code>algorithms</code>
+</p>
+</li>
+<li> <p><code>Nk</code> - vector of sample sizes generated for each algorithm
+</p>
+</li>
+<li> <p><code>Diffk</code> - data frame with point estimates, standard errors and
+other information for all algorithm pairs of interest
+</p>
+</li>
+<li> <p><code>seed</code> - seed used for the PRNG
+</p>
+</li>
+<li> <p><code>dif</code> - type of difference used
+</p>
+</li>
+<li> <p><code>method</code> - method used ("param" / "boot")
+</p>
+</li>
+<li> <p><code>comparisons</code> - type of pairings ("all.vs.all" / "all.vs.first")
+</p>
+</li>
+</ul>
+<h3>Instance</h3>
+
+<p>Parameter <code>instance</code> must be a named list containing all relevant parameters
+that define the problem instance. This list must contain at least the field
+<code>instance$FUN</code>, with the name of the function implementing the problem
+instance, that is, a routine that calculates y = f(x). If the instance
+requires additional parameters, these must also be provided as named fields.
+</p>
+
+
+<h3>Algorithms</h3>
+
+<p>Object <code>algorithms</code> is a list in which each component is a named
+list containing all relevant parameters that define an algorithm to be
+applied for solving the problem instance. In what follows <code>algorithm[[k]]</code>
+refers to any algorithm specified in the <code>algorithms</code> list.
+</p>
+<p><code>algorithm[[k]]</code> must contain an <code>algorithm[[k]]$FUN</code> field, which is a
+character object with the name of the function that calls the algorithm; as
+well as any other elements/parameters that <code>algorithm[[k]]$FUN</code> requires
+(e.g., stop criteria, operator names and parameters, etc.).
+</p>
+<p>The function defined by the routine <code>algorithm[[k]]$FUN</code> must have the
+following structure: supposing that the list in <code>algorithm[[k]]</code> has
+fields <code>algorithm[[k]]$FUN = "myalgo"</code>, <code>algorithm[[k]]$par1 = "a"</code> and
+<code>algorithm$par2 = 5</code>, then:
+</p>
+<pre>
+         myalgo &lt;- function(par1, par2, instance, ...){
+               # do stuff
+               # ...
+               return(results)
+         }
+   </pre>
+<p>That is, it must be able to run if called as:
+</p>
+<pre>
+         # remove '$FUN' and '$alias' fields from list of arguments
+         # and include the problem definition as field 'instance'
+         myargs          &lt;- algorithm[names(algorithm) != "FUN"]
+         myargs          &lt;- myargs[names(myargs) != "alias"]
+         myargs$instance &lt;- instance
+
+         # call function
+         do.call(algorithm$FUN,
+                 args = myargs)
+   </pre>
+<p>The <code>algorithm$FUN</code> routine must return a list containing (at
+least) the performance value of the final solution obtained, in a field named
+<code>value</code> (e.g., <code>result$value</code>) after a given run.
+</p>
+
+
+<h3>Initial Number of Observations</h3>
+
+<p>In the <strong>general case</strong> the initial number of observations per algorithm
+(<code>nstart</code>) should be relatively high. For the parametric case
+we recommend between 10 and 20 if outliers are not expected, or between 30
+and 50 if that assumption cannot be made. For the bootstrap approach we
+recommend using at least 20. However, if some distributional assumptions can
+be made - particularly low skewness of the population of algorithm results on
+the test instances), then <code>nstart</code> can in principle be as small as 5 (if the
+output of the algorithms were known to be normal, it could be 1).
+</p>
+<p>In general, higher sample sizes are the price to pay for abandoning
+distributional assumptions. Use lower values of <code>nstart</code> with caution.
+</p>
+
+
+<h3>Pairwise Differences</h3>
+
+<p>Parameter <code>dif</code> informs the type of difference in performance to be used
+for the estimation (<code class="reqn">\mu_a</code> and <code class="reqn">\mu_b</code> represent the mean
+performance of any two algorithms on the test instance, and <code class="reqn">mu</code>
+represents the grand mean of all algorithms given in <code>algorithms</code>):
+</p>
+
+<ul>
+<li>
+<p> If <code>dif == "perc"</code> and <code>comparisons == "all.vs.first"</code>, the estimated quantity is
+<code class="reqn">\phi_{1b} = (\mu_1 - \mu_b) / \mu_1 = 1 - (\mu_b / \mu_1)</code>.
+</p>
+</li>
+<li>
+<p> If <code>dif == "perc"</code> and <code>comparisons == "all.vs.all"</code>, the estimated quantity is
+<code class="reqn">\phi_{ab} = (\mu_a - \mu_b) / \mu</code>.
+</p>
+</li>
+<li>
+<p> If <code>dif == "simple"</code> it estimates <code class="reqn">\mu_a - \mu_b</code>.
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Felipe Campelo (<a href="mailto:fcampelo@gmail.com">fcampelo@gmail.com</a>)
+</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li>
+<p> F. Campelo, F. Takahashi:
+Sample size estimation for power and accuracy in the experimental
+comparison of algorithms. Journal of Heuristics 25(2):305-338, 2019.
+</p>
+</li>
+<li>
+<p> P. Mathews.
+Sample size calculations: Practical methods for engineers and scientists.
+Mathews Malnar and Bailey, 2010.
+</p>
+</li>
+<li>
+<p> A.C. Davison, D.V. Hinkley:
+Bootstrap methods and their application. Cambridge University Press (1997)
+</p>
+</li>
+<li>
+<p> E.C. Fieller:
+Some problems in interval estimation. Journal of the Royal Statistical
+Society. Series B (Methodological) 16(2), 175–185 (1954)
+</p>
+</li>
+<li>
+<p> V. Franz:
+Ratios: A short guide to confidence limits and proper use (2007).
+https://arxiv.org/pdf/0710.2024v1.pdf
+</p>
+</li>
+<li>
+<p> D.C. Montgomery, C.G. Runger:
+Applied Statistics and Probability for Engineers, 6th ed. Wiley (2013)
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Example using dummy algorithms and instances. See ?dummyalgo for details.
+# We generate dummy algorithms with true means 15, 10, 30, 15, 20; and true
+# standard deviations 2, 4, 6, 8, 10.
+algorithms &lt;- mapply(FUN = function(i, m, s){
+                          list(FUN   = "dummyalgo",
+                               alias = paste0("algo", i),
+                               distribution.fun  = "rnorm",
+                               distribution.pars = list(mean = m, sd = s))},
+                     i = c(alg1 = 1, alg2 = 2, alg3 = 3, alg4 = 4, alg5 = 5),
+                     m = c(15, 10, 30, 15, 20),
+                     s = c(2, 4, 6, 8, 10),
+                     SIMPLIFY = FALSE)
+
+# Make a dummy instance with a centered (zero-mean) exponential distribution:
+instance = list(FUN = "dummyinstance", distr = "rexp", rate = 5, bias = -1/5)
+
+# Explicitate all other parameters (just this one time:
+# most have reasonable default values)
+myreps &lt;- calc_nreps(instance   = instance,
+                      algorithms = algorithms,
+                      se.max     = 0.05,          # desired (max) standard error
+                      dif        = "perc",        # type of difference
+                      comparisons = "all.vs.all", # differences to consider
+                      method     = "param",       # method ("param", "boot")
+                      nstart     = 15,            # initial number of samples
+                      nmax       = 1000,          # maximum allowed sample size
+                      seed       = 1234,          # seed for PRNG
+                      boot.R     = 499,           # number of bootstrap resamples (unused)
+                      ncpus      = 1,             # number of cores to use
+                      force.balanced = FALSE,     # force balanced sampling?
+                      load.folder   = NA,         # file to load results from
+                      save.folder = NA)         # folder to save results
+summary(myreps)
+plot(myreps)
+</code></pre>
+
+
+</div>

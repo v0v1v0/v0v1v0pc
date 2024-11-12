@@ -1,0 +1,162 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>generate_coordinated_network</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>generate_coordinated_network</h2>
+
+<h3>Description</h3>
+
+<p>This function takes the results of detect_groups
+and generates a network from the data. It performs the second step in
+coordinated detection analysis by identifying users who repeatedly engage in
+identical actions within a predefined time window. The function offers
+multiple options to identify various types of networks, allowing for
+filtering based on different edge weights and facilitating the extraction
+of distinct subgraphs. See details.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">generate_coordinated_network(
+  x,
+  fast_net = FALSE,
+  edge_weight = 0.5,
+  subgraph = 0,
+  objects = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a data.table (result from detect_groups) with the
+Columns: <code>object_id</code>, <code>account_id</code>, <code>account_id_y</code>, <code>content_id</code>, <code>content_id_y</code>,
+<code>timedelta</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fast_net</code></td>
+<td>
+<p>If the data.table x has been updated with the
+flag_speed_share function and this parameter is set to TRUE, two columns
+weight_full and weight_fast are created, the first containing the edge weights
+of the full graph, the second those of the subgraph that includes the shares
+made in the narrower time window.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>edge_weight</code></td>
+<td>
+<p>This parameter defines the edge weight threshold, expressed
+as a percentile of the edge weight distribution within the network. This applies
+also to the faster network, if 'fast_net' is set to TRUE (and the data is updated
+using the flag_speed_share function). Edges with a weight exceeding this
+threshold are marked as 0 (not exceeding) or 1 (exceeding). The parameter accepts
+any numeric value between 0 and 1. The default value is set to "0.5", representing
+the median value of edge weights in the network.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subgraph</code></td>
+<td>
+<p>Generate and return the following subgraph (default value is 0,
+meaning that no subgraph is created):
+</p>
+
+<ul>
+<li>
+<p> If 1 reduces the graph to the subgraph whose edges have a value that exceeds
+the threshold given in the edge_weight parameter (weighted subgraph).
+</p>
+</li>
+<li>
+<p> If 2 reduces the subgraph whose nodes exhibit coordinated behavior in the
+narrowest time window (as established with the flag_speed_share function),
+to the subgraph whose edges have a value that exceeds the threshold given in
+the edge_weight parameter (fast weighted subgraph).
+</p>
+</li>
+<li>
+<p> If 3 reduces the graph to the subgraph whose nodes exhibit coordinated
+behavior in the narrowest time window established with the flag_speed_share
+function (fast subgraph), and the vertices adjacent to their edges. In other
+words, this option identifies the fastest network, along with a contextual set
+of accounts that shared the same objects but in the wider time window. It
+also add a  vertex attribute color_v to facilitate further analyses or the
+generation of the graph plot. This attribute is 1 when for the coordinated
+accounts and 0 for the neighbor accounts.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>objects</code></td>
+<td>
+<p>Keep track of the IDs of shared objects for further analysis with
+<code>group_stats</code> (default FALSE). There could be a performance impact when this
+option is set to TRUE, although the actual impact may vary. For smaller datasets,
+the difference might be negligible. However, for very large datasets, or in
+scenarios where optimal performance is crucial, you might experience a more
+significant slowdown.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Two users may coincidentally share the same objects within the same
+time window, but it is unlikely that they do so repeatedly (Giglietto et al.,
+2020). Such repetition is thus considered an indicator of potential
+coordination. This function utilizes percentile edge weight to represent
+recurrent shares by the same user pairs within a predefined time window. By
+considering the edge weight distribution across the data and setting the
+percentile value <em>p</em> between 0 and 1, we can identify edges that fall within
+the top <em>p</em> percentile of the edge weight distribution. Selecting a
+sufficiently high percentile (e.g., 0.99) allows us to pinpoint users who
+share an unusually high number of objects (for instance, more than 99% of
+user pairs in the network) in the same time window.
+</p>
+<p>The graph also incorporates the contribution of each node within the pair to
+the pair's edge weight, specifically, the number of shared <code>content_id</code> that
+contribute to the edge weight. Additionally, an <code>edge_symmetry_score</code> is
+included, which equals 1 in cases of equal contributions from both users and
+approaches 0 as the contributions become increasingly unequal.
+The edge_symmetry_score is determined as the proportion of the unique
+content_ids (unique content) shared by each vertex to the total content_ids
+shared by both users.
+This score, along with the value of contributions, can be utilized for further
+filtering or examining cases where the score is particularly low. Working with
+an undirected graph, it is plausible that the activity of highly active users
+disproportionately affects the weight of edges connecting them to less active
+users. For instance, if user A shares the same objects (<code>object_id</code>) 100
+times, and user B shares the same object only once, but within a time frame
+that matches the <code>time_window</code> defined in the parameter for all of user A's
+100 shares, then the edge weight between A and B will be 100, although this
+weight is almost entirely influenced by the hyperactivity of user A. The
+<code>edge_symmetry_score</code>, along with the counts of shares by each user <code>user_id</code>
+and <code>user_id_y</code> (<code>n_content_id</code> and <code>n_content_id_y</code>), allows for monitoring
+and controlling this phenomenon.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A weighted, undirected network (igraph object) where the vertices (nodes)
+are users and edges (links) are the membership in coordinated groups (<code>object_id</code>).
+</p>
+
+
+<h3>References</h3>
+
+<p>Giglietto, F., Righetti, N., Rossi, L., &amp; Marino, G. (2020). It takes a village to manipulate the media: coordinated link sharing behavior during 2018 and 2019 Italian elections. <em>Information, Communication &amp; Society</em>, 23(6), 867-891.
+</p>
+
+
+</div>

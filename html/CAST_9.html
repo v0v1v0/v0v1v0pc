@@ -1,0 +1,206 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>errorProfiles</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Model and inspect the relationship between the prediction error and measures of dissimilarities and distances</h2>
+
+<h3>Description</h3>
+
+<p>Performance metrics are calculated for moving windows of dissimilarity values based on cross-validated training data
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">errorProfiles(
+  model,
+  trainDI = NULL,
+  locations = NULL,
+  variable = "DI",
+  multiCV = FALSE,
+  length.out = 10,
+  window.size = 5,
+  calib = "scam",
+  method = "L2",
+  useWeight = TRUE,
+  k = 6,
+  m = 2
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>the model used to get the AOA</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trainDI</code></td>
+<td>
+<p>the result of <code>trainDI</code> or aoa object <code>aoa</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>locations</code></td>
+<td>
+<p>Optional. sf object for the training data used in model. Only used if variable=="geodist". Note that they must be in the same order as model$trainingData.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>variable</code></td>
+<td>
+<p>Character. Which dissimilarity or distance measure to use for the error metric. Current options are "DI" or "LPD"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>multiCV</code></td>
+<td>
+<p>Logical. Re-run model fitting and validation with different CV strategies. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>length.out</code></td>
+<td>
+<p>Numeric. Only used if multiCV=TRUE. Number of cross-validation folds. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>window.size</code></td>
+<td>
+<p>Numeric. Size of the moving window. See <code>rollapply</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>calib</code></td>
+<td>
+<p>Character. Function to model the DI/LPD~performance relationship. Currently lm and scam are supported</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Character. Method used for distance calculation. Currently euclidean distance (L2) and Mahalanobis distance (MD) are implemented but only L2 is tested. Note that MD takes considerably longer. See ?aoa for further explanation</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>useWeight</code></td>
+<td>
+<p>Logical. Only if a model is given. Weight variables according to importance in the model?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p>Numeric. See mgcv::s</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>m</code></td>
+<td>
+<p>Numeric. See mgcv::s</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If multiCV=TRUE the model is re-fitted and validated by length.out new cross-validations where the cross-validation folds are defined by clusters in the predictor space,
+ranging from three clusters to LOOCV. Hence, a large range of dissimilarity values is created during cross-validation.
+If the AOA threshold based on the calibration data from multiple CV is larger than the original AOA threshold (which is likely if extrapolation situations are created during CV),
+the AOA threshold changes accordingly. See Meyer and Pebesma (2021) for the full documentation of the methodology.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A scam, linear model or exponential model
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Hanna Meyer, Marvin Ludwig, Fabian Schumacher
+</p>
+
+
+<h3>References</h3>
+
+<p>Meyer, H., Pebesma, E. (2021): Predicting into unknown space?
+Estimating the area of applicability of spatial prediction models.
+<a href="https://doi.org/10.1111/2041-210X.13650">doi:10.1111/2041-210X.13650</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>aoa</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+library(CAST)
+library(sf)
+library(terra)
+library(caret)
+
+data(splotdata)
+predictors &lt;- terra::rast(system.file("extdata","predictors_chile.tif", package="CAST"))
+
+model &lt;- caret::train(st_drop_geometry(splotdata)[,6:16], splotdata$Species_richness,
+   ntree = 10, trControl = trainControl(method = "cv", savePredictions = TRUE))
+
+AOA &lt;- aoa(predictors, model, LPD = TRUE, maxLPD = 1)
+
+### DI ~ error
+errormodel_DI &lt;- errorProfiles(model, AOA, variable = "DI")
+plot(errormodel_DI)
+summary(errormodel_DI)
+
+expected_error_DI = terra::predict(AOA$DI, errormodel_DI)
+plot(expected_error_DI)
+
+### LPD ~ error
+errormodel_LPD &lt;- errorProfiles(model, AOA, variable = "LPD")
+plot(errormodel_LPD)
+summary(errormodel_DI)
+
+expected_error_LPD = terra::predict(AOA$LPD, errormodel_LPD)
+plot(expected_error_LPD)
+
+### geodist ~ error
+errormodel_geodist = errorProfiles(model, locations=splotdata, variable = "geodist")
+plot(errormodel_geodist)
+summary(errormodel_DI)
+
+dist &lt;- terra::distance(predictors[[1]],vect(splotdata))
+names(dist) &lt;- "geodist"
+expected_error_DI &lt;- terra::predict(dist, errormodel_geodist)
+plot(expected_error_DI)
+
+
+### with multiCV = TRUE (for DI ~ error)
+errormodel_DI = errorProfiles(model, AOA, multiCV = TRUE, length.out = 3, variable = "DI")
+plot(errormodel_DI)
+
+expected_error_DI = terra::predict(AOA$DI, errormodel_DI)
+plot(expected_error_DI)
+
+# mask AOA based on new threshold from multiCV
+mask_aoa = terra::mask(expected_error_DI, AOA$DI &gt; attr(errormodel_DI, 'AOA_threshold'),
+  maskvalues = 1)
+plot(mask_aoa)
+
+## End(Not run)
+
+
+</code></pre>
+
+
+</div>

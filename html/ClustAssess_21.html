@@ -1,0 +1,159 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>get_nn_importance</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Assess Graph Building Parameters</h2>
+
+<h3>Description</h3>
+
+<p>Evaluates clustering stability when changing the values of different
+parameters involved in the graph building step,
+namely the base embedding, the graph type and the number of neighbours.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">get_nn_importance(
+  object,
+  n_neigh_sequence,
+  n_repetitions = 100,
+  seed_sequence = NULL,
+  graph_reduction_type = "PCA",
+  ecs_thresh = 1,
+  ncores = 1,
+  transpose = (graph_reduction_type == "PCA"),
+  graph_type = 2,
+  algorithm = 4,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>The data matrix. If the graph reduction type is PCA, the object
+should be an expression matrix, with features on rows and observations on columns;
+in the case of UMAP, the user could also provide a matrix associated to a PCA embedding.
+See also the transpose argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_neigh_sequence</code></td>
+<td>
+<p>A sequence of the number of nearest neighbours.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_repetitions</code></td>
+<td>
+<p>The number of repetitions of applying the pipeline with
+different seeds; ignored if seed_sequence is provided by the user.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed_sequence</code></td>
+<td>
+<p>A custom seed sequence; if the value is NULL,
+the sequence will be built starting from 1 with a step of 100.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>graph_reduction_type</code></td>
+<td>
+<p>The graph reduction type, denoting if the graph
+should be built on either the PCA or the UMAP embedding.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ecs_thresh</code></td>
+<td>
+<p>The ECS threshold used for merging similar clusterings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncores</code></td>
+<td>
+<p>The number of parallel R instances that will run the code.
+If the value is set to 1, the code will be run sequentially.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>transpose</code></td>
+<td>
+<p>Logical: whether the input object will be transposed or not.
+Set to FALSE if the input is an observations X features matrix, and set to TRUE
+if the input is a features X observations matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>graph_type</code></td>
+<td>
+<p>Argument indicating whether the graph should be
+unweighted (0), weighted (1) or both (2).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>algorithm</code></td>
+<td>
+<p>An index indicating which community detection algorithm will
+be used: Louvain (1), Louvain refined (2), SLM (3) or Leiden (4). More details
+can be found in the Seurat's <code>FindClusters</code> function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments passed to the <code>irlba::irlba</code> or the <code>uwot::umap</code>
+method, depending on the value of graph_reduction_type.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list having three fields:
+</p>
+
+<ul>
+<li>
+<p> n_neigh_k_corresp - list containing the number of the clusters obtained by running
+the pipeline multiple times with different seed, number of neighbors and graph type (weighted vs unweigted)
+</p>
+</li>
+<li>
+<p> n_neigh_ec_consistency - list containing the EC consistency of the partitions obtained
+at multiple runs when changing the number of neighbors or the graph type
+</p>
+</li>
+<li>
+<p> n_different_partitions - the number of different partitions obtained by each
+number of neighbors
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(2021)
+# create an artificial expression matrix
+expr_matrix = matrix(c(runif(100*10), runif(100*10, min=5, max=6)), nrow = 200)
+rownames(expr_matrix) = as.character(1:200)
+
+nn_importance_obj = get_nn_importance(object = expr_matrix,
+    n_neigh_sequence = c(10,15,20),
+    n_repetitions = 10,
+    graph_reduction_type = "PCA",
+    algorithm = 1,
+    transpose = FALSE, # the matrix is already observations x features, so we won't transpose it
+    # the following parameter is used by the irlba function and is not mandatory
+    nv = 2)
+plot_n_neigh_ecs(nn_importance_obj)
+</code></pre>
+
+
+</div>

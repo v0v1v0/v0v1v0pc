@@ -1,0 +1,194 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>imputeX</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Impute missing entries in 'X' data</h2>
+
+<h3>Description</h3>
+
+<p>Replace 'NA'/'NaN' values in new 'X' data according to the model predictions,
+given that same 'X' data and optionally 'U' data.
+</p>
+<p>Note: this function will not perform any internal re-indexing for the data.
+If the 'X' to which the data was fit was a 'data.frame', the numeration of the
+items will be under 'model$info$item_mapping'. There is also a function
+predict_new which will let the model do the appropriate reindexing.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">imputeX(
+  model,
+  X,
+  weight = NULL,
+  U = NULL,
+  U_bin = NULL,
+  nthreads = model$info$nthreads
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>A collective matrix factorization model as output by function
+CMF. This functionality is not available for the other model classes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>New 'X' data with missing values which will be imputed.
+Must be passed as a dense matrix from base R (class 'matrix').</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weight</code></td>
+<td>
+<p>Associated observation weights for entries in 'X'. If passed, must
+have the same shape as 'X'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>U</code></td>
+<td>
+<p>New 'U' data, with rows matching to those of 'X'.
+Can be passed in the following formats:</p>
+
+<ul>
+<li>
+<p> A sparse COO/triplets matrix, either from package
+'Matrix' (class 'dgTMatrix'), or from package 'SparseM' (class 'matrix.coo').
+</p>
+</li>
+<li>
+<p> A sparse matrix in CSR format, either from package
+'Matrix' (class 'dgRMatrix'), or from package 'SparseM' (class 'matrix.csr').
+Passing the input as CSR is faster than COO as it will be converted internally.
+</p>
+</li>
+<li>
+<p> A sparse row vector from package 'Matrix' (class 'dsparseVector').
+</p>
+</li>
+<li>
+<p> A dense matrix from base R (class 'matrix'), with missing entries set as 'NA'/'NaN'.
+</p>
+</li>
+<li>
+<p> A dense row vector from base R (class 'numeric').
+</p>
+</li>
+<li>
+<p> A 'data.frame'.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>U_bin</code></td>
+<td>
+<p>New binary columns of 'U' (rows matching to those of 'X').
+Must be passed as a dense matrix from base R or as a 'data.frame'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nthreads</code></td>
+<td>
+<p>Number of parallel threads to use.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If using the matrix factorization model as a general missing-value imputer,
+it's recommended to:</p>
+
+<ul>
+<li>
+<p> Fit a model without user biases.
+</p>
+</li>
+<li>
+<p> Set a lower regularization for the item biases than for the matrices.
+</p>
+</li>
+<li>
+<p> Tune the regularization parameter(s) very well.
+</p>
+</li>
+</ul>
+<p>In general, matrix factorization works better for imputation of selected entries
+of sparse-and-wide matrices, whereas for dense matrices, the method is unlikely
+to provide better results than mean/median imputation, but it is nevertheless
+provided for experimentation purposes.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The 'X' matrix with its missing values imputed according to the
+model predictions.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(cmfrec)
+
+### Simplest example
+SeqMat &lt;- matrix(1:50, nrow=10)
+SeqMat[2,1] &lt;- NaN
+SeqMat[8,3] &lt;- NaN
+m &lt;- CMF(SeqMat, k=1, lambda=1e-10, nthreads=1L, verbose=FALSE)
+imputeX(m, SeqMat)
+
+
+### Better example with multivariate normal data
+if (require("MASS")) {
+    ### Generate random data, set some values as NA
+    set.seed(1)
+    n_rows &lt;- 1000
+    n_cols &lt;- 5
+    mu &lt;- rnorm(n_cols)
+    S &lt;- matrix(rnorm(n_cols^2), nrow = n_cols)
+    S &lt;- t(S) %*% S
+    X &lt;- MASS::mvrnorm(n_rows, mu, S)
+    X_na &lt;- X
+    values_NA &lt;- matrix(runif(n_rows*n_cols) &lt; .15, nrow=n_rows)
+    X_na[values_NA] &lt;- NaN
+    
+    ### In the event that any column is fully missing
+    if (any(colSums(is.na(X_na)) == n_rows)) {
+        cols_remove &lt;- colSums(is.na(X_na)) == n_rows
+        X_na &lt;- X_na[, !cols_remove, drop=FALSE]
+        values_NA &lt;- values_NA[, !cols_remove, drop=FALSE]
+    }
+    
+    ### Impute missing values with model
+    model &lt;- CMF(X_na, k=3, lambda=c(0,0,1,1,1,1),
+                 user_bias=FALSE,
+                 verbose=FALSE, nthreads=1L)
+    X_imputed &lt;- imputeX(model, X_na)
+    cat(sprintf("RMSE for imputed values w/model: %f\n",
+                sqrt(mean((X[values_NA] - X_imputed[values_NA])^2))))
+    
+    ### Compare against simple mean imputation
+    X_means &lt;- apply(X_na, 2, mean, na.rm=TRUE)
+    X_imp_mean &lt;- X_na
+    for (cl in 1:n_cols)
+        X_imp_mean[values_NA[,cl], cl] &lt;- X_means[cl]
+    cat(sprintf("RMSE for imputed values w/means: %f\n",
+                sqrt(mean((X[values_NA] - X_imp_mean[values_NA])^2))))
+}
+</code></pre>
+
+
+</div>

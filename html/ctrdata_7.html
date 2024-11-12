@@ -1,0 +1,267 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ctrLoadQueryIntoDb</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Load and store register trial information</h2>
+
+<h3>Description</h3>
+
+<p>Retrieves information on clinical trials from registers
+and stores it in a collection in a database. Main function
+of ctrdata for accessing registers.
+A collection can store trial information from different queries
+or different registers. Query details are stored in the
+collection and can be accessed using dbQueryHistory.
+A previous query can be re-run, which replaces or adds trial
+records while keeping any user annotations of trial records.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ctrLoadQueryIntoDb(
+  queryterm = NULL,
+  register = "",
+  querytoupdate = NULL,
+  forcetoupdate = FALSE,
+  euctrresults = FALSE,
+  euctrresultshistory = FALSE,
+  ctgov2history = FALSE,
+  documents.path = NULL,
+  documents.regexp = "prot|sample|statist|sap_|p1ar|p2ars|icf|ctalett|lay|^[0-9]+ ",
+  annotation.text = "",
+  annotation.mode = "append",
+  only.count = FALSE,
+  con = NULL,
+  verbose = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>queryterm</code></td>
+<td>
+<p>Either a string with the full URL of a search
+query in a register, or the data frame returned by the
+ctrGetQueryUrl or the
+dbQueryHistory functions, or, together with parameter
+<code>register</code>, a string with query elements of a search URL.
+The query details are recorded in the <code>collection</code> for
+later use to update records.
+For "CTIS", <code>queryterm</code> can be an empty string to obtain
+all trial records. For automatically copying the user's
+query of a register in a web browser to the clipboard, see
+<a href="https://rfhb.github.io/ctrdata/#id_2-script-to-automatically-copy-users-query-from-web-browser">here</a></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>register</code></td>
+<td>
+<p>String with abbreviation of register to query,
+either "EUCTR", "CTGOV2", "ISRCTN" or "CTIS". Not needed
+if <code>queryterm</code> provides a full URL to query results.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>querytoupdate</code></td>
+<td>
+<p>Either the word "last", or the row number of
+a query in the data frame returned by dbQueryHistory that
+should be run to retrieve any new or update trial records since
+this query was run the last time.
+This parameter takes precedence over <code>queryterm</code>.
+For "EUCTR", updates are available only for the last seven days;
+the query is run again if more time has passed since it was
+run last.
+Does not work with "CTIS" at this time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>forcetoupdate</code></td>
+<td>
+<p>If <code>TRUE</code>, run again the query
+given in <code>querytoupdate</code>, irrespective of when it was
+run last. Default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>euctrresults</code></td>
+<td>
+<p>If <code>TRUE</code>, also download available
+results when retrieving and loading trials from EUCTR. This
+slows down this function. (For "CTGOV2" and "CTIS",
+available results are always retrieved and loaded into the
+collection.)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>euctrresultshistory</code></td>
+<td>
+<p>If <code>TRUE</code>, also download
+available history of results publication in "EUCTR."
+This is quite time-consuming. Default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ctgov2history</code></td>
+<td>
+<p>For trials from CTGOV2, retrieve historic
+versions of the record. Default is <code>FALSE</code>, because this
+is a time-consuming operation. Use
+<code>n</code> for n from all versions (recommended),
+<code>1</code> for the first (original) version,
+<code>-1</code> for the last-but-one version,
+<code>"n:m"</code> for the nth to the mth versions, or
+<code>TRUE</code> for all versions
+of the trial record to be retrieved. Note that for register
+CTIS, historic versions were available in the 'applications'
+field only before the register's relaunch on 2024-06-17.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>documents.path</code></td>
+<td>
+<p>If this is a relative or absolute
+path to a directory that exists or can be created,
+save any documents into it that are directly available from
+the register ("EUCTR", "CTGOV2", "ISRCTN", "CTIS")
+such as PDFs on results, analysis plans, spreadsheets,
+patient information sheets, assessments or product information.
+Default is <code>NULL</code>, which disables saving documents.
+For "EUCTR", sets <code>euctrresults = TRUE</code> since documents
+are available only with results.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>documents.regexp</code></td>
+<td>
+<p>Regular expression, case insensitive,
+to select documents by filename, if saving documents is requested
+(see <code>documents.path</code>).
+If set to <code>NULL</code>, empty placeholder files are saved for
+every document that could be saved. Default is
+<code>"prot|sample|statist|sap_|p1ar|p2ars|icf|ctalett|lay|^[0-9]+ "</code>.
+Used with "CTGOV2", "ISRCTN" and "CTIS" (for "EUCTR", all documents
+are downloaded since they are few and have non-canonical filenames.)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>annotation.text</code></td>
+<td>
+<p>Text to be including into the field
+"annotation" in the records retrieved with the query
+that is to be loaded into the collection.
+The contents of the field "annotation" for a trial record
+are preserved e.g. when running this function again and
+loading a record of a with an annotation, see parameter
+<code>annotation.mode</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>annotation.mode</code></td>
+<td>
+<p>One of "append" (default), "prepend"
+or "replace" for new annotation.text with respect to any
+existing annotation for the records retrieved with the query
+that is to be loaded into the collection.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>only.count</code></td>
+<td>
+<p>Set to <code>TRUE</code> to return only the
+number of trial records found in the register for the query.
+Does not load trial information into the database.
+Default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>con</code></td>
+<td>
+<p>A connection object, see section
+'Databases' in ctrdata.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Printing additional information if set to
+<code>TRUE</code>; default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Do not use (capture deprecated parameters).</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list with elements
+'n' (number of trial records newly imported or updated),
+‘success' (a vector of _id’s of successfully loaded records),
+'failed' (a vector of identifiers of records that failed to load)
+and 'queryterm' (the query term used).
+The returned list has several attributes (including database and
+collection name, as well as the query history of this database
+collection) to facilitate documentation.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+
+dbc &lt;- nodbi::src_sqlite(collection = "my_collection")
+
+# Retrieve protocol- and results-related information
+# on two specific trials identified by their EU number
+ctrLoadQueryIntoDb(
+  queryterm = "2005-001267-63+OR+2008-003606-33",
+  register = "EUCTR",
+  euctrresults = TRUE,
+  con = dbc
+)
+
+# Count ongoing interventional cancer trials involving children
+# Note this query is a classical CTGOV query and is translated
+# to a corresponding query for the current CTGOV2 webinterface
+ctrLoadQueryIntoDb(
+  queryterm = "cond=cancer&amp;recr=Open&amp;type=Intr&amp;age=0",
+  register = "CTGOV",
+  only.count = TRUE,
+  con = dbc
+)
+
+# Retrieve all information on more than 40 trials
+# that are labelled as phase 3 and that mention
+# either neuroblastoma or lymphoma from ISRCTN,
+# into the same collection as used before
+ctrLoadQueryIntoDb(
+  queryterm = paste0(
+    "https://www.isrctn.com/search?",
+    "q=neuroblastoma+OR+lymphoma&amp;filters=phase%3APhase+III"),
+  con = dbc
+)
+
+# Retrieve information trials in CTIS mentioning neonates
+ctrLoadQueryIntoDb(
+  queryterm = paste0("https://euclinicaltrials.eu/ctis-public/",
+  "search#searchCriteria={%22containAll%22:%22%22,",
+  "%22containAny%22:%22neonates%22,%22containNot%22:%22%22}"),
+  con = dbc
+)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

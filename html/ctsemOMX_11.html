@@ -1,0 +1,306 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ctFit</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fit a ctsem object</h2>
+
+<h3>Description</h3>
+
+<p>This function fits continuous time SEM models specified via <code>ctModel</code>
+to a dataset containing one or more subjects.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ctFit(
+  dat,
+  ctmodelobj,
+  dataform = "auto",
+  objective = "auto",
+  stationary = c("T0TRAITEFFECT", "T0TIPREDEFFECT"),
+  optimizer = "CSOLNP",
+  retryattempts = 5,
+  iterationSummary = FALSE,
+  carefulFit = TRUE,
+  carefulFitWeight = 100,
+  showInits = FALSE,
+  asymptotes = FALSE,
+  meanIntervals = FALSE,
+  crossEffectNegStarts = TRUE,
+  fit = TRUE,
+  nofit = FALSE,
+  discreteTime = FALSE,
+  verbose = 0,
+  useOptimizer = TRUE,
+  omxStartValues = NULL,
+  transformedParams = TRUE,
+  datawide = NA
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>dat</code></td>
+<td>
+<p>the data you wish to fit a ctsem model to, in either wide format (one individual per row), 
+or long format (one time point of one individual per row). See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ctmodelobj</code></td>
+<td>
+<p>the ctsem model object you wish to use, specified via the <code>ctModel</code> function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dataform</code></td>
+<td>
+<p>either "wide" or "long" depending on which input format you wish to use for the data. See details and or vignette.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>objective</code></td>
+<td>
+<p>'auto' selects either 'Kalman', if fitting to single subject data, 
+or 'mxRAM' for multiple subjects. For single subject data, 'Kalman' uses the <code>mxExpectationStateSpace </code>
+function from OpenMx to implement the Kalman filter. 
+For more than one subject, 'mxRAM' specifies a wide format SEM with a row of data per subject.
+'cov' may be specified, in which case the 'meanIntervals' argument is set to TRUE, and the covariance matrix
+of the supplied data is calculated and fit instead of the raw data. This is much faster but only a rough approximation,
+unless there are no individual differences in time interval and no missing data.
+'Kalman' may be specified for multiple subjects, however as no trait matrices are used by the Kalman filter
+one must consider how average level differences between subjects are accounted for.
+See <code>ctMultigroupFit</code> for the possibility to apply the Kalman filter over multiple subjects)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stationary</code></td>
+<td>
+<p>Character vector of T0 matrix names in which to constrain any 
+free parameters to stationarity. 
+Defaults to <code>c('T0TRAITEFFECT','T0TIPREDEFFECT')</code>, constraining only
+between person effects to stationarity. Use <code>NULL</code> for no constraints,
+or 'all' to constrain all T0 matrices.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimizer</code></td>
+<td>
+<p>character string, defaults to the open-source 'CSOLNP' optimizer that is distributed
+in all versions of OpenMx. However, 'NPSOL' may sometimes perform better for these problems,
+though requires that you have installed OpenMx via the OpenMx web site, by running:
+<code>source('http://openmx.psyc.virginia.edu/getOpenMx.R')</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>retryattempts</code></td>
+<td>
+<p>Number of times to retry the start value randomisation and fit procedure, if non-convergance or uncertain fits occur.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iterationSummary</code></td>
+<td>
+<p>if TRUE, outputs limited fit details after every fit attempt.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>carefulFit</code></td>
+<td>
+<p>if TRUE, first fits the specified model with a penalised likelihood function 
+to force MANIFESTVAR, DRIFT, TRAITVAR, MANIFESTTRAITVAR parameters to remain close to 0, then
+fits the specified model normally, using these estimates as starting values. 
+Can help to ensure optimization begins at sensible, non-exteme values, 
+though results in any user specified start values being ignored for the final fit (though they are still used for initial fit).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>carefulFitWeight</code></td>
+<td>
+<p>Positive numeric. Sets the weight for the penalisation (or prior) applied by the carefulFit algorithm. 
+Generally unnecessary to adjust, may be helpful to try a selection of values (perhaps between 0 and 1000) when optimization is problematic.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>showInits</code></td>
+<td>
+<p>if TRUE, prints the list of 
+starting values for free parameters. These are the 'raw' values used by OpenMx, 
+and reflect the log (var / cov matrices) or -log(DRIFT matrices) transformations used in ctsem.
+These are saved in the fit object under <code>fitobject$omxStartValues</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>asymptotes</code></td>
+<td>
+<p>when TRUE, optimizes over asymptotic parameter matrices instead of continuous time parameter matrices. 
+Can be faster for optimization and in some cases makes reliable convergance easier. Will result in equivalent models 
+when continuous time input matrices (DRIFT, DIFFUSION, CINT) are free, but fixing the values of 
+any such matrices will result in large differences - a value of 0 in a cell of the normal continuous time DIFFUSION matrix
+does not necessarily result in a value of 0 for the asymptotic DIFFUSION matrix, for instance.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>meanIntervals</code></td>
+<td>
+<p>Use average time intervals for each column for calculation 
+(both faster and inaccurate to the extent that intervals vary across individuals).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>crossEffectNegStarts</code></td>
+<td>
+<p>Logical. If TRUE (default) free DRIFT matrix cross effect parameters have starting values 
+set to small negative values (e.g. -.05), if FALSE, the start values are 0. The TRUE setting is useful for easy 
+initialisation of higher order models, while the FALSE setting is useful when one has already estimated a model without cross effects,
+and wishes to begin optimization from those values by using the omxStartValues switch.
+are re-transformed into regular continuous time parameter matrices, and may be interpreted as normal.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fit</code></td>
+<td>
+<p>if FALSE, output only openmx model without fitting</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nofit</code></td>
+<td>
+<p>Deprecated. If TRUE, output only openmx model without fitting</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>discreteTime</code></td>
+<td>
+<p>Estimate a discrete time model - ignores timing information, parameter
+estimates will correspond to those of classical vector autoregression models, 
+OpenMx fit object will be directly output, thus ctsem summary and plot functionality will be unavailable.
+Time dependent predictor type also becomes irrelevant.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Integer between 0 and 3. Sets mxComputeGradientDescent messaging level, defaults to 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>useOptimizer</code></td>
+<td>
+<p>Logical. Defaults to TRUE.  Passes argument to <code>mxRun</code>, 
+useful for using custom optimizers or fitting to specified parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>omxStartValues</code></td>
+<td>
+<p>A named vector containing the raw (potentially log transformed) OpenMx starting values for free parameters, as captured by
+OpenMx function <code>omxGetParameters(ctmodelobj$mxobj)</code>. These values will take precedence 
+over any starting values already specified using ctModel.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>transformedParams</code></td>
+<td>
+<p>Logical indicating whether or not to log transform 
+certain parameters internally to allow unconstrained estimation over
+entire 'sensible' range for parameters. 
+When TRUE (default) raw OpenMx parameters (only reported if <code>verbose=TRUE</code> argument used
+for summary function) will reflect these transformations and may be harder to 
+interpret, but summary matrices are reported as normal.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>datawide</code></td>
+<td>
+<p>included for compatibility with scripts written for earlier versions of ctsem. 
+Do not use this argument, instead use the dat argument, and the dataform argument now specifies whether the
+data is in wide or long format.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For full discussion of how to structure the data and use this function, see the vignette using: <code>vignette('ctsem')</code>, or
+the data examples <code>data("longexample") ; longexample</code> for long and <code>data("datastructure") ; datastructure</code> for wide. 
+If using long format, the subject id column must be numeric and grouped by ascending time within subject, and named 'id'. 
+The time column must also be numeric, and representing absolute time (e.g., since beginning of study, *not* time intervals),
+and called 'time'.
+Models are specified using the <code>ctModel</code> function.
+For help regarding the summary function, see <code>summary.ctsemFit</code>, 
+and for the plot function, <code>plot.ctsemFit</code>.
+Multigroup models may be specified using <code>ctMultigroupFit</code>.
+Confidence intervals for any matrices and or parameters 
+may be estimated using <code>ctCI</code>.
+Difficulties during estimation can sometimes be alleviated using <code>ctRefineTo</code> instead of <code>ctFit</code> – 
+this uses a multistep fit procedure.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Examples set to 'donttest' because they take longer than 5s.
+
+mfrowOld&lt;-par()$mfrow
+par(mfrow=c(2, 3))
+
+### example from Driver, Oud, Voelkle (2017), 
+### simulated happiness and leisure time with unobserved heterogeneity.
+data(ctExample1)
+traitmodel &lt;- ctModel(n.manifest=2, n.latent=2, Tpoints=6, LAMBDA=diag(2), 
+  manifestNames=c('LeisureTime', 'Happiness'), 
+  latentNames=c('LeisureTime', 'Happiness'), TRAITVAR="auto")
+traitfit &lt;- ctFit(dat=ctExample1, ctmodelobj=traitmodel)
+summary(traitfit)
+plot(traitfit, wait=FALSE)
+
+
+###Example from Voelkle, Oud, Davidov, and Schmidt (2012) - anomia and authoritarianism.  
+data(AnomAuth) 
+AnomAuthmodel &lt;- ctModel(LAMBDA = matrix(c(1, 0, 0, 1), nrow = 2, ncol = 2), 
+Tpoints = 5, n.latent = 2, n.manifest = 2, MANIFESTVAR=diag(0, 2), TRAITVAR = NULL) 
+AnomAuthfit &lt;- ctFit(AnomAuth, AnomAuthmodel)
+summary(AnomAuthfit)
+
+
+### Single subject time series - using Kalman filter (OpenMx statespace expectation)
+data('ctExample3')
+model &lt;- ctModel(n.latent = 1, n.manifest = 3, Tpoints = 100, 
+  LAMBDA = matrix(c(1, 'lambda2', 'lambda3'), nrow = 3, ncol = 1), 
+  CINT= matrix('cint'),
+  MANIFESTMEANS = matrix(c(0, 'manifestmean2', 'manifestmean3'), nrow = 3, 
+    ncol = 1))
+fit &lt;- ctFit(dat = ctExample3, ctmodelobj = model, objective = 'Kalman', 
+  stationary = c('T0VAR'))
+
+
+###Oscillating model from Voelkle &amp; Oud (2013). 
+data("Oscillating")
+
+inits &lt;- c(-39, -.3, 1.01, 10.01, .1, 10.01, 0.05, .9, 0)
+names(inits) &lt;- c("crosseffect","autoeffect", "diffusion",
+  "T0var11", "T0var21", "T0var22","m1", "m2", 'manifestmean')
+
+oscillatingm &lt;- ctModel(n.latent = 2, n.manifest = 1, Tpoints = 11,
+  MANIFESTVAR = matrix(c(0), nrow = 1, ncol = 1),
+  LAMBDA = matrix(c(1, 0), nrow = 1, ncol = 2),
+  T0MEANS = matrix(c('m1', 'm2'), nrow = 2, ncol = 1),
+  T0VAR = matrix(c("T0var11", "T0var21", 0, "T0var22"), nrow = 2, ncol = 2),
+  DRIFT = matrix(c(0, "crosseffect", 1, "autoeffect"), nrow = 2, ncol = 2),
+  CINT = matrix(0, ncol = 1, nrow = 2),
+  MANIFESTMEANS = matrix('manifestmean', nrow = 1, ncol = 1),
+  DIFFUSION = matrix(c(0, 0, 0, "diffusion"), nrow = 2, ncol = 2),
+  startValues=inits)
+
+oscillatingf &lt;- ctFit(Oscillating, oscillatingm, carefulFit = FALSE)
+
+</code></pre>
+
+
+</div>

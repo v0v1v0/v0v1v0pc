@@ -1,0 +1,159 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>impute_missing_geno</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Impute missing genotype data using k nearest neighbors</h2>
+
+<h3>Description</h3>
+
+<p>This function uses k nearest neighbors to impute missing genotype data
+on a per chromosome basis. If missing genotypes remain after imputations
+the user can prioritize whether to remove individuals, markers, or whichever
+has fewer missing values.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">impute_missing_geno(
+  data_obj,
+  geno_obj = NULL,
+  k = 10,
+  ind_missing_thresh = 0,
+  marker_missing_thresh = 0,
+  prioritize = c("fewer", "ind", "marker"),
+  max_region_size = NULL,
+  min_region_size = NULL,
+  run_parallel = FALSE,
+  verbose = FALSE,
+  n_cores = 2
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data_obj</code></td>
+<td>
+<p>a <code>Cape</code> object</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>geno_obj</code></td>
+<td>
+<p>a genotype object</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p>The number of nearest neighbors to use to impute missing data. Defaults to 10.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ind_missing_thresh</code></td>
+<td>
+<p>percent A percentage of acceptable missing data. After imputation
+if an individual is missing more data than the percent specified, it will be removed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>marker_missing_thresh</code></td>
+<td>
+<p>A percentage of acceptable missing data. After imputation
+if a marker is missing more data than the percent specified, it will be removed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prioritize</code></td>
+<td>
+<p>How to prioritize removal of rows and columns with missing data.
+"ind" = remove individuals with missing data exceeding the threshold before 
+considering markers to remove.
+"marker" = remove markers with missing data exceeding the threshold before
+considering individuals to remove.
+"fewer" = Determine how much data will be removed by prioritizing individuals
+or markers. Remove data in whichever order removes the least amount of data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_region_size</code></td>
+<td>
+<p>maximum number of markers to be used in calculating individual similarity.
+Defaults to the minimum chromosome size.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min_region_size</code></td>
+<td>
+<p>minimum number of markers to be used in calculating individual similarity
+Defaults to the maximum chromosome size.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>run_parallel</code></td>
+<td>
+<p>A logical value indicating whether to run the process in parallel</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>A logical value indicating whether to print progress to the screen.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_cores</code></td>
+<td>
+<p>integer number of available CPU cores to use for parallel processing</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function is run by <code>run_cape</code> and runs automatically if
+a kinship correction is specified and there are missing values in the 
+genotype object.
+</p>
+<p>The prioritize parameter can be a bit confusing. If after imputation,
+there is one marker for which all data are missing, it makes sense to remove that
+one marker rather than all individuals with missing data, since all individuals
+would be removed. Similarly, if there is one individual with massive amounts of 
+missing data, it makes sense to remove that individual, rather than all markers
+that individual is missing. We recommend always using the default "fewer" option 
+here unless you know for certain that you want to prioritize individuals or markers 
+for removal.
+There is no need to specify max_region_size or min_region_size, but advanced
+users may want to specify them. There is a trade-off between the time it takes 
+to calculate a distance matrix for a large matrix and the time it takes to slide 
+through the genome imputing markers. This function does not yet support imputation 
+of covariates.
+If individuals are genotyped very densely, the user may want to specify max_region_size
+to be smaller than the maximum chromosome size to speed calculation of similarity matrices.
+</p>
+
+
+<h3>Value</h3>
+
+<p>This function returns a list that includes both the data_obj and geno_obj
+These objects must then be separated again to continue through the cape analysis.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+combined_obj &lt;- impute_missing_geno(data_obj, geno_obj)
+new_data_obj &lt;- combined_obj$data_obj
+noew_geno_obj &lt;- combined_obj$geno_obj
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

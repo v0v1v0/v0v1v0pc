@@ -1,0 +1,246 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>iw_est</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>The inverse weighting estimator (nonparametric method)</h2>
+
+<h3>Description</h3>
+
+<p>This is a nonparametric method that estimates the ADRF by using a local linear
+regression of <code>Y</code> on <code>treat</code> with weighted kernel function.  For
+details, see Flores et. al. (2012).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">iw_est(Y,
+       treat,
+       treat_formula,
+       data,
+       grid_val,
+       bandw,
+       treat_mod,
+       link_function,
+       ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Y</code></td>
+<td>
+<p>is the the name of the outcome variable contained in <code>data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>treat</code></td>
+<td>
+<p>is the name of the treatment variable contained in
+<code>data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>treat_formula</code></td>
+<td>
+<p>an object of class "formula" (or one that can be
+coerced to that class) that regresses <code>treat</code> on a linear combination
+of <code>X</code>: a symbolic description of the model to be fitted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>is a dataframe containing <code>Y</code>, <code>treat</code>, and
+<code>X</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grid_val</code></td>
+<td>
+<p>contains the treatment values to be evaluated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bandw</code></td>
+<td>
+<p>is the bandwidth.  Default is 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>treat_mod</code></td>
+<td>
+<p>a description of the error distribution to be used in the
+model for treatment. Options include: <code>"Normal"</code> for normal model,
+<code>"LogNormal"</code> for lognormal model, <code>"Sqrt"</code> for square-root transformation
+to a normal treatment, <code>"Poisson"</code> for Poisson model,
+<code>"NegBinom"</code> for negative binomial model, <code>"Gamma"</code> for gamma
+model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link_function</code></td>
+<td>
+<p>is either "log", "inverse", or "identity" for the
+"Gamma" <code>treat_mod</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments to be passed to the treatment regression function.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The ADRF is estimated by
+</p>
+<p style="text-align: center;"><code class="reqn">(D_{0}(t) S_{2}(t) - D_{1}(t) S_{1}(t)) / (S_{0}(t) S_{2}(t) - S_{1}^{2}(t)) </code>
+</p>
+
+<p>where </p>
+<p style="text-align: center;"><code class="reqn">D_{j}(t) = \sum_{i = 1}^{N} \tilde{K}_{h, X} (T_i - t)  (T_i - t)^j Y_i</code>
+</p>
+<p> and
+<code class="reqn">S_{j}(t) = \sum_{i = 1}^{N} \tilde{K}_{h, X} (T_i - t)  (T_i - t)^j</code>
+<code class="reqn">\tilde{K}_{h, X}(t) = K_{h}(t) / \hat{R}_i(t)</code>
+which is a local linear regression.
+More details are given in Flores (2012).
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>iw_est</code> returns an object of class "causaldrf",
+a list that contains the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>param</code></td>
+<td>
+<p>parameter estimates for a iw fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>t_mod</code></td>
+<td>
+<p>the result of the treatment model fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the matched call.</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Schafer, J.L., Galagate, D.L. (2015).  Causal inference with a
+continuous treatment and outcome: alternative estimators for parametric
+dose-response models. <em>Manuscript in preparation</em>.
+</p>
+<p>Flores, Carlos A., et al. "Estimating the effects of length of exposure to
+instruction in a training program: the case of job corps."
+<em>Review of Economics and Statistics</em> <b>94.1</b> (2012): 153-171.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>nw_est</code>, <code>iw_est</code>, <code>hi_est</code>, <code>gam_est</code>,
+<code>add_spl_est</code>,
+<code>bart_est</code>, etc. for other estimates.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Example from Schafer (2015).
+
+example_data &lt;- sim_data
+
+iw_list &lt;- iw_est(Y = Y,
+                treat = T,
+                treat_formula = T ~ B.1 + B.2 + B.3 + B.4 + B.5 + B.6 + B.7 + B.8,
+                data = example_data,
+                grid_val = seq(8, 16, by = 1),
+                bandw = bw.SJ(example_data$T),
+                treat_mod = "Normal")
+
+sample_index &lt;- sample(1:1000, 100)
+
+plot(example_data$T[sample_index],
+      example_data$Y[sample_index],
+      xlab = "T",
+      ylab = "Y",
+      main = "iw estimate")
+
+lines(seq(8, 16, by = 1),
+        iw_list$param,
+        lty = 2,
+        lwd = 2,
+        col = "blue")
+
+legend('bottomright',
+        "iw estimate",
+        lty=2,
+        lwd = 2,
+        col = "blue",
+        bty='Y',
+        cex=1)
+
+rm(example_data, iw_list, sample_index)
+
+## Example from Imai &amp; van Dyk (2004).
+
+data("nmes_data")
+head(nmes_data)
+# look at only people with medical expenditures greater than 0
+nmes_nonzero &lt;- nmes_data[which(nmes_data$TOTALEXP &gt; 0), ]
+
+
+iw_list &lt;- iw_est(Y = TOTALEXP,
+                  treat = packyears,
+                  treat_formula = packyears ~ LASTAGE + I(LASTAGE^2) +
+                    AGESMOKE + I(AGESMOKE^2) + MALE + RACE3 + beltuse +
+                    educate + marital + SREGION + POVSTALB,
+                  data = nmes_nonzero,
+                  grid_val = seq(5, 100, by = 5),
+                  bandw = bw.SJ(nmes_nonzero$packyears),
+                  treat_mod = "LogNormal")
+
+set.seed(307)
+sample_index &lt;- sample(1:nrow(nmes_nonzero), 1000)
+
+plot(nmes_nonzero$packyears[sample_index],
+     nmes_nonzero$TOTALEXP[sample_index],
+     xlab = "packyears",
+     ylab = "TOTALEXP",
+     main = "iw estimate",
+     ylim = c(0, 10000),
+     xlim = c(0, 100))
+
+lines(seq(5, 100, by = 5),
+      iw_list$param,
+      lty = 2,
+      lwd = 2,
+      col = "blue")
+
+legend('topright',
+       "iw estimate",
+       lty=2,
+       lwd = 2,
+       col = "blue",
+       bty='Y',
+       cex = 1)
+abline(0, 0)
+</code></pre>
+
+
+</div>

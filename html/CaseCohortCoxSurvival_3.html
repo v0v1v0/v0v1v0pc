@@ -1,0 +1,137 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>calibration</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>calibration</h2>
+
+<h3>Description</h3>
+
+<p>Calibrates the design weights using the raking procedure.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">calibration(A.phase2, design.weights, total, eta0 = NULL, niter.max = NULL,
+epsilon.stop = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>A.phase2</code></td>
+<td>
+<p>matrix with the values of the q auxiliary variables to be used for
+the calibration of the weights in the case-cohort (phase-two data).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>design.weights</code></td>
+<td>
+<p>design weights to be calibrated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>total</code></td>
+<td>
+<p>vector of length q with un-weighted auxiliary variable totals in the whole cohort.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eta0</code></td>
+<td>
+<p>vector of length q with initial values for <code>eta</code> (the Lagrangian multipliers),
+to be used as seed in the iterative procedure. Default is (0, ... ,0).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>niter.max</code></td>
+<td>
+<p>maximum number of iterations for the iterative optimization algorithm.
+Default is 10^4 iterations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>epsilon.stop</code></td>
+<td>
+<p>threshold for the difference between the estimated weighted total
+and the total in the whole cohort.
+If this difference is less than the value of epsilon.stop,
+no more iterations will be performed.
+Default is 10^(-10).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Calibration matches the weighted total of the auxiliary variables in the case-cohort
+(with calibrated weights), to the un-weighted auxiliary variables total in the whole cohort.
+In other words, it solves in <code class="reqn">\eta</code>
+<code class="reqn">\sum_{j=1}^J \sum_{i=1}^{n^{(j)}} \lbrace \xi_{i,j} w_{i,j}
+      \text{exp}(\eta' A_{i,j}) A_{i,j} - A_{i,j} \rbrace = 0</code>,
+with <code class="reqn">\xi_{i,j}</code> the sampling indicator and <code class="reqn">w_{i,j}</code> the design weight of
+individual <code class="reqn">i</code> in stratum <code class="reqn">j</code>, and with
+<code class="reqn">\sum_{j=1}^J \sum_{i=1}^{n^{(j)}} A_{i,j}</code>
+the total in the whole cohort. See Etievant and Gail (2024). The Newton Raphson method is used to solve the optimization problem.
+In the end, the calibrated weights of the case-cohort individuals are given by
+<code class="reqn">w_{i,j} \text{exp}(\hat \eta' A_{i,j})</code>, and
+<code class="reqn">\sum_{j=1}^J \sum_{i=1}^{n^{(j)}} \lbrace \xi_{i,j} w_{i,j}
+     \text{exp}(\hat \eta' A_{i,j}) A_{i,j} \rbrace</code>
+gives the estimated total.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>eta.hat</code>: vector of length q with final eta values.
+</p>
+<p><code>calibrated.weights</code>: vector with the calibrated weights for the individuals
+in the case-cohort (phase-two data), computed from <code>design.weights</code>,
+<code>A.phase2</code> and <code>eta.hat</code>.
+</p>
+<p><code>estimated.total</code>: vector with the estimated totals, computed from the
+<code>calibrated.weights</code> and <code>A.phase2</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Deville, J.C. and Sarndal, C.E. (1992). Calibration Estimators in Survey Sampling.
+Journal of the American Statistical Association, 87, 376-382.
+</p>
+<p>Etievant, L., Gail, M. H. (2024). Cox model inference for relative hazard and pure risk from stratified weight-calibrated case-cohort data. Lifetime Data Analysis, 30, 572-599.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code>auxiliary.construction</code>, <code>influences</code>, <code>influences.RH</code>, <code>influences.CumBH</code> and <code>influences.PR</code>. </p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+  data(dataexample.stratified, package="CaseCohortCoxSurvival")
+  cohort &lt;- dataexample.stratified$cohort
+  casecohort &lt;- cohort[which(cohort$status == 1 |
+                       cohort$subcohort == 1),] # the stratified case-cohort
+  casecohort$weight &lt;- casecohort$strata.n / casecohort$strata.m
+  casecohort$weight[which(casecohort$status == 1)] &lt;- 1
+
+  A &lt;- dataexample.stratified$A # auxiliary variables values in the cohort
+  indiv.phase2 &lt;- casecohort$id
+  q &lt;- ncol(A)
+  total &lt;- colSums(A)
+  A.phase2 &lt;- A[indiv.phase2,]
+  calib &lt;- calibration(A.phase2 = A[indiv.phase2,], design.weights = casecohort$weight,
+                       total = total, eta0 = rep(0, q), niter.max = 10^3, epsilon.stop = 10^(-10))
+  #calib$calibrated.weights # print calibrated weights
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,213 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>global_bootclus</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Global stabiliy assessment of Joint Dimension Reduction and Clustering methods by bootstrapping.
+</h2>
+
+<h3>Description</h3>
+
+<p>Runs joint dimension and clustering algorithms repeatedly for different numbers of clusters on bootstrap replica of the original data and returns corresponding cluster assignments, and cluster agreement indices comparing pairs of partitions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">global_bootclus(data, nclusrange = 3:4, ndim = NULL, 
+method = c("RKM","FKM","mixedRKM","mixedFKM","clusCA","MCAk","iFCB"), 
+nboot = 10, alpha = NULL, alphak = NULL, center = TRUE, 
+scale = TRUE, nstart = 100, smartStart = NULL, seed = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>Continuous, Categorical ot Mixed data set</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nclusrange</code></td>
+<td>
+<p>An integer or an integer vector with the number of clusters or a range of numbers of clusters (should be greater than one)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ndim</code></td>
+<td>
+<p>Dimensionality of the solution; if <code>NULL</code> it is set to nclus - 1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Specifies the method. Options are RKM for Reduced K-means, FKM for Factorial K-means, mixedRKM for Mixed Reduced K-means, mixedFKM for Mixed Factorial K-means, MCAk for MCA K-means, iFCB for Iterative Factorial Clustering of Binary variables and clusCA for Cluster Correspondence Analysis.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nboot</code></td>
+<td>
+<p>Number of bootstrap pairs of partitions</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>Adjusts for the relative importance of (mixed) RKM and FKM in the objective function; <code>alpha = 1</code> reduces to PCA/PCAMIX, <code>alpha = 0.5</code> to (mixed) reduced K-means, and <code>alpha = 0</code> to (mixed) factorial K-means</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alphak</code></td>
+<td>
+<p>Non-negative scalar to adjust for the relative importance of MCA (<code>alphak = 1</code>) and K-means (<code>alphak = 0</code>) in the solution (default = .5). Works only in combination with <code>method = "MCAk"</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>center</code></td>
+<td>
+<p>A logical value indicating whether the metric variables should be shifted to be zero centered (default = <code>TRUE)</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scale</code></td>
+<td>
+<p>A logical value indicating whether the metric variables should be scaled to have unit variance before the analysis takes place (default = <code>TRUE)</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nstart</code></td>
+<td>
+<p>Number of random starts (default = 100)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smartStart</code></td>
+<td>
+<p>If <code>NULL</code> then a random cluster membership vector is generated. Alternatively, a cluster membership vector can be provided as a starting solution</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>An integer that is used as argument by <code>set.seed()</code> for offsetting the random number generator when <code>smartStart = NULL</code>. The default value is NULL.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The algorithm for assessing global cluster stability is similar to that in Dolnicar and Leisch (2010) and can be summarized in three steps:
+</p>
+<p><em>Step 1. Resampling:</em> Draw bootstrap samples S_i and T_i of size <em>n</em> from the data and use the original data, X, as evaluation set E_i = X. Apply the clustering method of choice to S_i and T_i and obtain C^S_i and C^T_i.
+</p>
+<p><em>Step 2. Mapping:</em> Assign each observation x_i to the closest centers of C^S_i and C^T_i using Euclidean distance, resulting in partitions C^XS_i and C^XT_i, where C^XS_i is the partition of the original data, X, predicted from clustering bootstrap sample S_i (same for T_i and C^XT_i).
+</p>
+<p><em>Step 3. Evaluation:</em> Use the Adjusted Rand Index (ARI, Hubert &amp; Arabie, 1985) or the Measure of Concordance (MOC, Pfitzner 2008) as measure of agreement and stability.
+</p>
+<p>Inspect the distributions of ARI/MOC to assess the global reproducibility of the clustering solutions.
+</p>
+<p>While nboot = 100 is recommended, smaller run numbers could give quite informative results as well, if computation times become too high.
+</p>
+<p>Note that the stability of a clustering solution is assessed, but stability is not the only important validity criterion - clustering solutions obtained by very inflexible clustering methods may be stable but not valid, as discussed in Hennig (2007).
+</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>nclusrange</code></td>
+<td>
+<p>An integer or an integer vector with the number of clusters or a range of numbers of clusters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clust1</code></td>
+<td>
+<p>Partitions, C^XS_i of the original data, X, predicted from clustering bootstrap sample S_i (see Details)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clust2</code></td>
+<td>
+<p>Partitions, C^XT_i of the original data, X, predicted from clustering bootstrap sample T_i (see Details)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>index1</code></td>
+<td>
+<p>Indices of the original data rows in bootstrap sample S_i</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>index2</code></td>
+<td>
+<p>Indices of the original data rows in bootstrap sample T_i</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rand</code></td>
+<td>
+<p>Adjusted Rand Index values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>moc</code></td>
+<td>
+<p>Measure of Concordance values</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Hennig, C. (2007). Cluster-wise assessment of cluster stability. <em>Computational Statistics and Data Analysis</em>, <em>52</em>, 258-271.
+</p>
+<p>Pfitzner, D., Leibbrandt, R., &amp; Powers, D. (2009). Characterization and evaluation of similarity measures for pairs of clusterings. <em>Knowledge and Information Systems</em>, <em>19</em>(3), 361-394.
+</p>
+<p>Dolnicar, S., &amp; Leisch, F. (2010). Evaluation of structure and reproducibility of cluster solutions using the bootstrap. <em>Marketing Letters</em>, <em>21</em>(1), 83-101.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>local_bootclus</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## 3 bootstrap replicates and nstart = 1 for speed in example,
+## use at least 20 replicates for real applications
+data(diamond)
+boot_mixedRKM = global_bootclus(diamond[,-7], nclusrange = 3:4,
+method = "mixedRKM", nboot = 3, nstart = 1, seed = 1234)
+
+boxplot(boot_mixedRKM$rand, xlab = "Number of clusters", ylab =
+"adjusted Rand Index")
+
+## 5 bootstrap replicates and nstart = 10 for speed in example,
+## use more for real applications
+#data(macro)
+#boot_RKM = global_bootclus(macro, nclusrange = 2:5,
+#method = "RKM", nboot = 5, nstart = 10, seed = 1234)
+
+#boxplot(boot_RKM$rand, xlab = "Number of clusters", ylab =
+#"adjusted Rand Index")
+
+## 5 bootstrap replicates and nstart = 1 for speed in example,
+## use more for real applications
+#data(bribery)
+#boot_cluCA = global_bootclus(bribery, nclusrange = 2:5, 
+#method = "clusCA", nboot = 5, nstart = 1, seed = 1234)
+
+#boxplot(boot_cluCA$rand, xlab = "Number of clusters", ylab =
+#"adjusted Rand Index")
+</code></pre>
+
+
+</div>

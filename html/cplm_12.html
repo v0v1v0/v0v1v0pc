@@ -1,0 +1,192 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cpglm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compound Poisson Generalized Linear Models
+</h2>
+
+<h3>Description</h3>
+
+<p>This function fits compound Poisson generalized linear models. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cpglm(formula, link = "log", data, weights, offset, 
+          subset, na.action = NULL, contrasts = NULL, 
+          control = list(), chunksize = 0, 
+          optimizer = "nlminb", ...)                      
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>an object of class <code>formula</code>. See also in <code>glm</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link</code></td>
+<td>
+<p>a specification for the model link function. This can be either a literal character string or a numeric number. If it is a character string, it must be one of "log", "identity", "sqrt" or "inverse". If it is numeric, it is the same as the <code>link.power</code> argument in the <code>tweedie</code> function. The default is <code>link = "log"</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>an optional data frame, list or environment (or object coercible by <code>as.data.frame</code> to a data frame) containing the variables in the model. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>an optional vector of weights. Should be either <code>NULL</code> or a numeric vector. When it is numeric, it must be positive. Zero weights are not allowed in <code>cpglm</code>. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subset</code></td>
+<td>
+<p>an optional vector specifying a subset of observations to be used in the fitting process.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.action</code></td>
+<td>
+<p>a function which indicates what should happen when the data contain <code>NA</code>s. The default is set by the <code>na.action</code> setting of options, and is <code>na.fail</code> if that is unset.  Another possible value is <code>NULL</code>, no action. Value <code>na.exclude</code> can be useful.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>offset</code></td>
+<td>
+<p>this can be used to specify an a priori known component to be included in the linear predictor during fitting. This should be either <code>NULL</code> or a numeric vector of length equal to the number of cases. One or more offset terms can be included in the formula instead or as well, and if more than one is specified their sum is used. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>contrasts</code></td>
+<td>
+<p>an optional list. See <code>contrasts.arg</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>a list of parameters for controling the fitting process. See 'Details' below. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>chunksize</code></td>
+<td>
+<p>an integer that indicates the size of chunks for processing the data frame as used in <code>bigglm</code>. The value of this argument also determines how the model is estimated. When it is <code>0</code> (the default), regular Fisher's scoring algorithms are used, which may run into memory issues when handling large data sets. In contrast,  a value  greater than <code>0</code> indicates that the <code>bigglm</code> is employed to fit the GLMs. The function <code>bigglm</code> relies on the bounded memory regression technique, and thus is well suited to large data GLMs. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimizer</code></td>
+<td>
+<p>a character string that determines which optimization routine is to be used in estimating the index and the dispersion parameters. Possible choices are <code>"nlminb"</code> (the default, see <code>nlminb</code>), <code>"bobyqa"</code> (<code>bobyqa</code>) and <code>"L-BFGS-B"</code> (<code>optim</code>).   
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p> additional arguments to be passed to <code>bigglm</code>. Not used when <code>chunksize = 0</code>. The <code>maxit</code> argument defaults to <code>50</code> in <code>cpglm</code> if not specified. 
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function implements the profile likelihood approach in Tweedie compound Poisson generalized linear models. First, the index and the dispersion parameters are estimated  by maximizing (numerically) the profile likelihood (profile out the mean parameters as they are determined for a given value of the index parameter). Then the mean parameters are estimated using a GLM with the above-estimated index parameter. To compute the profile likelihood, one must resort to numerical methods provided in the  <code>tweedie</code> package for approximating the density of the compound Poisson distribution. Indeed, the function  <code>tweedie.profile</code> in that package makes available the profile likelihood approach. The <code>cpglm</code> function  differs from <code>tweedie.profile</code> in two aspects. First, the user does not need to specify the grid of possible values the index parameter can take. Rather, the optimization of the profile likelihood is automated.   Second, big data sets can be handled where the <code>bigglm</code> function from the <code>biglm</code> package is used in fitting GLMs. The <code>bigglm</code> is invoked when the argument <code>chunksize</code> is greater than 0. It is also to be noted that only MLE estimate for the dispersion parameter is included here, while <code>tweedie.profile</code> provides several other possibilities.
+</p>
+<p>The package used to implement a second approach using the Monte Carlo EM algorithm, but it is now removed because it does not offer obvious advantages over the profile likelihood approach for this model.
+</p>
+<p>The <code>control</code> argument is a list that can supply various controlling elements used in the optimization process, and it has the following components:
+</p>
+
+<dl>
+<dt><code>bound.p</code></dt>
+<dd>
+<p>a vector of lower and upper bounds for the index parameter <code class="reqn">p</code> used in the optimization. The default is <code>c(1.01, 1.99)</code>. </p>
+</dd>
+<dt><code>trace</code></dt>
+<dd>
+<p>if greater than 0, tracing information on the progress of the fitting is produced. For <code>optimizer = "nlminb"</code> or <code>optimizer = "L-BFGS-B"</code>, this is the same as the <code>trace</code> control parameter, and for <code>optimizer = "bobyqa"</code>, this is the same as the <code>iprint</code> control parameter. See the corresponding documentation for details. 
+</p>
+</dd>
+<dt><code>max.iter</code></dt>
+<dd>
+<p>maximum number of iterations allowed in the optimization. The default is <code>300</code>. </p>
+</dd>
+<dt><code>max.fun</code></dt>
+<dd>
+<p>maximum number of function evaluations allowed in the optimizer. The default is <code>2000</code>.</p>
+</dd>
+</dl>
+<h3>Value</h3>
+
+<p><code>cpglm</code> returns an object of class <code>"cpglm"</code>. See <code>cpglm-class</code> for details of the return values as well as various methods available for this class. 
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Yanwei (Wayne) Zhang <a href="mailto:actuary_zhang@hotmail.com">actuary_zhang@hotmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p><cite> Dunn, P.K. and Smyth, G.K. (2005). Series evaluation of Tweedie exponential dispersion models densities. <em>Statistics and Computing</em>, 15, 267-280.</cite>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>The users are recommended to see the documentation for <code>cpglm-class</code>, <code>glm</code>, <code>tweedie</code>, and <code>tweedie.profile</code> for related information.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+fit1 &lt;- cpglm(RLD ~ factor(Zone) * factor(Stock),
+  data = FineRoot)
+     
+# residual and qq plot
+parold &lt;- par(mfrow = c(2, 2), mar = c(5, 5, 2, 1))
+# 1. regular plot
+r1 &lt;- resid(fit1) / sqrt(fit1$phi)
+plot(r1 ~ fitted(fit1), cex = 0.5)
+qqnorm(r1, cex = 0.5)
+# 2. quantile residual plot to avoid overlapping
+u &lt;- tweedie::ptweedie(fit1$y, fit1$p, fitted(fit1), fit1$phi)
+u[fit1$y == 0] &lt;- runif(sum(fit1$y == 0), 0, u[fit1$y == 0])
+r2 &lt;- qnorm(u)
+plot(r2 ~ fitted(fit1), cex = 0.5)
+qqnorm(r2, cex = 0.5)
+par(parold)
+
+# use bigglm 
+fit2 &lt;- cpglm(RLD ~ factor(Zone), 
+  data = FineRoot, chunksize = 250)
+
+</code></pre>
+
+
+</div>

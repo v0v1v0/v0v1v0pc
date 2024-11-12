@@ -1,0 +1,115 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>remove_bound</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>remove upper and lower bounds
+from an XTS object</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt="[Experimental]"></a>
+</p>
+<p>The <code>stats::window()</code>-function has inclusive upper and lower bounds,
+which in some cases is an undesirable feature. This high level function
+removes the bounds if desired
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">remove_bound(xts, bounds = c("upper"))
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>xts</code></td>
+<td>
+<p>A xts-object that needs its bounds modified.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bounds</code></td>
+<td>
+<p>A character vector of length 1.
+Has to be one of <code>c('upper','lower','both')</code>. Defaults to Upper.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Returns an xts-class object with its bounds removed.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other utility: 
+<code>calibrate_window()</code>,
+<code>split_window()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># script start;
+
+# 1) check index of BTCUSDT and
+# the Fear and Greed Index
+setequal(
+  zoo::index(BTC),
+  zoo::index(FGIndex)
+)
+
+# 2) to align the indices,
+# we use the convincience functions
+# by splitting the FGI by the BTC index.
+FGIndex &lt;- cryptoQuotes::split_window(
+  xts = cryptoQuotes::FGIndex,
+  by  = zoo::index(BTC),
+
+  # Remove upper bounds of the
+  # index to avoid overlap between
+  # the dates.
+  #
+  # This ensures that the FGI is split
+  # according to start of each weekly
+  # BTC candle
+  bounds = 'upper'
+)
+
+# 3) as splitWindow returns a list
+# it needs to passed into calibrateWindow
+# to ensure comparability
+FGIndex &lt;- cryptoQuotes::calibrate_window(
+  list = FGIndex,
+
+  # As each element in the list can include
+  # more than one row, each element needs to be aggregated
+  # or summarised.
+  #
+  # using xts::first gives the first element
+  # of each list, along with its values
+  FUN  = xts::first
+)
+
+
+# 3) check if candles aligns
+# accordingly
+stopifnot(
+  setequal(
+    zoo::index(BTC),
+    zoo::index(FGIndex)
+  )
+)
+
+
+# script end;
+</code></pre>
+
+
+</div>

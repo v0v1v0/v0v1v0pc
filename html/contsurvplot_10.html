@@ -1,0 +1,398 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>plot_surv_matrix</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Plot a Discretized Heatmap of the Effect of a Continuous Covariate on a Time-To-Event Outcome
+</h2>
+
+<h3>Description</h3>
+
+<p>Using a previously fit time-to-event model, this function plots a discretized heatmap with the continuous covariate on the y-axis and the time-to-event on the x-axis. This is essentially a discretized version of the <code>plot_surv_heatmap</code> plot, which makes it look very similar to a correlation matrix.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">plot_surv_matrix(time, status, variable, group=NULL, data, model,
+                 cif=FALSE, na.action=options()$na.action,
+                 horizon=NULL, fixed_t=NULL, max_t=Inf,
+                 n_col=10, n_row=10,
+                 start_color="red", end_color="blue",
+                 alpha=1, xlab="Time", ylab=variable,
+                 title=NULL, subtitle=NULL,
+                 legend.title="S(t)", legend.position="none",
+                 gg_theme=ggplot2::theme_bw(),
+                 facet_args=list(),
+                 panel_border=FALSE, axis_dist=0,
+                 border_color="white", border_size=0.5,
+                 numbers=TRUE, number_color="white",
+                 number_size=3, number_family="sans",
+                 number_fontface="plain", number_digits=2,
+                 ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+
+<p>A single character string specifying the time-to-event variable. Needs to be a valid column name of a numeric variable in <code>data</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>status</code></td>
+<td>
+
+<p>A single character string specifying the status variable, indicating if a person has experienced an event or not. Needs to be a valid column name of a numeric or logical variable in <code>data</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>variable</code></td>
+<td>
+
+<p>A single character string specifying the continuous variable of interest, for which the survival curves should be estimated. This variable has to be contained in the <code>data.frame</code> that is supplied to the <code>data</code> argument.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>group</code></td>
+<td>
+
+<p>An optional single character string specifying a factor variable in <code>data</code>. When used, the plot is created conditional on this factor variable, meaning that a facetted plot is produced with one facet for each level of the factor variable. See <code>curve_cont</code> for a detailed description of the estimation strategy. Set to <code>NULL</code> (default) to use no grouping variable.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+
+<p>A <code>data.frame</code> containing all required variables.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+
+<p>A model describing the time-to-event process (such as an <code>coxph</code> model). Needs to include <code>variable</code> as an independent variable. It also has to have an associated <code>predictRisk</code> method. See <code>?predictRisk</code> for more details.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cif</code></td>
+<td>
+
+<p>Whether to plot the cumulative incidence (CIF) instead of the survival probability. If multiple failure types are present, the survival probability cannot be estimated in an unbiased way. This function will always return CIF estimates in that case.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.action</code></td>
+<td>
+
+<p>How missing values should be handled. Can be one of: <code>na.fail</code>, <code>na.omit</code>, <code>na.pass</code>, <code>na.exclude</code> or a user-defined custom function. Also accepts strings of the function names. See <code>?na.action</code> for more details. By default it uses the na.action which is set in the global options by the respective user.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>horizon</code></td>
+<td>
+
+<p>A numeric vector containing a range of values of <code>variable</code> for which the survival curves should be calculated or <code>NULL</code> (default). If <code>NULL</code>, the horizon is constructed as a sequence from the lowest to the highest value observed in <code>variable</code> with 100 equally spaced steps. In this function, this needs to be a equally spaced vector.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixed_t</code></td>
+<td>
+
+<p>A numeric vector containing points in time at which the survival probabilities should be calculated or <code>NULL</code> (default). If <code>NULL</code>, the survival probability is estimated at 100 equally spaced steps from 0 to the maximum observed event time. In this function, this needs to be a equally spaced vector.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_t</code></td>
+<td>
+
+<p>A number indicating the latest survival time which is to be plotted.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_col</code></td>
+<td>
+
+<p>The number of columns to use in the matrix style heatmap. This parameter only controls how many tiles are shown, not how many are estimated. The amount of estimated probabilities is controlled using the <code>fixed_t</code> and <code>horizon</code> arguments. See details.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_row</code></td>
+<td>
+
+<p>The number of rows to use in the matrix style heatmap. See <code>n_col</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start_color</code></td>
+<td>
+
+<p>The color used for the lowest value in <code>horizon</code>. This and the <code>end_color</code> argument can be used to specify custom continuous color scales used in the plot. For example, if a black and white plot is desired, the user can set <code>start_color="white"</code> and <code>end_color="black"</code>. See <code>?scale_color_gradient</code> for more information. Defaults to <code>"red"</code>, set to <code>NULL</code> to use the default <span class="pkg">ggplot2</span> palette.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>end_color</code></td>
+<td>
+
+<p>The color used for the highest value in <code>horizon</code>. Defaults to <code>"blue"</code>. See argument <code>start_color</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+
+<p>The transparency level of the plot.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xlab</code></td>
+<td>
+
+<p>A character string used as the x-axis label of the plot.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ylab</code></td>
+<td>
+
+<p>A character string used as the y-axis label of the plot.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>title</code></td>
+<td>
+
+<p>A character string used as the title of the plot.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subtitle</code></td>
+<td>
+
+<p>A character string used as the subtitle of the plot.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>legend.title</code></td>
+<td>
+
+<p>A character string used as the legend title of the plot.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>legend.position</code></td>
+<td>
+
+<p>Where to put the legend. See <code>?theme</code> for more details.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gg_theme</code></td>
+<td>
+
+<p>A <span class="pkg">ggplot2</span> theme which is applied to the plot.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>facet_args</code></td>
+<td>
+
+<p>A named list of arguments that are passed to the <code>facet_wrap</code> function call when creating a plot separated by groups. Ignored if <code>group=NULL</code>. Any argument except the <code>facets</code> argument of the <code>facet_wrap</code> function can be used. For example, if the user wants to allow free y-scales, this argument could be set to <code>list(scales="free_y")</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>panel_border</code></td>
+<td>
+
+<p>Whether to draw a border around the heatmap or not. Is set to FALSE by default to mimic standard heatmaps.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>axis_dist</code></td>
+<td>
+
+<p>The distance of the axis ticks to the colored heatmap. Is set to 0 by default to mimic standard heatmaps.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>border_color</code></td>
+<td>
+
+<p>The color of the individual rectangles borders. Defaults to <code>"white"</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>border_size</code></td>
+<td>
+
+<p>The size of the individual rectangles borders. Defaults to 0.5.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>numbers</code></td>
+<td>
+
+<p>Whether to put the numbers of the average estimated probabilities into the rectangles or not. Defaults to <code>TRUE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>number_color</code></td>
+<td>
+
+<p>The color of the numbers inside the rectangles. Ignored if <code>numbers=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>number_size</code></td>
+<td>
+
+<p>The size of the numbers inside the rectangles. Ignored if <code>numbers=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>number_family</code></td>
+<td>
+
+<p>The font family of the numbers inside the rectangles. Ignored if <code>numbers=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>number_fontface</code></td>
+<td>
+
+<p>The fontface of the numbers inside the rectangles. Ignored if <code>numbers=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>number_digits</code></td>
+<td>
+
+<p>The amount of digits the numbers inside the rectangles should be rounded to. Ignored if <code>numbers=FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+
+<p>Further arguments passed to <code>curve_cont</code>.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Heatmaps are a great tool to visualize a three dimensional surface in a two-dimensional plot. Continuously changing colors over a single area can, however, be difficult to interpret correctly if the color does not change a lot. This version makes the heatmap easier to understand by discretizing the space into equally spaced rectangles. The survival or failure probability is still estimated at a very fine grid of points in time (controlled using the <code>fixed_t</code> and <code>horizon</code> arguments), but is then aggregated into average probabilities afterwards. The number inside each rectangle then shows the *average* probability inside the region defined by the rectangle. This makes the plot look a lot like a correlation matrix.
+</p>
+<p>The dimensions of the plot can be controlled using the <code>n_col</code> and <code>n_row</code> arguments. Using high numbers in these parameters makes the plot look more similar to a standard <code>plot_surv_heatmap</code> plot. It is recommended to create the <code>plot_surv_heatmap</code> plot first to pick appropriate dimensions for the discretized version here.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a <code>ggplot2</code> object.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Robin Denz
+</p>
+
+
+<h3>References</h3>
+
+<p>Robin Denz, Nina Timmesfeld (2023). "Visualizing the (Causal) Effect of a Continuous Variable on a Time-To-Event Outcome". In: Epidemiology 34.5
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(contsurvplot)
+library(riskRegression)
+library(survival)
+library(ggplot2)
+library(splines)
+
+# using data from the survival package
+data(nafld, package="survival")
+
+# take a random sample to keep example fast
+set.seed(42)
+nafld1 &lt;- nafld1[sample(nrow(nafld1), 150), ]
+
+# fit cox-model with age
+model &lt;- coxph(Surv(futime, status) ~ age, data=nafld1, x=TRUE)
+
+# plot effect of age on survival using defaults
+plot_surv_matrix(time="futime",
+                 status="status",
+                 variable="age",
+                 data=nafld1,
+                 model=model)
+
+# plot it only for 60 to 80 year old people
+plot_surv_matrix(time="futime",
+                 status="status",
+                 variable="age",
+                 data=nafld1,
+                 model=model,
+                 horizon=seq(60, 80, 0.5))
+
+## showing non-linear effects
+
+# fit cox-model with bmi modelled using B-Splines,
+# adjusting for age and sex
+model2 &lt;- coxph(Surv(futime, status) ~ age + male + bs(bmi, df=3),
+                data=nafld1, x=TRUE)
+
+# plot effect of bmi on survival using defaults
+plot_surv_matrix(time="futime",
+                 status="status",
+                 variable="bmi",
+                 data=nafld1,
+                 model=model2)
+
+</code></pre>
+
+
+</div>

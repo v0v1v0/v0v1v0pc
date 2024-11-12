@@ -1,0 +1,248 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>derCOPinv</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Numerical Derivative Inverse  of a Copula for V with respect to U</h2>
+
+<h3>Description</h3>
+
+<p>Compute the inverse of a numerical partial derivative for <code class="reqn">V</code> with respect to <code class="reqn">U</code> of a copula, which is a <em>conditional quantile function</em> for nonexceedance probability <code class="reqn">t</code>, or
+</p>
+<p style="text-align: center;"><code class="reqn">t = c_u(v) = \mathbf{C}^{(-1)}_{2 \mid 1}(v \mid u) = \frac{\delta \mathbf{C}(u,v)}{\delta u}\mbox{,}</code>
+</p>
+
+<p>and solving for <code class="reqn">v</code>. Nelsen (2006, pp. 13, 40–41) shows that this inverse is quite important for random variable generation using the <em>conditional distribution method</em>. This function is not vectorized and will not be so.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">derCOPinv(cop=NULL, u, t, trace=FALSE,
+          delu=.Machine$double.eps^0.50, para=NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cop</code></td>
+<td>
+<p>A copula function;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>A single nonexceedance probability <code class="reqn">u</code> in the <code class="reqn">X</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>t</code></td>
+<td>
+<p>A single nonexceedance probability level <code class="reqn">t</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>A logical controlling a <code>message</code> on whether the signs on the <code>uniroot</code> are the same—this is helpful in exploring the numerical derivative limits of a given implementation of a copula.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delu</code></td>
+<td>
+<p>The <code class="reqn">\Delta u</code> interval for the derivative;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>Vector of parameters or other data structures, if needed, to pass to <code>cop</code>; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass to the copula.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Value(s) for the derivative inverse are returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p><em>AN EDUCATIONAL OPPORTUNITY</em>—The Farlie-Gumbel-Morgenstern copula <code class="reqn">\mathbf{FGM}(u,v)</code> <br> (<code>FGMcop</code>) (Joe, 2014, p. 213) is
+</p>
+<p style="text-align: center;"><code class="reqn">\mathbf{FGM}(u,v; \Theta) = uv[1+\Theta(1-u)(1-v)]\mbox{,}</code>
+</p>
+
+<p>where <code class="reqn">-1 \le \Theta \le 1</code> has analytical solutions to the conditional cumulative distribution function (CDF) <code class="reqn">\mathbf{C}_{2 \mid 1}(v \mid u)</code> as
+</p>
+<p style="text-align: center;"><code class="reqn">\mathbf{C}_{2 \mid 1}(v \mid u) = v[1 + \Theta(1-v)(1-2u)]\mbox{,}</code>
+</p>
+
+<p>and the inverse of the conditional CDF as
+</p>
+<p style="text-align: center;"><code class="reqn">\mathbf{C}_{2 \mid 1}(v \mid u) = \frac{[1 + \Theta(1-2u)] - \sqrt{[1+\Theta(1-2u)]^2 - 4t(1-2u)}}{2\Theta(1-2u)}\mbox{.}</code>
+</p>
+
+<p>These three functions for the copula can be defined in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> by
+</p>
+<pre>
+  "FGMcop"       &lt;- function(u,v, para=NULL, ...) u*v*(1 + para*(1-u)*(1-v)  )
+  "joeFGMder"    &lt;- function(u,v, para=NULL, ...)   v*(1 + para*(1-v)*(1-2*u))
+  "joeFGMderinv" &lt;- function(u,t, para=NULL, ...) {
+      K &lt;- (1-2*u)
+      ((1 + para*K) - sqrt((1 + para*K)^2 - 4*t*K))/(2*para*K)
+  }
+</pre>
+<p>The <code class="reqn">\mathbf{C}^{(-1)}_{2 \mid 1}(v \mid u)</code> is critical for simulation by the conditional simulation method. Although exclusively for simulation, <span class="pkg">copBasic</span> uses inversion of the numerical derivative, the <code class="reqn">\mathbf{FGM}</code> copula has three representations of supposedly the same analytical algorithm for simulation in the literature (Durante, 2007; Johnson, 1987; Nelsen, 2006). An opportunity for comparison is thus available.
+</p>
+<p>The three analytical algorithms for nonexceedance probability <code class="reqn">t</code> given <code class="reqn">u</code> by mathematics and code, following Durante (2007, p. 245), are
+</p>
+<p style="text-align: center;"><code class="reqn">A = \Theta(1-2u) - 1\mbox{,}</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">B = \sqrt{A^2 - 4t(A+1)}\mbox{, and}</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">v = 2t/(B-A)\mbox{,}</code>
+</p>
+
+<p>and in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>, this “Durante algorithm” is
+</p>
+<pre>
+  "durFGMderinv" &lt;- function(u,t, para=NULL, ...) { # Durante (2007, p. 245)
+      A &lt;- para*(1-2*u) - 1; B &lt;- sqrt(A^2 - 4*t*(A+1)); return(2*t/(B - A))
+  }
+</pre>
+<p>and, letting <code class="reqn">K = (2u - 1)</code>, following Johnson (1987, p. 185)
+</p>
+<p style="text-align: center;"><code class="reqn">A = K\Theta - 1</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">B = \sqrt{1 - 2K\Theta + (K\Theta)^2 + 4tK\Theta}</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">v = 2t/(B - A)</code>
+</p>
+
+<p>and in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>, this “Johnson algorithm” is
+</p>
+<pre>
+  "jonFGMderinv" &lt;- function(u,t, para=NULL, ...) { # Johnson (1987, p. 185)
+      K &lt;- (2*u - 1)
+      A &lt;- K*para - 1; B &lt;- sqrt(1 - 2*K*para + (K*para)^2 + 4*t*K*para)
+      2*t/(B - A)
+  }
+</pre>
+<p>and finally following Nelsen (2006, p. 87)
+</p>
+<p style="text-align: center;"><code class="reqn">A = 1 + \theta(1 - 2u)\mbox{,}</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">B = \sqrt{A^2 - 4t(A-1)}\mbox{, and}</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">v = 2t/(B+A)\mbox{,}</code>
+</p>
+
+<p>and in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>, this “Nelsen algorithm” is
+</p>
+<pre>
+  "nelFGMderinv" &lt;- function(u,t, para=NULL, ...) { # Nelsen (2006, p. 87)
+      A &lt;- 1 + para*(1-2*u); B &lt;- sqrt(A^2 - 4*t*(A-1)); return(2*t/(B + A))
+  }
+</pre>
+<p>With appropriate code now available, two comparisons can be made in the following sections.
+</p>
+<p><em>CONDITIONAL DISTRIBUTION FUNCTION</em>—A comparison of the analytical <code class="reqn">\mathbf{FGM}(u,v)</code> derivative shows that Joe's equation is congruent with the numerical derivative of <span class="pkg">copBasic</span>:
+</p>
+<pre>
+  joeFGMder(0.8, 0.44, para=0.78)             # 0.3246848      (Joe, 2014)
+  derCOP(   0.8, 0.44, para=0.78, cop=FGMcop) # 0.3246848      (copBasic )
+</pre>
+<p>and the result will be used in the computations that follow.
+</p>
+<p>A comparison for <code class="reqn">t = 0.3246848</code> of the analytical inverse and the numerical optimization of the numerical derivative of <span class="pkg">copBasic</span> is
+</p>
+<pre>
+  joeFGMderinv(0.8, 0.3246848, para=0.78)             # 0.5327603
+  derCOPinv(   0.8, 0.3246848, para=0.78, cop=FGMcop) # 0.4399934 --&gt; 0.44
+</pre>
+<p>where obviously, the two results are not in agreement—so something is amiss. Because many examples in this documentation clearly demonstrate numerical reliability, a tentative conclusion is that Joe's listed equation must be in error. Let us check this hypothesis against the three other sources:
+</p>
+<pre>
+  durFGMderinv(0.8, 0.3246848, para=0.78) # 0.2074546          (Durante, 2007)
+  jonFGMderinv(0.8, 0.3246848, para=0.78) # 0.44               (Johnson, 1987)
+  nelFGMderinv(0.8, 0.3246848, para=0.78) # 0.44               (Nelsen,  2006)
+</pre>
+<p>The result from Durante (2007) is different from both Joe (2014) and from <span class="pkg">copBasic</span>. However, the Johnson (1987) and Nelsen (2006) versions are equivalent and congruent to <span class="pkg">copBasic</span> with the <em>distinctly different</em> numerical methods of <code>derCOPinv</code>. These incongruent results demonstrate that care is needed when navigating the copula literature and the usefulness of the <span class="pkg">copBasic</span>-style implementation of copula theory. In words, these computations show that the <code class="reqn">t \approx 32</code>nd percentile of the <code class="reqn">\mathbf{FGM}</code> copula given that the 80th percentile in <code class="reqn">U</code> is about the 44th percentile of <code class="reqn">V</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Durante, F., 2007, Families of copulas, Appendix C, <em>in</em> Salvadori, G., De Michele, C., Kottegoda, N.T., and Rosso, R., 2007, Extremes in Nature—An approach using copulas: Springer, 289 p.
+</p>
+<p>Joe, H., 2014, Dependence modeling with copulas: Boca Raton, CRC Press, 462 p.
+</p>
+<p>Johnson, M.E., 1987, Multivariate statistical simulation: New York, John Wiley, 230 p.
+</p>
+<p>Nelsen, R.B., 2006, An introduction to copulas: New York, Springer, 269 p.
+</p>
+<p>Zhang, L., and Singh, V.P., 2019, Copulas and their applications in water resources engineering: Cambridge University Press, ISBN 978–1–108–47425–2.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>derCOP</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">u &lt;- runif(1); t &lt;- runif(1)
+derCOPinv(u,t, cop=W)   # perfect negative dependence
+derCOPinv(u,t, cop=P)   # independence
+derCOPinv(u,t, cop=M)   # perfect positive dependence
+derCOPinv(u,t, cop=PSP) # a parameterless copula example
+## Not run: 
+# Simulate 500 values from product (independent) copula
+plot(NA,NA, type="n", xlim=c(0,1), ylim=c(0,1), xlab="U", ylab="V")
+for(i in 1:500) {
+   u &lt;- runif(1); t &lt;- runif(1)
+   points(u, derCOPinv(cop=P, u, t), cex=0.5, pch=16) # black dots
+}
+# Now simulate 500 from the Nelsen 4.2.12 copula.
+for(i in 1:500) {
+   u &lt;- runif(1); t &lt;- runif(1)
+   points(u,derCOPinv(cop=N4212cop,para=9.3,u,t), cex=2, pch=16, col=2) # red dots
+} #
+## End(Not run)
+
+## Not run: 
+# Zhang and Singh (2019) exam. 3.23, p. 105
+# show the application of the derivative inversion C2|1
+# for u=0.6036 and t=0.6036 ---&gt; v = 0.4719
+derCOPinv( cop=CLcop, 0.6036, 0.4028, para=0.5) # 0.4719 for C2|1
+derCOPinv2(cop=CLcop, 0.6036, 0.4028, para=0.5) # 0.4719 for C1|2
+# and C2|1 and C1|2 are equal because the copula has permutation symmetry
+isCOP.permsym(cop=CLcop, para=0.5) # TRUE
+## End(Not run)
+</code></pre>
+
+
+</div>

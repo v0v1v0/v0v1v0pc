@@ -1,0 +1,254 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>getParentsStable</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate the connectivity matrix of a causal graph using stability selection.</h2>
+
+<h3>Description</h3>
+
+<p>Estimates the connectivity matrix of a directed causal graph, 
+using various possible methods. Supported methods at the moment are  ARGES,
+backShift, bivariateANM, bivariateCAM, CAM, FCI, FCI+, GES, GIES, hiddenICP, 
+ICP, LINGAM, MMHC, rankARGES, rankFci, rankGES, rankGIES, rankPC, 
+regression, RFCI and PC.
+Uses stability selection to select an appropriate sparseness.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">getParentsStable(
+  X,
+  environment,
+  interventions = NULL,
+  EV = 1,
+  nodewise = TRUE,
+  threshold = 0.75,
+  nsim = 100,
+  sampleSettings = 1/sqrt(2),
+  sampleObservations = 1/sqrt(2),
+  parentsOf = 1:ncol(X),
+  method = c("ICP", "hiddenICP", "backShift", "pc", "LINGAM", "ges", "gies", "CAM",
+    "fci", "rfci", "regression", "bivariateANM", "bivariateCAM")[1],
+  alpha = 0.1,
+  mode = c("raw", "parental", "ancestral")[1],
+  variableSelMat = NULL,
+  excludeTargetInterventions = TRUE,
+  onlyObservationalData = FALSE,
+  indexObservationalData = NULL,
+  setOptions = list(),
+  verbose = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>A (nxp)-data matrix with n observations of p variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>environment</code></td>
+<td>
+<p>A vector of length n, where the entry for 
+observation i is an index for the environment in which observation i took 
+place (simplest case entries <code>1</code> for observational data and entries
+<code>2</code> for interventional data of unspecified type). Is required for 
+methods <code>ICP</code>, <code>hiddenICP</code>, <code>backShift</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interventions</code></td>
+<td>
+<p>A optional list of length n. The entry for observation
+i is a numeric vector that specifies the variables on which interventions 
+happened for observation i (a scalar if an intervention happened on just 
+one variable and <code>numeric(0)</code> if no intervention occured for this 
+observation). Is used for method <code>gies</code> but will generate the vector 
+<code>environment</code> if this is set to <code>NULL</code> (even though it might 
+generate too many different environments for some data so a hand-picked 
+vector <code>environment</code> is preferable). Is also used for <code>ICP</code> and 
+<code>hiddenICP</code> to exclude interventions on the target variable of 
+interest.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>EV</code></td>
+<td>
+<p>A bound on the expected number of falsely selected edges.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nodewise</code></td>
+<td>
+<p>If <code>FALSE</code>, stability selection retains for each 
+subsample the largest overall entries in the connectivity matrix. 
+If <code>TRUE</code>, values are ordered row- and node-wise first and then the 
+largest entries in each row and column are retained. Error control is 
+valid (under exchangeability assumption) in both cases. The latter setting 
+<code>TRUE</code> is perhaps more robust and is the default.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold</code></td>
+<td>
+<p>The empirical selection frequency in (0.5,1) under 
+subsampling that needs to be surpassed for an edge to be selected.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsim</code></td>
+<td>
+<p>The number of resamples for stability selection.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sampleSettings</code></td>
+<td>
+<p>The fraction of different environments to resample 
+in each resampling (at least two different environments will be selected so 
+the argument is without effect if there are just two different environments 
+in total).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sampleObservations</code></td>
+<td>
+<p>The fraction of samples to resample in each 
+environment.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parentsOf</code></td>
+<td>
+<p>The variables for which we would like to estimate the 
+parents. Default are all variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>A string that specfies the method to use. The methods 
+<code>pc</code> (PC-algorithm), <code>LINGAM</code> (LINGAM), <code>arges</code> (Adaptively 
+restricted greedy equivalence search), <code>ges</code> 
+(Greedy equivalence search), <code>gies</code> (Greedy interventional equivalence 
+search),  <code>fci</code> (Fast causal inference)  
+and <code>rfci</code> (Really fast causal inference) are imported from the 
+package "pcalg" and are documented there in more detail, including the 
+additional options that can be supplied via <code>setOptions</code>. The method 
+<code>CAM</code> (Causal additive models) is documented in the package "CAM" and 
+the methods <code>ICP</code> (Invariant causal prediction), <code>hiddenICP</code> 
+(Invariant causal prediction with hidden variables) are from the package 
+"InvariantCausalPrediction". The method <code>backShift</code> comes from the 
+package "backShift". The method <code>mmhc</code> comes from the 
+package "bnlearn". 
+Finally, the methods <code>bivariateANM</code> and 
+<code>bivariateCAM</code> are for now implemented internally but will hopefully 
+be part of another package at some point in the near future.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>The level at which tests are done. This leads to confidence 
+intervals for <code>ICP</code> and <code>hiddenICP</code> and is used internally for 
+<code>pc</code> and <code>rfci</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mode</code></td>
+<td>
+<p>Output type - can be "raw", "parental" or "ancestral". If "raw"
+output is the output of the underlying method, without modifications. If "parental"
+output described parental relations; if "ancestral" output is casted to ancestral 
+relations. #TODO explain further</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>variableSelMat</code></td>
+<td>
+<p>An optional logical matrix of dimension (pxp). An 
+entry <code>TRUE</code> for entry (i,j) says that variable i should be considered 
+as a potential parent for variable j and vice versa for <code>FALSE</code>. If the 
+default value of <code>NULL</code> is used, all variables will be considered, but 
+this can be very slow, especially for methods <code>pc</code>, <code>ges</code>, 
+<code>gies</code>, <code>rfci</code> and <code>CAM</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>excludeTargetInterventions</code></td>
+<td>
+<p>When looking for parents of variable k 
+in 1,...,p, set to <code>TRUE</code> if observations where an intervention on 
+variable k occured should be excluded. Default is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>onlyObservationalData</code></td>
+<td>
+<p>If set to <code>TRUE</code>, only observational data 
+is used. It will take the index in <code>environment</code> specified by 
+<code>indexObservationalData</code>. If <code>environment</code> is <code>NULL</code>, all 
+observations are used. Default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>indexObservationalData</code></td>
+<td>
+<p>Index in <code>environment</code> that encodes 
+observational data. Default is <code>1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>setOptions</code></td>
+<td>
+<p>A list that can take method-specific options; see the 
+individual documentations of the methods for more options and their 
+possible values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>If <code>TRUE</code>, detailed output is provided.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A sparse matrix, where a 0 entry in (j,k) corresponds to an estimate 
+of 'no edge' <code>j</code> -&gt; <code>parentsOf[k]</code>. Entries between 0 and 100 
+give the selection percentage of this edge over all resamples (set to 0 if
+below critical threshold) and all non-zero values are considered as selected
+edges.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Nicolai Meinshausen <a href="mailto:meinshausen@stat.math.ethz.ch">meinshausen@stat.math.ethz.ch</a>, Christina
+Heinze-Deml <a href="mailto:heinzedeml@stat.math.ethz.ch">heinzedeml@stat.math.ethz.ch</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Stability selection (2010):  N. Meinshausen and P. Buhlmann, 
+Journal of the Royal Statistical Society: Series B, 72, 417-473
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>getParents</code> for the underlying point-estimate of 
+the causal graph.
+</p>
+
+
+</div>

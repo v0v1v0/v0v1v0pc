@@ -1,0 +1,148 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>corTESTsrd</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Significance test of rank cross-correlations</h2>
+
+<h3>Description</h3>
+
+<p>Significance test of Spearman's Rho or Kendall's Tau between time series of short-range dependent random variables.
+The test is based on the asymptotic normal distributions of the estimators.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">corTESTsrd(x, y,
+           iid=TRUE, method="spearman",
+           alternative="two.sided",
+           kernelf=function(z){return(ifelse(abs(z) &lt;= 1, (1 - z^2)^2, 0))},
+           bwf=function(n){3*n^(1/4)})
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>numeric input vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>numeric input vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iid</code></td>
+<td>
+<p>logical, if TRUE, observations are assumed to be iid, if FALSE observations are assumed to be short-range dependent and the long-run variance of the estimator is estimated from the observations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>a character string, indicating which correlation coefficient should be used for the test. One of "spearman" or "kendall", cannot be abbreviated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alternative</code></td>
+<td>
+<p>a character string indicating the alternative hypothesis. Must be one of "two.sided", "greater" or "less", cannot be abbreviated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kernelf</code></td>
+<td>
+<p>a function that is used in the estimation procedure. The default kernel-function is a quartic kernel. Should be a vectorized function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bwf</code></td>
+<td>
+<p>a function for choosing the bandwidth, based on the sample size <code class="reqn">n</code>, that should be used in the estimation procedure. Default is <code class="reqn">3n^{1/4}</code>, <code class="reqn">b_n=o(n^{1/2})</code> must hold.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Calculates an estimate of the rank correlation coefficient between the inputs x and y, which are assumed to be evenly spaced time series with equal time-increments,
+and performs a significance test for the rank correlation coefficient with <code class="reqn">\mathcal{H}_0: \rho_S/\tau=0</code> against an alternative specified by the user. The function returns the estimate of the rank correlation coefficient
+and a p-value. Missing observations (<code>NA</code>) are allowed, but will prompt a warning. Ties are not allowed. <br><br>
+The test statistic and the corresponding p-value are based on the distribution of the respective estimator under the assumption of independence between the inputs x and y, and an additional assumption regarding
+the dependence structure of the inputs on their own past. The distribution of the test statistic is modelled as a normal distribution. <br><br>
+If the option iid is TRUE, the inputs are assumed to be realizations of independent and identically distributed random variables. In this case the asymptotic variance of the test statistic is given by <code class="reqn">\frac{1}{n-1}</code>
+for Spearman's Rho and as <code class="reqn">\frac{2(2n+5)}{9n(n-1)}</code> for Kendall's Tau, see Gibbons and Chakraborti (2003), equations 3.13 and 2.29 in chapter 11, respectively. <br><br>
+If the option iid is FALSE, the inputs are assumed to be realizations of short-range dependent random variables (see Corollary 1 in Lun et al., 2022). The asymptotic variance of the test statistic is modelled as
+<code class="reqn">\frac{1}{n}(1+2\sum_{h=1}^{\infty} \rho_S^X(h) \rho_S^Y(h))</code> for Spearman's Rho and as <code class="reqn">\frac{4}{9n}(1+2\sum_{h=1}^{\infty} \rho_S^X(h) \rho_S^Y(h))</code> for Kendall's Tau.
+Here <code class="reqn">\rho_S^X(h)</code> refers to the Spearman autocorrelation of the first input x for lag <code class="reqn">h</code>, and the analogue applies to <code class="reqn">\rho_S^X(h)</code>. In this case the asymptotic variance of the test statistic is estimated
+(see Corollary 2 in Lun et al., 2022). For this estimation procedure a kernel-function together with a bandwidth is used, which can be specified by the user.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Estimate of rank correlation coefficient and p-value of corresponding hypothesis test.
+</p>
+
+
+<h3>References</h3>
+
+<p>J. D. Gibbons, and S. Chakraborti, Nonparametric statistical inference (4th Edition). CRC press, 2003. <br><br>
+D. Lun, S. Fischer, A. Viglione, and G. Blöschl, Significance testing of rank cross-correlations between autocorrelated time series with short-range dependence, Journal of Applied Statistics, 2022, 1-17. doi: <a href="https://doi.org/10.1080/02664763.2022.2137115">10.1080/02664763.2022.2137115</a>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#Demonstration
+sam_size = 50
+nsim = 1000
+
+pval_iid &lt;- rep(NA, nsim)
+pval_srd &lt;- rep(NA, nsim)
+#iid-simulation: if we have iid observations the modified test
+#is able to maintain the desired significance level
+for(j in c(1:nsim)) {
+  x &lt;- rnorm(n=sam_size)
+  y &lt;- rnorm(n=sam_size)
+  pval_iid[j] &lt;- corTESTsrd(x, y, iid=TRUE, method="spearman")[2]
+  pval_srd[j] &lt;- corTESTsrd(x, y, iid=FALSE, method="spearman")[2]
+}
+sum(pval_iid &lt;= 0.05)/nsim
+sum(pval_srd &lt;= 0.05)/nsim
+
+#ar(1)-simulation: if we have srd-observations the modified test
+#counteracts the inflation of type-I-errors
+for(j in c(1:nsim)) {
+  x &lt;- as.numeric(arima.sim(model=list(ar=c(0.8)), n=sam_size))
+  y &lt;- as.numeric(arima.sim(model=list(ar=c(0.8)), n=sam_size))
+  pval_iid[j] &lt;- corTESTsrd(x, y, iid=TRUE, method="spearman")[2]
+  pval_srd[j] &lt;- corTESTsrd(x, y, iid=FALSE, method="spearman")[2]
+}
+sum(pval_iid &lt;= 0.05)/nsim
+sum(pval_srd &lt;= 0.05)/nsim
+
+#the test can be made more conservative be choosing a bigger bandwidth,
+#but this decreases the power
+bwfbig &lt;- function(n) {10*(n^(1/4))}
+#ar(1)-simulation: if we have srd-observations the modified test
+#counteracts the inflation of type-I-errors
+for(j in c(1:nsim)) {
+  x &lt;- as.numeric(arima.sim(model=list(ar=c(0.8)), n=sam_size))
+  y &lt;- as.numeric(arima.sim(model=list(ar=c(0.8)), n=sam_size))
+  pval_iid[j] &lt;- corTESTsrd(x, y, iid=TRUE, method="spearman")[2]
+  pval_srd[j] &lt;- corTESTsrd(x, y, iid=FALSE, method="spearman", bwf=bwfbig)[2]
+}
+sum(pval_iid&lt;=0.05)/nsim
+sum(pval_srd&lt;=0.05)/nsim
+
+</code></pre>
+
+
+</div>

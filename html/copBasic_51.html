@@ -1,0 +1,197 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>EvuCOP</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Expected value of V given U</h2>
+
+<h3>Description</h3>
+
+<p>Compute the <em>expected value</em> of <code class="reqn">V</code> given a <code class="reqn">U</code> (the <code class="reqn">X</code> direction) through the <em>conditional distribution function</em> <code class="reqn">F(X)</code> using the appropriate <em>partial derivative</em> of a copula (<code class="reqn">\mathbf{C}(u,v)</code>) with respect to <code class="reqn">U</code>. The inversion of the partial derivative is the <em>conditional quantile function</em>. Basic principles provide the expectation for a <code class="reqn">x \ge 0</code> is
+</p>
+<p style="text-align: center;"><code class="reqn">E[X] = \int_0^\infty xf(x)\mathrm{d}x = \int_0^\infty \bigl(1-F_x(X)\bigr)\mathrm{d}x\mbox{,}</code>
+</p>
+
+<p>which for the setting here becomes
+</p>
+<p style="text-align: center;"><code class="reqn">E[V \mid U = u] = \int_0^1 \bigl(1 - \frac{\delta}{\delta u} \mathbf{C}(u,v)\bigr)\mathrm{d}v\mbox{.}</code>
+</p>
+
+<p>This function solves the integral using the <code>derCOP</code> function. Verification study is provided in the <b>Note</b> section.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">EvuCOP(u=seq(0.01, 0.99, by=0.01), cop=NULL, para=NULL, asuv=FALSE, nsim=1E5,
+    subdivisions=100L, rel.tol=.Machine$double.eps^0.25, abs.tol=rel.tol, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">u</code> in the <code class="reqn">X</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cop</code></td>
+<td>
+<p>A copula function with vectorization as in <code>asCOP</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>Vector of parameters or other data structures, if needed, to pass to the copula;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>asuv</code></td>
+<td>
+<p>Return a data frame of the <code class="reqn">U</code> and <code class="reqn">V</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsim</code></td>
+<td>
+<p>Number of simulations for Monte Carlo integration when the numerical integration fails (see <b>Note</b> in <code>EvuCOP</code>);</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subdivisions</code></td>
+<td>
+<p>Argument of same name passed to <code>integrate()</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rel.tol</code></td>
+<td>
+<p>Argument of same name passed to <code>integrate()</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>abs.tol</code></td>
+<td>
+<p>Argument of same name passed to <code>integrate()</code>; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass to <code>derCOP</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Value(s) for the expectation are returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>For the <code>PSP</code> copula with no parameters, compute the the median and mean <code class="reqn">V</code> given <code class="reqn">U=0.4</code>, respectively:
+</p>
+<pre>
+  U &lt;- 0.4; n &lt;- 1E4
+  med.regressCOP(u=U, cop=PSP)                            # V = 0.4912752
+  set.seed(1)
+  median(replicate(n, derCOPinv(cop=PSP, U, runif(1)) ) ) # V = 0.4876440
+  mean(  replicate(n, derCOPinv(cop=PSP, U, runif(1)) ) ) # V = 0.5049729
+</pre>
+<p>It is seen in the above that the median <code class="reqn">V</code> given <code class="reqn">U</code> is very close to the mean, but is not equal. Using the derivative inversion within <code>med.regressCOP</code> the median is about 0.491 and then using large-sample simulation, about 0.491 too is computed. This confirms the median and long standing proven use of <code>derCOP</code> (conditional distribution function) and <code>derCOPinv</code> (conditional quantile function) within the package. The expectation (mean) by simulation provides the anchor point to check implementation of <code>EuvCOP()</code>. The mean for <code class="reqn">V</code> given <code class="reqn">U</code> is about 0.505. Continuing, the core logic of <code>EvuCOP()</code> is to use numerical integration of the conditional distribution function (the partial derivative) and not bother for speed purposes to use the inversion of the partial derivative:
+</p>
+<pre>
+  integrate(function(v)                      1-derCOP(   cop=PSP, U, v),
+            lower=0, upper=1) # 0.5047805 with absolute error &lt; 1.4e-11
+
+  integrate(function(v) sapply(v, function(t)  derCOPinv(cop=PSP, U, t)),
+            lower=0, upper=1) # 0.5047862 with absolute error &lt; 7.2e-05
+</pre>
+<p>The two integrals match, which functions as a confirmation of the <code class="reqn">(1-F)</code> term in the mathematical definition. Finally, the two integrals match the simulation results. The expectation or mean <code class="reqn">V \mid U=0.4</code> for the <code>PSP</code> copula is about 0.5048.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>See Also</h3>
+
+<p><code>EuvCOP</code>, <code>derCOP</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Highly asymmetric and reflected Clayton copula for which visualization
+para &lt;- list(cop=CLcop, para=30, alpha=0.2, beta=0.6, reflect=3)
+# UV &lt;- simCOP(5000, cop=breveCOP, para=para, cex=0.5); abline(v=0.25, col="red")
+EvuCOP(0.25, cop=breveCOP, para=para)  # 0.5982261
+# confirms that at U=0.25 that an intuitive estimate would be about 0.6.
+
+## Not run: 
+  # Secondary validation of the EvuCOP() and EuvCOP() implementation
+  UV &lt;- simCOP(200, cop=PSP)
+  u &lt;- seq(0.005, 0.995, by=0.005)
+  v &lt;- sapply(u, function(t) integrate(function(k)
+                         1 - derCOP(cop=PSP, t, k),  lower=0, upper=1)$value)
+  lines(u,v, col="red", lwd=7, lty=1)   # red line
+  v &lt;- seq(0.005, 0.995, by=0.005)
+  u &lt;- sapply(v, function(t) integrate(function(k)
+                         1 - derCOP2(cop=PSP, k, t), lower=0, upper=1)$value)
+  lines(u,v, col="red", lwd=7, lty=2)   # dashed red line
+
+  uv &lt;- seq(0.005, 0.995, by=0.005)     # solid and dashed white lines
+  lines(EvuCOP(uv, cop=PSP, asuv=TRUE), col="white",  lwd=3,   lty=1)
+  lines(EuvCOP(uv, cop=PSP, asuv=TRUE), col="white",  lwd=3,   lty=3)
+
+  # median regression lines for comparison, green and green dashed lines
+  lines(med.regressCOP( uv, cop=PSP), col="seagreen", lwd=1.5, lty=1)
+  lines(med.regressCOP2(uv, cop=PSP), col="seagreen", lwd=1.5, lty=4) #
+## End(Not run)
+
+## Not run: 
+  uv &lt;- seq(0.005, 0.995, by=0.005) # stress testing eample with singularity
+  UV &lt;- simCOP(50, cop=M_N5p12b, para=2)
+  lines(EvuCOP(uv, cop=M_N5p12b, para=2, asuv=TRUE), col="red",     lwd=5)
+  lines(EuvCOP(uv, cop=M_N5p12b, para=2, asuv=TRUE), col="skyblue", lwd=1) #
+## End(Not run)
+
+## Not run: 
+  uv &lt;- seq(0.005, 0.995, by=0.005) # more asymmetry ---- mean regression in UV and VU
+  para &lt;- list(cop=GHcop, para=23, alpha=0.1, beta=0.6, reflect=3)
+  para &lt;- list(cop=breveCOP, para=para)
+  UV &lt;- simCOP(200, cop=COP, para=para)
+  lines(EuvCOP(uv,  cop=COP, para=para, asuv=TRUE), col="red",  lwd=2)
+  lines(EvuCOP(uv,  cop=COP, para=para, asuv=TRUE), col="blue", lwd=2) #
+## End(Not run)
+
+## Not run: 
+  # Open questions? The derCOP() and derCOPinv() functions of the package have long
+  # been known to work "properly." But let us think again on the situation of
+  # permutation symmetry about the equal value line. Recalling that this symmetry is
+  # orthogonal to the equal value line, it remains open whether there could be
+  # asymmetry in the vertical (or horizontal). Let us draw some median regression lines
+  # and see that the do not plot perfectly on the equal value line, but coudl this be
+  # down to numerical issues and by association the simulation of the copula itself
+  # that is also using derCOPinv() (conditional simulation method). Then, we can plot
+  # the expections and we see that these are not equal to the medians, but again are
+  # close. *** Do results here indicate edges of numerical performance? ***
+  t &lt;- seq(0.01, 0.99, by=0.01)
+  UV &lt;- simCOP(10000,   cop=N4212cop, para=4, pch=21, lwd=0.8, col=8, bg="white")
+  lines(med.regressCOP( cop=N4212cop, para=4, asuv=TRUE), col="red")
+  lines(med.regressCOP2(cop=N4212cop, para=4, asuv=TRUE), col="red")
+  abline(0, 1, col="deepskyblue", lwd=3); abline(v=0.5, col="deepskyblue", lwd=4)
+  lines(EvuCOP(t, cop=N4212cop, para=4, asuv=TRUE), pch=16, col="darkgreen")
+  lines(EuvCOP(t, cop=N4212cop, para=4, asuv=TRUE), pch=16, col="darkgreen") #
+## End(Not run)
+</code></pre>
+
+
+</div>

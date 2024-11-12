@@ -1,0 +1,137 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>edaRun</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Main Loop of an EDA</h2>
+
+<h3>Description</h3>
+
+<p>Main loop of an EDA.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">edaRun(eda, f, lower, upper)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>eda</code></td>
+<td>
+<p><code>EDA</code> instance.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+<p>Objective function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lower</code></td>
+<td>
+<p>Lower bounds of the variables of the objective function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>upper</code></td>
+<td>
+<p>Upper bounds of the variables of the objective function.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>EDAs are implemented using S4 classes with generic functions for its main
+parts: seeding (<code>edaSeed</code>), selection (<code>edaSelect</code>),
+learning (<code>edaLearn</code>), sampling (<code>edaSample</code>), replacement
+(<code>edaReplace</code>), local optimization (<code>edaOptimize</code>),
+termination (<code>edaTerminate</code>), and reporting
+(<code>edaReport</code>). The following pseudocode illustrates the interactions
+between all the generic functions. It is a simplified version of the
+implementation of the <code>edaRun</code> function.
+</p>
+<pre>
+gen &lt;- 0
+fEvals &lt;- 0
+terminate &lt;- FALSE
+
+while (!terminate) {
+  gen &lt;- gen + 1
+
+  if (gen == 1) {
+    model &lt;- NULL
+    pop &lt;- edaSeed(lower, upper)
+    # Set popEval to the evaluation of each solution in pop.
+    # Update fEvals.
+    r &lt;- edaOptimize(gen, pop, popEval, f, lower, upper)
+    pop &lt;- r$pop; popEval &lt;- r$popEval
+  } else {
+    s &lt;- edaSelect(gen, pop, popEval)
+    selectedPop &lt;- pop[s, ]; selectedEval &lt;- popEval[s]
+    model &lt;- edaLearn(gen, model, selectedPop, selectedEval,
+                      lower, upper)
+    sampledPop &lt;- edaSample(gen, model, lower, upper)
+    # Set sampledEval to the evaluation of each solution
+    # in sampledPop. Update fEvals.
+    r &lt;- edaOptimize(gen, sampledPop, sampledEval, f, lower, upper)
+    sampledPop &lt;- r$pop; sampledEval &lt;- r$popEval
+    r &lt;- edaReplace(gen, pop, popEval, sampledPop, sampledEval)
+    pop &lt;- r$pop; popEval &lt;- r$popEval
+  }
+
+  edaReport(gen, fEvals, model, pop, popEval)
+  terminate &lt;- edaTerminate(gen, fEvals, pop, popEval)
+}
+</pre>
+
+
+<h3>Value</h3>
+
+<p>An <code>EDAResult</code> instance.
+</p>
+
+
+<h3>References</h3>
+
+<p>Gonzalez-Fernandez Y, Soto M (2014). <span class="pkg">copulaedas</span>: An <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>
+Package for Estimation of Distribution Algorithms Based on Copulas.
+<em>Journal of Statistical Software</em>, <b>58</b>(9), 1-34.
+<a href="http://www.jstatsoft.org/v58/i09/">http://www.jstatsoft.org/v58/i09/</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>EDA</code>,
+<code>EDAResult</code>,
+<code>edaIndepRuns</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">setMethod("edaReport", "EDA", edaReportSimple)
+setMethod("edaTerminate", "EDA",
+    edaTerminateCombined(edaTerminateMaxGen,
+        edaTerminateEval))
+
+DVEDA &lt;- VEDA(vine = "DVine", copulas = c("normal"),
+    indepTestSigLevel = 0.01, margin = "norm",
+    popSize = 200, maxGens = 50, fEval = 0,
+    fEvalTol = 1e-03)
+DVEDA@name &lt;- "D-vine Estimation of Distribution Algorithm"
+
+result &lt;- edaRun(DVEDA, fSphere, rep(-600, 5), rep(600, 5))
+
+show(result)
+</code></pre>
+
+
+</div>

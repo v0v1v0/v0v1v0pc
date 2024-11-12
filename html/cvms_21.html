@@ -1,0 +1,525 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>most_challenging</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Find the data points that were hardest to predict</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt="[Experimental]"></a>
+Finds the data points that, overall, were the most challenging to predict,
+based on a prediction metric.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">most_challenging(
+  data,
+  type,
+  obs_id_col = "Observation",
+  target_col = "Target",
+  prediction_cols = ifelse(type == "gaussian", "Prediction", "Predicted Class"),
+  threshold = 0.15,
+  threshold_is = "percentage",
+  metric = NULL,
+  cutoff = 0.5
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p><code>data.frame</code> with predictions, targets and observation IDs.
+Can be grouped by <code>dplyr::group_by()</code>.
+</p>
+<p>Predictions can be passed as values, predicted classes or predicted probabilities:
+</p>
+<p><strong>N.B.</strong> Adds <code>.Machine$double.eps</code> to all probabilities to avoid <code>log(0)</code>.
+</p>
+
+
+<h4>Multinomial</h4>
+
+<p>When <code>`type`</code> is <code>"multinomial"</code>, the predictions can be passed in one of two formats.
+</p>
+
+
+<h5>Probabilities (Preferable)</h5>
+
+<p>One column per class with the probability of that class.
+The columns should have the name of their class,
+as they are named in the target column. E.g.:
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>class_1</strong> </td>
+<td style="text-align: right;"> <strong>class_2</strong> </td>
+<td style="text-align: right;">
+  <strong>class_3</strong> </td>
+<td style="text-align: right;"> <strong>target</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.269 </td>
+<td style="text-align: right;"> 0.528 </td>
+<td style="text-align: right;"> 0.203 </td>
+<td style="text-align: right;"> class_2</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.368 </td>
+<td style="text-align: right;"> 0.322 </td>
+<td style="text-align: right;"> 0.310 </td>
+<td style="text-align: right;"> class_3</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.375 </td>
+<td style="text-align: right;"> 0.371 </td>
+<td style="text-align: right;"> 0.254 </td>
+<td style="text-align: right;"> class_2</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  ... </td>
+<td style="text-align: right;"> ... </td>
+<td style="text-align: right;"> ... </td>
+<td style="text-align: right;"> ...</td>
+</tr>
+</table>
+<h5>Classes</h5>
+
+<p>A single column of type <code>character</code> with the predicted classes. E.g.:
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>prediction</strong> </td>
+<td style="text-align: right;"> <strong>target</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  class_2 </td>
+<td style="text-align: right;"> class_2</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  class_1 </td>
+<td style="text-align: right;"> class_3</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  class_1 </td>
+<td style="text-align: right;"> class_2</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  ... </td>
+<td style="text-align: right;"> ...</td>
+</tr>
+</table>
+<h4>Binomial</h4>
+
+<p>When <code>`type`</code> is <code>"binomial"</code>, the predictions can be passed in one of two formats.
+</p>
+
+
+<h5>Probabilities (Preferable)</h5>
+
+<p>One column with the <strong>probability of class being
+the second class alphabetically</strong>
+("dog" if classes are "cat" and "dog"). E.g.:
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>prediction</strong> </td>
+<td style="text-align: right;"> <strong>target</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.769 </td>
+<td style="text-align: right;"> "dog"</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.368 </td>
+<td style="text-align: right;"> "dog"</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.375 </td>
+<td style="text-align: right;"> "cat"</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  ... </td>
+<td style="text-align: right;"> ...</td>
+</tr>
+</table>
+<p>Note: At the alphabetical ordering of the class labels, they are of type <code>character</code>,
+why e.g. <code>100</code> would come before <code>7</code>.
+</p>
+
+
+<h5>Classes</h5>
+
+<p>A single column of type <code>character</code> with the predicted classes. E.g.:
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>prediction</strong> </td>
+<td style="text-align: right;"> <strong>target</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  class_0 </td>
+<td style="text-align: right;"> class_1</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  class_1 </td>
+<td style="text-align: right;"> class_1</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  class_1 </td>
+<td style="text-align: right;"> class_0</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  ... </td>
+<td style="text-align: right;"> ...</td>
+</tr>
+</table>
+<h4>Gaussian</h4>
+
+<p>When <code>`type`</code> is <code>"gaussian"</code>, the predictions should be passed as
+one column with the predicted values. E.g.:
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>prediction</strong> </td>
+<td style="text-align: right;"> <strong>target</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  28.9 </td>
+<td style="text-align: right;"> 30.2</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  33.2 </td>
+<td style="text-align: right;"> 27.1</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  23.4 </td>
+<td style="text-align: right;"> 21.3</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  ... </td>
+<td style="text-align: right;"> ...</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>Type of task used to get the predictions:
+</p>
+<p><code>"gaussian"</code> for regression (like linear regression).
+</p>
+<p><code>"binomial"</code> for binary classification.
+</p>
+<p><code>"multinomial"</code> for multiclass classification.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>obs_id_col</code></td>
+<td>
+<p>Name of column with observation IDs. This will be used to aggregate
+the performance of each observation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>target_col</code></td>
+<td>
+<p>Name of column with the true classes/values in <code>`data`</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prediction_cols</code></td>
+<td>
+<p>Name(s) of column(s) with the predictions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold</code></td>
+<td>
+<p>Threshold to filter observations by. Depends on <code>`type`</code> and <code>`threshold_is`</code>.
+</p>
+<p>The <code>threshold</code> can either be a <strong>percentage</strong> or a <strong>score</strong>.
+For percentages, a lower <code>threshold</code>
+returns fewer observations. For scores, this depends on <code>`type`</code>.
+</p>
+
+
+<h4>Gaussian</h4>
+
+
+
+<h5>threshold_is "percentage"</h5>
+
+<p>(Approximate) percentage of the observations with the largest root mean square errors
+to return.
+</p>
+
+
+
+<h5>threshold_is "score"</h5>
+
+<p>Observations with a root mean square error larger than or equal to the <code>threshold</code> will be returned.
+</p>
+
+
+
+
+<h4>Binomial, Multinomial</h4>
+
+
+
+<h5>threshold_is "percentage"</h5>
+
+<p>(Approximate) percentage of the observations to return with:
+</p>
+<p><code>MAE</code>, <code>Cross Entropy</code>: Highest error scores.
+</p>
+<p><code>Accuracy</code>: Lowest accuracies
+</p>
+
+
+
+<h5>threshold_is "score"</h5>
+
+<p><code>MAE</code>, <code>Cross Entropy</code>: Observations with an error score above or equal to the threshold will be returned.
+</p>
+<p><code>Accuracy</code>: Observations with an accuracy below or equal to the threshold will be returned.
+</p>
+
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold_is</code></td>
+<td>
+<p>Either <code>"score"</code> or <code>"percentage"</code>. See <code>`threshold`</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metric</code></td>
+<td>
+<p>The metric to use. If <code>NULL</code>,
+the default metric depends on the format of the prediction columns.
+</p>
+
+
+<h4>Binomial, Multinomial</h4>
+
+<p><code>"Accuracy"</code>, <code>"MAE"</code> or <code>"Cross Entropy"</code>.
+</p>
+<p>When <em>one</em> prediction column with predicted <em>classes</em> is passed,
+the default is <code>"Accuracy"</code>.
+In this configuration, the other metrics are not calculated.
+</p>
+<p>When <em>one or more</em> prediction columns with predicted <em>probabilities</em> are passed,
+the default is <code>"MAE"</code>. This is the Mean Absolute Error of the
+probability of the target class.
+</p>
+
+
+
+<h4>Gaussian</h4>
+
+<p>Ignored. Always uses <code>"RMSE"</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cutoff</code></td>
+<td>
+<p>Threshold for predicted classes. (Numeric)
+</p>
+<p>N.B. <strong>Binomial only</strong>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>data.frame</code> with the most challenging observations and their metrics.
+</p>
+<p><code>`&gt;=` / `&lt;=`</code> denotes the threshold as score.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Ludvig Renbo Olsen, <a href="mailto:r-pkgs@ludvigolsen.dk">r-pkgs@ludvigolsen.dk</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Attach packages
+library(cvms)
+library(dplyr)
+
+##
+## Multinomial
+##
+
+# Find the most challenging data points (per classifier)
+# in the predicted.musicians dataset
+# which resembles the "Predictions" tibble from the evaluation results
+
+# Passing predicted probabilities
+# Observations with 30% highest MAE scores
+most_challenging(
+  predicted.musicians,
+  obs_id_col = "ID",
+  prediction_cols = c("A", "B", "C", "D"),
+  type = "multinomial",
+  threshold = 0.30
+)
+
+# Observations with 25% highest Cross Entropy scores
+most_challenging(
+  predicted.musicians,
+  obs_id_col = "ID",
+  prediction_cols = c("A", "B", "C", "D"),
+  type = "multinomial",
+  threshold = 0.25,
+  metric = "Cross Entropy"
+)
+
+# Passing predicted classes
+# Observations with 30% lowest Accuracy scores
+most_challenging(
+  predicted.musicians,
+  obs_id_col = "ID",
+  prediction_cols = "Predicted Class",
+  type = "multinomial",
+  threshold = 0.30
+)
+
+# The 40% lowest-scoring on accuracy per classifier
+predicted.musicians %&gt;%
+  dplyr::group_by(Classifier) %&gt;%
+  most_challenging(
+    obs_id_col = "ID",
+    prediction_cols = "Predicted Class",
+    type = "multinomial",
+    threshold = 0.40
+  )
+
+# Accuracy scores below 0.05
+most_challenging(
+  predicted.musicians,
+  obs_id_col = "ID",
+  type = "multinomial",
+  threshold = 0.05,
+  threshold_is = "score"
+)
+
+##
+## Binomial
+##
+
+# Subset the predicted.musicians
+binom_data &lt;- predicted.musicians %&gt;%
+  dplyr::filter(Target %in% c("A","B")) %&gt;%
+  dplyr::rename(Prediction = B)
+
+# Passing probabilities
+# Observations with 30% highest MAE
+most_challenging(
+  binom_data,
+  obs_id_col = "ID",
+  type = "binomial",
+  prediction_cols = "Prediction",
+  threshold = 0.30
+)
+
+# Observations with 30% highest Cross Entropy
+most_challenging(
+  binom_data,
+  obs_id_col = "ID",
+  type = "binomial",
+  prediction_cols = "Prediction",
+  threshold = 0.30,
+  metric = "Cross Entropy"
+)
+
+# Passing predicted classes
+# Observations with 30% lowest Accuracy scores
+most_challenging(
+  binom_data,
+  obs_id_col = "ID",
+  type = "binomial",
+  prediction_cols = "Predicted Class",
+  threshold = 0.30
+)
+
+##
+## Gaussian
+##
+
+set.seed(1)
+
+df &lt;- data.frame(
+  "Observation" = rep(1:10, n = 3),
+  "Target" = rnorm(n = 30, mean = 25, sd = 5),
+  "Prediction" = rnorm(n = 30, mean = 27, sd = 7)
+)
+
+# The 20% highest RMSE scores
+most_challenging(
+  df,
+  type = "gaussian",
+  threshold = 0.2
+)
+
+# RMSE scores above 9
+most_challenging(
+  df,
+  type = "gaussian",
+  threshold = 9,
+  threshold_is = "score"
+)
+
+</code></pre>
+
+
+</div>

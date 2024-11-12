@@ -1,0 +1,301 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>catr_wms_get_layer</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>WMS INSPIRE: Download map images</h2>
+
+<h3>Description</h3>
+
+<p>Get geotagged images from the Spanish Cadastre. This function is a wrapper of
+<code>mapSpain::esp_getTiles()</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">catr_wms_get_layer(
+  x,
+  srs,
+  what = c("building", "buildingpart", "parcel", "zoning", "address", "admboundary",
+    "admunit"),
+  styles = "default",
+  update_cache = FALSE,
+  cache_dir = NULL,
+  verbose = FALSE,
+  crop = FALSE,
+  options = NULL,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>See <strong>Details</strong>. It could be:
+</p>
+
+<ul>
+<li>
+<p> A numeric vector of length 4 with the coordinates that defines
+the bounding box: <code>c(xmin, ymin, xmax, ymax)</code>
+</p>
+</li>
+<li>
+<p> A <code>sf/sfc</code> object, as provided by the <a href="https://CRAN.R-project.org/package=sf"><span class="pkg">sf</span></a> package.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>srs</code></td>
+<td>
+<p>SRS/CRS to use on the query. To check the admitted values check
+catr_srs_values, specifically the <code>wfs_service</code> column. See <strong>Details</strong>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>what</code></td>
+<td>
+<p>Layer to be extracted, see <strong>Details</strong>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>styles</code></td>
+<td>
+<p>Style of the WMS layer. See <strong>Details</strong>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>update_cache</code></td>
+<td>
+<p>A logical whether to update cache. Default is <code>FALSE</code>.
+When set to <code>TRUE</code> it would force a fresh download of the source file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cache_dir</code></td>
+<td>
+<p>A path to a cache directory. On <code>NULL</code> value (the default)
+the function would store the cached files on the
+<code>tempdir</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Logical, displays information. Useful for debugging,
+default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>crop</code></td>
+<td>
+<p><code>TRUE</code> if results should be cropped to the specified <code>x</code> extent,
+<code>FALSE</code> otherwise. If <code>x</code> is an <a href="https://CRAN.R-project.org/package=sf"><span class="pkg">sf</span></a> object with one <code>POINT</code>, crop
+is set to <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>options</code></td>
+<td>
+<p>A named list containing additional options to pass to the
+query.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+
+<p>Arguments passed on to <code>mapSpain::esp_getTiles</code>
+</p>
+
+<dl>
+<dt><code>res</code></dt>
+<dd>
+<p>Resolution (in pixels) of the final tile. Only valid for WMS.</p>
+</dd>
+<dt><code>bbox_expand</code></dt>
+<dd>
+<p>A numeric value that indicates the expansion percentage
+of the bounding box of <code>x</code>.</p>
+</dd>
+<dt><code>transparent</code></dt>
+<dd>
+<p>Logical. Provides transparent background, if supported.
+Depends on the selected provider on <code>type</code>.</p>
+</dd>
+<dt><code>mask</code></dt>
+<dd>
+<p><code>TRUE</code> if the result should be masked to <code>x</code>.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>When <code>x</code> is a numeric vector, make sure that the <code>srs</code> matches the
+coordinate values. When <code>x</code> is a <code>sf</code> object, the value
+<code>srs</code> is ignored.
+</p>
+<p>The query is performed using <a href="https://epsg.io/3857">EPSG:3857</a> (Web Mercator)
+and the tile is projected back to the SRS of <code>x</code>. In
+case that the tile looks deformed, try either providing <code>x</code> or specify the
+SRS of the requested tile via the <code>srs</code> parameter, that ideally would need
+to match the SRS of <code>x</code>. See <strong>Examples</strong>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>SpatRaster</code> is returned, with 3 (RGB) or 4 (RGBA) layers,
+see <code>terra::RGB()</code>.
+</p>
+
+
+<h3>Layers</h3>
+
+<p>The parameter <code>what</code> defines the layer to be extracted. The equivalence with
+the
+<a href="https://www.catastro.minhap.es/webinspire/documentos/inspire-WMS.pdf">API Docs</a>
+equivalence is:
+</p>
+
+<ul>
+<li> <p><code>"parcel"</code>: CP.CadastralParcel
+</p>
+</li>
+<li> <p><code>"zoning"</code>: CP.CadastralZoning
+</p>
+</li>
+<li> <p><code>"building"</code>: BU.Building
+</p>
+</li>
+<li> <p><code>"buildingpart"</code>: BU.BuildingPart
+</p>
+</li>
+<li> <p><code>"address"</code>: AD.Address
+</p>
+</li>
+<li> <p><code>"admboundary"</code>: AU.AdministrativeBoundary
+</p>
+</li>
+<li> <p><code>"admunit"</code>: AU.AdministrativeUnit
+</p>
+</li>
+</ul>
+<h3>Styles</h3>
+
+<p>The WMS service provide different styles on each layer (<code>what</code> parameter).
+Some of the styles available are:
+</p>
+
+<ul>
+<li> <p><code>"parcel"</code>: styles : <code>"BoundariesOnly"</code>, <code>"ReferencePointOnly"</code>,
+<code>"ELFCadastre"</code>.
+</p>
+</li>
+<li> <p><code>"zoning"</code>: styles : <code>"BoundariesOnly"</code>, <code>"ELFCadastre"</code>.
+</p>
+</li>
+<li> <p><code>"building"</code>, <code>"buildingpart"</code>: <code>"ELFCadastre"</code>
+</p>
+</li>
+<li> <p><code>"address"</code>: <code>"Number.ELFCadastre"</code>
+</p>
+</li>
+<li> <p><code>"admboundary"</code>, <code>"admunit"</code>: <code>"ELFCadastre"</code>
+</p>
+</li>
+</ul>
+<p>Check the <a href="https://www.catastro.minhap.es/webinspire/documentos/inspire-WMS.pdf">API Docs</a>
+for more information.
+</p>
+
+
+<h3>References</h3>
+
+<p><a href="https://www.catastro.minhap.es/webinspire/documentos/inspire-WMS.pdf">API Documentation</a>.
+</p>
+<p><a href="https://www.catastro.minhap.es/webinspire/index.html">INSPIRE Services for Cadastral Cartography</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>mapSpain::esp_getTiles()</code> and <code>terra::RGB()</code>. For plotting see
+<code>terra::plotRGB()</code> and <code>tidyterra::geom_spatraster_rgb()</code>.
+</p>
+<p>INSPIRE API functions:
+<code>catr_atom_get_address()</code>,
+<code>catr_atom_get_address_db_all()</code>,
+<code>catr_atom_get_buildings()</code>,
+<code>catr_atom_get_buildings_db_all()</code>,
+<code>catr_atom_get_parcels()</code>,
+<code>catr_atom_get_parcels_db_all()</code>,
+<code>catr_wfs_get_address_bbox()</code>,
+<code>catr_wfs_get_buildings_bbox()</code>,
+<code>catr_wfs_get_parcels_bbox()</code>
+</p>
+<p>Other spatial: 
+<code>catr_atom_get_address()</code>,
+<code>catr_atom_get_buildings()</code>,
+<code>catr_atom_get_parcels()</code>,
+<code>catr_wfs_get_address_bbox()</code>,
+<code>catr_wfs_get_buildings_bbox()</code>,
+<code>catr_wfs_get_parcels_bbox()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+
+# With a bbox
+
+pict &lt;- catr_wms_get_layer(
+  c(222500, 4019500, 223700, 4020700),
+  srs = 25830,
+  what = "parcel"
+)
+
+library(mapSpain)
+library(ggplot2)
+library(tidyterra)
+
+ggplot() +
+  geom_spatraster_rgb(data = pict)
+
+
+# With a spatial object
+
+parcels &lt;- catr_wfs_get_parcels_neigh_parcel("3662303TF3136B", srs = 25830)
+
+
+# Use styles
+
+parcels_img &lt;- catr_wms_get_layer(parcels,
+  what = "buildingpart",
+  srs = 25830, # As parcels object
+  bbox_expand = 0.3,
+  styles = "ELFCadastre"
+)
+
+
+ggplot() +
+  geom_sf(data = parcels, fill = "blue", alpha = 0.5) +
+  geom_spatraster_rgb(data = parcels_img)
+
+
+</code></pre>
+
+
+</div>

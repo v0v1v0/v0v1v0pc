@@ -1,0 +1,132 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ard_survival_survfit</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>ARD Survival Estimates</h2>
+
+<h3>Description</h3>
+
+<p>Analysis results data for survival quantiles and x-year survival estimates, extracted
+from a <code>survival::survfit()</code> model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ard_survival_survfit(x, times = NULL, probs = NULL, type = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>(<code>survival::survfit()</code>)<br>
+a <code>survival::survfit()</code> object. See below for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>times</code></td>
+<td>
+<p>(<code>numeric</code>)<br>
+a vector of times for which to return survival probabilities.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>probs</code></td>
+<td>
+<p>(<code>numeric</code>)<br>
+a vector of probabilities with values in (0,1) specifying the survival quantiles to return.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>(<code>string</code> or <code>NULL</code>)<br>
+type of statistic to report. Available for Kaplan-Meier time estimates only, otherwise <code>type</code>
+is ignored. Default is <code>NULL</code>.
+Must be one of the following:</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+   type </td>
+<td style="text-align: left;"> transformation </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <code>"survival"</code> </td>
+<td style="text-align: left;"> <code>x</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <code>"risk"</code> </td>
+<td style="text-align: left;"> <code>1 - x</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <code>"cumhaz"</code> </td>
+<td style="text-align: left;"> <code>-log(x)</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+
+<ul>
+<li>
+<p> Only one of either the <code>times</code> or <code>probs</code> parameters can be specified.
+</p>
+</li>
+<li>
+<p> Times should be provided using the same scale as the time variable used to fit the provided
+survival fit model.
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p>an ARD data frame of class 'card'
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+library(survival)
+library(ggsurvfit)
+
+survfit(Surv_CNSR(AVAL, CNSR) ~ TRTA, cards::ADTTE) |&gt;
+  ard_survival_survfit(times = c(60, 180))
+
+survfit(Surv_CNSR(AVAL, CNSR) ~ TRTA, cards::ADTTE) |&gt;
+  ard_survival_survfit(probs = c(0.25, 0.5, 0.75))
+
+# Competing Risks Example ---------------------------
+set.seed(1)
+ADTTE_MS &lt;- cards::ADTTE %&gt;%
+  dplyr::mutate(
+    CNSR = dplyr::case_when(
+      CNSR == 0 ~ "censor",
+      runif(dplyr::n()) &lt; 0.5 ~ "death from cancer",
+      TRUE ~ "death other causes"
+    ) %&gt;% factor()
+  )
+
+survfit(Surv(AVAL, CNSR) ~ TRTA, data = ADTTE_MS) %&gt;%
+  ard_survival_survfit(times = c(60, 180))
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,210 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>COCONUT</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+COmbat CO-Normalization Using conTrols: COCONUT
+</h2>
+
+<h3>Description</h3>
+
+<p>COCONUT is a modified version of the ComBat empiric Bayes batch correction method (Johnson et al., Biostatistics 2007). It allows for batch correction of microarray datasets using control samples, which allows for diseased samples to be compared in pooled analysis. It makes a strong assumption that all controls come from the same distribution.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">COCONUT(GSEs, control.0.col, disease.col=NULL, byPlatform = FALSE, platformCol,
+        par.prior=TRUE, itConv=1e-04, parallel=FALSE, mc.cores=1)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>GSEs</code></td>
+<td>
+
+<p>A list of data objects. See details below.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control.0.col</code></td>
+<td>
+
+<p>The column name in the $pheno data.frames (in GSEs) that notes which samples are controls. These samples MUST be marked with a 0 (zero).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>disease.col</code></td>
+<td>
+
+<p>Optional; if passed, refers to a column name in the $pheno data.frames (in GSEs) from which disease samples are returned. Only checks to remove missing (NA) samples from disease.col. Useful if there is a class of samples that need to be removed from the analysis (i.e., samples that are not controls but also not the disease of interest). If NOT supplied, COCONUT assumes all non-0 rows in control.0.col are diseased.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>byPlatform</code></td>
+<td>
+
+<p>Natively, byPlatform=F. If T, will group datasets by the batches found in platformCol.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>platformCol</code></td>
+<td>
+
+<p>If byPlatform=T, platformCol is the name of a column in $pheno data.frames (in GSEs) that indicates platform type. For instance, in the data example, each $pheno has a $platform_id which contains that dataset's GPL ID. Note: the microarray ID type supplied should be constant within a column (but of course can vary between datasets).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>par.prior</code></td>
+<td>
+
+<p>Whether to use parametric or non-parametric priors in empiric Bayes updates. Defaults to parametric. Non-parametric can be quite time-consuming.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>itConv</code></td>
+<td>
+
+<p>Allows user to change threshold for iterative solver. For advanced users only.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+
+<p>Parallel derivation of priors. Uses parallel:mclapply, and so will not work on Windows machines (sorry).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mc.cores</code></td>
+<td>
+
+<p>If parallel=T, mc.cores should be set to the desired number of cores. Defaults to 1, so unless this is changed, functionality will be serial.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>GSEs:
+A list of (named) data objects. Each data object must have two components, $pheno (a data.frame of phenotype information with samples in rows and phenotype variables in columns), and $genes (a matrix of genes in rows and samples in columns). Further, the rownames of $pheno should match the colnames of $genes within each dataset. See the example data object for details.
+</p>
+<p>byPlatform:
+Natively, COCONUT will assume each dataset in GSEs is a batch. However, there is enough similarity between microarrays (if the same normalization protocols are used) that each TYPE of microarray can be considered a batch. The advantage to this process is that datasets that share platforms can pool control samples, meaning datasets without controls can be potentially brought into the pool. The drawback is that there is still a substantial batch effect among datasets that used the same microarray type but were processed separately. Quantile normalization is used to overcome this to some degree, but it cannot be fixed altogether.
+</p>
+
+
+<h3>Value</h3>
+
+<p>COCONUT returns a list of lists. In the main list:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>COCONUTList</code></td>
+<td>
+
+<p>COCONUTList is itself a list, with the same names as the datasets in the input objects. Only diseased (or non-control) samples are passed back here (controls are dealt with separately, as below). The post-COCONUT-conormalized values are found in $COCONUTList[GSEname]$genes. See example below for single-line code to collapse these into a single matrix for pooled analysis.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rawDiseaseList</code></td>
+<td>
+
+<p>rawDiseaseList is returned so that the user can make easy comparisons between pre- and post-COCONUT-co-normalized disease data. This contains the same data as the input object, except that all control samples have been removed.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>controlList</code></td>
+<td>
+
+<p>controlList returns the ComBat-normalized controls in $GSEs, and the derived empiric Bayes parameters in $bayesParams. It is generally assumed that these will be useful mainly for proving what COCONUT has done, etc., and not for downstream analyses. Note that this does NOT contain the non-co-normalized control data. To compare distributions, for example, you will need the original data object. See example below.
+</p>
+</td>
+</tr>
+</table>
+<h3>Warning </h3>
+
+<p>COCONUT makes the strong assumption that the control data are from the same distribution. This may not always be an appropriate assumption. Users are advised to think carefully about how to apply COCONUT locally.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Timothy E Sweeney, MD, PhD (tes17 [at] stanford [dot] edu)
+</p>
+
+
+<h3>References</h3>
+
+<p>Sweeney TE et al., "Robust classification of bacterial and viral infections via integrated host gene expression diagnostics", Science Translational Medicine, 2016
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>COCONUT-package</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(GSEs.test)
+
+## apply COCONUT to a very small test case
+## (3 datasets with 10 patients and 2000 genes)
+GSEs.COCONUT &lt;- COCONUT(GSEs=GSEs.test,
+                        control.0.col="Healthy0.Sepsis1",
+                        byPlatform=FALSE)
+
+## make gene matrices
+COCONUTgenes &lt;- Reduce(cbind, lapply(GSEs.COCONUT$COCONUTList, function(x) x$genes))
+rawgenes &lt;- Reduce(cbind, lapply(GSEs.COCONUT$rawDiseaseList, function(x) x$genes))
+
+### plot not run; (uncomment for plot)
+### plot pre- and post-normalized data
+# plot(x=1:ncol(COCONUTgenes), y=COCONUTgenes["ATP6V1B1", ], ylim=c(0,6), pch=20, col=1)
+# points(x=1:ncol(rawgenes), y=rawgenes["ATP6V1B1", ], ylim=c(0,6), pch=20, col=2)
+
+
+## compare distributions before and after COCONUT
+classvec &lt;- GSEs.test$GSE28750$pheno$Healthy0.Sepsis1
+prior &lt;- GSEs.test$GSE28750$genes
+post &lt;- cbind(GSEs.COCONUT$controlList$GSEs$GSE28750$genes,
+              GSEs.COCONUT$COCONUTList$GSE28750$genes)
+
+prior.t.stats &lt;- apply(prior, 1, function(geneRow){
+    geneByClass &lt;- split(geneRow, classvec)
+    gene.test &lt;- t.test(geneByClass[[1]], geneByClass[[2]])
+    gene.test$statistic
+})
+
+post.t.stats &lt;- apply(post, 1, function(geneRow){
+    geneByClass &lt;- split(geneRow, classvec)
+    gene.test &lt;- t.test(geneByClass[[1]], geneByClass[[2]])
+    gene.test$statistic
+})
+
+summary(prior.t.stats-post.t.stats)
+
+## thus gene distributions are preserved within datasets, but normalized
+## between datasets
+
+</code></pre>
+
+
+</div>

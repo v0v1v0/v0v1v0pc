@@ -1,0 +1,105 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>encrypt</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Easy encryption and decryption</h2>
+
+<h3>Description</h3>
+
+<p>Wrapper functions for encryption.  These functions wrap
+expressions that produce or consume a file and arrange to encrypt
+(for producing functions) or decrypt (for consuming functions).
+The forms with a trailing underscore (<code>encrypt_</code>,
+<code>decrypt_</code>) do not use any non-standard evaluation and may be
+more useful for programming.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">encrypt(expr, key, file_arg = NULL, envir = parent.frame())
+
+decrypt(expr, key, file_arg = NULL, envir = parent.frame())
+
+encrypt_(expr, key, file_arg = NULL, envir = parent.frame())
+
+decrypt_(expr, key, file_arg = NULL, envir = parent.frame())
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>expr</code></td>
+<td>
+<p>A single expression representing a function call that
+would be called for the side effect of creating or reading a
+file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>key</code></td>
+<td>
+<p>A <code>cyphr_key</code> object describing the
+encryption approach to use.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>file_arg</code></td>
+<td>
+<p>Optional hint indicating which argument to
+<code>expr</code> is the filename.  This is done automatically for
+some built-in functions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>envir</code></td>
+<td>
+<p>Environment in which <code>expr</code> is to be evaluated.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>These functions will not work for all functions.  For example
+<code>pdf</code>/<code>dev.off</code> will create a file but we can't wrap
+those up (yet!).  Functions that <em>modify</em> a file (e.g.,
+appending) also will not work and may cause data loss.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># To do anything we first need a key:
+key &lt;- cyphr::key_sodium(sodium::keygen())
+
+# Encrypted write.csv - note how any number of arguments to
+# write.csv will be passed along
+path &lt;- tempfile(fileext = ".csv")
+cyphr::encrypt(write.csv(iris, path, row.names = FALSE), key)
+
+# The new file now exists, but you would not be able to read it
+# with read.csv because it is now binary data.
+file.exists(path)
+
+# Wrap the read.csv call with cyphr::decrypt()
+dat &lt;- cyphr::decrypt(read.csv(path, stringsAsFactors = FALSE), key)
+head(dat)
+
+file.remove(path)
+
+# If you have a function that is not supported you can specify the
+# filename argument directly.  For example, with "write.dcf" the
+# filename argument is called "file"; we can pass that along
+path &lt;- tempfile()
+cyphr::encrypt(write.dcf(list(a = 1), path), key, file_arg = "file")
+
+# Similarly for decryption:
+cyphr::decrypt(read.dcf(path), key, file_arg = "file")
+</code></pre>
+
+
+</div>

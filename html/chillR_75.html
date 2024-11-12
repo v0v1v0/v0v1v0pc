@@ -1,0 +1,139 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>patch_daily_temps</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Patch gaps in daily weather records - updated</h2>
+
+<h3>Description</h3>
+
+<p>This is the successor function of <code>patch_daily_temperatures</code>, which will no
+longer be updated.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">patch_daily_temps(
+  weather,
+  patch_weather,
+  vars = c("Tmin", "Tmax"),
+  max_mean_bias = NA,
+  max_stdev_bias = NA,
+  time_interval = "month"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>weather</code></td>
+<td>
+<p>chillR-compatible weather record to be patched</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>patch_weather</code></td>
+<td>
+<p>list of chillR-compatible weather records to be used for
+patching holes in weather. They are used sequentially, until all have been used
+or until there are no holes left.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vars</code></td>
+<td>
+<p>vector of column names to be considered in patching. Defaults to
+c("Tmin","Tmax"), the most common variables in chillR applications.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_mean_bias</code></td>
+<td>
+<p>maximum mean bias of auxiliary data compared to the original
+dataset (applied to all variables in vars). If this threshold is exceeded, the
+respective variable from that particular dataset will not be used. Defaults to NA,
+meaning no records are excluded.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_stdev_bias</code></td>
+<td>
+<p>maximum standard deviation of the bias in the auxiliary
+data compared to the original dataset (applied to all variables in vars). If this
+threshold is exceeded, the respective variable from that particular dataset will not
+be used. Defaults to NA, meaning no records are excluded.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_interval</code></td>
+<td>
+<p>time interval for which mean bias and standard deviation of the
+bias are to be evaluated. This defaults to "month", which means that the function
+looks for overlapping days between weather and patch_weather for each calendar month.
+Bias correction is then also done on a monthly basis. 'time_interval' can also assume
+other values, such as 'week' or '2 weeks'.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The patch_daily_temps function uses auxiliary data sources to fill gaps in daily weather data.
+It can accommodate multiple sources of auxiliary information, which are used
+in the user-specified sequence. There have to be some overlapping records for
+this to work, because without bias correction, this procedure could produce
+erroneous records. Bias correction is done by computing the mean difference
+between main and auxiliary data for each variable and adjusting for it in
+filling the gaps. You can specify a maximum mean bias and a maximum standard
+deviation of the bias to exclude unsuitable records that aren't similar
+enough to the original data.
+When patching records, the function breaks the calendar year down into smaller
+intervals that can be specified with the 'time_interval' parameter (this was not
+possible in [chillR::patch_daily_temperatures], but is recommended for accurate results).
+</p>
+
+
+<h3>Value</h3>
+
+<p>list of two elements: weather (the patched weather record, with additional
+columns specifying the data source for each value) and statistics (containing
+data.frames for each element of patch_weather that indicate the mean bias, the
+number of values that were filled from this source and the number of missing records
+that remained after exhausting this auxiliary data source.)
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Eike Luedeling
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+gap_weather&lt;-KA_weather[1:100,]
+gap_weather[c(3,4,7:15,20,22:25,27:28,35:45,55,67,70:75,80:88,95:97),"Tmin"]&lt;-NA
+gap_weather[c(10:25,30,36:44,50,57,65,70:80,86,91:94),"Tmax"]&lt;-NA
+p1&lt;-KA_weather[65:95,]
+p1$Tmin&lt;-p1$Tmin-2
+p2&lt;-KA_weather[c(15:40,60:80),]
+p2$Tmax&lt;-p2$Tmax+3
+p3&lt;-KA_weather[12:35,]
+p3$Tmax&lt;-p3$Tmax-2
+p4&lt;-KA_weather
+p4$Tmax&lt;-p4$Tmax+0.5
+patch_weather&lt;-list(stat1=p1,st2=p2,home=p3,last=p4)
+
+patch_daily_temps(gap_weather,patch_weather)
+
+patch_daily_temps(gap_weather,patch_weather,max_mean_bias=0.1,time_interval="2 weeks")
+
+
+</code></pre>
+
+
+</div>

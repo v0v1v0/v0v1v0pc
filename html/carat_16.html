@@ -1,0 +1,154 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>getData</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Data Generation</h2>
+
+<h3>Description</h3>
+
+<p>Generates continuous or binary outcomes given patients' covariates, the underlying model and the randomization procedure.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">  getData(n, cov_num, level_num, pr, type, beta, 
+          mu1, mu2, sigma = 1, method = "HuHuCAR", ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>the number of patients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cov_num</code></td>
+<td>
+<p>the number of covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>level_num</code></td>
+<td>
+<p>a vector of level numbers for each covariate. Hence the length of <code>level_num</code> should be equal to the number of covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pr</code></td>
+<td>
+<p>a vector of probabilities. Under the assumption of independence between covariates, <code>pr</code> is a vector containing probabilities for each level of each covariate. The length of <code>pr</code> should correspond to the number of all levels, and the sum of the probabilities for each margin should be <code>1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>a data-generating method. Optional input: <code>"linear"</code> or <code>"logit"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta</code></td>
+<td>
+<p>a vector of coefficients of covariates. The length of <code>beta</code> must correspond to the sum of all covariates' levels.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mu1,mu2</code></td>
+<td>
+<p>main effects of treatment <code>1</code> and treatment <code>2</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sigma</code></td>
+<td>
+<p>the error variance for the linear model. The default is 1. This should be a positive value and is only used when <code>type = linear</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>the randomization procedure to be used for generating randomization sequences. This package provides data-generating function for <code>"HuHuCAR"</code>, <code>"PocSimMIN"</code>, <code>"StrBCD"</code>, <code>"StrPBR"</code>, <code>"AdjBCD"</code>, and <code>"DoptBCD"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments to be passed to <code>method</code>. These arguments depend on the randomization method used and the following arguments are accepted:
+</p>
+
+<dl>
+<dt>omega</dt>
+<dd>
+<p>a vector of weights at the overall, within-stratum, and within-covariate-margin levels. It is required that at least one element is larger than 0. Note that <code>omega</code> is only needed when <code>HuHuCAR</code> is to be used.</p>
+</dd>
+<dt>weight</dt>
+<dd>
+<p>a vector of weights for within-covariate-margin imbalances. It is required that at least one element is larger than 0. Note that <code>weight</code> is only needed when <code>PocSimMIN</code> is to be used.</p>
+</dd>
+<dt>p</dt>
+<dd>
+<p>the biased coin probability. <code>p</code> should be larger than <code>1/2</code> and less than <code>1</code>. Note that <code>p</code> is only needed when <code>"HuHuCAR", "PocSimMIN"</code> and <code>"StrBCD"</code> are to be used.</p>
+</dd>
+<dt>a</dt>
+<dd>
+<p>a design parameter governing the degree of randomness. Note that <code>a</code> is only needed when <code>"AdjBCD"</code> is to be used.</p>
+</dd>
+<dt>bsize</dt>
+<dd>
+<p>the block size for stratified randomization. It is required to be a multiple of 2. Note that <code>bsize</code> is only needed when <code>"StrPBR"</code> is to be used.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>To generate continuous outcomes, we use the linear model:</p>
+<p style="text-align: center;"><code class="reqn">y_i = \mu_j+x_i^T\beta+\epsilon_i,</code>
+</p>
+
+<p>to generate binary outcomes, we use the logit link function:</p>
+<p style="text-align: center;"><code class="reqn">P(y_i=1) = \frac{exp\{\mu_j+x_i^T\beta \}}{1+exp \{\mu_j+x_i^T\beta }</code>
+</p>
+<p>,
+</p>
+<p>where <code class="reqn">j</code> indicates patient <code class="reqn">i</code> belongs to treatment <code class="reqn">j</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>getData</code> returns a size <code class="reqn">cov_num+2 \times n</code> dataframe. The first <code>cov_num</code> rows represent patients' profile. The next row consists of patients' assignments and the final row consists of generated outcomes.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#Parameters' Setting
+set.seed(100)
+n = 1000
+cov_num = 5
+level_num = c(2,2,2,2,2)
+beta = c(1,4,3,2,5,5,4,3,2,1)
+mu1 = 0
+mu2 = 0
+sigma = 1
+type = "linear"
+p = 0.85
+omega = c(0.1, 0.1, rep(0.8 / 5, times = 5))
+pr = rep(0.5,10)
+
+#Data Generation
+dataH = getData(n, cov_num,level_num, pr, type, beta,
+                mu1, mu2, sigma, "HuHuCAR", omega, p)
+dataH[1:(cov_num+2),1:5]
+</code></pre>
+
+
+</div>

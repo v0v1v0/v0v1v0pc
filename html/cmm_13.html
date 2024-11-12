@@ -1,0 +1,130 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>EVS</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>European Values Study (EVS): attitude towards women's role in society</h2>
+
+<h3>Description</h3>
+
+<p>European Values Study 1999/2000, Views on Women's Roles.
+</p>
+<p>The data are tabulated in Bergsma, Croon, and Hagenaars (2009, Table 5.1a). 
+Section 5.1.2 in Bergsma, Croon and Hagenaars (2009).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">data(EVS)</code></pre>
+
+
+<h3>Format</h3>
+
+<p>A data frame with 960 observations on the following variables.
+</p>
+
+<dl>
+<dt><code>S</code></dt>
+<dd>
+<p>Sex (factor):
+1 = Male;
+2 = Female.
+</p>
+</dd>
+<dt><code>A</code></dt>
+<dd>
+<p>Date of Birth (ordered):
+1 = Before 1945;
+2 = 1945-1963;
+3 = After 1963.
+</p>
+</dd>
+<dt><code>E</code></dt>
+<dd>
+<p>Level of education (ordered):
+1 = Lower;
+2 = Intermediate;
+3 = Higher.
+</p>
+</dd>
+<dt><code>R</code></dt>
+<dd>
+<p>Religion (ordered):
+1 = Religious person;
+2 = Not a religious person;
+3 = Convinced atheist.
+</p>
+</dd>
+<dt><code>W</code></dt>
+<dd>
+<p>Attitude women's role in society (factor):
+1 = Traditional;
+2 = Nontraditional.
+</p>
+</dd>
+</dl>
+<h3>Source</h3>
+
+<p>European Values Study 1999/2000
+</p>
+
+
+<h3>References</h3>
+
+<p>Bergsma, W. P., Croon, M. A., &amp; Hagenaars, J. A. P. (2009).
+<em>Marginal models for dependent, clustered, and longitudinal categorical data.</em>
+New York: Springer.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(EVS)
+
+# Table SAERW
+var = c("S", "A", "E", "R", "W");
+dim = c(2, 3, 3, 3, 2);
+
+# matrices for table SA
+at1 &lt;- MarginalMatrix(var, c("S", "A"), dim);
+bt1 &lt;- ConstraintMatrix(c("S", "A"), list(c("S"), c("A")), c(2, 3));
+
+# matrices for table SAER
+at2 &lt;- MarginalMatrix(var, c("S", "A", "E", "R"), dim);
+bt2 &lt;- ConstraintMatrix(var = c("S", "A", "E", "R"), 
+                       suffconfigs = list(c("S", "A", "E"), c("S", "R"), c("A", "R")), 
+                       dim = c(2, 3, 3, 3));
+
+# matrices for table SAERW: constraints
+at3 &lt;- MarginalMatrix(var, c("S", "A", "E", "R", "W"), dim);
+bt3 &lt;- ConstraintMatrix(var = c("S", "A", "E", "R", "W"), 
+ suffconfigs = list(c("S", "A", "E", "R"), c("S", "W"), c("A", "W"), c("E", "W"), c("R", "W")), 
+ dim = c(2, 3, 3, 3, 2))
+
+# matrix for table SAERW: design matrix
+x &lt;- DesignMatrix(var = c("S", "A", "E", "R", "W"), 
+ suffconfigs = list(c("S", "A", "E", "R"), c("S", "W"), c("A", "W"), c("E", "W"), c("R", "W")), 
+ dim = c(2, 3, 3, 3, 2));
+
+# model1: specification using only constraints
+at &lt;- rbind(at1, at2, at3);
+bt &lt;- DirectSum(bt1, bt2);
+bt &lt;- DirectSum(bt, bt3);
+model1 &lt;- list(bt, "log", at);
+
+# model2: same as model1 but using both constraints and a design matrix 
+# to specify a loglinear model for the joint distribution
+at &lt;- rbind(at1, at2);
+bt &lt;- DirectSum(bt1, bt2);
+model2 &lt;- list(list(bt, "log", at), x);
+
+nkps3 &lt;- MarginalModelFit(EVS, model2, MaxError = 10.^-25,
+    MaxSteps = 1000,
+    ShowProgress = 10,
+    MaxStepSize = .3 );
+</code></pre>
+
+
+</div>

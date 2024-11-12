@@ -1,0 +1,236 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cli_progress_step</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simplified cli progress messages, with styling</h2>
+
+<h3>Description</h3>
+
+<p>This is a simplified progress bar, a single (dynamic)
+message, without progress units.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cli_progress_step(
+  msg,
+  msg_done = msg,
+  msg_failed = msg,
+  spinner = FALSE,
+  class = if (!spinner) ".alert-info",
+  current = TRUE,
+  .auto_close = TRUE,
+  .envir = parent.frame(),
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>msg</code></td>
+<td>
+<p>Message to show. It may contain glue substitution and cli
+styling. It can be updated via <code>cli_progress_update()</code>, as usual.
+It is style as a cli info alert (see <code>cli_alert_info()</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>msg_done</code></td>
+<td>
+<p>Message to show on successful termination. By default
+this it is the same as <code>msg</code> and it is styled as a cli success alert
+(see <code>cli_alert_success()</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>msg_failed</code></td>
+<td>
+<p>Message to show on unsuccessful termination. By
+default it is the same as <code>msg</code> and it is styled as a cli danger alert
+(see <code>cli_alert_danger()</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>spinner</code></td>
+<td>
+<p>Whether to show a spinner at the beginning of the line.
+To make the spinner spin, you'll need to call <code>cli_progress_update()</code>
+regularly.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>class</code></td>
+<td>
+<p>cli class to add to the message. By default there is no
+class for steps with a spinner.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>current</code></td>
+<td>
+<p>Passed to <code>cli_progress_bar()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.auto_close</code></td>
+<td>
+<p>Passed to <code>cli_progress_bar()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.envir</code></td>
+<td>
+<p>Passed to <code>cli_progress_bar()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Passed to <code>cli_progress_bar()</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>cli_progress_step()</code> always shows the progress message,
+even if no update is due.
+</p>
+
+
+<h4>Basic use</h4>
+
+<div class="sourceCode r"><pre>f &lt;- function() {
+  cli_progress_step("Downloading data")
+  Sys.sleep(2)
+  cli_progress_step("Importing data")
+  Sys.sleep(1)
+  cli_progress_step("Cleaning data")
+  Sys.sleep(2)
+  cli_progress_step("Fitting model")
+  Sys.sleep(3)
+}
+f()
+</pre></div>
+<p><img src="../help/figures/progress-step.svg" alt="progress-step.svg"></p>
+
+
+
+<h4>Spinner</h4>
+
+<p>You can add a spinner to some or all steps with <code>spinner = TRUE</code>,
+but note that this will only work if you call <code>cli_progress_update()</code>
+regularly.
+</p>
+<div class="sourceCode r"><pre>f &lt;- function() {
+  cli_progress_step("Downloading data", spinner = TRUE)
+  for (i in 1:100) { Sys.sleep(2/100); cli_progress_update() }
+  cli_progress_step("Importing data")
+  Sys.sleep(1)
+  cli_progress_step("Cleaning data")
+  Sys.sleep(2)
+  cli_progress_step("Fitting model", spinner = TRUE)
+  for (i in 1:100) { Sys.sleep(3/100); cli_progress_update() }
+}
+f()
+</pre></div>
+<p><img src="../help/figures/progress-step-spin.svg" alt="progress-step-spin.svg"></p>
+
+
+
+<h4>Dynamic messages</h4>
+
+<p>You can make the step messages dynamic, using glue templates.
+Since <code>cli_progress_step()</code> show that message immediately, we need
+to initialize <code>msg</code> first.
+</p>
+<div class="sourceCode r"><pre>f &lt;- function() {
+  msg &lt;- ""
+  cli_progress_step("Downloading data{msg}", spinner = TRUE)
+  for (i in 1:100) {
+    Sys.sleep(2/100)
+    msg &lt;- glue::glue(", got file {i}/100")
+    cli_progress_update()
+  }
+  cli_progress_step("Importing data")
+  Sys.sleep(1)
+  cli_progress_step("Cleaning data")
+  Sys.sleep(2)
+  cli_progress_step("Fitting model", spinner = TRUE)
+  for (i in 1:100) { Sys.sleep(3/100); cli_progress_update() }
+}
+f()
+</pre></div>
+<p><img src="../help/figures/progress-step-dynamic.svg" alt="progress-step-dynamic.svg"></p>
+
+
+
+<h4>Termination messages</h4>
+
+<p>You can specify a different message for successful and/or
+unsuccessful termination:
+</p>
+<div class="sourceCode r"><pre>f &lt;- function() {
+  size &lt;- 0L
+  cli_progress_step(
+    "Downloading data.",
+    msg_done = "Downloaded {prettyunits::pretty_bytes(size)}.",
+    spinner = TRUE
+  )
+  for (i in 1:100) {
+    Sys.sleep(3/100)
+    size &lt;- size + 8192
+    cli_progress_update()
+  }
+}
+f()
+</pre></div>
+<p><img src="../help/figures/progress-step-msg.svg" alt="progress-step-msg.svg"></p>
+
+
+
+<h3>See Also</h3>
+
+<p>This function supports inline markup.
+</p>
+<p>Other progress bar functions: 
+<code>cli_progress_along()</code>,
+<code>cli_progress_bar()</code>,
+<code>cli_progress_builtin_handlers()</code>,
+<code>cli_progress_message()</code>,
+<code>cli_progress_num()</code>,
+<code>cli_progress_output()</code>,
+<code>cli_progress_styles()</code>,
+<code>progress-variables</code>
+</p>
+<p>Other functions supporting inline markup: 
+<code>cli_abort()</code>,
+<code>cli_alert()</code>,
+<code>cli_blockquote()</code>,
+<code>cli_bullets_raw()</code>,
+<code>cli_bullets()</code>,
+<code>cli_dl()</code>,
+<code>cli_h1()</code>,
+<code>cli_li()</code>,
+<code>cli_ol()</code>,
+<code>cli_process_start()</code>,
+<code>cli_progress_along()</code>,
+<code>cli_progress_bar()</code>,
+<code>cli_progress_message()</code>,
+<code>cli_progress_output()</code>,
+<code>cli_rule</code>,
+<code>cli_status_update()</code>,
+<code>cli_status()</code>,
+<code>cli_text()</code>,
+<code>cli_ul()</code>,
+<code>format_error()</code>,
+<code>format_inline()</code>
+</p>
+
+
+</div>

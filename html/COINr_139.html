@@ -1,0 +1,182 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Treat.numeric</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Treat a numeric vector for outliers</h2>
+
+<h3>Description</h3>
+
+<p>Operates a two-stage data treatment process, based on two data treatment functions, and a pass/fail
+function which detects outliers. This function is set up to allow any functions to be passed as the
+data treatment functions (<code>f1</code> and <code>f2</code>), as well as any function to be passed as the outlier detection
+function <code>f_pass</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'numeric'
+Treat(
+  x,
+  f1,
+  f1_para = NULL,
+  f2 = NULL,
+  f2_para = NULL,
+  f_pass,
+  f_pass_para = NULL,
+  combine_treat = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A numeric vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f1</code></td>
+<td>
+<p>First stage data treatment function e.g. as a string.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f1_para</code></td>
+<td>
+<p>First stage data treatment function parameters as a named list.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f2</code></td>
+<td>
+<p>First stage data treatment function as a string.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f2_para</code></td>
+<td>
+<p>First stage data treatment function parameters as a named list.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f_pass</code></td>
+<td>
+<p>A string specifying an outlier detection function - see details. Default <code>"check_SkewKurt"</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f_pass_para</code></td>
+<td>
+<p>Any further arguments to pass to <code>f_pass()</code>, as a named list.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>combine_treat</code></td>
+<td>
+<p>By default, if <code>f1</code> fails to pass <code>f_pass</code>, then <code>f2</code> is applied to the original <code>x</code>,
+rather than the treated output of <code>f1</code>. If <code>combine_treat = TRUE</code>, <code>f2</code> will instead be applied to the output
+of <code>f1</code>, so the two treatments will be combined.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments passed to or from other methods.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The arrangement of this function is inspired by a fairly standard data treatment process applied to
+indicators, which consists of checking skew and kurtosis, then if the criteria are not met, applying
+Winsorisation up to a specified limit. Then if Winsorisation still does not bring skew and kurtosis
+within limits, applying a nonlinear transformation such as log or Box-Cox.
+</p>
+<p>This function generalises this process by using the following general steps:
+</p>
+
+<ol>
+<li>
+<p> Check if variable passes or fails using <code>f_pass</code>
+</p>
+</li>
+<li>
+<p> If <code>f_pass</code> returns <code>FALSE</code>, apply <code>f1</code>, else return <code>x</code> unmodified
+</p>
+</li>
+<li>
+<p> Check again using *<code>f_pass</code>
+</p>
+</li>
+<li>
+<p> If <code>f_pass</code> still returns <code>FALSE</code>, apply <code>f2</code> (by default to the original <code>x</code>, see <code>combine_treat</code>
+parameter)
+</p>
+</li>
+<li>
+<p> Return the modified <code>x</code> as well as other information.
+</p>
+</li>
+</ol>
+<p>For the "typical" case described above <code>f1</code> is a Winsorisation function, <code>f2</code> is a nonlinear transformation
+and <code>f_pass</code> is a skew and kurtosis check. Parameters can be passed to each of these three functions in
+a named list, for example to specify a maximum number of points to Winsorise, or Box-Cox parameters, or anything
+else. The constraints are that:
+</p>
+
+<ul>
+<li>
+<p> All of <code>f1</code>, <code>f2</code> and <code>f_pass</code> must follow the format <code style="white-space: pre;">⁠function(x, f_para)⁠</code>, where <code>x</code> is a
+numerical vector, and <code>f_para</code> is a list of other function parameters to be passed to the function, which
+is specified by <code>f1_para</code> for <code>f1</code> and similarly for the other functions. If the function has no parameters
+other than <code>x</code>, then <code>f_para</code> can be omitted.
+</p>
+</li>
+<li> <p><code>f1</code> and <code>f2</code> should return either a list with <code>.$x</code> as the modified numerical vector, and any other information
+to be attached to the list, OR, simply <code>x</code> as the only output.
+</p>
+</li>
+<li> <p><code>f_pass</code> must return a logical value, where <code>TRUE</code> indicates that the <code>x</code> passes the criteria (and
+therefore doesn't need any (more) treatment), and <code>FALSE</code> means that it fails to meet the criteria.
+</p>
+</li>
+</ul>
+<p>See also <code>vignette("treat")</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A treated vector of data.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># numbers between 1 and 10
+x &lt;- 1:10
+
+# two outliers
+x &lt;- c(x, 30, 100)
+
+# check whether passes skew/kurt test
+check_SkewKurt(x)
+
+# treat using winsorisation
+l_treat &lt;- Treat(x, f1 = "winsorise", f1_para = list(winmax = 2),
+                 f_pass = "check_SkewKurt")
+
+# plot original against treated
+plot(x, l_treat$x)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,168 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>inder</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Interpolate derivatives
+</h2>
+
+<h3>Description</h3>
+
+<p>A function <code>inder</code> ("in" + "der" = interpolate derivatives) for 
+interpolating first and second derivatives using the five-point stencil. 
+Therefore this function can be used to estimate the Cq (cycle of 
+quantification) of an amplification curve. First positive derivative also 
+known as First Derivative Maximum (FDM) and the Second Derivative Maximum 
+(SDM) are calculated this way (Ruijter et al. 2013). However, from the 
+mathematical point of view it can also be used to calculate the melting 
+point for melting curve analysis (compare Roediger et al. 2013) provided 
+that the sign of the derivative is changed.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">inder(x, y, Nip = 4, logy = FALSE, smooth.method = "spline")
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+
+<p>is a <code>numeric</code> vector of independent variable or data frame/matrix 
+containing
+abscissa and ordinate values.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+
+<p>is a vector of dependent variable. Omitted if <code>x</code> is data frame or 
+matrix.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Nip</code></td>
+<td>
+
+<p>is a value which defines how often an interpolation takes place at n 
+equally 
+spaced points spanning the interval (default 4). <code>Nip</code> is a such a 
+resolution. A high <code>Nip</code> may improve the precision. <code>Nip</code>s less 
+than 
+2 and higher than 20 are not meaningful for conventional qPCR with up to 
+50 cycles. However, higher <code>Nip</code>s might be appropriate for isothermal
+amplification reactions.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logy</code></td>
+<td>
+
+<p>If <code>logy</code> is TRUE than a semi-decadic log scale graph (corresponds to 
+the 
+linear phase) to illustrate the exponential dynamic of the qPCR 
+amplification
+is used.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smooth.method</code></td>
+<td>
+
+<p>a character vector of length 1 or <code>NULL</code> defining smoothing method used. Currently 
+accepted character values: "spline", "supsmu". If <code>NULL</code>, smoothing is not performed.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function <code>y = f(x)</code> is numerically derived using the five-point stencil. 
+This method does not require any assumptions regarding the function <code>f</code>.
+</p>
+<p>A smoothing procedure greatly enhances calculating derivative calculation. <code>inder</code>
+uses two smoothing algorithms best suited for this approach. A smoothing can
+be omitted by setting <code>smooth.method</code> to <code>NULL</code>, which is advisable in case of 
+the already smoothed data.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of <code>der</code> class.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Stefan Roediger, Michal Burdukiewicz
+</p>
+
+
+<h3>References</h3>
+
+<p>Ruijter JM, Pfaffl MW, Zhao S, et al. (2013) Evaluation of qPCR curve 
+analysis methods for reliable biomarker discovery: bias, resolution, 
+precision, and implications. <em>Methods</em> San Diego Calif 59:32–46.
+</p>
+<p>Surface Melting Curve Analysis with R. S. Roediger, A. Boehm and I. 
+Schimke. <em>The R Journal</em>. 5(2):37–52, 2013. 
+<a href="https://journal.r-project.org">https://journal.r-project.org</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># First example
+# Derive sinus
+x &lt;- 1:100/10
+y &lt;- sin(x)
+ders &lt;- inder(x, y)
+plot(x, y, type = "l")
+lines(ders[, "x"], ders[, "d1y"], col = "red")
+lines(ders[, "x"], ders[, "d2y"], col = "green")
+legend("topright", c("f(x)", "f'(x)", "f''(x)"), lty = 1, col = c("black", 
+	"red", "green"))
+
+# Second example
+# Determine the approximate second derivative maximum
+# for a qPCR experiment. SDM, 
+isPCR &lt;- AmpSim(cyc = 1:40)
+
+res &lt;- inder(isPCR)
+
+plot(isPCR, xlab = "Cycle", ylab = "RFU", ylim = c(-0.15,1),
+     main = "Approximate Second Derivative Maximum (SDM)", 
+     type = "b", pch = 20)
+
+  lines(res[, "x"], res[, "d1y"], col = "blue")
+  lines(res[, "x"], res[, "d2y"], col = "red")
+  summ &lt;- summary(res, print = FALSE)
+  abline(v = c(summ["SDM"], summ["SDm"], summ["SDC"]), col = c(3,4,5))
+  text(summ["SDM"], 0.5, paste0("SDM ~ ", round(summ["SDM"], 2)), 
+       cex = 1.5, col = 3)
+  text(summ["SDC"], 0.7, paste0("SDC ~ ", round(summ["SDC"], 2)), 
+       cex = 1.5, col = 5)
+  text(summ["SDm"], 0.9, paste0("SDm ~ ", round(summ["SDm"], 2)), 
+       cex = 1.5, col = 4)
+  text(summ["FDM"] + 10, 0.65, paste("FDM ~ ", round(summ["FDM"], 2)), 
+       cex = 1.5, col = 1)
+       
+  legend(1, 1, c("raw", "first derivative", "second derivative"), 
+	 col = c(1,4,2), lty = c(2,1,1), cex = 1.2)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,165 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>roworder</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fast Reordering of Data Frame Rows
+</h2>
+
+<h3>Description</h3>
+
+<p>A fast substitute for <code>dplyr::arrange</code>, based on <code>radixorder(v)</code> and inspired by <code>data.table::setorder(v)</code>. It returns a sorted copy of the data frame, unless the data is already sorted in which case no copy is made. In addition, rows can be manually re-ordered. <code>roworderv</code> is a programmers version that takes vectors/variables as input.
+</p>
+<p>Use <code>data.table::setorder(v)</code> to sort a data frame without creating a copy. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">roworder(X, ..., na.last = TRUE, verbose = .op[["verbose"]])
+
+roworderv(X, cols = NULL, neworder = NULL, decreasing = FALSE,
+          na.last = TRUE, pos = "front", verbose = .op[["verbose"]])
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>a data frame or list of equal-length columns. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>comma-separated columns of <code>X</code> to sort by e.g. <code>var1, var2</code>. Negatives i.e. <code>-var1, var2</code> can be used to sort in decreasing order of <code>var1</code>. Internally all expressions are turned into strings and <code>startsWith(expr, "-")</code> is used to detect this, thus it does not negate the actual values (which may as well be strings), and you cannot apply any other functions to columns inside <code>roworder()</code> to induce different sorting behavior.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cols</code></td>
+<td>
+<p>select columns to sort by using a function, column names, indices or a logical vector. The default <code>NULL</code> sorts by all columns in order of occurrence (from left to right). </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.last</code></td>
+<td>
+<p>logical. If <code>TRUE</code>, missing values in the sorting columns are placed last; if <code>FALSE</code>, they are placed first; if <code>NA</code> they are removed (argument passed to <code>radixorderv</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>decreasing</code></td>
+<td>
+<p>logical. Should the sort order be increasing or decreasing? Can also be a vector of length equal to the number of arguments in <code>cols</code> (argument passed to <code>radixorderv</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>neworder</code></td>
+<td>
+<p>an ordering vector, can be <code>&lt; nrow(X)</code>. if <code>pos = "front"</code> or <code>pos = "end"</code>, a logical vector can also be supplied. This argument overwrites <code>cols</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pos</code></td>
+<td>
+<p>integer or character. Different arrangement options if <code>!is.null(neworder) &amp;&amp; length(neworder) &lt; nrow(X)</code>.
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<em> Int. </em>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> String </em>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> Description </em>  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 1 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "front"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> move rows in <code>neworder</code> to the front (top) of <code>X</code> (the default). </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 2 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "end" </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> move rows in <code>neworder</code> to the end (bottom) of <code>X</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 3 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "exchange"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> just exchange the order of rows in <code>neworder</code>, other rows remain in the same position. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 4 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "after"  </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> place all further selected rows behind the first selected row. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+  </td>
+</tr>
+</table>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>logical. <code>1L</code> (default) prints a message when ordering a grouped or indexed frame, indicating that this is not efficient and encouraging reordering the data prior to the grouping/indexing step. Users can also set <code>verbose = 2L</code> to also toggle a message if <code>x</code> is already sorted, implying that no copy was made and the call to <code>roworder(v)</code> is redundant.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A copy of <code>X</code> with rows reordered. If <code>X</code> is already sorted, <code>X</code> is simply returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>If you don't require a copy of the data, use <code>data.table::setorder</code> (you can also use it in a piped call as it invisibly returns the data).
+</p>
+<p><code>roworder(v)</code> has internal facilities to deal with grouped and indexed data. This is however inefficient (since in most cases data could be reordered before grouping/indexing), and therefore issues a message if <code>verbose &gt; 0L</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>colorder</code>, Data Frame Manipulation, Fast Grouping and Ordering, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">head(roworder(airquality, Month, -Ozone))
+head(roworder(airquality, Month, -Ozone, na.last = NA))  # Removes the missing values in Ozone
+
+## Same in standard evaluation
+head(roworderv(airquality, c("Month", "Ozone"), decreasing = c(FALSE, TRUE)))
+head(roworderv(airquality, c("Month", "Ozone"), decreasing = c(FALSE, TRUE), na.last = NA))
+
+## Custom reordering
+head(roworderv(mtcars, neworder = 3:4))               # Bring rows 3 and 4 to the front
+head(roworderv(mtcars, neworder = 3:4, pos = "end"))  # Bring them to the end
+head(roworderv(mtcars, neworder = mtcars$vs == 1))    # Bring rows with vs == 1 to the top
+</code></pre>
+
+
+</div>

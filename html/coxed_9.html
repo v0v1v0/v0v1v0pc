@@ -1,0 +1,174 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>coxed.gam</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Predict expected durations using the GAM method</h2>
+
+<h3>Description</h3>
+
+<p>This function is called by <code>coxed</code> and is not intended to be used by itself.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">coxed.gam(cox.model, newdata = NULL, k = -1, coef = NULL,
+  b.ind = NULL, warn = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cox.model</code></td>
+<td>
+<p>The output from a Cox proportional hazards model estimated
+with the <code>coxph</code> function in the <code>survival</code> package
+or with the <code>cph</code> function in the <code>rms</code>
+package</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdata</code></td>
+<td>
+<p>An optional data frame in which to look for variables with
+which to predict. If omitted, the fitted values are used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p>The number of knots in the GAM smoother. The default is -1, which
+employs the <code>choose.k</code> function from the <code>mgcv</code> package
+to choose the number of knots</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coef</code></td>
+<td>
+<p>A vector of new coefficients to replace the <code>coefficients</code> attribute
+of the <code>cox.model</code>. Used primarily for bootstrapping, to recalculate durations
+using new coefficients derived from a bootstrapped sample.
+If <code>NULL</code>, the original coefficients are employed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>b.ind</code></td>
+<td>
+<p>A vector of observation numbers to pass to the estimation sample to construct
+the a bootstrapped sample with replacement</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>warn</code></td>
+<td>
+<p>If <code>TRUE</code>, displays warnings, and if <code>FALSE</code> suppresses them</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function employs the GAM method of generating expected durations described
+in Kropko and Harden (2018), which proceeds according to five steps. First, it uses coefficient
+estimates from the Cox model, so researchers must first estimate the model just as they always have.
+Then the method computes expected values of risk for each observation by matrix-multiplying the
+covariates by the estimated coefficients from the model, then exponentiating the result. This creates
+the exponentiated linear predictor (ELP). Then the observations are ranked from smallest to largest
+according to their values of the ELP. This ranking is interpreted as the expected order of failure;
+the larger the value of the ELP, the sooner the model expects that observation to fail, relative to
+the other observations.
+</p>
+<p>The next step is to connect the model's expected risk for each observation (ELP) to duration time
+(the observed durations). A <code>gam</code> fits a model to data by using a series of locally-estimated polynomial
+splines set by the user (see, for example, Wood, Pya, and Saefken 2016). It is a flexible means of allowing for
+the possibility of nonlinear relationships between variables. <code>coxed.gam</code> uses a GAM to model the observed
+utilizes a cubic regression spline to draw a smoothed line summarizing the bivariate relationship between
+the observed durations and the ranks. The GAM fit can be used directly to compute expected durations, given the covariates, for each observation
+in the data.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a list containing the following components:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<code>exp.dur</code> </td>
+<td style="text-align: left;"> A vector of predicted mean durations for the estimation sample
+if <code>newdata</code> is omitted, or else for the specified new data. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>gam.model</code> </td>
+<td style="text-align: left;"> Output from the <code>gam</code> function in which the durations
+are fit against the exponentiated linear predictors from the Cox model.</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>gam.data</code> </td>
+<td style="text-align: left;"> Fitted values and confidence intervals from the GAM model.</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Jonathan Kropko &lt;jkropko@virginia.edu&gt; and Jeffrey J. Harden &lt;jharden2@nd.edu&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Kropko, J. and Harden, J. J. (2018). Beyond the Hazard Ratio: Generating Expected
+Durations from the Cox Proportional Hazards Model. <em>British Journal of Political Science</em>
+<a href="https://doi.org/10.1017/S000712341700045X">https://doi.org/10.1017/S000712341700045X</a>
+</p>
+<p>Wood, S.N., N. Pya and B. Saefken (2016). Smoothing parameter and model selection for general smooth models (with discussion). <em>Journal of the American Statistical Association</em> <strong>111</strong>, 1548-1575
+<a href="http://dx.doi.org/10.1080/01621459.2016.1180986">http://dx.doi.org/10.1080/01621459.2016.1180986</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>gam</code>, <code>coxed</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">mv.surv &lt;- Surv(martinvanberg$formdur, event = rep(1, nrow(martinvanberg)))
+mv.cox &lt;- coxph(mv.surv ~ postel + prevdef + cont + ident + rgovm +
+pgovno + tpgovno + minority, method = "breslow", data = martinvanberg)
+
+ed &lt;- coxed.gam(mv.cox)
+summary(ed$gam.data)
+summary(ed$gam.model)
+ed$exp.dur
+
+#Plotting the GAM fit
+## Not run: require(ggplot2)
+ggplot(ed$gam.data, aes(x=rank.xb, y=y)) +
+    geom_point() +
+    geom_line(aes(x=rank.xb, y=gam_fit)) +
+    geom_ribbon(aes(ymin=gam_fit_95lb, ymax=gam_fit_95ub), alpha=.5) +
+    xlab("Cox model LP rank (smallest to largest)") +
+    ylab("Duration")
+
+## End(Not run)
+
+#Running coxed.gam() on a bootstrap sample and with new coefficients
+bsample &lt;- sample(1:nrow(martinvanberg), nrow(martinvanberg), replace=TRUE)
+newcoefs &lt;- rnorm(8)
+ed2 &lt;- coxed.gam(mv.cox, b.ind=bsample, coef=newcoefs)
+</code></pre>
+
+
+</div>

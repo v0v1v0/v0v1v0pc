@@ -1,0 +1,225 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ProjKrigSpTi</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>#' Spatio temporal interpolation using projected spatial temporal normal model.</h2>
+
+<h3>Description</h3>
+
+<p><code>ProjKrigSpTi</code> function computes the spatio-temporal
+prediction for circular space-time data using samples
+from the posterior distribution of the space-time projected normal model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ProjKrigSpTi(ProjSpTi_out, coords_obs, coords_nobs, times_obs, times_nobs,
+  x_obs)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>ProjSpTi_out</code></td>
+<td>
+<p>the functions takes the output of <code>ProjSpTi</code> function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coords_obs</code></td>
+<td>
+<p>coordinates of observed locations (in UTM)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coords_nobs</code></td>
+<td>
+<p>coordinates of unobserved locations (in UTM)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>times_obs</code></td>
+<td>
+<p>numeric vector of observed time coordinates</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>times_nobs</code></td>
+<td>
+<p>numeric vector of unobserved time coordinates</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x_obs</code></td>
+<td>
+<p>observed values in <code class="reqn">[0,2\pi)</code>
+If they are not in <code class="reqn">[0,2\pi)</code>, the function will tranform
+the data in the right interval</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a list of 3 elements
+</p>
+
+<dl>
+<dt><code>M_out</code></dt>
+<dd>
+<p>the mean of the associated linear process on the prediction locations  coords_nobs (rows) over all the posterior samples (columns) returned by ProjSpTi</p>
+</dd>
+<dt><code>V_out</code></dt>
+<dd>
+<p>the variance of the associated linear process on the prediction locations  coords_nobs (rows) over all the posterior samples (columns) returned by ProjSpTi</p>
+</dd>
+<dt><code>Prev_out</code></dt>
+<dd>
+<p>are the posterior predicted  values at the unobserved locations.</p>
+</dd>
+</dl>
+<h3>References</h3>
+
+<p>G. Mastrantonio, G.Jona Lasinio,
+A. E. Gelfand, "Spatio-temporal circular models with
+non-separable covariance structure", TEST 25 (2016), 331–350.
+</p>
+<p>F. Wang, A. E.   Gelfand,
+"Modeling space and space-time directional data using projected Gaussian processes",
+Journal of the American Statistical Association,109 (2014), 1565-1580
+</p>
+<p>T. Gneiting,  "Nonseparable, Stationary Covariance Functions for Space-Time
+Data", JASA 97 (2002), 590-600
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>ProjSpTi</code> to sample the posterior distribution of the spatio-temporal
+Projected Normal model,
+<code>WrapSpTi</code> to sample the posterior distribution of the spatio-temporal
+Wrapped Normal model and <code>WrapKrigSpTi</code> for
+spatio-temporal interpolation under the same model
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(CircSpaceTime)
+#### simulated example
+## auxiliary functions
+rmnorm &lt;- function(n = 1, mean = rep(0, d), varcov) {
+  d &lt;- if (is.matrix(varcov)) {
+    ncol(varcov)
+  } else {
+    1
+  }
+  z &lt;- matrix(rnorm(n * d), n, d) %*% chol(varcov)
+  y &lt;- t(mean + t(z))
+  return(y)
+}
+####
+# Simulation using a gneiting covariance function
+####
+set.seed(1)
+n &lt;- 20
+
+coords &lt;- cbind(runif(n, 0, 100), runif(n, 0, 100))
+coordsT &lt;- cbind(runif(n, 0, 100))
+Dist &lt;- as.matrix(dist(coords))
+DistT &lt;- as.matrix(dist(coordsT))
+
+rho &lt;- 0.05
+rhoT &lt;- 0.01
+sep_par &lt;- 0.1
+sigma2 &lt;- 1
+alpha &lt;- c(0.5)
+SIGMA &lt;- sigma2 * (rhoT * DistT^2 + 1)^(-1) * exp(-rho * Dist / (rhoT * DistT^2 + 1)^(sep_par / 2))
+tau &lt;- 0.2
+
+Y &lt;- rmnorm(
+  1, rep(alpha, times = n),
+  kronecker(SIGMA, matrix(c(sigma2, sqrt(sigma2) * tau, sqrt(sigma2) * tau, 1), nrow = 2))
+)
+theta &lt;- c()
+for (i in 1:n) {
+  theta[i] &lt;- atan2(Y[(i - 1) * 2 + 2], Y[(i - 1) * 2 + 1])
+}
+theta &lt;- theta %% (2 * pi) ## to be sure we have values in (0,2pi)
+rose_diag(theta)
+################ some useful quantities
+rho_sp.min &lt;- 3 / max(Dist)
+rho_sp.max &lt;- rho_sp.min + 0.5
+rho_t.min &lt;- 3 / max(DistT)
+rho_t.max &lt;- rho_t.min + 0.5
+### validation set 20% of the data
+val &lt;- sample(1:n, round(n * 0.2))
+
+set.seed(200)
+
+mod &lt;- ProjSpTi(
+  x = theta[-val],
+  coords = coords[-val, ],
+  times = coordsT[-val],
+  start = list(
+    "alpha" = c(0.66, 0.38, 0.27, 0.13),
+    "rho_sp" = c(0.29, 0.33),
+    "rho_t" = c(0.25, 0.13),
+    "sep_par" = c(0.56, 0.31),
+    "tau" = c(0.71, 0.65),
+    "sigma2" = c(0.47, 0.53),
+    "r" = abs(rnorm(length(theta[-val])))
+  ),
+  priors = list(
+    "rho_sp" = c(rho_sp.min, rho_sp.max), # Uniform prior in this interval
+    "rho_t" = c(rho_t.min, rho_t.max), # Uniform prior in this interval
+    "sep_par" = c(1, 1), # Beta distribution
+    "tau" = c(-1, 1), ## Uniform prior in this interval
+    "sigma2" = c(10, 3), # inverse gamma
+    "alpha_mu" = c(0, 0), ## a vector of 2 elements,
+    ## the means of the bivariate Gaussian distribution
+    "alpha_sigma" = diag(10, 2) # a 2x2 matrix, the covariance matrix of the
+    # bivariate Gaussian distribution,
+  ),
+  sd_prop = list(
+    "sep_par" = 0.1, "sigma2" = 0.1, "tau" = 0.1, "rho_sp" = 0.1, "rho_t" = 0.1,
+    "sdr" = sample(.05, length(theta), replace = TRUE)
+  ),
+  iter = 4000,
+  BurninThin = c(burnin = 2000, thin = 2),
+  accept_ratio = 0.234,
+  adapt_param = c(start = 155000, end = 156000, exp = 0.5),
+  n_chains = 2,
+  parallel = TRUE,
+)
+check &lt;- ConvCheck(mod)
+check$Rhat ### convergence has been reached when the values are close to 1
+#### graphical checking
+#### recall that it is made of as many lists as the number of chains and it has elements named
+#### as the model's parameters
+par(mfrow = c(3, 3))
+coda::traceplot(check$mcmc)
+par(mfrow = c(1, 1))
+# once convergence is reached we run the interpolation on the validation set
+Krig &lt;- ProjKrigSpTi(
+  ProjSpTi_out = mod,
+  coords_obs = coords[-val, ],
+  coords_nobs = coords[val, ],
+  times_obs = coordsT[-val],
+  times_nobs = coordsT[val],
+  x_obs = theta[-val]
+)
+
+#### checking the prediction
+
+Proj_ape &lt;- APEcirc(theta[val], Krig$Prev_out)
+Proj_crps &lt;- CRPScirc(theta[val],Krig$Prev_out)
+
+</code></pre>
+
+
+</div>

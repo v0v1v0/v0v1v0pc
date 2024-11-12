@@ -1,0 +1,105 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>LRV.regression</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Long-run variance estimation for regression settings with change points.</h2>
+
+<h3>Description</h3>
+
+<p>Estimating long-run variance for regression settings with change points.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">LRV.regression(cpt_init, beta_hat, y, X, w = 0.9, block_size)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cpt_init</code></td>
+<td>
+<p>An <code>integer</code> vector of initial changepoints estimation (sorted in strictly increasing order).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta_hat</code></td>
+<td>
+<p>A <code>numeric</code> (px(K_hat+1))matrix of estimated regression coefficients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>A <code>numeric</code> vector of response variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>A <code>numeric</code> matrix of covariates with vertical axis being time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>A <code>numeric</code> scalar in (0,1) representing the weight for interval truncation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>block_size</code></td>
+<td>
+<p>An <code>integer</code> scalar corresponding to the block size S in the paper.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A vector of long-run variance estimators associated with all local refined intervals.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Haotian Xu
+</p>
+
+
+<h3>References</h3>
+
+<p>Xu, Wang, Zhao and Yu (2022) &lt;arXiv:2207.12453&gt;.
+</p>
+<p>Xu, Wang, Zhao and Yu (2022) &lt;arXiv:2207.12453&gt;.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">d0 = 5
+p = 10
+n = 200
+cpt_true = c(70, 140)
+data = simu.change.regression(d0, cpt_true, p, n, sigma = 1, kappa = 9)
+lambda_set = c(0.1, 0.5, 1, 2)
+zeta_set = c(10, 15, 20)
+temp = CV.search.DPDU.regression(y = data$y, X = data$X, lambda_set, zeta_set)
+temp$test_error # test error result
+# find the indices of lambda_set and zeta_set which minimizes the test error
+min_idx = as.vector(arrayInd(which.min(temp$test_error), dim(temp$test_error))) 
+lambda_set[min_idx[2]]
+zeta_set[min_idx[1]]
+cpt_init = unlist(temp$cpt_hat[min_idx[1], min_idx[2]])
+beta_hat = matrix(unlist(temp$beta_hat[min_idx[1], min_idx[2]]), ncol = length(cpt_init)+1)
+interval_refine = trim_interval(n, cpt_init)
+# choose S
+block_size = ceiling(sqrt(min(floor(interval_refine[,2]) - ceiling(interval_refine[,1])))/2)
+LRV_est = LRV.regression(cpt_init, beta_hat, data$y, data$X, w = 0.9, block_size)
+</code></pre>
+
+
+</div>

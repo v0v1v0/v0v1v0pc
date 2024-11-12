@@ -1,0 +1,112 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cfc.survreg.survprob</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Survival probability function for <code>survreg</code> models
+</h2>
+
+<h3>Description</h3>
+
+<p>Function for predicting survival probability as a function of time for <code>survreg</code> regression objects in <span class="pkg">survival</span> package. It can be used to mix <code>survreg</code> models with other survival models in competing-risk analysis, using <span class="pkg">CFC</span> package. This function is used inside <code>cfc.survreg</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cfc.survreg.survprob(t, args, n)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>t</code></td>
+<td>
+<p>Time from index. Must be non-negative, but can be a vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>args</code></td>
+<td>
+<p>Regression object that is returned by <code>survreg</code>. If using <code>newdata</code> for prediction, the <code>x</code> field of this object must be updated accordingly.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>Observation index, must be between <code>1</code> and <code>nrow(args$x)</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Vector of survival probabilities at time(s) <code>t</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Mansour T.A. Sharabiani, Alireza S. Mahani
+</p>
+
+
+<h3>References</h3>
+
+<p>Mahani A.S. and Sharabiani M.T.A. (2019). Bayesian, and Non-Bayesian, Cause-Specific Competing-Risk Analysis for Parametric and Nonparametric Survival Functions: The R Package CFC. Journal of Statistical Software, 89(9), 1-29. doi:10.18637/jss.v089.i09
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cfc.survreg</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+library("CFC") # for cfc
+data(bmt)
+library("randomForestSRC") # for rfsrc
+library("survival") # for survreg
+
+prep &lt;- cfc.prepdata(Surv(time, cause) ~ platelet + age + tcell, bmt)
+f1 &lt;- prep$formula.list[[1]]
+f2 &lt;- prep$formula.list[[2]]
+dat &lt;- prep$dat
+tmax &lt;- prep$tmax
+
+# building a parametric Weibull regression model
+# for cause 1
+reg1 &lt;- survreg(f1, dat, x = TRUE) # must keep x for prediction
+
+# building a random forest survival model for cause 2
+reg2 &lt;- rfsrc(f2, dat)
+# implementing a continuous interface for the random forest
+# survival function
+rfsrc.survfunc &lt;- function(t, args, n) {
+  which.zero &lt;- which(t &lt; .Machine$double.eps)
+  ret &lt;- approx(args$time.interest, args$survival[n, ], t, rule = 2)$y
+  ret[which.zero] &lt;- 1.0
+  return (ret)
+}
+
+# constructing function and argument list
+f.list &lt;- list(cfc.survreg.survprob, rfsrc.survfunc)
+arg.list &lt;- list(reg1, reg2)
+
+# competing-risk analysis
+tout &lt;- seq(0.0, tmax, length.out = 10)
+# increase rel.tol for higher accuracy
+cfc.out &lt;- cfc(f.list, arg.list, nrow(bmt), tout, rel.tol = 1e-3)
+
+
+## End(Not run)
+</code></pre>
+
+
+</div>

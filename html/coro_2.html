@@ -1,0 +1,116 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>async</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Make an async function</h2>
+
+<h3>Description</h3>
+
+<p><code>async()</code> functions are building blocks for cooperative
+concurrency.
+</p>
+
+<ul>
+<li>
+<p> They are <em>concurrent</em> because they are jointly managed by a
+scheduler in charge of running them.
+</p>
+</li>
+<li>
+<p> They are <em>cooperative</em> because they decide on their own when they
+can no longer make quick progress and need to <strong>await</strong> some
+result. This is done with the <code>await()</code> keyword which suspends
+the async function and gives control back to the scheduler. The
+scheduler waits until the next async operation is ready to make
+progress.
+</p>
+</li>
+</ul>
+<p>The async framework used by <code>async()</code> functions is implemented in
+the <a href="https://github.com/r-lib/later/">later</a> and
+<a href="https://rstudio.github.io/promises/">promises</a> packages:
+</p>
+
+<ul>
+<li>
+<p> You can chain async functions created with coro to promises.
+</p>
+</li>
+<li>
+<p> You can await promises. You can also await futures created with
+the <a href="https://github.com/HenrikBengtsson/future">future</a> package
+because they are coercible to promises.
+</p>
+</li>
+</ul>
+<h3>Usage</h3>
+
+<pre><code class="language-R">async(fn)
+
+await(x)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>fn</code></td>
+<td>
+<p>An anonymous function within which <code>await()</code> calls are
+allowed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>An awaitable value, i.e. a promise.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A function that returns a <code>promises::promise()</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>async_generator()</code> and <code>await_each()</code>;
+<code>coro_debug()</code> for step-debugging.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># This async function counts down from `n`, sleeping for 2 seconds
+# at each iteration:
+async_count_down &lt;- async(function(n) {
+  while (n &gt; 0) {
+    cat("Down", n, "\n")
+    await(async_sleep(2))
+    n &lt;- n - 1
+  }
+})
+
+# This async function counts up until `stop`, sleeping for 0.5
+# seconds at each iteration:
+async_count_up &lt;- async(function(stop) {
+  n &lt;- 1
+  while (n &lt;= stop) {
+    cat("Up", n, "\n")
+    await(async_sleep(0.5))
+    n &lt;- n + 1
+  }
+})
+
+# You can run these functions concurrently using `promise_all()`
+if (interactive()) {
+  promises::promise_all(async_count_down(5), async_count_up(5))
+}
+</code></pre>
+
+
+</div>

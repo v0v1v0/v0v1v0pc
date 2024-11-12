@@ -1,0 +1,195 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>getSpeciesImages</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Collect all images of a species</h2>
+
+<h3>Description</h3>
+
+<p>This function will fetch all images of a particular species from all camera
+trap stations and copies these images to a new location. The images which
+are to be copied are found in one of 2 possible ways, 1) by providing an
+existing record table (created with <code>recordTable</code>) or 2) by
+reading species IDs from species directories or from metadata (calling
+ExifTool). Earlier in the workflow, i.e., before running this function,
+images should have been renamed (with <code>imageRename</code>) to give
+images unique file names based on station ID and date/time.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">getSpeciesImages(
+  species,
+  recordTable,
+  speciesCol = "Species",
+  stationCol = "Station",
+  inDir,
+  outDir,
+  createStationSubfolders = FALSE,
+  IDfrom,
+  metadataSpeciesTag,
+  metadataHierarchyDelimitor = "|"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>species</code></td>
+<td>
+<p>character. Species whose images are to be fetched</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>recordTable</code></td>
+<td>
+<p>data frame. A data frame as returned by function
+<code>recordTable</code>. If you specify this argument, do not specify
+<code>inDir</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>speciesCol</code></td>
+<td>
+<p>character. Name of the column specifying species ID in
+<code>recordTable</code>. Only required if <code>recordTable</code> is defined</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stationCol</code></td>
+<td>
+<p>character. Name of the column specifying station ID in
+<code>recordTable</code>. Only required if <code>recordTable</code> is defined</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inDir</code></td>
+<td>
+<p>character. Directory containing identified (species level)
+camera trap images sorted into station subdirectories (e.g.
+inDir/StationA/). If you specify this argument, do not specify
+<code>recordTable</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outDir</code></td>
+<td>
+<p>character. Directory in which to save species images. A
+species subdirectory will be created in <code>outDir</code> automatically.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>createStationSubfolders</code></td>
+<td>
+<p>logical. Save images in station directories
+within the newly created species directory in <code>outDir</code>?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>IDfrom</code></td>
+<td>
+<p>character. Read species ID from image metadata ("metadata") of
+from species directory names ("directory")? Only required if <code>inDir</code> is
+defined.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metadataSpeciesTag</code></td>
+<td>
+<p>character. The species ID tag name in image
+metadata (if IDfrom = "metadata"). Only required if <code>inDir</code> is defined.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metadataHierarchyDelimitor</code></td>
+<td>
+<p>character. The character delimiting
+hierarchy levels in image metadata tags in field "HierarchicalSubject".
+Either "|" or ":" (if IDfrom = "metadata"). Only required if <code>inDir</code> is
+defined and <code>IDfrom = "metadata"</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function finds the images to be copied by either consulting a record
+table created with <code>recordTable</code> or by reading species IDs from
+images. The former is considerable faster because ExifTool is not called,
+but requires images to be in precisely the location given by the columns
+<code>Directory</code> and <code>FileName</code> in <code>recordTable</code>. To use this
+feature, provide the function with a record table in argument
+<code>recordTable</code>.
+</p>
+<p>If you'd rather read species IDs from images within the function (to make
+sure all file paths are correct), images need to be in the directory
+structure required by the package, e.g.
+</p>
+<p>&gt; inDir/Station/Species
+</p>
+<p>or
+</p>
+<p>&gt; inDir/Station/Camera/Species
+</p>
+<p>if using species directories for species IDs, and
+</p>
+<p>&gt; inDir/Station
+</p>
+<p>or
+</p>
+<p>&gt; inDir/Station/Camera
+</p>
+<p>if reading IDs from species metadata tags. In the latter case, only station
+directories are needed. In any case, the argument <code>species</code> must match
+species IDs (either the <code>speciesCol</code> in <code>recordTable</code>, species
+directory names or species metadata tags).
+</p>
+<p>Before running the function, first rename the images using function
+<code>imageRename</code> to provide unique file names and prevent several
+images from having the same name (if generic names like "IMGP0001.jpg" are
+used). The function will not copy images if there are duplicate filenames to
+prevent overwriting images unintentionally.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>data.frame</code> with old and new directories and file names and
+the copy status (<code>copy_ok</code>; TRUE if copying was successful, FALSE if
+not).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Juergen Niedballa
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Not run: 
+# define image directory
+wd_images_ID &lt;- system.file("pictures/sample_images_species_dir", package = "camtrapR")
+wd_images_ID_copy &lt;- file.path(tempdir(), "sample_images_species_dir")
+
+species_to_copy &lt;- "VTA"    # = Viverra tangalunga, Malay Civet
+
+specImagecopy &lt;- getSpeciesImages(species                 = species_to_copy,
+                                  inDir                   = wd_images_ID,
+                                  outDir                  = wd_images_ID_copy,
+                                  createStationSubfolders = FALSE,
+                                  IDfrom                  = "directory"
+                                  )
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,174 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>statTn</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>The Tn Statistic of a Fitted Copula to an Empirical Copula</h2>
+
+<h3>Description</h3>
+
+<p>Compute the <code class="reqn">T_n(p)</code> statistic of Genest <em>et al.</em> (2011) that is defined as
+</p>
+<p style="text-align: center;"><code class="reqn">T_n(p) = \sum_{i=1}^n \big|\mathbf{C}_n(u_i, v_i) - \mathbf{C}_{\Theta_n}(u_i, v_i)\big|^p\mbox{,}</code>
+</p>
+
+<p>where <code class="reqn">\mathbf{C}_n(u,v)</code> is the <em>empirical copula</em>, <code class="reqn">\mathbf{C}_{\Theta_n}(u,v)</code> is the <em>fitted copula</em> with estimated parameters <code class="reqn">\Theta_n</code> from the sample of size <code class="reqn">n</code>. The <code class="reqn">T_n</code> for <code class="reqn">p = 2</code> is reported by those authors to be of general purpose and overall performance in large scale simulation studies. The extension here for arbitary exponent <code class="reqn">p</code> is made for flexibility. Alternatively the definition could be associated with the statistic <code class="reqn">T_n(p)^{1/p}</code> in terms of a root <code class="reqn">1/p</code> of the summation as shown above.
+</p>
+<p>The <code class="reqn">T_n</code> statistic is obviously a form of deviation between the empirical (nonparametric) and parametric fitted copula. The distribution of this statistic through Monte Carlo simulation could be used for inference. The inference is based on that a chosen parametric model is suitably close to the empirical copula. The <code class="reqn">T_n(p)</code> statistic has an advantage of being relatively straightforward to understand and explain to stakeholders and decision makers, is attractive for being suitable in a wide variety of circumstances, but intuitively might have limited statistical power in some situations for it looks at whole copula structure and not say at tail dependency. Finally, other goodness-of-fits using the squared differences between <code class="reqn">\mathbf{C}_n(u,v)</code> and <code class="reqn">\mathbf{C}_{\Theta_m}(u, v)</code> are <code>aicCOP</code>, <code>bicCOP</code>, and <code>rmseCOP</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">statTn(u, v=NULL, cop=NULL, para=NULL, p=2, proot=FALSE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">u</code> in the <code class="reqn">X</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>v</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">v</code> in the <code class="reqn">Y</code> direction. If not given, then a second column from argument <code>u</code> is attempted;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cop</code></td>
+<td>
+<p>A copula function;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>Vector of parameters or other data structure, if needed, to pass to the copula;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p>The value for <code class="reqn">p</code>, and the default follows that of Genest <em>et al.</em> (2011);</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>proot</code></td>
+<td>
+<p>A logical controling whether the <code class="reqn">T_n</code> returned be rooted by <code class="reqn">1/p</code>, and the default follows that of Genest <em>et al.</em> (2011); and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass to the copula function and (or) the empirical copula.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The value for <code class="reqn">T_n</code> is returned dependent on the specification of <code class="reqn">p</code> and whether rooting of the result is desired.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The <b>Examples</b> section shows a simple computation of the <code class="reqn">\hat T_n</code> statistic for a sample and a fitted copula to that sample. Ideally <code>statTn</code> would be wrapped in a Monte Carlo process of fitting the apparent “parent” distribution from the sample data, then for some large replication count, generate <code class="reqn">N</code> samples of size <code class="reqn">n</code> from the parent and from these samples compute the empirical copula and also fit parameter(s) of the chosen copula and repeatedly solve for <code class="reqn">T_n</code>. Given a total of <code class="reqn">N</code> values of <code class="reqn">T_n</code>, then the sample <code class="reqn">T_n</code> or <code class="reqn">\hat{T}_n</code> can be compared to the distribution, and if <code class="reqn">\hat{T}_n</code> is greater than say the 95th percentile, then the assumed form of the copula could be rejected.
+</p>
+<p>The <code>distTn</code> defined below and is dependent on the <code>copBasic.fitpara.beta</code> function can be used to demonstrate concepts. (The process is complex enough that user-level implementation of <code>distTn</code> in <span class="pkg">copBasic</span> is not presently (2019) thought appropriate.)
+</p>
+<pre>
+  "distTn" &lt;- function(n, N=1000, statf=NULL,
+                       cop=NULL, para=para, interval=NULL, ...) {
+      opts &lt;- options(warn=-1)
+      message("Estimating Tn distribution: ", appendLF=FALSE)
+      Tn &lt;- vector(mode="numeric", N)
+      for(i in 1:N) {
+         showi &lt;- as.logical(length(grep("0+$", i, perl=TRUE)))
+         if(showi) message(i, "-", appendLF=FALSE)
+         ruv &lt;- simCOP(n=n, cop=cop, para=para, graphics=FALSE, ...)
+         rpara &lt;- copBasic.fitpara.beta(ruv, statf=statf,
+                             interval=interval, cop=cop)
+         Tn[i] &lt;- ifelse(is.na(rpara), NA, statTn(ruv, cop=cop, para=rpara))
+      }
+      numNA &lt;- length(Tn[is.na(Tn)])
+      message("done: Number of failed parameter estimates=", numNA)
+      options(opts)
+      return(Tn[! is.na(Tn)])
+  }
+</pre>
+<p>Let us imagine an <code class="reqn">n=400</code> sample size of a <em>Galambos copula</em> (<code class="reqn">\mathbf{GL}(u,v)</code>; <code>GLcop</code>) and then treat the <em>Plackett copula</em> (<code class="reqn">\mathbf{PL}(u,v)</code>; <code>PLACKETTcop</code>) as the proper (chosen) model. The estimated parameter by the sample <em>Blomqvist Beta</em> of <code class="reqn">\hat\beta_\mathbf{C} = 0.64</code> using the <code>blomCOP</code> function called from within <code>copBasic.fitpara.beta</code> is then placed in variable <code>para</code>. The <code class="reqn">\hat\beta_\mathbf{C}</code> is not the most efficient estimator but for purposes here, but it is fast.  The parameter for the given seed is estimated as about <code class="reqn">\mathbf{PL}(\hat\Theta{=}20.75)</code>.
+</p>
+<pre>
+  n &lt;- 400 # sample size
+  correctCopula &lt;- GLcop; set.seed(1596)
+  sampleUV &lt;- simCOP(n=n, cop=correctCopula, para=1.9) # a random sample
+  para.correctCopula &lt;- copBasic.fitpara.beta(uv=sampleUV, statf=blomCOP,
+                                interval=c(1,5),      cop=correctCopula)
+  chosenCopula &lt;- PLACKETTcop
+  para &lt;- copBasic.fitpara.beta(uv=sampleUV, statf=blomCOP,
+                                interval=c(.001,200), cop=chosenCopula )
+</pre>
+<p>Next, compute the sample <code class="reqn">\hat T_n = 0.063</code> from <code>sampleUV</code>. The distribution of the <code class="reqn">T_n</code> is estimated using the <code>distTn</code> function, and an estimate of the <code class="reqn">\hat T_n</code> p-value is in turn estimated. A large simulation run <code class="reqn">N = 1{,}000</code> for a sample of size of <code class="reqn">n = 400</code> is selected. The <code>distTn</code> function internally will simulated for <code>N</code>-replicates from the assumed parent and estimate the parameter. A computation run yields a p-value of approximately 0.01 (depending upon the seed) and is statistically significant at an alpha of 0.05, and therefore, the <code class="reqn">\mathbf{PL}(\Theta{=}20.75)</code> should be rejected for fitting to these data.
+</p>
+<pre>
+  sampleTn   &lt;- statTn(sampleUV, cop=chosenCopula, para=para)
+  Tns        &lt;- distTn(n=n,      cop=chosenCopula, para=para,
+                       interval=c(0.001, 100), statf=blomCOP)
+  Tns_pvalue &lt;- 1 - sum(Tns &lt;= sampleTn) / length(Tns) # estimate p-value
+</pre>
+<p>The demonstration is furthered with a check on the <em>Kullback–Leibler sample size</em> <code class="reqn">n_{f\!g}</code> at the 5-percent significance level (alpha = 0.05) by the <code>kullCOP</code> function, which yields <code class="reqn">100</code>. Given the parent copula as <code class="reqn">\mathbf{GL}(\Theta{=}1.9)</code>, therefore, it would take approximately 100 samples to distinguish between that copula and a <code class="reqn">\mathbf{PL}(\Theta{=}20.75)</code> where in this case the fit was through the <code class="reqn">\hat\beta_\mathbf{C} = 0.64</code>.
+</p>
+<pre>
+  kullCOP(cop1=correctCopula, para1=1.9,
+          cop2=chosenCopula,  para2=para)$KL.sample.size # KL sample size = 100
+  vuongCOP(sampleUV, cop1=correctCopula, para1=para.correctCopula,
+                     cop2=chosenCopula,  para2=para)$message
+  # [1] "Copula 1 has better fit than Copula 2 at 100x(1-alpha) level"
+</pre>
+<p>The available sample size <code class="reqn">n = 400</code> is then about four times larger than <code class="reqn">n_{f\!g}</code> so the sample size <code class="reqn">n</code> should be sufficient to judge goodness-of-fit. This is a large value but with the sample variability of <code class="reqn">\hat\beta_\mathbf{C}</code>, it seems that other measures of association such as <em>Spearman Rho</em> (<code>rhoCOP</code>) or <em>Kendall Tau</em> (<code>tauCOP</code>) and others cross-referenced therein might be preferable.
+</p>
+<p>The prior conclusion is supported by the p-value of the <code class="reqn">\hat T_n</code> being about 0.01, which suggests that the <code class="reqn">\mathbf{PL}(u,v)</code> is not a good model of the available sample data in <code>sampleUV</code>. Lastly, these judgments are consistent with the <em>Vuoug Procedure</em> performed by the <code>vuongCOP</code> function, which reports at the 5-percent significance level that “copula number 1”—in this case, the <code class="reqn">\mathbf{GL}(u,v)</code>—has the better fit, and this is obviously consistent with the problem setup because the random sample for investigation was drawn from the Galambos coupla (the parent form).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Genest, C., Kojadinovic, I., Nešlehová, J., and Yan, J., 2011, A goodness-of-fit test for bivariate extreme-value copulas: Bernoulli, v. 17, no. 1, pp. 253–275.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>aicCOP</code>, <code>bicCOP</code>, <code>rmseCOP</code>, <code>vuongCOP</code>, <code>kullCOP</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+# Example here is just for Tn. For the example below, the PSP copula is quite different
+# from the Gumbel-Hougaard copula and thus, the hatTn would be expected to be different
+# from those of the Gumbel-Hougaard and certainly not too near to zero.
+samUV  &lt;- simCOP(n=60, cop=PSP, graphics=FALSE, seed=1)   # random sample
+hatTau &lt;- cor(samUV$U, samUV$V, method="kendall")         # Kendall Tau
+hatTn  &lt;- statTn(samUV, cop=GHcop, para=GHcop(tau=hatTau)$para,
+                 ctype="bernstein", bernprogress=TRUE)    # 0.03328789
+# hatTn in this case is by itself is somewhat uninformative and requires
+# Monte Carlo to put an individual value into context.
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,358 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>MultiChainLadder</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2> Multivariate Chain-Ladder Models </h2>
+
+<h3>Description</h3>
+
+<p>The function <code>MultiChainLadder</code> implements multivariate methods to  forecast insurance loss payments based on several cumulative claims development triangles. These methods are multivariate extensions of the chain-ladder technique, which develop several correlated triangles simultaneously in a way that both contemporaneous correlations and structural relationships can be accounted for. The estimated conditional Mean Square Errors (MSE) are also produced. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">MultiChainLadder(Triangles, fit.method = "SUR", delta = 1,
+  int = NULL, restrict.regMat = NULL, extrap = TRUE, 
+  mse.method = "Mack", model = "MCL", ...)
+    
+MultiChainLadder2(Triangles, mse.method = "Mack", last = 3, 
+  type = c("MCL", "MCL+int", "GMCL-int", "GMCL"), ...)    
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Triangles</code></td>
+<td>
+<p>a list of cumulative claims triangles of the same dimensions. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fit.method</code></td>
+<td>
+<p>the method used to fit the multivariate regression in each development period. The default is <code>"SUR"</code> - seemingly unrelated regressions. When <code>"OLS"</code> (Ordinary Least Squares) is used, this is the same as developing each triangle separately. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta</code></td>
+<td>
+<p>parameter for controlling weights. It is used to determine the covariance structure <code class="reqn">D(Y_{i,k}^{\delta/2})\Sigma_k D(Y_{i,k}^{\delta/2})</code>. The default value <code>1</code> means that the variance is proportional to the cumulative loss from the previous period. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>int</code></td>
+<td>
+<p>a numeric vector that indicates which development periods have intercepts specified. This only takes effect for <code>model = "GMCL"</code>. The default <code>NULL</code> means that no intercepts are specified.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>restrict.regMat</code></td>
+<td>
+<p>a list of matrix specifying parameter restriction matrix for each period. This is only used for <code>model = "GMCL"</code>. The default value <code>NULL</code> means no restriction is imposed on the development matrix. For example, if there are 3 triangles, there will be 9 parameters in the development matrix for each period if <code>restrict.regMat = NULL</code>. See <code>systemfit</code> for how to specify the appropriate parameter constraints.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extrap</code></td>
+<td>
+<p>a logical value indicating whether to use Mack's extrapolation method for the last period to get the residual variance  estimation. It only takes effect for  <code>model = "MCL"</code>. If the data are  trapezoids, it is set to be <code>FALSE</code> automatically and a warning message is given.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mse.method</code></td>
+<td>
+<p>method to estimate the mean square error. It can be either <code>"Mack"</code> or <code>"Independence"</code>, which are  the multivariate generalization of Mack's formulas and the conditional re-sampling approach, respectively.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>the structure of the model to be fitted. It is either <code>"MCL"</code> or <code>"GMCL"</code>. See details below. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>last</code></td>
+<td>
+<p>an integer. The <code>MultiChainLadder2</code> function splits the triangles into 2 parts internally (see details below), and the <code>last</code> argument indicates how many of the development periods in the tail go into the second part of the split. The default is <code>3</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>the type of the model structure to be specified for the first part of the split model in <code>MultiChainLadder2</code>. <code>"MCL"</code>- the multivariate chain-ladder with diagonal development matrix; <code>"MCL+int"</code>- the multivariate chain-ladder with additional intercepts; <code>"GMCL-int"</code>- the general multivariate chain-ladder without intercepts; and <code>"GMCL"</code> - the full general multivariate chain-ladder with intercepts and non-diagonal development matrix. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments passed to <code>systemfit</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function implements multivariate loss reserving models within the chain-ladder framework.  Two major models are included. One is the Multivariate chain-ladder (MCL) model proposed by Prohl and Schmidt (2005). This is a direct multivariate generalization of the univariate chain-ladder model in that losses from different triangles are assumed to be correlated but the mean development in one triangle only depends on its past values, not on the observed values from other triangles. In contrast, the other model, the General Multivariate chain-ladder (GMCL) model outlined in Zhang (2010), extends the MCL model by allowing development dependencies among different triangles as well as the inclusion of regression intercepts. As a result, structurally related triangles, such as the  paid and incurred loss triangles or the paid loss and case reserve triangles, can be developed together while still accounting for the potential contemporaneous correlations. While the MCL model is a special case of the GMCL model, it is programmed and listed separately because: a) it is an important model for its own sake; b) different MSE methods are only available for the MCL model; c) extrapolation of the residual variance estimation can be implemented for the MCL model, which is considerably difficult for the GMCL model. 
+</p>
+<p>We introduce some details of the GMCL model in the following. Assume N triangles are available. Denote <code class="reqn">Y_{i,k}=(Y^{(1)}_{i,k}, \ldots ,Y^{(N)}_{i,k})</code> as an <code class="reqn">N \times 1</code> vector of  cumulative losses at accident year i and development year k, where (n) refers to the n-th triangle. The GMCL model in development period k (from development year k to year k+1) is:
+</p>
+<p style="text-align: center;"><code class="reqn">Y_{i,k+1}=A_k + B_k \cdot Y_{i,k}+\epsilon_{i,k},</code>
+</p>
+
+<p>where <code class="reqn">A_k</code> is a column of intercepts and <code class="reqn">B_k</code> is the  <code class="reqn">N \times N</code> development matrix. By default, <code>MultiChainLadder</code> sets <code class="reqn">A_k</code> to be zero. This behavior can be changed by appropriately specifying the <code>int</code> argument.
+Assumptions for this model are:
+</p>
+<p style="text-align: center;"><code class="reqn">E(\epsilon_{i,k}|Y_{i,1},\ldots,Y_{i,I+1-k})=0.</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">cov(\epsilon_{i,k}|Y_{i,1},\ldots,Y_{i,I+1-k})=\Sigma_{\epsilon_{i,k}}=D(Y_{i,k}^{\delta/2})\Sigma_k D(Y_{i,k}^{\delta/2}).</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">\mbox{losses of different accident years are independent}.</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">\epsilon_{i,k} \, \mbox{are symmetrically distributed}.</code>
+</p>
+
+<p>The GMCL model structure is generally over-parameterized. Parameter restrictions are usually necessary for the estimation to be feasible, which can be specified through the <code>restrict.regMat</code> argument. We refer the users to the documentation for <code>systemfit</code> for details and the demo of the present function for examples. 
+</p>
+<p>In particular, if one restricts the development matrix to be diagonal, the GMCL model will reduce to the MCL model. When non-diagonal development matrix is used and the GMCL model is applied to paid and incurred loss triangles, it can reflect the development relationship between the two triangles, as described in Quarg and Mack (2004). The full bivariate model is identical to the "double regression" model described by Mack (2003), which is argued by him to be very similar to the Munich chain-ladder (MuCL) model. The GMCL model with intercepts can also help improve model adequacy as described in Barnett and Zehnwirth (2000). 
+</p>
+<p>Currently, the GMCL model only works for trapezoid data, and only implements <code>mse.method = "Mack"</code>. The MCL model allows an additional mse estimation method that assumes independence among the estimated parameters. Further, the MCL model using <code>fit.method = "OLS"</code> will be equivalent to running univariate chain-ladders separately on each triangle. Indeed, when only one triangle is specified (as a list),  the MCL model is equivalent to <code>MackChainLadder</code>. 
+</p>
+<p>The GMCL model allows different model structures to be specified in each development period. This is generally achieved through the combination of the <code>int</code> argument, which specifies the periods that have intercepts, and the <code>restrict.regMat</code> argument, which imposes parameter restrictions on the development matrix. 
+</p>
+<p>In using the multivariate methods, we often specify separate univariate chain-ladders for the tail periods to stabilize the estimation - there are few data points in the tail and running a multivariate model often produces extremely volatile estimates or even fails. In this case, we can use the subset operator <code>"["</code> defined for class <code>triangles</code> to split the input data into two parts. We can specify a multivariate model with rich structures on the first part to reflect the multivariate dependencies, and simply apply multiple univariate chain-ladders on the second part. The two models are subsequently joined together using the <code>Join2Fits</code> function. We can then invoke the <code>predict</code> and <code>Mse</code> methods to produce loss predictions and mean square error estimations. They can further be combined via the <code>JoinFitMse</code> function  to construct an object of class <code>MultiChainLadder</code>. See the demo for such examples. 
+</p>
+<p>To facilitate such a split-and-join process for most applications, we have created the function <code>MultiChainLadder2</code>. This function splits the data according to the <code>last</code> argument (e.g., if <code>last = 3</code>, the last three periods go into the second part), and fits the first part according to the structure indicated in the <code>type</code> argument. See the 'Arguments' section for details. 
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>MultiChainLadder</code> returns an object of class <code>MultiChainLadder</code>  with the following slots:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>the model structure used, either <code>"MCL"</code> or <code>"GMCL"</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Triangles</code></td>
+<td>
+<p>input triangles of cumulative claims that are converted to class <code>triangles</code> internally. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>models</code></td>
+<td>
+<p>fitted models for each development period. This is the output from the call of <code>systemfit</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coefficients</code></td>
+<td>
+<p>estimated regression coefficients or development parameters. They are put into the matrix format for the GMCL model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coefCov</code></td>
+<td>
+<p>estimated variance-covariance matrix for the regression coefficients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>residCov</code></td>
+<td>
+<p>estimated residual covariance matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fit.method</code></td>
+<td>
+<p>multivariate regression estimation method</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta</code></td>
+<td>
+<p>the value of delta</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mse.ay</code></td>
+<td>
+<p>mean square error matrix for each accident year</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mse.ay.est</code></td>
+<td>
+<p>estimation error matrix for each accident year</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mse.ay.proc</code></td>
+<td>
+<p>process error matrix for each accident year</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mse.total</code></td>
+<td>
+<p>mean square error matrix for all accident years combined</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mse.total.est</code></td>
+<td>
+<p>estimation error matrix for all accident years combined</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mse.total.proc</code></td>
+<td>
+<p>process error matrix for all accident years combined</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FullTriangles</code></td>
+<td>
+<p>the forecasted full triangles of class <code>triangles</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>int</code></td>
+<td>
+<p>intercept indicators</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>When <code>MultiChainLadder</code> or <code>MultiChainLadder2</code> fails, the most possible reason is that there is little or no development in the tail periods. That is, the development factor is <code>1</code> or almost equal to <code>1</code>. In this case, the <code>systemfit</code> function may fail even for <code>fit.method = "OLS"</code>, because the residual covariance matrix <code class="reqn">\Sigma_k</code> is singular. The simplest solution is to remove these columns using the <code>"["</code> operator and fit the model on the remaining part. 
+</p>
+<p>Also, we recommend the use of <code>MultiChainLadder2</code> over <code>MultiChainLadder</code>. The function <code>MultiChainLadder2</code> meets the need for most applications, is relatively easy to use and produces more stable but very similar results to <code>MultiChainLadder</code>. Use <code>MultiChainLadder</code> only when non-standard situation arises, e.g., when different parameter restrictions are needed for different periods. See the demo for such examples.   
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Wayne Zhang <a href="mailto:actuary_zhang@hotmail.com">actuary_zhang@hotmail.com</a></p>
+
+
+<h3>References</h3>
+
+ 
+<p><cite>Buchwalder M, Bühlmann H, Merz M, Wüthrich M.V (2006). The mean square error of prediction in the chain-ladder reserving method (Mack and Murphy revisited), <em>ASTIN Bulletin</em>, 36(2), 521-542.</cite>
+</p>
+<p><cite>Prohl C, Schmidt K.D (2005). Multivariate chain-ladder, <em>Dresdner Schriften zur Versicherungsmathematik</em>.</cite>
+</p>
+<p><cite> Mack T (1993). Distribution-free calculation of the standard error, <em>ASTIN Bulletin</em>, 23, No.2. </cite>
+</p>
+<p><cite> Mack T (1999). The standard error of chain-ladder reserve estimates: recursive calculation and inclusion of a tail factor, <em>ASTIN Bulletin</em>, 29, No.2, 361-366.</cite>
+</p>
+<p><cite> Merz M, Wüthrich M (2008). Prediction error of the multivariate chain ladder reserving method, <em>North American Actuarial Journal</em>, 12, No.2, 175-197.</cite>
+</p>
+<p><cite>Zhang Y (2010). A general multivariate chain-ladder model.<em>Insurance: Mathematics and Economics</em>, 46, pp. 588-599.</cite>
+</p>
+<p><cite>Zhang Y (2010). Prediction error of the general multivariate chain ladder model.</cite>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>See also <code>MackChainLadder</code>, <code>MunichChainLadder</code>, <code>triangles</code>, <code>MultiChainLadder</code>, <code>summary,MultiChainLadder-method</code> and  <code>plot,MultiChainLadder,missing-method</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># This shows that the MCL model using "OLS" is equivalent to 
+# the MackChainLadder when applied to one triangle 
+
+data(GenIns)
+(U1 &lt;- MackChainLadder(GenIns, est.sigma = "Mack"))
+(U2 &lt;- MultiChainLadder(list(GenIns), fit.method = "OLS"))
+
+# show plots 
+parold &lt;- par(mfrow = c(2, 2))
+plot(U2, which.plot = 1:4)
+plot(U2, which.plot = 5)
+par(parold)
+
+
+# For mse.method = "Independence", the model is equivalent 
+# to that in Buchwalder et al. (2006)
+
+(B1 &lt;- MultiChainLadder(list(GenIns), fit.method = "OLS", 
+    mse.method = "Independence"))
+
+# use the unbiased residual covariance estimator 
+# in Merz and Wuthrich (2008)
+(W1 &lt;- MultiChainLadder2(liab, mse.method = "Independence", 
+    		control = systemfit::systemfit.control(methodResidCov = "Theil"))) 
+
+## Not run: 
+# use the iterative residual covariance estimator
+for (i in 1:5){
+  W2 &lt;- MultiChainLadder2(liab, mse.method = "Independence", 
+      control = systemfit::systemfit.control(
+      methodResidCov = "Theil", maxiter = i))
+  print(format(summary(W2)@report.summary[[3]][15, 4:5], 
+          digits = 6, big.mark = ","))    
+}
+
+# The following fits an MCL model with intercepts for years 1:7
+# and separate chain-ladder models for the rest periods
+f1 &lt;- MultiChainLadder2(auto, type = "MCL+int")
+
+# compare with the model without intercepts through residual plots
+f0 &lt;- MultiChainLadder2(auto, type = "MCL")
+
+parold &lt;- par(mfrow = c(2, 3), mar = c(3, 3, 2, 1))
+mt &lt;- list(c("Personal Paid", "Personal Incured", "Commercial Paid"))
+plot(f0, which.plot = 3, main = mt)
+plot(f1, which.plot = 3, main = mt)
+par(parold)
+
+## summary statistics
+summary(f1, portfolio = "1+3")@report.summary[[4]]
+
+
+# model for joint development of paid and incurred triangles 
+da &lt;- auto[1:2]
+# MCL with diagonal development
+M0 &lt;- MultiChainLadder(da)
+# non-diagonal development matrix with no intercepts
+M1 &lt;- MultiChainLadder2(da, type = "GMCL-int")
+# Munich chain-ladder
+M2 &lt;- MunichChainLadder(da[[1]], da[[2]])
+# compile results and compare projected paid to incurred ratios
+r1 &lt;- lapply(list(M0, M1), function(x){
+          ult &lt;- summary(x)@Ultimate
+          ult[, 1] / ult[, 2]
+      })
+names(r1) &lt;- c("MCL", "GMCL")
+r2 &lt;- summary(M2)[[1]][, 6]
+r2 &lt;- c(r2, summary(M2)[[2]][2, 3])
+print(do.call(cbind, c(r1, list(MuCl = r2))) * 100, digits = 4)
+
+
+## End(Not run)
+
+# To reproduce results in Zhang (2010) and see more examples, use:
+## Not run: 
+ demo(MultiChainLadder)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

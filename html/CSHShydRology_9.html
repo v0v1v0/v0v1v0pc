@@ -1,0 +1,204 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ch_checkcatchment</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Check Catchments</h2>
+
+<h3>Description</h3>
+
+<p>Generates a simple map to allow a visual assessment of the catchment 
+boundaries relative to the elevation contours.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ch_checkcatchment(
+  dem,
+  catchment,
+  outlet,
+  outlet_label = NULL,
+  main_label = "",
+  bbox_type = "catchment",
+  channel_vec = NULL,
+  cb_colour = "red",
+  pp_colour = "red",
+  channel_colour = "blue",
+  contour_colour = "grey",
+  plot_na = TRUE,
+  plot_scale = TRUE,
+  na_location = "tr",
+  scale_location = "bl"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>dem</code></td>
+<td>
+<p>raster DEM that catchments were generated from.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>catchment</code></td>
+<td>
+<p>Catchment polygon (sf object).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outlet</code></td>
+<td>
+<p>Location of catchment outlet (sf object).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outlet_label</code></td>
+<td>
+<p>Character label for outlet.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>main_label</code></td>
+<td>
+<p>Main label for catchment plot.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bbox_type</code></td>
+<td>
+<p>type of bounding box. If <span class="option">catchment</span>, then
+the contours are bounded by the catchment, otherwise they are plotted 
+to the extent of the DEM</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>channel_vec</code></td>
+<td>
+<p>Vectors of the channels will be plotted if specified.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cb_colour</code></td>
+<td>
+<p>Colour for catchment outline. Default is "red".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pp_colour</code></td>
+<td>
+<p>Colour for catchment pour points. Default is "red".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>channel_colour</code></td>
+<td>
+<p>Colour for channel. Default is "blue".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>contour_colour</code></td>
+<td>
+<p>Colour for contours Default is "grey".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot_na</code></td>
+<td>
+<p>If <code>TRUE</code> (the default) a north arrow is added to the plot.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot_scale</code></td>
+<td>
+<p>If <code>TRUE</code> (the default) a scale bar is added to the plot.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na_location</code></td>
+<td>
+<p>Location for the north arrow. Default is <span class="option">tr</span>, i.e. top-right.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scale_location</code></td>
+<td>
+<p>Location for the scale bar. Default is <span class="option">bl</span>, i.e. bottom-left.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Also generates a table summarizing the catchments, 
+including the coordinates of the outlet point and the catchment area.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>TRUE</code>. A map of the catchments is also plotted and 
+the catchment parameters are printed.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Dan Moore and Kevin Shook
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>ch_checkchannels</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Only proceed if Whitebox executable is installed
+library(whitebox)
+if (check_whitebox_binary()){
+  library(raster)
+  test_raster &lt;- ch_volcano_raster()
+  dem_raster_file &lt;- tempfile(fileext = ".tif")
+  no_sink_raster_file &lt;- tempfile("no_sinks", fileext = ".tif")
+
+  # write test raster to file
+  writeRaster(test_raster, dem_raster_file, format = "GTiff")
+
+  # remove sinks
+  removed_sinks &lt;- ch_wbt_removesinks(dem_raster_file, no_sink_raster_file, 
+  method = "fill")
+
+  # get flow accumulations
+  flow_acc_file &lt;- tempfile("flow_acc", fileext = ".tif")
+  flow_acc &lt;- ch_wbt_flow_accumulation(no_sink_raster_file, flow_acc_file)
+
+  # get pour points
+  pourpoint_file &lt;- tempfile("volcano_pourpoints", fileext = ".shp")
+  pourpoints &lt;- ch_volcano_pourpoints(pourpoint_file)
+  snapped_pourpoint_file &lt;- tempfile("snapped_pourpoints", fileext = ".shp")
+  snapped_pourpoints &lt;- ch_wbt_pourpoints(pourpoints, flow_acc_file, pourpoint_file,
+  snapped_pourpoint_file, snap_dist = 10)
+
+# get flow directions
+  flow_dir_file &lt;- tempfile("flow_dir", fileext = ".tif")
+  flow_dir &lt;- ch_wbt_flow_direction(no_sink_raster_file, flow_dir_file)
+  fn_catchment_ras &lt;- tempfile("catchment", fileext = ".tif")
+  fn_catchment_vec &lt;- tempfile("catchment", fileext = ".shp")
+  catchments &lt;- ch_wbt_catchment(snapped_pourpoint_file, flow_dir_file, 
+  fn_catchment_ras, fn_catchment_vec)
+
+# check results
+  ch_checkcatchment(test_raster, catchments, snapped_pourpoints)
+} else {
+  message("Examples not run as Whitebox executable not found")
+}
+</code></pre>
+
+
+</div>

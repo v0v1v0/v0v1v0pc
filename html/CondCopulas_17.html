@@ -1,0 +1,153 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CKT.fit.GLM</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimation of conditional Kendall's taus by penalized GLM</h2>
+
+<h3>Description</h3>
+
+<p>The function <code>CKT.fit.GLM</code> fits a regression model for the
+conditional Kendall's tau <code class="reqn">\tau_{1,2|Z}</code>
+between two variables <code class="reqn">X_1</code> and <code class="reqn">X_2</code>
+conditionally to some predictors <code class="reqn">Z</code>.
+More precisely, this function fits the model
+</p>
+<p style="text-align: center;"><code class="reqn">\tau_{1,2|Z} =
+2 * \Lambda( \beta_0 + \beta_1 \phi_1(Z) + ... + \beta_p \phi_p(Z) )</code>
+</p>
+
+<p>for a link function <code class="reqn">\Lambda</code>,
+and <code class="reqn">p</code> real-valued functions <code class="reqn">\phi_1, ..., \phi_p</code>.
+The function <code>CKT.predict.GLM</code> predicts the values of
+conditional Kendall's tau for some values of the conditioning variable <code class="reqn">Z</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CKT.fit.GLM(
+  datasetPairs,
+  designMatrix = datasetPairs[, 2:(ncol(datasetPairs) - 3), drop = FALSE],
+  link = "logit",
+  ...
+)
+
+CKT.predict.GLM(fit, newZ)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>datasetPairs</code></td>
+<td>
+<p>the matrix of pairs and corresponding values of the kernel
+as provided by <code>datasetPairs</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>designMatrix</code></td>
+<td>
+<p>the matrix of predictor to be used for the fitting of the model.
+It should have the same number of rows as the <code>datasetPairs</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link</code></td>
+<td>
+<p>link function, can be one of
+<code>logit</code>, <code>probit</code>, <code>cloglog</code>, <code>cauchit</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>other parameters passed to
+<code>ordinalNet::ordinalNet()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fit</code></td>
+<td>
+<p>result of a call to <code>CKT.fit.GLM</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newZ</code></td>
+<td>
+<p>new matrix of observations of the conditioning vector <code class="reqn">Z</code>,
+with the same number of variables and same names as the <code>designMatrix</code>
+that was used to fit the GLM.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>CKT.fit.GLM</code> returns the fitted GLM,
+an object with S3 class <code>ordinalNet</code>.
+</p>
+<p><code>CKT.predict.GLM</code> returns
+a vector of (predicted) conditional Kendall's taus of the same size
+as the number of rows of the matrix <code>newZ</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Derumigny, A., &amp; Fermanian, J. D. (2019).
+A classification point-of-view about conditional Kendall’s tau.
+Computational Statistics &amp; Data Analysis, 135, 70-94.
+(Algorithm 2)
+<a href="https://doi.org/10.1016/j.csda.2019.01.013">doi:10.1016/j.csda.2019.01.013</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>See also other estimators of conditional Kendall's tau:
+<code>CKT.fit.tree</code>, <code>CKT.fit.randomForest</code>,
+<code>CKT.fit.nNets</code>, <code>CKT.predict.kNN</code>,
+<code>CKT.kernel</code>, <code>CKT.kendallReg.fit</code>,
+and the more general wrapper <code>CKT.estimate</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># We simulate from a conditional copula
+set.seed(1)
+N = 400
+Z = rnorm(n = N, mean = 5, sd = 2)
+conditionalTau = 2*plogis(-1 + 0.8*Z - 0.1*Z^2) - 1
+simCopula = VineCopula::BiCopSim(N=N , family = 1,
+    par = VineCopula::BiCopTau2Par(1 , conditionalTau ))
+X1 = qnorm(simCopula[,1])
+X2 = qnorm(simCopula[,2])
+
+datasetP = datasetPairs(X1 = X1, X2 = X2, Z = Z, h = 0.07, cut = 0.9)
+designMatrix = cbind(datasetP[,2], datasetP[,2]^2)
+fitCKT_GLM &lt;- CKT.fit.GLM(
+  datasetPairs = datasetP, designMatrix = designMatrix,
+  maxiterOut = 10, maxiterIn = 5)
+print(coef(fitCKT_GLM))
+# These are rather close to the true coefficients -1, 0.8, -0.1
+# used to generate the data above.
+
+newZ = seq(2,10,by = 0.1)
+estimatedCKT_GLM = CKT.predict.GLM(
+  fit = fitCKT_GLM, newZ = cbind(newZ, newZ^2))
+
+# Comparison between true Kendall's tau (in red)
+# and estimated Kendall's tau (in black)
+trueConditionalTau = 2*plogis(-1 + 0.8*newZ - 0.1*newZ^2) - 1
+plot(newZ, trueConditionalTau , col="red",
+   type = "l", ylim = c(-1, 1))
+lines(newZ, estimatedCKT_GLM)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,154 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>medweightcont</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Causal mediation analysis with a continuous treatment based on weighting by the inverse of generalized propensity scores</h2>
+
+<h3>Description</h3>
+
+<p>Causal mediation analysis (evaluation of natural direct and indirect effects) of a continuous treatment based on weighting by the inverse of generalized propensity scores as suggested in Hsu, Huber, Lee, and Lettry (2020).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">medweightcont(
+  y,
+  d,
+  m,
+  x,
+  d0,
+  d1,
+  ATET = FALSE,
+  trim = 0.1,
+  lognorm = FALSE,
+  bw = NULL,
+  boot = 1999,
+  cluster = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Dependent variable, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+<p>Continuous treatment, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>m</code></td>
+<td>
+<p>Mediator(s), may be a scalar or a vector, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Pre-treatment confounders of the treatment, mediator, and/or outcome, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d0</code></td>
+<td>
+<p>Value of <code>d</code> under non-treatment. Effects are based on pairwise comparisons, i.e. differences in potential outcomes evaluated at <code>d1</code> and <code>d0</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d1</code></td>
+<td>
+<p>Value of <code>d</code> under treatment. Effects are based on pairwise comparisons, i.e. differences in potential outcomes evaluated at <code>d1</code> and <code>d0</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ATET</code></td>
+<td>
+<p>If FALSE, the average treatment effect (ATE) and the corresponding direct and indirect effects are estimated. If TRUE, the average treatment effect on the treated (ATET)  and the corresponding direct and indirect effects are estimated. Default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trim</code></td>
+<td>
+<p>Trimming rule for discarding observations with too large weights in the estimation of any mean potential outcome. That is, observations with a weight&gt;<code>trim</code> are dropped from the sample. Default is a maximum weight of 0.1 (or 10 percent) per observation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lognorm</code></td>
+<td>
+<p>If FALSE, a linear model with normally distributed errors is assumed for generalized propensity score estimation. If TRUE, a lognormal model is assumed. Default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bw</code></td>
+<td>
+<p>Bandwith for the second order Epanechnikov kernel functions of the treatment. If set to NULL, bandwidth computation is based on the rule of thumb for Epanechnikov kernels, determining the bandwidth as the standard deviation of the treatment times 2.34/(<code>n</code>^0.25), where <code>n</code> is the sample size. Default is <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>boot</code></td>
+<td>
+<p>Number of bootstrap replications for estimating standard errors. Default is 1999.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cluster</code></td>
+<td>
+<p>A cluster ID for block or cluster bootstrapping when units are clustered rather than iid. Must be numerical. Default is NULL (standard bootstrap without clustering).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Estimation of causal mechanisms (natural direct and indirect effects) of a continuous treatment under a selection on observables assumption assuming that all confounders of the treatment and the mediator, the treatment and the outcome, or the mediator and the outcome are observed. Units are weighted by the inverse of their conditional treatment densities (known as generalized propensity scores) given the mediator and/or observed confounders, which are estimated by linear or loglinear regression.
+Standard errors are obtained by bootstrapping the effects.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A medweightcont object contains two components, <code>results</code> and <code>ntrimmed</code>:
+</p>
+<p><code>results</code>: a 3X5 matrix containing the effect estimates in the first row ("effects"), standard errors in the second row ("se"), and p-values in the third row ("p-value").
+The first column provides the total effect, namely the average treatment effect (ATE) if <code>ATET=FALSE</code> or the average treatment effect on the treated (ATET), i.e. those with D=<code>d1</code>, if <code>ATET=TRUE</code>.
+The second and third columns provide the direct effects under treatment and control, respectively ("dir.treat", "dir.control"). The fourth and fifth columns provide the indirect effects under treatment and control, respectively ("indir.treat", "indir.control").
+</p>
+<p><code>ntrimmed</code>: number of discarded (trimmed) observations due to extreme propensity score values.
+</p>
+
+
+<h3>References</h3>
+
+<p>Hsu, Y.-C., Huber, M., Lee, Y.-Y., Lettry, L. (2020): "Direct and indirect effects of continuous treatments based on generalized propensity score weighting", Journal of Applied Econometrics, forthcoming.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># A little example with simulated data (10000 observations)
+## Not run: 
+n=10000
+x=runif(n=n,min=-1,max=1)
+d=0.25*x+runif(n=n,min=-2,max=2)
+d=d-min(d)
+m=0.5*d+0.25*x+runif(n=n,min=-2,max=2)
+y=0.5*d+m+0.25*x+runif(n=n,min=-2,max=2)
+# The true direct and indirect effects are all equal to 0.5
+output=medweightcont(y,d,m,x,d0=2,d1=3,ATET=FALSE,trim=0.1,
+       lognorm=FALSE,bw=NULL,boot=19)
+round(output$results,3)
+output$ntrimmed
+## End(Not run)
+</code></pre>
+
+
+</div>

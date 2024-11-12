@@ -1,0 +1,495 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cross_validate</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Cross-validate regression models for model selection</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#stable"><img src="../help/figures/lifecycle-stable.svg" alt="[Stable]"></a>
+</p>
+<p>Cross-validate one or multiple linear or logistic regression
+models at once. Perform repeated cross-validation.
+Returns results in a <code>tibble</code> for easy comparison,
+reporting and further analysis.
+</p>
+<p>See <code>cross_validate_fn()</code> for use
+with custom model functions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cross_validate(
+  data,
+  formulas,
+  family,
+  fold_cols = ".folds",
+  control = NULL,
+  REML = FALSE,
+  cutoff = 0.5,
+  positive = 2,
+  metrics = list(),
+  preprocessing = NULL,
+  rm_nc = FALSE,
+  parallel = FALSE,
+  verbose = FALSE,
+  link = deprecated(),
+  models = deprecated(),
+  model_verbose = deprecated()
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p><code>data.frame</code>.
+</p>
+<p>Must include one or more grouping factors for identifying folds
+- as made with <code>groupdata2::fold()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formulas</code></td>
+<td>
+<p>Model formulas as strings. (Character)
+</p>
+<p>E.g. <code>c("y~x", "y~z")</code>.
+</p>
+<p>Can contain random effects.
+</p>
+<p>E.g. <code>c("y~x+(1|r)", "y~z+(1|r)")</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>Name of the family. (Character)
+</p>
+<p>Currently supports <strong><code>"gaussian"</code></strong> for linear regression
+with <code>lm()</code> / <code>lme4::lmer()</code>
+and <strong><code>"binomial"</code></strong> for binary classification
+with <code>glm()</code> / <code>lme4::glmer()</code>.
+</p>
+<p>See <code>cross_validate_fn()</code> for use with other model functions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fold_cols</code></td>
+<td>
+<p>Name(s) of grouping factor(s) for identifying folds. (Character)
+</p>
+<p>Include names of multiple grouping factors for repeated cross-validation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>Construct control structures for mixed model fitting
+(with <code>lme4::lmer()</code> or <code>lme4::glmer()</code>).
+See <code>lme4::lmerControl</code> and
+<code>lme4::glmerControl</code>.
+</p>
+<p>N.B. Ignored if fitting <code>lm()</code> or <code>glm()</code> models.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>REML</code></td>
+<td>
+<p>Restricted Maximum Likelihood. (Logical)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cutoff</code></td>
+<td>
+<p>Threshold for predicted classes. (Numeric)
+</p>
+<p>N.B. <strong>Binomial models only</strong></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>positive</code></td>
+<td>
+<p>Level from dependent variable to predict.
+Either as character (<em>preferable</em>) or level index (<code>1</code> or <code>2</code> - alphabetically).
+</p>
+<p>E.g. if we have the levels <code>"cat"</code> and <code>"dog"</code> and we want <code>"dog"</code> to be the positive class,
+we can either provide <code>"dog"</code> or <code>2</code>, as alphabetically, <code>"dog"</code> comes after <code>"cat"</code>.
+</p>
+<p><strong>Note:</strong> For <em>reproducibility</em>, it's preferable to <strong>specify the name directly</strong>, as
+different <code>locales</code> may sort the levels differently.
+</p>
+<p>Used when calculating confusion matrix metrics and creating <code>ROC</code> curves.
+</p>
+<p>The <code>Process</code> column in the output can be used to verify this setting.
+</p>
+<p>N.B. Only affects evaluation metrics, not the model training or returned predictions.
+</p>
+<p>N.B. <strong>Binomial models only</strong>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metrics</code></td>
+<td>
+<p><code>list</code> for enabling/disabling metrics.
+</p>
+<p>E.g. <code>list("RMSE" = FALSE)</code> would remove <code>RMSE</code> from the results,
+and <code>list("Accuracy" = TRUE)</code> would add the regular <code>Accuracy</code> metric
+to the classification results.
+Default values (<code>TRUE</code>/<code>FALSE</code>) will be used for the remaining available metrics.
+</p>
+<p>You can enable/disable all metrics at once by including
+<code>"all" = TRUE/FALSE</code> in the <code>list</code>. This is done prior to enabling/disabling
+individual metrics, why <code>list("all" = FALSE, "RMSE" = TRUE)</code>
+would return only the <code>RMSE</code> metric.
+</p>
+<p>The <code>list</code> can be created with
+<code>gaussian_metrics()</code> or
+<code>binomial_metrics()</code>.
+</p>
+<p>Also accepts the string <code>"all"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>preprocessing</code></td>
+<td>
+<p>Name of preprocessing to apply.
+</p>
+<p>Available preprocessings are:
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>Name</strong> </td>
+<td style="text-align: right;"> <strong>Description</strong> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  "standardize" </td>
+<td style="text-align: right;"> Centers and scales the numeric predictors.</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  "range" </td>
+<td style="text-align: right;"> Normalizes the numeric predictors to the <code>0</code>-<code>1</code> range.
+  Values outside the min/max range in the test fold are truncated to <code>0</code>/<code>1</code>.</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  "scale" </td>
+<td style="text-align: right;"> Scales the numeric predictors to have a standard deviation of one.</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  "center" </td>
+<td style="text-align: right;"> Centers the numeric predictors to have a mean of zero.</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ </td>
+</tr>
+</table>
+<p>The preprocessing parameters (<code>mean</code>, <code>SD</code>, etc.) are extracted from the training folds and
+applied to both the training folds and the test fold.
+They are returned in the <strong>Preprocess</strong> column for inspection.
+</p>
+<p>N.B. The preprocessings should not affect the results
+to a noticeable degree, although <code>"range"</code> might due to the truncation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rm_nc</code></td>
+<td>
+<p>Remove non-converged models from output. (Logical)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+<p>Whether to cross-validate the <code>list</code> of models in parallel. (Logical)
+</p>
+<p>Remember to register a parallel backend first.
+E.g. with <code>doParallel::registerDoParallel</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Whether to message process information
+like the number of model instances to fit and which model function was applied. (Logical)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link, models, model_verbose</code></td>
+<td>
+<p>Deprecated.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Packages used:
+</p>
+
+
+<h4>Models</h4>
+
+<p>Gaussian: <code>stats::lm</code>, <code>lme4::lmer</code>
+</p>
+<p>Binomial: <code>stats::glm</code>, <code>lme4::glmer</code>
+</p>
+
+
+
+<h4>Results</h4>
+
+
+
+<h5>Shared</h5>
+
+<p><code>AIC</code> : <code>stats::AIC</code>
+</p>
+<p><code>AICc</code> : <code>MuMIn::AICc</code>
+</p>
+<p><code>BIC</code> : <code>stats::BIC</code>
+</p>
+
+
+
+<h5>Gaussian</h5>
+
+<p><code>r2m</code> : <code>MuMIn::r.squaredGLMM</code>
+</p>
+<p><code>r2c</code> : <code>MuMIn::r.squaredGLMM</code>
+</p>
+
+
+
+<h5>Binomial</h5>
+
+<p><code>ROC and AUC</code>: <code>pROC::roc</code>
+</p>
+
+
+
+
+<h3>Value</h3>
+
+<p><code>tibble</code> with results for each model.
+</p>
+
+
+<h4>Shared across families</h4>
+
+<p>A nested <code>tibble</code> with <strong>coefficients</strong> of the models from all iterations.
+</p>
+<p>Number of <em>total</em> <strong>folds</strong>.
+</p>
+<p>Number of <strong>fold columns</strong>.
+</p>
+<p>Count of <strong>convergence warnings</strong>. Consider discarding models that did not converge on all
+iterations. Note: you might still see results, but these should be taken with a grain of salt!
+</p>
+<p>Count of <strong>other warnings</strong>. These are warnings without keywords such as "convergence".
+</p>
+<p>Count of <strong>Singular Fit messages</strong>.
+See <code>lme4::isSingular</code> for more information.
+</p>
+<p>Nested <code>tibble</code> with the <strong>warnings and messages</strong> caught for each model.
+</p>
+<p>A nested <strong>Process</strong> information object with information
+about the evaluation.
+</p>
+<p>Name of <strong>dependent</strong> variable.
+</p>
+<p>Names of <strong>fixed</strong> effects.
+</p>
+<p>Names of <strong>random</strong> effects, if any.
+</p>
+<p>Nested <code>tibble</code> with <strong>preprocess</strong>ing parameters, if any.
+</p>
+
+<p>—————————————————————-
+</p>
+
+
+<h4>Gaussian Results</h4>
+
+<p>—————————————————————-
+</p>
+<p>Average <strong><code>RMSE</code></strong>, <strong><code>MAE</code></strong>, <strong><code>NRMSE(IQR)</code></strong>,
+<strong><code>RRSE</code></strong>, <strong><code>RAE</code></strong>, <strong><code>RMSLE</code></strong>,
+<strong><code>AIC</code></strong>, <strong><code>AICc</code></strong>,
+and <strong><code>BIC</code></strong> of all the iterations*,
+<em><strong>omitting potential NAs</strong> from non-converged iterations</em>.
+Note that the Information Criterion metrics (<code>AIC</code>, <code>AICc</code>, and <code>BIC</code>) are also averages.
+</p>
+<p>See the additional metrics (disabled by default) at <code>?gaussian_metrics</code>.
+</p>
+<p>A nested <code>tibble</code> with the <strong>predictions</strong> and targets.
+</p>
+<p>A nested <code>tibble</code> with the non-averaged <strong>results</strong> from all iterations.
+</p>
+<p>* In <em>repeated cross-validation</em>,
+the metrics are first averaged for each fold column (repetition) and then averaged again.
+</p>
+
+<p>—————————————————————-
+</p>
+
+
+<h4>Binomial Results</h4>
+
+<p>—————————————————————-
+</p>
+<p>Based on the <strong>collected</strong> predictions from the test folds*,
+a confusion matrix and a <code>ROC</code> curve are created to get the following:
+</p>
+<p><code>ROC</code>:
+</p>
+<p><strong><code>AUC</code></strong>, <strong><code>Lower CI</code></strong>, and <strong><code>Upper CI</code></strong>
+</p>
+<p><code>Confusion Matrix</code>:
+</p>
+<p><strong><code>Balanced Accuracy</code></strong>,
+<strong><code>F1</code></strong>,
+<strong><code>Sensitivity</code></strong>,
+<strong><code>Specificity</code></strong>,
+<strong><code>Positive Predictive Value</code></strong>,
+<strong><code>Negative Predictive Value</code></strong>,
+<strong><code>Kappa</code></strong>,
+<strong><code>Detection Rate</code></strong>,
+<strong><code>Detection Prevalence</code></strong>,
+<strong><code>Prevalence</code></strong>, and
+<strong><code>MCC</code></strong> (Matthews correlation coefficient).
+</p>
+<p>See the additional metrics (disabled by default) at
+<code>?binomial_metrics</code>.
+</p>
+<p>Also includes:
+</p>
+<p>A nested <code>tibble</code> with <strong>predictions</strong>, predicted classes (depends on <code>cutoff</code>), and the targets.
+Note, that the predictions are <em>not necessarily</em> of the <em>specified</em> <code>positive</code> class, but of
+the <em>model's</em> positive class (second level of dependent variable, alphabetically).
+</p>
+<p>The <code>pROC::roc</code> <strong><code>ROC</code></strong> curve object(s).
+</p>
+<p>A nested <code>tibble</code> with the <strong>confusion matrix</strong>/matrices.
+The <code>Pos_</code> columns tells you whether a row is a
+True Positive (<code>TP</code>), True Negative (<code>TN</code>),
+False Positive (<code>FP</code>), or False Negative (<code>FN</code>),
+depending on which level is the "positive" class. I.e. the level you wish to predict.
+</p>
+<p>A nested <code>tibble</code> with the <strong>results</strong> from all fold columns.
+</p>
+<p>The name of the <strong>Positive Class</strong>.
+</p>
+<p>* In <em>repeated cross-validation</em>, an evaluation is made per fold column (repetition) and averaged.
+</p>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Ludvig Renbo Olsen, <a href="mailto:r-pkgs@ludvigolsen.dk">r-pkgs@ludvigolsen.dk</a>
+</p>
+<p>Benjamin Hugh Zachariae
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other validation functions: 
+<code>cross_validate_fn()</code>,
+<code>validate()</code>,
+<code>validate_fn()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Attach packages
+library(cvms)
+library(groupdata2) # fold()
+library(dplyr) # %&gt;% arrange()
+
+# Data is part of cvms
+data &lt;- participant.scores
+
+# Set seed for reproducibility
+set.seed(7)
+
+# Fold data
+data &lt;- fold(
+  data,
+  k = 4,
+  cat_col = "diagnosis",
+  id_col = "participant"
+) %&gt;%
+  arrange(.folds)
+
+#
+# Cross-validate a single model
+#
+
+# Gaussian
+cross_validate(
+  data,
+  formulas = "score~diagnosis",
+  family = "gaussian",
+  REML = FALSE
+)
+
+# Binomial
+cross_validate(
+  data,
+  formulas = "diagnosis~score",
+  family = "binomial"
+)
+
+#
+# Cross-validate multiple models
+#
+
+formulas &lt;- c(
+  "score~diagnosis+(1|session)",
+  "score~age+(1|session)"
+)
+
+cross_validate(
+  data,
+  formulas = formulas,
+  family = "gaussian",
+  REML = FALSE
+)
+
+#
+# Use parallelization
+#
+
+# Attach doParallel and register four cores
+# Uncomment:
+# library(doParallel)
+# registerDoParallel(4)
+
+# Cross-validate a list of model formulas in parallel
+# Make sure to uncomment the parallel argument
+cross_validate(
+  data,
+  formulas = formulas,
+  family = "gaussian"
+  #, parallel = TRUE  # Uncomment
+)
+
+</code></pre>
+
+
+</div>

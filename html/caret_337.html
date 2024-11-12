@@ -1,0 +1,182 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>thresholder</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate Data to Choose a Probability Threshold</h2>
+
+<h3>Description</h3>
+
+<p>This function uses the resampling results from a <code>train</code>
+object to generate performance statistics over a set of probability
+thresholds for two-class problems.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">thresholder(x, threshold, final = TRUE, statistics = "all")
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A <code>train</code> object where the values of
+<code>savePredictions</code> was either <code>TRUE</code>, <code>"all"</code>,
+or <code>"final"</code> in <code>trainControl</code>. Also, the 
+control argument <code>clasProbs</code> should have been <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold</code></td>
+<td>
+<p>A numeric vector of candidate probability thresholds
+between [0,1]. If the class probability corresponding to the first
+level of the outcome is greater than the threshold, the data point
+is classified as that level.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>final</code></td>
+<td>
+<p>A logical: should only the final tuning parameters
+chosen by <code>train</code> be used when 
+<code>savePredictions = 'all'</code>?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>statistics</code></td>
+<td>
+<p>A character vector indicating which statistics to
+calculate. See details below for possible choices; the default value
+<code>"all"</code> computes all of these.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The argument <code>statistics</code> designates the statistics to compute
+for each probability threshold. One or more of the following statistics can
+be selected:
+</p>
+
+<ul>
+<li>
+<p> Sensitivity
+</p>
+</li>
+<li>
+<p> Specificity
+</p>
+</li>
+<li>
+<p> Pos Pred Value
+</p>
+</li>
+<li>
+<p> Neg Pred Value
+</p>
+</li>
+<li>
+<p> Precision
+</p>
+</li>
+<li>
+<p> Recall
+</p>
+</li>
+<li>
+<p> F1
+</p>
+</li>
+<li>
+<p> Prevalence
+</p>
+</li>
+<li>
+<p> Detection Rate
+</p>
+</li>
+<li>
+<p> Detection Prevalence
+</p>
+</li>
+<li>
+<p> Balanced Accuracy
+</p>
+</li>
+<li>
+<p> Accuracy
+</p>
+</li>
+<li>
+<p> Kappa
+</p>
+</li>
+<li>
+<p> J
+</p>
+</li>
+<li>
+<p> Dist
+</p>
+</li>
+</ul>
+<p>For a description of these statistics (except the last two), see the
+documentation of <code>confusionMatrix</code>. The last two statistics
+are Youden's J statistic and the distance to the best possible cutoff (i.e.
+perfect sensitivity and specificity.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame with columns for each of the tuning parameters
+from the model along with an additional column called
+<code>prob_threshold</code> for the probability threshold. There are
+also columns for summary statistics averaged over resamples with
+column names corresponding to the input argument <code>statistics</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+set.seed(2444)
+dat &lt;- twoClassSim(500, intercept = -10)
+table(dat$Class)
+
+ctrl &lt;- trainControl(method = "cv", 
+                     classProbs = TRUE,
+                     savePredictions = "all",
+                     summaryFunction = twoClassSummary)
+
+set.seed(2863)
+mod &lt;- train(Class ~ ., data = dat, 
+             method = "rda",
+             tuneLength = 4,
+             metric = "ROC",
+             trControl = ctrl)
+
+resample_stats &lt;- thresholder(mod, 
+                              threshold = seq(.5, 1, by = 0.05), 
+                              final = TRUE)
+
+ggplot(resample_stats, aes(x = prob_threshold, y = J)) + 
+  geom_point()
+ggplot(resample_stats, aes(x = prob_threshold, y = Dist)) + 
+  geom_point()
+ggplot(resample_stats, aes(x = prob_threshold, y = Sensitivity)) + 
+  geom_point() + 
+  geom_point(aes(y = Specificity), col = "red")
+
+## End(Not run)
+</code></pre>
+
+
+</div>

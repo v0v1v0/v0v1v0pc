@@ -1,0 +1,192 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>runClue</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Run CLUster Evaluation</h2>
+
+<h3>Description</h3>
+
+<p>Takes in a time-course matrix and test for enrichment of the clustering using cmeans or kmeans clustering algorithm with a reference annotation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">runClue(
+  Tc,
+  annotation,
+  rep = 5,
+  kRange = 2:10,
+  clustAlg = "cmeans",
+  effectiveSize = c(5, 100),
+  pvalueCutoff = 0.05,
+  alpha = 0.5,
+  standardise = TRUE,
+  universe = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Tc</code></td>
+<td>
+<p>a numeric matrix to be clustered. The columns correspond to the time-course and the rows correspond to phosphorylation sites.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>annotation</code></td>
+<td>
+<p>a list with names correspond to kinases and elements correspond to substrates belong to each kinase.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rep</code></td>
+<td>
+<p>number of times the clustering is to be applied. This is to account for variability in the clustering algorithm. Default is 5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kRange</code></td>
+<td>
+<p>the range of k to be tested for clustering. Default is 2:10</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clustAlg</code></td>
+<td>
+<p>the clustering algorithm to be used. The default is cmeans clustering.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>effectiveSize</code></td>
+<td>
+<p>the size of annotation groups to be considered for calculating enrichment. Groups that are too small
+or too large will be removed from calculating overall enrichment of the clustering.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pvalueCutoff</code></td>
+<td>
+<p>a pvalue cutoff for determining which kinase-substrate groups to be included in calculating overall enrichment of the clustering.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>a regularisation factor for penalizing large number of clusters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>standardise</code></td>
+<td>
+<p>whether to z-score standardise the input matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>universe</code></td>
+<td>
+<p>the universe of genes/proteins/phosphosites etc. that the enrichment is calculated against. The default are the row names of the dataset.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a clue output that contains the input parameters used for evaluation and the evaluation results. Use ls(x) to see details of output. 'x' be the output here.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Example 1. Running CLUE with a simulated phosphoproteomics data
+
+## simulate a time-series phosphoproteomics data with 4 clusters and
+## each cluster with a size of 100 phosphosites
+simuData &lt;- temporalSimu(seed=1, groupSize=100, sdd=1, numGroups=4)
+
+## create an artificial annotation database. Specifically, Generate 50
+## kinase-substrate groups each comprising 20 substrates assigned to a kinase. 
+## Among them, create 5 groups each contains phosphosites defined 
+## to have the same temporal profile.
+
+kinaseAnno &lt;- list()
+groupSize &lt;- 100
+for (i in 1:5) {
+  kinaseAnno[[i]] &lt;- paste("p", (groupSize*(i-1)+1):(groupSize*(i-1)+20), sep="_")
+}
+
+for (i in 6:50) {
+  set.seed(i)
+  kinaseAnno[[i]] &lt;- paste("p", sample.int(nrow(simuData), size = 20), sep="_")
+}
+names(kinaseAnno) &lt;- paste("KS", 1:50, sep="_")
+
+## run CLUE with a repeat of 3 times and a range from 2 to 8
+set.seed(1)
+cl &lt;- runClue(Tc=simuData, annotation=kinaseAnno, rep=3, kRange=2:8, 
+              standardise = TRUE, universe = NULL)
+
+## visualize the evaluation outcome
+boxplot(cl$evlMat, col=rainbow(8), las=2, xlab="# cluster", ylab="Enrichment", main="CLUE")
+
+## generate optimal clustering results using the optimal k determined by CLUE
+best &lt;- clustOptimal(cl, rep=3, mfrow=c(2, 3))
+
+## list enriched clusters
+best$enrichList
+
+## obtain the optimal clustering object
+best$clustObj
+
+## Example 2. Running CLUE with a phosphoproteomics dataset, discover optimal number of clusters, 
+## clustering data accordingly, and identify key kinases involved in each cluster.
+
+## load the human ES phosphoprotoemics data (Rigbolt et al. Sci Signal. 4(164):rs3, 2011)
+data(hES)
+# load the PhosphoSitePlus annotations (Hornbeck et al. Nucleic Acids Res. 40:D261-70, 2012)
+# note that one can instead use PhosphoELM database by typing "data(PhosphoELM)".
+data(PhosphoSite)
+
+## run CLUE with a repeat of 5 times and a range from 2 to 15
+set.seed(1)
+cl &lt;- runClue(Tc=hES, annotation=PhosphoSite.human, rep=5, kRange=2:15, 
+              standardise = TRUE, universe = NULL)
+
+boxplot(cl$evlMat, col=rainbow(15), las=2, xlab="# cluster", ylab="Enrichment", main="CLUE")
+
+best &lt;- clustOptimal(cl, rep=3, mfrow=c(4, 4))
+
+best$enrichList
+
+## Example 3. Running CLUE with a gene expression dataset, discover optimal number of clusters, 
+## clustering data accordingly, and identify key pathway involved in each cluster.
+
+## load mouse adipocyte gene expression data 
+# (Ma et al. Molecular and Cellular Biology. 2014, 34(19):3607-17)
+data(adipocyte)
+
+## load the KEGG annotations
+## note that one can instead use reactome, GOBP, biocarta database
+data(Pathways)
+
+## select genes that are differentially expressed during adipocyte differentiation
+adipocyte.selected &lt;- adipocyte[adipocyte[,"DE"] == 1,]
+
+## run CLUE with a repeat of 5 times and a range from 10 to 22
+
+set.seed(3)
+cl &lt;- runClue(Tc=adipocyte.selected, annotation=Pathways.KEGG, rep=3, kRange=10:20, 
+              standardise = TRUE, universe = NULL)
+
+xl &lt;- "Number of clusters"
+yl &lt;- "Enrichment score"
+boxplot(cl$evlMat, col=rainbow(ncol(cl$evlMat)), las=2, xlab=xl, ylab=yl, main="CLUE")
+
+</code></pre>
+
+
+</div>

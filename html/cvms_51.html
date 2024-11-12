@@ -1,0 +1,819 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>validate_fn</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Validate a custom model function on a test set</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt="[Experimental]"></a>
+</p>
+<p>Fit your model function on a training set and validate it by
+predicting a test/validation set.
+Validate different hyperparameter combinations and formulas at once.
+Preprocess the train/test split.
+Returns results and fitted models in a <code>tibble</code> for easy reporting and further analysis.
+</p>
+<p>Compared to <code>validate()</code>,
+this function allows you supply a custom model function, a predict function,
+a preprocess function and the hyperparameter values to validate.
+</p>
+<p>Supports regression and classification (binary and multiclass).
+See <code>`type`</code>.
+</p>
+<p>Note that some metrics may not be computable for some types
+of model objects.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">validate_fn(
+  train_data,
+  formulas,
+  type,
+  model_fn,
+  predict_fn,
+  test_data = NULL,
+  preprocess_fn = NULL,
+  preprocess_once = FALSE,
+  hyperparameters = NULL,
+  partitions_col = ".partitions",
+  cutoff = 0.5,
+  positive = 2,
+  metrics = list(),
+  rm_nc = FALSE,
+  parallel = FALSE,
+  verbose = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>train_data</code></td>
+<td>
+<p><code>data.frame</code>.
+</p>
+<p>Can contain a grouping factor for identifying partitions - as made with
+<code>groupdata2::partition()</code>.
+See <code>`partitions_col`</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formulas</code></td>
+<td>
+<p>Model formulas as strings. (Character)
+</p>
+<p>Will be converted to <code>formula</code> objects
+before being passed to <code>`model_fn`</code>.
+</p>
+<p>E.g. <code>c("y~x", "y~z")</code>.
+</p>
+<p>Can contain random effects.
+</p>
+<p>E.g. <code>c("y~x+(1|r)", "y~z+(1|r)")</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>Type of evaluation to perform:
+</p>
+<p><code>"gaussian"</code> for regression (like linear regression).
+</p>
+<p><code>"binomial"</code> for binary classification.
+</p>
+<p><code>"multinomial"</code> for multiclass classification.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model_fn</code></td>
+<td>
+<p>Model function that returns a fitted model object.
+Will usually wrap an existing model function like <code>e1071::svm</code>
+or <code>nnet::multinom</code>.
+</p>
+<p>Must have the following function arguments:
+</p>
+<p><code>function(train_data, formula,</code>
+</p>
+<p><code style="white-space: pre;">⁠         ⁠</code><code>hyperparameters)</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predict_fn</code></td>
+<td>
+<p>Function for predicting the targets in the test folds/sets using the fitted model object.
+Will usually wrap <code>stats::predict()</code>, but doesn't have to.
+</p>
+<p>Must have the following function arguments:
+</p>
+<p><code>function(test_data, model, formula,</code>
+</p>
+<p><code style="white-space: pre;">⁠         ⁠</code><code>hyperparameters, train_data)</code>
+</p>
+<p>Must return predictions in the following formats, depending on <code>`type`</code>:
+</p>
+
+
+<h4>Binomial</h4>
+
+<p><code>vector</code> or one-column <code>matrix</code> / <code>data.frame</code> with probabilities (0-1)
+<strong>of the second class, alphabetically</strong>.
+E.g.:
+</p>
+<p><code>c(0.3, 0.5, 0.1, 0.5)</code>
+</p>
+<p>N.B. When unsure whether a model type produces probabilities based off
+the alphabetic order of your classes, using 0 and 1 as classes in the
+dependent variable instead of the class names should increase the chance of
+getting probabilities of the right class.
+</p>
+
+
+
+<h4>Gaussian</h4>
+
+<p><code>vector</code> or one-column <code>matrix</code> / <code>data.frame</code> with the predicted value.
+E.g.:
+</p>
+<p><code>c(3.7, 0.9, 1.2, 7.3)</code>
+</p>
+
+
+
+<h4>Multinomial</h4>
+
+<p><code>data.frame</code> with one column per class containing probabilities of the class.
+Column names should be identical to how the class names are written in the target column.
+E.g.:
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>class_1</strong> </td>
+<td style="text-align: right;"> <strong>class_2</strong> </td>
+<td style="text-align: right;">
+  <strong>class_3</strong> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.269 </td>
+<td style="text-align: right;"> 0.528 </td>
+<td style="text-align: right;"> 0.203</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.368 </td>
+<td style="text-align: right;"> 0.322 </td>
+<td style="text-align: right;"> 0.310</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.375 </td>
+<td style="text-align: right;"> 0.371 </td>
+<td style="text-align: right;"> 0.254</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  ... </td>
+<td style="text-align: right;"> ... </td>
+<td style="text-align: right;"> ...</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test_data</code></td>
+<td>
+<p><code>data.frame</code>. If specifying <code>`partitions_col`</code>, this can be <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>preprocess_fn</code></td>
+<td>
+<p>Function for preprocessing the training and test sets.
+</p>
+<p>Can, for instance, be used to standardize both the training and test sets
+with the scaling and centering parameters from the training set.
+</p>
+<p>Must have the following function arguments:
+</p>
+<p><code>function(train_data, test_data,</code>
+</p>
+<p><code style="white-space: pre;">⁠         ⁠</code><code>formula, hyperparameters)</code>
+</p>
+<p>Must return a <code>list</code> with the preprocessed <code>`train_data`</code> and <code>`test_data`</code>. It may also contain
+a <code>tibble</code> with the <code>parameters</code> used in preprocessing:
+</p>
+<p><code>list("train" = train_data,</code>
+</p>
+<p><code style="white-space: pre;">⁠     ⁠</code><code>"test" = test_data,</code>
+</p>
+<p><code style="white-space: pre;">⁠     ⁠</code><code>"parameters" = preprocess_parameters)</code>
+</p>
+<p>Additional elements in the returned <code>list</code> will be ignored.
+</p>
+<p>The optional parameters <code>tibble</code> will be included in the output.
+It could have the following format:
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>Measure</strong> </td>
+<td style="text-align: right;"> <strong>var_1</strong> </td>
+<td style="text-align: right;"> <strong>var_2</strong> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Mean </td>
+<td style="text-align: right;"> 37.921 </td>
+<td style="text-align: right;"> 88.231</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  SD </td>
+<td style="text-align: right;"> 12.4 </td>
+<td style="text-align: right;"> 5.986</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  ... </td>
+<td style="text-align: right;"> ... </td>
+<td style="text-align: right;"> ...</td>
+</tr>
+</table>
+<p>N.B. When <code>`preprocess_once`</code> is <code>FALSE</code>, the current formula and
+hyperparameters will be provided. Otherwise,
+these arguments will be <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>preprocess_once</code></td>
+<td>
+<p>Whether to apply the preprocessing once
+(<strong>ignoring</strong> the formula and hyperparameters arguments in <code>`preprocess_fn`</code>)
+or for every model separately. (Logical)
+</p>
+<p>When preprocessing does not depend on the current formula or hyperparameters,
+we can do the preprocessing of each train/test split once, to save time.
+This <strong>may require holding a lot more data in memory</strong> though,
+why it is not the default setting.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hyperparameters</code></td>
+<td>
+<p>Either a <code>named list</code> with hyperparameter values to combine in a grid
+or a <code>data.frame</code> with one row per hyperparameter combination.
+</p>
+
+
+<h4>Named list for grid search</h4>
+
+<p>Add <code>".n"</code> to sample the combinations. Can be the number of combinations to use,
+or a percentage between <code>0</code> and <code>1</code>.
+</p>
+<p>E.g.
+</p>
+<p><code>list(".n" = 10,  # sample 10 combinations</code>
+</p>
+<p><code style="white-space: pre;">⁠     ⁠</code><code>"lrn_rate" = c(0.1, 0.01, 0.001),</code>
+</p>
+<p><code style="white-space: pre;">⁠     ⁠</code><code>"h_layers" = c(10, 100, 1000),</code>
+</p>
+<p><code style="white-space: pre;">⁠     ⁠</code><code>"drop_out" = runif(5, 0.3, 0.7))</code>
+</p>
+
+
+
+<h4>
+<code>data.frame</code> with specific hyperparameter combinations</h4>
+
+<p>One row per combination to test.
+</p>
+<p>E.g.
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>lrn_rate</strong> </td>
+<td style="text-align: right;"> <strong>h_layers</strong> </td>
+<td style="text-align: right;"> <strong>drop_out</strong> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.1 </td>
+<td style="text-align: right;"> 10 </td>
+<td style="text-align: right;"> 0.65</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.1 </td>
+<td style="text-align: right;"> 1000 </td>
+<td style="text-align: right;"> 0.65</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.01 </td>
+<td style="text-align: right;"> 1000 </td>
+<td style="text-align: right;"> 0.63</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  ... </td>
+<td style="text-align: right;"> ... </td>
+<td style="text-align: right;"> ...</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>partitions_col</code></td>
+<td>
+<p>Name of grouping factor for identifying partitions. (Character)
+</p>
+<p>Rows with the value <code>1</code> in <code>`partitions_col`</code> are used as training set and
+rows with the value <code>2</code> are used as test set.
+</p>
+<p>N.B. <strong>Only used if <code>`test_data`</code> is <code>NULL</code></strong>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cutoff</code></td>
+<td>
+<p>Threshold for predicted classes. (Numeric)
+</p>
+<p>N.B. <strong>Binomial models only</strong></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>positive</code></td>
+<td>
+<p>Level from dependent variable to predict.
+Either as character (<em>preferable</em>) or level index (<code>1</code> or <code>2</code> - alphabetically).
+</p>
+<p>E.g. if we have the levels <code>"cat"</code> and <code>"dog"</code> and we want <code>"dog"</code> to be the positive class,
+we can either provide <code>"dog"</code> or <code>2</code>, as alphabetically, <code>"dog"</code> comes after <code>"cat"</code>.
+</p>
+<p><strong>Note:</strong> For <em>reproducibility</em>, it's preferable to <strong>specify the name directly</strong>, as
+different <code>locales</code> may sort the levels differently.
+</p>
+<p>Used when calculating confusion matrix metrics and creating <code>ROC</code> curves.
+</p>
+<p>The <code>Process</code> column in the output can be used to verify this setting.
+</p>
+<p>N.B. Only affects evaluation metrics, not the model training or returned predictions.
+</p>
+<p>N.B. <strong>Binomial models only</strong>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metrics</code></td>
+<td>
+<p><code>list</code> for enabling/disabling metrics.
+</p>
+<p>E.g. <code>list("RMSE" = FALSE)</code> would remove <code>RMSE</code> from the regression results,
+and <code>list("Accuracy" = TRUE)</code> would add the regular <code>Accuracy</code> metric
+to the classification results.
+Default values (<code>TRUE</code>/<code>FALSE</code>) will be used for the remaining available metrics.
+</p>
+<p>You can enable/disable all metrics at once by including
+<code>"all" = TRUE/FALSE</code> in the <code>list</code>. This is done prior to enabling/disabling
+individual metrics, why f.i. <code>list("all" = FALSE, "RMSE" = TRUE)</code> would return only the <code>RMSE</code> metric.
+</p>
+<p>The <code>list</code> can be created with
+<code>gaussian_metrics()</code>,
+<code>binomial_metrics()</code>, or
+<code>multinomial_metrics()</code>.
+</p>
+<p>Also accepts the string <code>"all"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rm_nc</code></td>
+<td>
+<p>Remove non-converged models from output. (Logical)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+<p>Whether to cross-validate the <code>list</code> of models in parallel. (Logical)
+</p>
+<p>Remember to register a parallel backend first.
+E.g. with <code>doParallel::registerDoParallel</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Whether to message process information
+like the number of model instances to fit. (Logical)</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Packages used:
+</p>
+
+
+<h4>Results</h4>
+
+
+
+<h5>Shared</h5>
+
+<p>AIC : <code>stats::AIC</code>
+</p>
+<p>AICc : <code>MuMIn::AICc</code>
+</p>
+<p>BIC : <code>stats::BIC</code>
+</p>
+
+
+
+<h5>Gaussian</h5>
+
+<p>r2m : <code>MuMIn::r.squaredGLMM</code>
+</p>
+<p>r2c : <code>MuMIn::r.squaredGLMM</code>
+</p>
+
+
+
+<h5>Binomial and Multinomial</h5>
+
+<p>ROC and related metrics:
+</p>
+<p>Binomial: <code>pROC::roc</code>
+</p>
+<p>Multinomial: <code>pROC::multiclass.roc</code>
+</p>
+
+
+
+
+<h3>Value</h3>
+
+<p><code>tibble</code> with the results and model objects.
+</p>
+
+
+<h4>Shared across families</h4>
+
+<p>A nested <code>tibble</code> with <strong>coefficients</strong> of the models. The coefficients
+are extracted from the model object with <code>parameters::model_parameters()</code> or
+<code>coef()</code> (with some restrictions on the output).
+If these attempts fail, a default coefficients <code>tibble</code> filled with <code>NA</code>s is returned.
+</p>
+<p>Nested <code>tibble</code> with the used <strong>preprocessing parameters</strong>,
+if a passed <code>`preprocess_fn`</code> returns the parameters in a <code>tibble</code>.
+</p>
+<p>Count of <strong>convergence warnings</strong>, using a limited set of keywords (e.g. "convergence"). If a
+convergence warning does not contain one of these keywords, it will be counted with <strong>other warnings</strong>.
+Consider discarding models that did not converge on all iterations.
+Note: you might still see results, but these should be taken with a grain of salt!
+</p>
+<p>Nested <code>tibble</code> with the <strong>warnings and messages</strong> caught for each model.
+</p>
+<p>Specified <strong>family</strong>.
+</p>
+<p>Nested <strong>model</strong> objects.
+</p>
+<p>Name of <strong>dependent</strong> variable.
+</p>
+<p>Names of <strong>fixed</strong> effects.
+</p>
+<p>Names of <strong>random</strong> effects, if any.
+</p>
+
+<p>—————————————————————-
+</p>
+
+
+<h4>Gaussian Results</h4>
+
+<p>—————————————————————-
+</p>
+<p><strong><code>RMSE</code></strong>, <strong><code>MAE</code></strong>, <strong><code>NRMSE(IQR)</code></strong>,
+<strong><code>RRSE</code></strong>, <strong><code>RAE</code></strong>, and <strong><code>RMSLE</code></strong>.
+</p>
+<p>See the additional metrics (disabled by default) at <code>?gaussian_metrics</code>.
+</p>
+<p>A nested <code>tibble</code> with the <strong>predictions</strong> and targets.
+</p>
+
+<p>—————————————————————-
+</p>
+
+
+<h4>Binomial Results</h4>
+
+<p>—————————————————————-
+</p>
+<p>Based on predictions of the test set,
+a confusion matrix and a <code>ROC</code> curve are created to get the following:
+</p>
+<p><code>ROC</code>:
+</p>
+<p><strong><code>AUC</code></strong>, <strong><code>Lower CI</code></strong>, and <strong><code>Upper CI</code></strong>
+</p>
+<p><code>Confusion Matrix</code>:
+</p>
+<p><strong><code>Balanced Accuracy</code></strong>,
+<strong><code>F1</code></strong>,
+<strong><code>Sensitivity</code></strong>,
+<strong><code>Specificity</code></strong>,
+<strong><code>Positive Predictive Value</code></strong>,
+<strong><code>Negative Predictive Value</code></strong>,
+<strong><code>Kappa</code></strong>,
+<strong><code>Detection Rate</code></strong>,
+<strong><code>Detection Prevalence</code></strong>,
+<strong><code>Prevalence</code></strong>, and
+<strong><code>MCC</code></strong> (Matthews correlation coefficient).
+</p>
+<p>See the additional metrics (disabled by default) at
+<code>?binomial_metrics</code>.
+</p>
+<p>Also includes:
+</p>
+<p>A nested <code>tibble</code> with <strong>predictions</strong>, predicted classes (depends on <code>cutoff</code>), and the targets.
+Note, that the predictions are <em>not necessarily</em> of the <em>specified</em> <code>positive</code> class, but of
+the <em>model's</em> positive class (second level of dependent variable, alphabetically).
+</p>
+<p>The <code>pROC::roc</code> <strong><code>ROC</code></strong> curve object(s).
+</p>
+<p>A nested <code>tibble</code> with the <strong>confusion matrix</strong>/matrices.
+The <code>Pos_</code> columns tells you whether a row is a
+True Positive (<code>TP</code>), True Negative (<code>TN</code>),
+False Positive (<code>FP</code>), or False Negative (<code>FN</code>),
+depending on which level is the "positive" class. I.e. the level you wish to predict.
+</p>
+<p>The name of the <strong>Positive Class</strong>.
+</p>
+
+<p>—————————————————————-
+</p>
+
+
+<h4>Multinomial Results</h4>
+
+<p>—————————————————————-
+</p>
+<p>For each class, a <em>one-vs-all</em> binomial evaluation is performed. This creates
+a <strong>Class Level Results</strong> <code>tibble</code> containing the same metrics as the binomial results
+described above (excluding <code>MCC</code>, <code>AUC</code>, <code>Lower CI</code> and <code>Upper CI</code>),
+along with a count of the class in the target column (<strong><code>Support</code></strong>).
+These metrics are used to calculate the <strong>macro-averaged</strong> metrics.
+The nested class level results <code>tibble</code> is also included in the output <code>tibble</code>,
+and could be reported along with the macro and overall metrics.
+</p>
+<p>The output <code>tibble</code> contains the macro and overall metrics.
+The metrics that share their name with the metrics in the nested
+class level results <code>tibble</code> are averages of those metrics
+(note: does not remove <code>NA</code>s before averaging).
+In addition to these, it also includes the <strong><code>Overall Accuracy</code></strong> and
+the multiclass <strong><code>MCC</code></strong>.
+</p>
+<p><strong>Note:</strong> <strong><code>Balanced Accuracy</code></strong> is the macro-averaged metric,
+<em>not</em> the macro sensitivity as sometimes used!
+</p>
+<p>Other available metrics (disabled by default, see <code>metrics</code>):
+<strong><code>Accuracy</code></strong>,
+<em>multiclass</em> <strong><code>AUC</code></strong>,
+<strong><code>Weighted Balanced Accuracy</code></strong>,
+<strong><code>Weighted Accuracy</code></strong>,
+<strong><code>Weighted F1</code></strong>,
+<strong><code>Weighted Sensitivity</code></strong>,
+<strong><code>Weighted Sensitivity</code></strong>,
+<strong><code>Weighted Specificity</code></strong>,
+<strong><code>Weighted Pos Pred Value</code></strong>,
+<strong><code>Weighted Neg Pred Value</code></strong>,
+<strong><code>Weighted Kappa</code></strong>,
+<strong><code>Weighted Detection Rate</code></strong>,
+<strong><code>Weighted Detection Prevalence</code></strong>, and
+<strong><code>Weighted Prevalence</code></strong>.
+</p>
+<p>Note that the "Weighted" average metrics are weighted by the <code>Support</code>.
+</p>
+<p>Also includes:
+</p>
+<p>A nested <code>tibble</code> with the <strong>predictions</strong>, predicted classes, and targets.
+</p>
+<p>A list of <strong>ROC</strong> curve objects when <code>AUC</code> is enabled.
+</p>
+<p>A nested <code>tibble</code> with the multiclass <strong>Confusion Matrix</strong>.
+</p>
+<p><strong>Class Level Results</strong>
+</p>
+<p>Besides the binomial evaluation metrics and the <code>Support</code>,
+the nested class level results <code>tibble</code> also contains a
+nested <code>tibble</code> with the <strong>Confusion Matrix</strong> from the one-vs-all evaluation.
+The <code>Pos_</code> columns tells you whether a row is a
+True Positive (<code>TP</code>), True Negative (<code>TN</code>),
+False Positive (<code>FP</code>), or False Negative (<code>FN</code>),
+depending on which level is the "positive" class. In our case, <code>1</code> is the current class
+and <code>0</code> represents all the other classes together.
+</p>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Ludvig Renbo Olsen, <a href="mailto:r-pkgs@ludvigolsen.dk">r-pkgs@ludvigolsen.dk</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other validation functions: 
+<code>cross_validate()</code>,
+<code>cross_validate_fn()</code>,
+<code>validate()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Attach packages
+library(cvms)
+library(groupdata2) # fold()
+library(dplyr) # %&gt;% arrange() mutate()
+
+# Note: More examples of custom functions can be found at:
+# model_fn: model_functions()
+# predict_fn: predict_functions()
+# preprocess_fn: preprocess_functions()
+
+# Data is part of cvms
+data &lt;- participant.scores
+
+# Set seed for reproducibility
+set.seed(7)
+
+# Fold data
+data &lt;- partition(
+  data,
+  p = 0.8,
+  cat_col = "diagnosis",
+  id_col = "participant",
+  list_out = FALSE
+) %&gt;%
+  mutate(diagnosis = as.factor(diagnosis)) %&gt;%
+  arrange(.partitions)
+
+# Formulas to validate
+
+formula_gaussian &lt;- "score ~ diagnosis"
+formula_binomial &lt;- "diagnosis ~ score"
+
+#
+# Gaussian
+#
+
+# Create model function that returns a fitted model object
+lm_model_fn &lt;- function(train_data, formula, hyperparameters) {
+  lm(formula = formula, data = train_data)
+}
+
+# Create predict function that returns the predictions
+lm_predict_fn &lt;- function(test_data, model, formula,
+                          hyperparameters, train_data) {
+  stats::predict(
+    object = model,
+    newdata = test_data,
+    type = "response",
+    allow.new.levels = TRUE
+  )
+}
+
+# Validate the model function
+v &lt;- validate_fn(
+  data,
+  formulas = formula_gaussian,
+  type = "gaussian",
+  model_fn = lm_model_fn,
+  predict_fn = lm_predict_fn,
+  partitions_col = ".partitions"
+)
+
+v
+
+# Extract model object
+v$Model[[1]]
+
+#
+# Binomial
+#
+
+# Create model function that returns a fitted model object
+glm_model_fn &lt;- function(train_data, formula, hyperparameters) {
+  glm(formula = formula, data = train_data, family = "binomial")
+}
+
+# Create predict function that returns the predictions
+glm_predict_fn &lt;- function(test_data, model, formula,
+                           hyperparameters, train_data) {
+  stats::predict(
+    object = model,
+    newdata = test_data,
+    type = "response",
+    allow.new.levels = TRUE
+  )
+}
+
+# Validate the model function
+validate_fn(
+  data,
+  formulas = formula_binomial,
+  type = "binomial",
+  model_fn = glm_model_fn,
+  predict_fn = glm_predict_fn,
+  partitions_col = ".partitions"
+)
+
+#
+# Support Vector Machine (svm)
+# with known hyperparameters
+#
+
+# Only run if the `e1071` package is installed
+if (requireNamespace("e1071", quietly = TRUE)){
+
+# Create model function that returns a fitted model object
+# We use the hyperparameters arg to pass in the kernel and cost values
+# These will usually have been found with cross_validate_fn()
+svm_model_fn &lt;- function(train_data, formula, hyperparameters) {
+
+  # Expected hyperparameters:
+  #  - kernel
+  #  - cost
+  if (!"kernel" %in% names(hyperparameters))
+    stop("'hyperparameters' must include 'kernel'")
+  if (!"cost" %in% names(hyperparameters))
+    stop("'hyperparameters' must include 'cost'")
+
+  e1071::svm(
+    formula = formula,
+    data = train_data,
+    kernel = hyperparameters[["kernel"]],
+    cost = hyperparameters[["cost"]],
+    scale = FALSE,
+    type = "C-classification",
+    probability = TRUE
+  )
+}
+
+# Create predict function that returns the predictions
+svm_predict_fn &lt;- function(test_data, model, formula,
+                           hyperparameters, train_data) {
+  predictions &lt;- stats::predict(
+    object = model,
+    newdata = test_data,
+    allow.new.levels = TRUE,
+    probability = TRUE
+  )
+
+  # Extract probabilities
+  probabilities &lt;- dplyr::as_tibble(
+    attr(predictions, "probabilities")
+  )
+
+  # Return second column
+  probabilities[[2]]
+}
+
+# Specify hyperparameters to use
+# We found these in the examples in ?cross_validate_fn()
+svm_hparams &lt;- list(
+  "kernel" = "linear",
+  "cost" = 10
+)
+
+# Validate the model function
+validate_fn(
+  data,
+  formulas = formula_binomial,
+  type = "binomial",
+  model_fn = svm_model_fn,
+  predict_fn = svm_predict_fn,
+  hyperparameters = svm_hparams,
+  partitions_col = ".partitions"
+)
+}  # closes `e1071` package check
+
+</code></pre>
+
+
+</div>

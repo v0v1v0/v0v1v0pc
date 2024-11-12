@@ -1,0 +1,116 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>read_RDP</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Read and filter RDP Classifier output</h2>
+
+<h3>Description</h3>
+
+<p>Reads RDP Classifier output and optionally extracts lineages, removes classifications below a certain count, or truncates classifications to lowest taxonomic level.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">  read_RDP(file, lineage = NULL, mincount = 200,
+    lowest.level = NULL, quiet = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>file</code></td>
+<td>
+<p>character, file name</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lineage</code></td>
+<td>
+<p>character, regular expression for filtering lineages</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mincount</code></td>
+<td>
+<p>integer, samples with less than this number of RDP classifications are excluded</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lowest.level</code></td>
+<td>
+<p>character, truncate classifications at this taxonomic level</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quiet</code></td>
+<td>
+<p>logical, suppress printed messages?</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>read_RDP</code> reads and filters RDP results for all samples in a study.
+The input file should be created by RDP Classifer using the -h option to create a hierarchical listing.
+Classifications for multiple samples can be combined into a single file using the merge-count command of RDP Classifier.
+</p>
+<p>Only rows (lineages) with count &gt; 0 for at least one sample are retained.
+Sequences with classification results at only the root or domain level (Root, Archaea, or Bacteria) are omitted because they provide poor taxonomic resolution.
+Sequences classified to the class Chloroplast or genera Chlorophyta or Bacillariophyta are also omitted because they have little correspondence with the NCBI taxonomy.
+Then, only columns (samples) with classification count &gt;= <code>mincount</code> are retained.
+All remaining sequences (those classified to genus or higher levels) can be used for mapping to the NCBI taxonomy.
+</p>
+<p>The lineage text of the RDP Classifier looks like “Root;rootrank;Archaea;domain;Diapherotrites; phylum;Diapherotrites Incertae Sedis AR10;genus;”, so you can use <code>lineage = "Archaea"</code> to select the archaeal classifications or <code>lineage = "genus"</code> to select genus-level classifications.
+</p>
+<p>Use the <code>lowest.level</code> argument to truncate the classifications to a level higher than genus.
+This argument does not reduce the number of classifications, but only trims the RDP lineages to the specified level.
+This may create duplicate lineages, for which the classification counts are summed, and only unique lineages are present in the returned data frame.
+</p>
+<p>Change <code>quiet</code> to TRUE to suppress printing of messages about percentage classification to genus level, omitted sequences, and final range of total counts among all samples.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Data frame with columns inherited from <code>file</code> (from RDP output files: <code>taxid</code>, <code>rank</code>, <code>lineage</code>, <code>name</code>, and one column of classification counts for each sample).
+If any sample has less than <code>mincount</code> total counts, that column is omitted from the result.
+The rows in the result are subset from those in <code>file</code> by filtering operations.
+</p>
+<p>NB: taxids in RDP files are not NCBI taxids.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># An example file
+file &lt;- system.file("extdata/RDP/SMS+12.tab.xz", package = "chem16S")
+
+# Default settings
+r0 &lt;- read_RDP(file)
+
+# Suppress messages
+r1 &lt;- read_RDP(file, quiet = TRUE)
+
+# Increase minimum count threshold
+r2 &lt;- read_RDP(file, mincount = 500)
+# This should be 3 (i.e., 3 samples have less than 500 counts)
+ncol(r1) - ncol(r2)
+
+# Keep only Archaea
+r3 &lt;- read_RDP(file, lineage = "Archaea")
+# This should be TRUE
+all(grepl("Archaea", r3$lineage))
+
+# Truncate taxonomy at phylum
+r4 &lt;- read_RDP(file, lowest.level = "phylum")
+# This should be TRUE
+all(sapply(strsplit(r4$lineage, ";"), tail, 1) == "phylum")
+</code></pre>
+
+
+</div>

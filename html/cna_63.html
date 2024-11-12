@@ -1,0 +1,93 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>makeFuzzy</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fuzzifying crisp-set data
+</h2>
+
+<h3>Description</h3>
+
+<p>The <code>makeFuzzy</code> function fuzzifies crisp-set data to a customizable degree. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">makeFuzzy(x, fuzzvalues = c(0, 0.05, 0.1), ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Data frame, matrix, or <code>configTable</code> featuring crisp-set (binary) factors with values 1 and 0 only.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fuzzvalues</code></td>
+<td>
+<p>Numeric vector of values from the interval [0,1].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments are passed to <code>configTable</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>In combination with <code>allCombs</code>, <code>full.ct</code> and <code>selectCases</code>, <code>makeFuzzy</code> is useful for simulating fuzzy-set data, which are needed for inverse search trials benchmarking the output of <code>cna</code>. <code>makeFuzzy</code> transforms a data frame or <code>configTable</code> <code>x</code> consisting of crisp-set (binary) factors into a fuzzy-set <code>configTable</code> by adding values selected at random from the argument <code>fuzzvalues</code> to the 0's and subtracting them from the 1's in <code>x</code>. <code>fuzzvalues</code> is a numeric vector of values from the interval [0,1].
+</p>
+<p><code>selectCases</code> can be used before and <code>selectCases1</code> after the fuzzification to select those configurations that are compatible with a given data generating causal structure (see examples below).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>configTable</code> of type "fs".
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>selectCases</code>, <code>allCombs</code>, <code>full.ct</code>, <code>configTable</code>, <code>cna</code>, <code>ct2df</code>, <code>condition</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Fuzzify a crisp-set (binary) 6x3 matrix with default fuzzvalues.
+X &lt;- matrix(sample(0:1, 18, replace = TRUE), 6)
+makeFuzzy(X)
+
+# ... and with customized fuzzvalues.
+makeFuzzy(X, fuzzvalues = 0:5/10)
+makeFuzzy(X, fuzzvalues = seq(0, 0.45, 0.01))
+
+# First, generate crisp-set data comprising all configurations of 5 binary factors that 
+# are compatible with the causal chain (A*b + a*B &lt;-&gt; C)*(C*d + c*D &lt;-&gt; E) and, 
+# second, fuzzify those crisp-set data. 
+dat1 &lt;- full.ct(5)
+dat2 &lt;- selectCases("(A*b + a*B &lt;-&gt; C)*(C*d + c*D &lt;-&gt; E)", dat1)
+(dat3 &lt;- makeFuzzy(dat2, fuzzvalues = seq(0, 0.45, 0.01)))
+condition("(A*b + a*B &lt;-&gt; C)*(C*d + c*D &lt;-&gt; E)", dat3)
+
+# Inverse search for the data generating causal structure A*b + a*B + C*D &lt;-&gt; E from
+# fuzzy-set data with non-perfect consistency and coverage scores.
+dat1 &lt;- full.ct(5)
+set.seed(55)
+dat2 &lt;- makeFuzzy(dat1, fuzzvalues = 0:4/10)
+dat3 &lt;- selectCases1("A*b + a*B + C*D &lt;-&gt; E", con = .8, cov = .8, dat2)
+cna(dat3, outcome = "E", con = .8, cov = .8)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,96 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>multi_class_cm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Multiple Confusion Matrix data frame</h2>
+
+<h3>Description</h3>
+
+<p>a confusion matrix object for multiple outcome classification machine learning problems.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">multi_class_cm(train_labels, truth_labels, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>train_labels</code></td>
+<td>
+<p>the classification labels from the training set</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>truth_labels</code></td>
+<td>
+<p>the testing set ground truth labels for comparison</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>function forwarding for passing mode and other parameters to 'caret' confusionMatrix</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list containing the outputs highlighted hereunder:
+</p>
+
+<ul>
+<li>
+<p><strong>"confusion_matrix"</strong> a confusion matrix list item with all the associated confusion matrix statistics
+</p>
+</li>
+<li>
+<p><strong>"record_level_cm"</strong> a row by row data.frame version of the above output, to allow for storage in databases and row by row for tracking ML model performance
+</p>
+</li>
+<li>
+<p><strong>"cm_tbl"</strong> a confusion matrix raw table of the values in the matrix
+</p>
+</li>
+<li>
+<p><strong>"last_run"</strong>datetime object storing when the function was run
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Get the IRIS data as this is a famous multi-classification problem
+library(caret)
+library(ConfusionTableR)
+library(randomForest)
+df &lt;- iris
+df &lt;- na.omit(df)
+table(iris$Species)
+# Create a training / test split
+train_split_idx &lt;- caret::createDataPartition(df$Species, p = 0.75, list = FALSE)
+# Here we define a split index and we are now going to use a multiclass ML model to fit the data
+train &lt;- df[train_split_idx, ]
+test &lt;- df[-train_split_idx, ]
+# Fit a random forest model on the data
+rf_model &lt;- caret::train(Species ~ .,data = df,method = "rf", metric = "Accuracy")
+# Predict the values on the test hold out set
+rf_class &lt;- predict(rf_model, newdata = test, type = "raw")
+predictions &lt;- cbind(data.frame(train_preds=rf_class, test$Species))
+# Use ConfusionTableR to create a row level output
+cm &lt;- ConfusionTableR::multi_class_cm(predictions$train_preds, predictions$test.Species)
+# Create the row level output
+cm_rl &lt;- cm$record_level_cm
+print(cm_rl)
+#Expose the original confusion matrix list
+cm_orig &lt;- cm$confusion_matrix
+print(cm_orig)
+</code></pre>
+
+
+</div>

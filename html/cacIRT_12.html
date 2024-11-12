@@ -1,0 +1,144 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Lee.poly</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Computes classification accuracy and consistency with Lee's approach for polytomous IRT models.
+</h2>
+
+<h3>Description</h3>
+
+
+<p>Computes classification accuracy and consistency with Lee's approach for polytomous tests. The probability of each possible total score conditional on ability is found with  <code>gen.rec.raw()</code>. Those probabilities are grouped according to the cut scores and used to estimate the indices.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">Lee.poly.D(cutscore, Pij, quadrature)
+Lee.poly.P(cutscore, Pij, theta)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cutscore</code></td>
+<td>
+
+
+<p>A scalar or vector of cut scores on the True Score scale. If you have cut scores on the theta scale, you can transform them with <code>irf</code> (See example for <code>irf</code>). Should not include 0 or the max total score, as the end points are added internally.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Pij</code></td>
+<td>
+<p>An NxMxJ array of probabilities. Each slice of the array represents an item. Within a slice, each row corresponds to the respective element in <code>theta</code> and each column represents a response category from 0, 1, ..., M. At a minimum, M=1, in which case the array is Nx2xJ and represents the dichotomous item case. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+
+
+<p>Ability estimates for each subject. Must correspond to the first dimension of <code>Pij</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quadrature</code></td>
+<td>
+
+
+<p>A list containing 1) The quadrature points and 2) Their corresponding weights. Must correspond to the first dimension of <code>Pij</code>.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+
+<p>The polytomous generalization to <code>class.Lee</code>. Requires the user build the <code>Pij</code> array.
+</p>
+
+
+<h3>Value</h3>
+
+
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Marginal</code></td>
+<td>
+<p>A matrix with two columns of marginal accuracy and consistency per cut score (and simultaneous if multiple cutscores are given)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Conditional</code></td>
+<td>
+<p>A matrix of conditional accuracy and conditional consistency</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>In order to score above a cut, an examinee must score at or above the cut score. Since we are working on the total score scale, be aware that if a cut score is given with a decimal (like 2.4), the examinee must have a total score at the next integer or more (so 3 or more) to score above the cut.
+</p>
+<p>If the test is mixed format (some dichotomous, some polytomous items), <code>Pij</code> must be of an appropriate size for the item with the most response categories. The response categories that do no appear in other items can be filled with zeros. Note also that the function assumes response categories are scored as 0,1,2,3,...,M
+</p>
+
+
+<h3>Note</h3>
+
+<p>While this function is needed for polytomous tests for the Lee approach, <code>class.Rud()</code> works directly with polytomous tests when given the ability estimate and the standard error and so does not need an analogous set of functions.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Quinn N. Lathrop</p>
+
+
+<h3>References</h3>
+
+<p>Lee, W. (2010) Classification consistency and accuracy for complex assessments using item response theory. Journal of Educational Measurement, 47, 1–17.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#Same example as \code{class.Lee()}, 
+  #build \code{Pij} the same as in the example for \code{gen.rec.raw()}.
+
+params &lt;- matrix(c(1,1,1,1,-2,1,0,1,0,0,0,0),4,3)
+theta &lt;- rnorm(100)
+
+Pij.flat &lt;- irf(params, theta)$f
+Pij.array &lt;- array(NA, dim = c(length(theta), 2, nrow(params)))
+Pij.array[,1,] &lt;- 1 - Pij.flat #P(X_j = 0 | theta_i)
+Pij.array[,2,] &lt;- Pij.flat     #P(X_j = 1 | theta_i)
+
+Lee.poly.P(2, Pij.array, theta)$Marginal
+
+#in the dichotomous case, identical to \code{Lee.P()}
+Lee.P(2, params, theta)$Marginal
+
+#For Rudner and polytomous tests, compute the theta estimate and se and use those as input
+theta.est &lt;- theta 
+#just for example
+
+theta.se &lt;- SEM(params, theta.est) 
+#also for example, SEM() assumes 3PL model, 
+#but if you use mirt or similar package, 
+#the theta estimates and their se will be available
+
+Rud.P(.5, theta.est, theta.se)$Marginal
+
+</code></pre>
+
+
+</div>

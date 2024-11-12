@@ -1,0 +1,185 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>depth.curve.Tukey</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate Tukey curve depth using given points</h2>
+
+<h3>Description</h3>
+
+<p>Calculates Tukey curve depth of each curve in <code>objects</code> w.r.t. the
+sample of curves in <code>data</code>. Calculation of partial depth of each
+single point can be either exact or approximate. If exact, modified method
+of Dyckerhoff and Mozharovskyi (2016) is used; if approximate,
+approximation is performed by projections on directions - points uniformly
+distributed on the unit hypersphere.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">depth.curve.Tukey(objects, data, nDirs = 100L, subs = TRUE, fracInt = 0.5,
+  fracEst = 0.5, subsamples = NULL, exactEst = TRUE, minMassObj = 0,
+  minMassDat = 0)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>objects</code></td>
+<td>
+<p>A list where each element is a multivariate curve being a
+list containing a matrix <code>coords</code> (values, d columns).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A list where each element is a multivariate curve being a list
+containing a matrix <code>coords</code> (values, d columns). The depths are
+computed w.r.t. this data set.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nDirs</code></td>
+<td>
+<p>Number of directions used to inspect the space, drawn from the
+uniform distribution on the sphere.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subs</code></td>
+<td>
+<p>Whether to split each object into two disjunctive subsets (one
+for integrating and one for estimation) when computing the depth.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fracInt</code></td>
+<td>
+<p>Portion of an object used for integrating.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fracEst</code></td>
+<td>
+<p>Portion of an object used for estimation,
+maximum: <code>1 - fracInt</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subsamples</code></td>
+<td>
+<p>A list indicating subsamples of points for each curve in
+<code>objects</code>. Each elemnt of the list corresponds to a single curve and
+should be given as a vector of the length equal to the number of points
+on it, with entries indicating:
+</p>
+
+<ul>
+<li>
+<p> 0 do not take the point into account at all,
+</p>
+</li>
+<li>
+<p> 1 use point as a reference (i.e. for integrating) and thus
+calculate its depth,
+</p>
+</li>
+<li>
+<p> 2 utilize point in depth calculation (i.e. for estimation).</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>exactEst</code></td>
+<td>
+<p>Is calculation of depth for each reference point of the
+curve exact (<code>TRUE</code>, by default) or approximate (<code>FALSE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minMassObj</code></td>
+<td>
+<p>Minimal portion of the <code>objects</code> distribution in the
+halfspace to be considered when calculating depth.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minMassDat</code></td>
+<td>
+<p>minimal portion of the <code>data</code> distribution in the
+halfspace to be considered when calculating depth.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A vector of doubles having the same length as <code>objects</code>, whose
+each entry is the depth of each element of <code>objects</code> w.r.t.
+<code>data</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Lafaye De Micheaux, P., Mozharovskyi, P. and Vimond, M. (2018).
+Depth for curve data and applications.
+</p>
+<p>Dyckerhoff, R. and Mozharovskyi P. (2016). Exact computation of the
+halfspace depth. <em>Computational Statistics and Data Analysis</em>, 98,
+19-30.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(curveDepth)
+# Load digits and transform them to curves
+data("mnistShort017")
+n &lt;- 10 # cardinality of each class
+m &lt;- 50 # number of points to sample
+cst &lt;- 1/10 # a threshold constant
+alp &lt;- 1/8 # a threshold constant
+curves0 &lt;- images2curves(mnistShort017$`0`[, , 1:n])
+curves1 &lt;- images2curves(mnistShort017$`1`[, , 1:n])
+set.seed(1)
+curves0Smpl &lt;- sample.curves(curves0, 2 * m)
+curves1Smpl &lt;- sample.curves(curves1, 2 * m)
+# Calculate depths
+depthSpace = matrix(NA, nrow = n * 2, ncol = 2)
+depthSpace[, 1] = depth.curve.Tukey(
+  c(curves0Smpl, curves1Smpl), curves0Smpl,
+  exactEst = TRUE, minMassObj = cst/m^alp)
+depthSpace[, 2] = depth.curve.Tukey(
+  c(curves0Smpl, curves1Smpl), curves1Smpl,
+  exactEst = TRUE, minMassObj = cst/m^alp)
+# Draw the DD-plot
+plot(NULL, xlim = c(0, 1), ylim = c(0, 1),
+     xlab = paste("Depth w.r.t. '0'"),
+     ylab = paste("Depth w.r.t. '1'"),
+     main = paste("DD-plot for '0' vs '1'"))
+grid()
+# Draw the separating rule
+dat1 &lt;- data.frame(cbind(
+  depthSpace, c(rep(0, n), rep(1, n))))
+ddalpha1 &lt;- ddalpha.train(X3 ~ X1 + X2, data = dat1,
+                          depth = "ddplot",
+                          separator = "alpha")
+ddnormal &lt;- ddalpha1$classifiers[[1]]$hyperplane[2:3]
+pts &lt;- matrix(c(0, 0, 1, ddnormal[1] / -ddnormal[2]),
+              nrow = 2, byrow = TRUE)
+lines(pts, lwd = 2)
+# Draw the points
+points(depthSpace[1:n, ],
+       col = "red", lwd = 2, pch = 1)
+points(depthSpace[(n + 1):(2 * n), ],
+       col = "blue", lwd = 2, pch = 3)
+</code></pre>
+
+
+</div>

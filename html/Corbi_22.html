@@ -1,0 +1,203 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>net_query</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Network querying method based on conditional random fields</h2>
+
+<h3>Description</h3>
+
+<p>Find the best matching subnetworks from a large target network for small
+query networks based on the conditional random fields (CRF) model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">net_query(
+  query.net,
+  target.net,
+  node.sim,
+  query.type = 4,
+  delta.d = 1e-10,
+  delta.c = 0.5,
+  delta.e = 1,
+  delta.s = 1,
+  output = "result.txt"
+)
+
+net_query_batch(
+  query.nets,
+  target.net,
+  node.sim,
+  query.type = 4,
+  delta.d = 1e-10,
+  delta.c = 0.5,
+  delta.e = 1,
+  delta.s = 1,
+  output = "result.txt"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>query.net</code></td>
+<td>
+<p>The input file name of the query network.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>target.net</code></td>
+<td>
+<p>The input file name of the target network.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>node.sim</code></td>
+<td>
+<p>The input file name of the node similarity scores between
+the query network and the target network.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>query.type</code></td>
+<td>
+<p>The querying network type: 1 - general, 2 - chain, 3 -
+tree, 4 - heuristic.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta.d</code></td>
+<td>
+<p>The parameter delta.d is a parameter for deletions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta.c</code></td>
+<td>
+<p>The parameter delta.c is a parameter for consecutive
+deletions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta.e</code></td>
+<td>
+<p>The parameter delta.e is a parameter for single deletion.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta.s</code></td>
+<td>
+<p>The parameter delta.s is a parameter for insertions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output</code></td>
+<td>
+<p>The suffix of output file name.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>query.nets</code></td>
+<td>
+<p>The vector of input file names of the query networks.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This is an approach for network querying problem based on conditional random
+field (CRF) model which can handle both undirected and directed networks,
+acyclic and cyclic networks, and any number of insertions/deletions.
+</p>
+<p>When querying several networks in the same target network,
+<code>net_query_batch</code> will save much time.
+</p>
+
+<ul>
+<li>
+<p> query.net: The query network file is written as follows:<br>
+v1 v2 v3 v4 v5<br> v3 v4 <br> ...  <br> where v1, v2, v3, v4, v5 ... are the
+nodes' names and each line indicates there are edges between the first node
+and other nodes in the line. For example, the first line denotes 4 edges:
+(v1, v2), (v1, v3), (v1, v4), and (v1, v5).
+</p>
+</li>
+<li>
+<p> target.net: The format of this file is the same as the query network
+file.
+</p>
+</li>
+<li>
+<p> node.sim: This similarity file's format is as follows:<br> v1 V1 s1 <br>
+v1 V2 s2 <br> ...  <br> v1 is the node from the query network, V1 is the node
+from the target network, s1 is the similarity score between the node v1 and
+V1, and so on.
+</p>
+</li>
+<li>
+<p> query.type: If query.type = 1, the loopy belief propagation (LBP)
+algorithm will be applied, which is an approximate algorithm for a general
+graph with loops. If the query is a chain or tree, there are exact
+algorithms. Set query.type = 2 when the query is a chain, and query.type = 3
+when the query is a tree. The heuristic algorithm will be used when
+query.type = 4, which will try the exact algorithm (junction tree algorithm)
+first and resort to LBP algorithm when the exact algorithm failed. The
+default value is 4.
+</p>
+</li>
+<li>
+<p> delta.d: The smaller delta.d is, the heavier penalty for deletions.
+</p>
+</li>
+<li>
+<p> delta.c: The smaller delta.c is, the heavier penalty for consecutive
+deletions.
+</p>
+</li>
+<li>
+<p> delta.e: The smaller delta.e is, the heavier penalty for single
+deletion.
+</p>
+</li>
+<li>
+<p> delta.s: The larger delta.s indicates heavier penalty for insertions.
+</p>
+</li>
+</ul>
+<h3>References</h3>
+
+<p>Qiang Huang, Ling-Yun Wu, and Xiang-Sun Zhang. An Efficient
+Network Querying Method Based on Conditional Random Fields. Bioinformatics,
+27(22):3173-3178, 2011.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Not run: 
+library(Corbi)
+
+## An example: "querynet.txt", "targetnet.txt", "nodesim.txt" are
+## three input files in the working directory
+net_query("querynet.txt", "targetnet.txt", "nodesim.txt", query.type=3)
+
+## End(Not run)
+
+
+## Not run: 
+## Batch example
+net_query_batch(c("querynet.txt", "querynet2.txt"),
+  "targetnet.txt", "nodesim.txt", query.type=3)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

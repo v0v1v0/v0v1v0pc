@@ -1,0 +1,176 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>matrix_tools</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Tools to Work with Matrices</h2>
+
+<h3>Description</h3>
+
+<p><code>p2P()</code> creates a <code>matrix</code> from a given
+<code>vector</code> of parameters.  <code>P2p()</code> creates a
+numeric vector from a given <code>matrix</code>,
+currently useful for elliptical copulas.
+</p>
+<p><code>getSigma()</code> returns the <code class="reqn">d \times d</code> symmetric
+matrix <code class="reqn">\Sigma</code> which is called “Rho” as well, written
+(capital Greek <code class="reqn">\rho</code> !) as <code class="reqn">P</code> (and hence sometimes
+erronously pronounced "Pee").
+Note that <code>getSigma()</code> works for all elliptical copulas and uses
+<code>p2P()</code> for the “unstuctured” case, <code>dispstr = "un"</code>.
+</p>
+<p><code>extremePairs()</code> identifies pairs with the largest (or smallest
+or both) entries in a symmetric matrix.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">p2P(param, d = floor(1 + sqrt(2*length(param))))
+P2p(P)
+getSigma(copula)
+extremePairs(x, n = 6, method = c("largest", "smallest", "both"),
+             use.names = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>param</code></td>
+<td>
+<p>a parameter vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+<p>dimension of the resulting <code>matrix</code>.  The default
+is correct under the assumption (of <code>p2P()</code> in general!) that
+<code>param</code> is the lower-triangular part of a correlation matrix
+<code>P</code> and hence corresponds to <code>ellipCopula(.., dispstr
+      = "un")</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>P</code></td>
+<td>
+<p>a <code>matrix</code> which should be converted to a vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>copula</code></td>
+<td>
+<p>an <b>elliptical</b> copula, i.e., an object (extending)
+class <code>ellipCopula</code>; typically resulting from
+<code>tCopula()</code> or <code>normalCopula()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a symmetric <code>matrix</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>the number of pairs with smallest (or largest) values to be
+displayed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>a <code>character</code> string indicating the method
+to be used (with <code>"largest"</code> to comute the <code>n</code> pairs with
+largest entries in <code>x</code> (sorted in decreasing order); with
+<code>"smallest"</code> to compute the <code>n</code> pairs with smallest entries
+in <code>x</code> (sorted in increasing order); and with <code>"both"</code> to
+comute the 2<code>n</code> pairs with <code>n</code> largest entries and
+<code>n</code> smallest entries (sorted in decreasing order)).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use.names</code></td>
+<td>
+<p>A <code>logical</code> indicating whether
+<code>colnames(x)</code> are used as labels (if <code>!is.null(colnames(x))</code>).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>These auxiliary functions are often used when working with
+elliptical copulas.
+</p>
+
+
+<h3>Value</h3>
+
+
+<dl>
+<dt>
+<code>p2P</code>:</dt>
+<dd>
+<p>a symmetric <code>matrix</code> with ones on the
+diagonal and the values of <code>param</code> filled column-wise below the
+diagonal (which corresponds to row-wise filling above the diagonal).</p>
+</dd>
+<dt>
+<code>P2p</code>:</dt>
+<dd>
+<p><code>vector</code> of column-wise below-diagonal
+entries of <code>P</code> (equal to the row-wise above-diagonal entries in
+case of a symmetric matrix).</p>
+</dd>
+<dt>
+<code>getSigma</code>:</dt>
+<dd>
+<p><code>matrix</code> as from <code>p2P()</code>
+for all cases of elliptical copulas.</p>
+</dd>
+<dt>
+<code>extremePairs</code>:</dt>
+<dd>
+<p>a <code>data.frame</code>
+consisting of three columns (<code>row</code> (index or name), <code>col</code> (index or name),
+<code>value</code>).</p>
+</dd>
+</dl>
+<h3>See Also</h3>
+
+<p><code>ellipCopula</code>, <code>tCopula</code>, <code>normalCopula</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## display the two simple definitions:
+p2P
+P2p
+
+param &lt;- (2:7)/10
+tC &lt;- tCopula(param, dim = 4, dispstr = "un", df = 3)
+## consistency of the three functions :
+P &lt;- p2P(param) # (using the default 'd')
+stopifnot(identical(param, P2p(P)),
+	  identical(P, getSigma(tC)))
+
+## Toeplitz case:
+(tCt &lt;- tCopula((2:6)/10, dim = 6, disp = "toep"))
+(rhoP &lt;- tCt@getRho(tCt))
+stopifnot(identical(getSigma (tCt),
+		    toeplitz (c(1, rhoP))))
+
+## "AR1" case:
+nC.7 &lt;- normalCopula(0.8, dim = 7, dispstr = "ar1")
+(Sar1.7 &lt;- getSigma(nC.7))
+0.8^(0:(7-1)) #  1  0.8  0.64  0.512 ..
+stopifnot(all.equal(Sar1.7, toeplitz(0.8^(0:(7-1)))))
+</code></pre>
+
+
+</div>

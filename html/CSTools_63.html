@@ -1,0 +1,230 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>RainFARM</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>RainFARM stochastic precipitation downscaling (reduced version)</h2>
+
+<h3>Description</h3>
+
+<p>This function implements the RainFARM stochastic precipitation downscaling method
+and accepts in input an array with named dims ("lon", "lat")
+and one or more dimension (such as "ftime", "sdate" or "time")
+over which to average automatically determined spectral slopes.
+Adapted for climate downscaling and including orographic correction.
+References:
+Terzago, S. et al. (2018). NHESS 18(11), 2825-2840. doi: <a href="https://doi.org/10.5194/nhess-18-2825-2018">10.5194/nhess-18-2825-2018</a>,
+D'Onofrio et al. (2014), J of Hydrometeorology 15, 830-843; Rebora et. al. 
+(2006), JHM 7, 724.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">RainFARM(
+  data,
+  lon,
+  lat,
+  nf,
+  weights = 1,
+  nens = 1,
+  slope = 0,
+  kmin = 1,
+  fglob = FALSE,
+  fsmooth = TRUE,
+  nprocs = 1,
+  time_dim = NULL,
+  lon_dim = "lon",
+  lat_dim = "lat",
+  drop_realization_dim = FALSE,
+  verbose = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>Precipitation array to downscale. The input array is expected to 
+have at least two dimensions named "lon" and "lat" by default (these default 
+names can be changed with the <code>lon_dim</code> and <code>lat_dim</code> parameters)
+and one or more dimensions over which to average these slopes, which can be 
+specified by parameter <code>time_dim</code>. The number of longitudes and 
+latitudes in the input data is expected to be even and the same. If not
+the function will perform a subsetting to ensure this condition.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lon</code></td>
+<td>
+<p>Vector or array of longitudes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lat</code></td>
+<td>
+<p>Vector or array of latitudes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nf</code></td>
+<td>
+<p>Refinement factor for downscaling (the output resolution is 
+increased by this factor).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>Multi-dimensional array with climatological weights which can 
+be obtained using the <code>CST_RFWeights</code> function. If <code>weights = 1.</code> 
+(default) no weights are used. The names of these dimensions must be at 
+least the same longitudinal and latitudinal dimension names as data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nens</code></td>
+<td>
+<p>Number of ensemble members to produce (default: <code>nens = 1</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>slope</code></td>
+<td>
+<p>Prescribed spectral slope. The default is <code>slope = 0.</code>
+meaning that the slope is determined automatically over the dimensions 
+specified by <code>time_dim</code>. A 1D array with named dimension can be 
+provided (see details and examples).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kmin</code></td>
+<td>
+<p>First wavenumber for spectral slope (default: <code>kmin = 1</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fglob</code></td>
+<td>
+<p>Logical to conseve global precipitation over the domain 
+(default: FALSE).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fsmooth</code></td>
+<td>
+<p>Logical to conserve precipitation with a smoothing kernel 
+(default: TRUE).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nprocs</code></td>
+<td>
+<p>The number of parallel processes to spawn for the use for 
+parallel computation in multiple cores. (default: 1)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_dim</code></td>
+<td>
+<p>String or character array with name(s) of time dimension(s)
+(e.g. "ftime", "sdate", "time" ...) over which to compute spectral slopes.
+If a character array of dimension names is provided, the spectral slopes
+will be computed over all elements belonging to those dimensions.
+If omitted one of c("ftime", "sdate", "time") is searched and the first one 
+with more than one element is chosen.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lon_dim</code></td>
+<td>
+<p>Name of lon dimension ("lon" by default).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lat_dim</code></td>
+<td>
+<p>Name of lat dimension ("lat" by default).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop_realization_dim</code></td>
+<td>
+<p>Logical to remove the "realization" stochastic 
+ensemble dimension (default: FALSE) with the following behaviour if set to 
+TRUE:
+</p>
+
+<ol>
+<li>
+<p>if <code>nens == 1</code>: the dimension is dropped;
+</p>
+</li>
+<li>
+<p>if <code>nens &gt; 1</code> and a "member" dimension exists: the "realization" 
+and "member" dimensions are compacted (multiplied) and the resulting 
+dimension is named "member";
+</p>
+</li>
+<li>
+<p>if <code>nens &gt; 1</code> and a "member" dimension does not exist: the 
+"realization" dimension is renamed to "member".
+</p>
+</li>
+</ol>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>logical for verbose output (default: FALSE).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Wether parameter 'slope' and 'weights' presents seasonality 
+dependency, a dimension name should match between these parameters and the 
+input data in parameter 'data'. See example 2 below where weights and slope 
+vary with 'sdate' dimension.
+</p>
+
+
+<h3>Value</h3>
+
+<p>RainFARM() Returns a list containing the fine-scale longitudes, 
+latitudes and the sequence of <code>nens</code> downscaled fields. If 
+<code>nens &gt; 1</code> an additional dimension named "realization" is added to the 
+output array after the "member" dimension (if it exists and unless 
+<code>drop_realization_dim = TRUE</code> is specified). The ordering of the 
+remaining dimensions in the <code>exp</code> element of the input object is 
+maintained.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jost von Hardenberg - ISAC-CNR, <a href="mailto:j.vonhardenberg@isac.cnr.it">j.vonhardenberg@isac.cnr.it</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Example for the 'reduced' RainFARM function 
+nf &lt;- 8   # Choose a downscaling by factor 8
+exp &lt;- 1 : (2 * 3 * 4 * 8 * 8)
+dim(exp) &lt;- c(dataset = 1, member = 2, sdate = 3, ftime = 4, lat = 8, lon = 8)
+lon &lt;- seq(10, 13.5, 0.5)
+lat &lt;- seq(40, 43.5, 0.5)
+# Create a test array of weights
+ww &lt;- array(1., dim = c(lon = 8 * nf, lat = 8 * nf))
+res &lt;- RainFARM(data = exp, lon = lon, lat = lat, nf = nf, 
+               weights = ww, nens = 3, time_dim = 'ftime')
+</code></pre>
+
+
+</div>

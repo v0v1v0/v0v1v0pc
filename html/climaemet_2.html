@@ -1,0 +1,160 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>aemet_alerts</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>AEMET Meteorological warnings</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt="[Experimental]"></a> Get a database of current meteorological
+alerts.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">aemet_alerts(
+  ccaa = NULL,
+  lang = c("es", "en"),
+  verbose = FALSE,
+  return_sf = FALSE,
+  extract_metadata = FALSE,
+  progress = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>ccaa</code></td>
+<td>
+<p>A vector of names for autonomous communities or <code>NULL</code> to get all
+the autonomous communities.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lang</code></td>
+<td>
+<p>Language of the results. It can be <code>"es"</code> (Spanish) or <code>"en"</code>
+(English).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Logical <code>TRUE/FALSE</code>. Provides information about the flow of
+information between the client and server.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return_sf</code></td>
+<td>
+<p>Logical <code>TRUE</code> or <code>FALSE</code>.
+Should the function return an <code>sf</code> spatial object? If <code>FALSE</code>
+(the default value) it returns a <code>tibble</code>. Note that
+you need to have the <a href="https://CRAN.R-project.org/package=sf"><span class="pkg">sf</span></a> package installed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extract_metadata</code></td>
+<td>
+<p>Logical <code>TRUE/FALSE</code>. On <code>TRUE</code> the output is
+a <code>tibble</code> with the description of the fields. See also
+<code>get_metadata_aemet()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>progress</code></td>
+<td>
+<p>Logical, display a <code>cli::cli_progress_bar()</code> object. If
+<code>verbose = TRUE</code> won't be displayed.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A <code>tibble</code> or a <a href="https://CRAN.R-project.org/package=sf"><span class="pkg">sf</span></a> object.
+</p>
+
+
+<h3>Source</h3>
+
+<p><a href="https://www.aemet.es/en/eltiempo/prediccion/avisos">https://www.aemet.es/en/eltiempo/prediccion/avisos</a>.
+</p>
+<p><a href="https://www.aemet.es/es/eltiempo/prediccion/avisos/ayuda">https://www.aemet.es/es/eltiempo/prediccion/avisos/ayuda</a>. See also
+Annex 2 and Annex 3 docs, linked in this page.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>aemet_alert_zones()</code>. See also mapSpain::esp_codelist,
+<code>mapSpain::esp_dict_region_code()</code> to get the names of the
+autonomous communities.
+</p>
+<p>Other aemet_api_data: 
+<code>aemet_alert_zones()</code>,
+<code>aemet_beaches()</code>,
+<code>aemet_daily_clim()</code>,
+<code>aemet_extremes_clim()</code>,
+<code>aemet_forecast_beaches()</code>,
+<code>aemet_forecast_daily()</code>,
+<code>aemet_forecast_fires()</code>,
+<code>aemet_last_obs()</code>,
+<code>aemet_monthly</code>,
+<code>aemet_normal</code>,
+<code>aemet_stations()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Display names of CCAAs
+library(dplyr)
+aemet_alert_zones() %&gt;%
+  select(NOM_CCAA) %&gt;%
+  distinct()
+
+# Base map
+cbasemap &lt;- mapSpain::esp_get_ccaa(ccaa = c(
+  "Galicia", "Asturias", "Cantabria",
+  "Euskadi"
+))
+
+# Alerts
+alerts_north &lt;- aemet_alerts(
+  ccaa = c("Galicia", "Asturias", "Cantabria", "Euskadi"),
+  return_sf = TRUE
+)
+
+# If any alert
+if (inherits(alerts_north, "sf")) {
+  library(ggplot2)
+  library(lubridate)
+
+
+  alerts_north$day &lt;- date(alerts_north$effective)
+
+  ggplot(alerts_north) +
+    geom_sf(data = cbasemap, fill = "grey60") +
+    geom_sf(aes(fill = `AEMET-Meteoalerta nivel`)) +
+    geom_sf(
+      data = cbasemap, fill = "transparent", color = "black",
+      linewidth = 0.5
+    ) +
+    facet_grid(vars(`AEMET-Meteoalerta fenomeno`), vars(day)) +
+    scale_fill_manual(values = c(
+      "amarillo" = "yellow", naranja = "orange",
+      "rojo" = "red"
+    ))
+}
+
+</code></pre>
+
+
+</div>

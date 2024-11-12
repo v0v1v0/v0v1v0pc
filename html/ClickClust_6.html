@@ -1,0 +1,200 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>click.forward</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2> Forward search for equivalent states </h2>
+
+<h3>Description</h3>
+
+<p>Runs forward search to detect blocks of equivalent states.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">click.forward(X, K, eps = 1e-10, r = 100, iter = 5, bic = TRUE,
+  min.gamma = 1e-3, scale.const = 1.0, silent = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X </code></td>
+<td>
+<p> dataset array (p x p x n) </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K </code></td>
+<td>
+<p> number of mixture components </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eps </code></td>
+<td>
+<p> tolerance level </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>r </code></td>
+<td>
+<p> number of restarts for initialization</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iter </code></td>
+<td>
+<p> number of iterations for each short EM run</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bic </code></td>
+<td>
+<p> flag indicating whether BIC or AIC is used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min.gamma </code></td>
+<td>
+<p> lower bound for transition probabilities </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scale.const </code></td>
+<td>
+<p> scaling constant for avoiding numerical issues </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>silent </code></td>
+<td>
+<p> output control </p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Runs forward search to detect blocks of equivalent states. States i and j are called equivalent if their behavior expressed in terms of transition probabilities is identical, i.e., the probabilities of leaving i and j to visit another state h are the same as well as the probabilities of coming to i and j from another state h are the same; this condition should hold for all mixture components.
+Notation: p - number of states, n - sample size, K - number of mixture components, d - number of equivalence blocks.
+</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>z </code></td>
+<td>
+<p> matrix of posterior probabilities (n x K)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha </code></td>
+<td>
+<p> vector of mixing proportions (length K)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gamma </code></td>
+<td>
+<p> array of transition probabilities (d x d x K)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>states </code></td>
+<td>
+<p> detected equivalence blocks (length p)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logl </code></td>
+<td>
+<p> log likelihood value</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>BIC </code></td>
+<td>
+<p> Bayesian Information Criterion</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>AIC </code></td>
+<td>
+<p> Akaike Information Criterion</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id </code></td>
+<td>
+<p> classification vector (length n)</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p> Melnykov, V.</p>
+
+
+<h3>References</h3>
+
+<p>Melnykov, V. (2016) Model-Based Biclustering of Clickstream Data, Computational Statistics and Data Analysis, 93, 31-45.
+</p>
+<p>Melnykov, V. (2016) ClickClust: An R Package for Model-Based Clustering of Categorical Sequences, Journal of Statistical Software, 74, 1-34.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>backward.search, click.EM</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+set.seed(123)
+
+n.seq &lt;- 50
+
+p &lt;- 5
+K &lt;- 2
+mix.prop &lt;- c(0.3, 0.7)
+
+
+TP1 &lt;- matrix(c(0.20, 0.10, 0.15, 0.15, 0.40,
+                0.20, 0.20, 0.20, 0.20, 0.20,
+                0.15, 0.10, 0.20, 0.20, 0.35,
+                0.15, 0.10, 0.20, 0.20, 0.35,
+                0.30, 0.30, 0.10, 0.10, 0.20), byrow = TRUE, ncol = p)
+
+TP2 &lt;- matrix(c(0.15, 0.15, 0.20, 0.20, 0.30,
+                0.20, 0.10, 0.30, 0.30, 0.10,
+                0.25, 0.20, 0.15, 0.15, 0.25,
+                0.25, 0.20, 0.15, 0.15, 0.25,
+                0.10, 0.30, 0.20, 0.20, 0.20), byrow = TRUE, ncol = p)
+
+
+TP &lt;- array(rep(NA, p * p * K), c(p, p, K))
+TP[,,1] &lt;- TP1
+TP[,,2] &lt;- TP2
+
+
+# DATA SIMULATION
+
+A &lt;- click.sim(n = n.seq, int = c(10, 50), alpha = mix.prop, gamma = TP)
+C &lt;- click.read(A$S)
+
+
+# FORWARD SEARCH
+
+click.forward(X = C$X, K = 2)
+
+</code></pre>
+
+
+</div>

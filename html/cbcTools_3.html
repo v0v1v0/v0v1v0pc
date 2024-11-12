@@ -1,0 +1,442 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cbc_design</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Make a choice-based conjoint survey design</h2>
+
+<h3>Description</h3>
+
+<p>This function creates a data frame containing a choice-based conjoint survey
+design where each row is an alternative. Generate a variety of survey
+designs, including full factorial designs, orthogonal designs, and Bayesian
+D-efficient designs as well as designs with "no choice" options and "labeled"
+(also known as "alternative specific") designs.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cbc_design(
+  profiles,
+  n_resp,
+  n_alts,
+  n_q,
+  n_blocks = 1,
+  n_draws = 50,
+  n_start = 5,
+  no_choice = FALSE,
+  label = NULL,
+  method = "random",
+  priors = NULL,
+  prior_no_choice = NULL,
+  probs = FALSE,
+  keep_d_eff = FALSE,
+  keep_db_error = FALSE,
+  max_iter = 50,
+  parallel = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>profiles</code></td>
+<td>
+<p>A data frame in which each row is a possible profile. This
+can be generated using the <code>cbc_profiles()</code> function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_resp</code></td>
+<td>
+<p>Number of survey respondents.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_alts</code></td>
+<td>
+<p>Number of alternatives per choice question.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_q</code></td>
+<td>
+<p>Number of questions per respondent.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_blocks</code></td>
+<td>
+<p>Number of blocks used in Orthogonal or Bayesian D-efficient
+designs. Max allowable is one block per respondent. Defaults to <code>1</code>,
+meaning every respondent sees the same choice set.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_draws</code></td>
+<td>
+<p>Number of draws used in simulating the prior distribution used
+in Bayesian D-efficient designs. Defaults to <code>50</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_start</code></td>
+<td>
+<p>A numeric value indicating the number of random start designs
+to use in obtaining a Bayesian D-efficient design. The default is <code>5</code>.
+Increasing <code>n_start</code> can result in a more efficient design at the expense
+of increased computational time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>no_choice</code></td>
+<td>
+<p>Include a "no choice" option in the choice sets? Defaults to
+<code>FALSE</code>. If <code>TRUE</code>, the total number of alternatives per question will be
+one more than the provided <code>n_alts</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>label</code></td>
+<td>
+<p>The name of the variable to use in a "labeled" design (also
+called an "alternative-specific design") such that each set of alternatives
+contains one of each of the levels in the <code>label</code> attribute. Currently not
+compatible with Bayesian D-efficient designs. If used, the <code>n_alts</code>
+argument will be ignored as its value is defined by the unique number of
+levels in the <code>label</code> variable. Defaults to <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Choose the design method to use: <code>"random"</code>, <code>"full"</code>,
+<code>"orthogonal"</code>, <code>"dopt"</code>, <code>"CEA"</code>, or <code>"Modfed"</code>. Defaults to <code>"random"</code>.
+See details below for complete description of each method.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>priors</code></td>
+<td>
+<p>A list of one or more assumed prior parameters used to generate
+a Bayesian D-efficient design. Defaults to <code>NULL</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior_no_choice</code></td>
+<td>
+<p>Prior utility value for the "no choice" alternative.
+Only required if <code>no_choice = TRUE</code>. Defaults to <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>probs</code></td>
+<td>
+<p>If <code>TRUE</code>, for Bayesian D-efficient designs the resulting design
+includes average predicted probabilities for each alternative in each
+choice set given the sample from the prior preference distribution.
+Defaults to <code>FALSE</code>.'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep_d_eff</code></td>
+<td>
+<p>If <code>TRUE</code>, for D-optimal designs (<code>method = "dopt"</code>) the
+returned object will be a list containing the design and the D-efficiency
+score. Defaults to <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep_db_error</code></td>
+<td>
+<p>If <code>TRUE</code>, for Bayesian D-efficient designs the
+returned object will be a list containing the design and the DB-error
+score. Defaults to <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_iter</code></td>
+<td>
+<p>A numeric value indicating the maximum number allowed
+iterations when searching for a Bayesian D-efficient design. The default is
+50.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+<p>Logical value indicating whether computations should be done
+over multiple cores. The default is <code>FALSE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>method</code> argument determines the design method used. Options
+are:
+</p>
+
+<ul>
+<li> <p><code>"random"</code>
+</p>
+</li>
+<li> <p><code>"full"</code>
+</p>
+</li>
+<li> <p><code>"orthogonal"</code>
+</p>
+</li>
+<li> <p><code>"dopt"</code>
+</p>
+</li>
+<li> <p><code>"CEA"</code>
+</p>
+</li>
+<li> <p><code>"Modfed"</code>
+</p>
+<p>All methods ensure that the two following criteria are met:
+</p>
+
+<ol>
+<li>
+<p> No two profiles are the same within any one choice set.
+</p>
+</li>
+<li>
+<p> No two choice sets are the same within any one respondent.
+</p>
+</li>
+</ol>
+<p>The table below summarizes method compatibility with other design options,
+including the ability to include a "no choice" option, the creation of a
+"labeled" design (also called a "alternative-specific" design), the use
+of restricted profile, and the use of blocking.</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+   Method </td>
+<td style="text-align: left;"> Include "no choice"? </td>
+<td style="text-align: left;"> Labeled designs? </td>
+<td style="text-align: left;"> Restricted profiles? </td>
+<td style="text-align: left;"> Blocking? </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <code>"random"</code> </td>
+<td style="text-align: left;"> Yes </td>
+<td style="text-align: left;"> Yes </td>
+<td style="text-align: left;"> Yes </td>
+<td style="text-align: left;"> No </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <code>"full"</code> </td>
+<td style="text-align: left;"> Yes </td>
+<td style="text-align: left;"> Yes </td>
+<td style="text-align: left;"> Yes </td>
+<td style="text-align: left;"> Yes </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <code>"orthogonal"</code> </td>
+<td style="text-align: left;"> Yes </td>
+<td style="text-align: left;"> No </td>
+<td style="text-align: left;"> No </td>
+<td style="text-align: left;"> Yes </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <code>"dopt"</code> </td>
+<td style="text-align: left;"> Yes </td>
+<td style="text-align: left;"> No </td>
+<td style="text-align: left;"> Yes </td>
+<td style="text-align: left;"> Yes </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <code>"CEA"</code> </td>
+<td style="text-align: left;"> Yes </td>
+<td style="text-align: left;"> No </td>
+<td style="text-align: left;"> No </td>
+<td style="text-align: left;"> Yes </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+   <code>"Modfed"</code> </td>
+<td style="text-align: left;"> Yes </td>
+<td style="text-align: left;"> No </td>
+<td style="text-align: left;"> Yes </td>
+<td style="text-align: left;"> Yes </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+</td>
+</tr>
+</table>
+<p>The <code>"random"</code> method (the default) creates a design where choice sets are
+created by randomly sampling from the full set of <code>profiles</code> *with
+*replacement. This means that few (if any) respondents will see the same
+sets of choice sets. This method is less efficient than other approaches
+and may lead to a deficient experiment in smaller sample sizes, though it
+guarantees equal ability to estimate main and interaction effects.
+</p>
+<p>The <code>"full"</code> method for ("full factorial") creates a design where choice
+sets are created by randomly sampling from the full set of <code>profiles</code>
+<em>without replacement</em>. The choice sets are then repeated to meet the
+desired number of survey respondents (determined by <code>n_resp</code>). If blocking
+is used, choice set blocks are created using mutually exclusive subsets of
+<code>profiles</code> within each block. This method produces a design with similar
+performance with that of the <code>"random"</code> method, except the choice sets are
+repeated and thus there will be many more opportunities for different
+respondents to see the same choice sets. This method is less efficient than
+other approaches and may lead to a deficient experiment in smaller sample
+sizes, though it guarantees equal ability to estimate main and interaction
+effects. For more information about blocking with full factorial designs,
+see <code>?DoE.base::fac.design</code> as well as the JSS article on the DoE.base
+package (Grömping, 2018).
+</p>
+<p>The <code>"orthogonal"</code> method creates a design where an orthogonal array from
+the full set of <code>profiles</code> is found and then choice sets are created by
+randomly sampling from this orthogonal array <em>without replacement</em>. The
+choice sets are then repeated to meet the desired number of survey
+respondents (determined by <code>n_resp</code>). If blocking is used, choice set
+blocks are created using mutually exclusive subsets of the orthogonal array
+within each block. For cases where an orthogonal array cannot be found, a
+full factorial design is used. This approach is also sometimes called a
+"main effects" design since orthogonal arrays focus the information on the
+main effects at the expense of information about interaction effects. For
+more information about orthogonal designs, see <code>?DoE.base::oa.design</code> as
+well as the JSS article on the DoE.base package (Grömping, 2018).
+</p>
+<p>The <code>"dopt"</code> method creates a "D-optimal" design where an array from
+<code>profiles</code> is found that maximizes the D-efficiency of a linear model
+using the Federov algorithm, with the total number of unique choice sets
+determined by <code>n_q*n_blocks</code>. Choice sets are then created by randomly
+sampling from this array <em>without replacement</em>. The choice sets are then
+repeated to meet the desired number of survey respondents (determined by
+<code>n_resp</code>). If blocking is used, choice set blocks are created from the
+D-optimal array. For more information about the underlying algorithm
+for this method, see <code>?AlgDesign::optFederov</code>.
+</p>
+<p>The <code>"CEA"</code> and <code>"Modfed"</code> methods use the specified <code>priors</code> to create a
+Bayesian D-efficient design for the choice sets, with the total number of
+unique choice sets determined by <code>n_q*n_blocks</code>. The choice sets are then
+repeated to meet the desired number of survey respondents (determined by
+<code>n_resp</code>). If <code>"CEA"</code> or <code>"Modfed"</code> is used without specifying <code>priors</code>, a
+prior of all <code>0</code>s will be used and a warning message stating this will be
+shown. In the opposite case, if <code>priors</code> are specified but neither Bayesian
+method is used, the <code>"CEA"</code> method will be used and a warning stating this
+will be shown. Restricted sets of <code>profiles</code> can only be used with
+<code>"Modfed"</code>. For more details on Bayesian D-efficient designs, see
+<code>?idefix::CEA</code> and <code>?idefix::Modfed</code> as well as the JSS article on the
+idefix package (Traets et al, 2020).
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p>The returned <code>design</code> data frame contains a choice-based conjoint
+survey design where each row is an alternative. It includes the following
+columns:
+</p>
+
+<ul>
+<li> <p><code>profileID</code>: Identifies the profile in <code>profiles</code>.
+</p>
+</li>
+<li> <p><code>respID</code>: Identifies each survey respondent.
+</p>
+</li>
+<li> <p><code>qID</code>: Identifies the choice question answered by the respondent.
+</p>
+</li>
+<li> <p><code>altID</code>:Identifies the alternative in any one choice observation.
+</p>
+</li>
+<li> <p><code>obsID</code>: Identifies each unique choice observation across all respondents.
+</p>
+</li>
+<li> <p><code>blockID</code>: If blocking is used, identifies each unique block.
+</p>
+</li>
+</ul>
+<h3>References</h3>
+
+<p>Grömping, U. (2018). R Package DoE.base for Factorial Experiments. Journal of Statistical Software, 85(5), 1–41
+<a href="https://doi.org/10.18637/jss.v085.i05">doi:10.18637/jss.v085.i05</a>
+</p>
+<p>Traets, F., Sanchez, D. G., &amp; Vandebroek, M. (2020). Generating Optimal Designs for Discrete Choice Experiments in R: The idefix Package. Journal of Statistical Software, 96(3), 1–41,
+<a href="https://doi.org/10.18637/jss.v096.i03">doi:10.18637/jss.v096.i03</a>
+</p>
+<p>Wheeler B (2022)._AlgDesign: Algorithmic Experimental Design. R package version 1.2.1,
+<a href="https://CRAN.R-project.org/package=AlgDesign">https://CRAN.R-project.org/package=AlgDesign</a>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(cbcTools)
+
+# A simple conjoint experiment about apples
+
+# Generate all possible profiles
+profiles &lt;- cbc_profiles(
+  price     = c(1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5),
+  type      = c("Fuji", "Gala", "Honeycrisp"),
+  freshness = c('Poor', 'Average', 'Excellent')
+)
+
+# Make a survey by randomly sampling from all possible profiles
+# (This is the default setting where method = 'random')
+design_random &lt;- cbc_design(
+  profiles = profiles,
+  n_resp   = 100, # Number of respondents
+  n_alts   = 3,   # Number of alternatives per question
+  n_q      = 6    # Number of questions per respondent
+)
+
+# Make a survey using a full factorial design and include a "no choice" option
+design_full &lt;- cbc_design(
+  profiles = profiles,
+  n_resp   = 100, # Number of respondents
+  n_alts   = 3,   # Number of alternatives per question
+  n_q      = 6,   # Number of questions per respondent
+  method   = 'full', # Change this to use a different method, e.g. 'orthogonal', or 'dopt'
+  no_choice = TRUE
+)
+
+# Make a survey by randomly sampling from all possible profiles
+# with each level of the "type" attribute appearing as an alternative
+design_random_labeled &lt;- cbc_design(
+  profiles = profiles,
+  n_resp   = 100, # Number of respondents
+  n_alts   = 3,   # Number of alternatives per question
+  n_q      = 6,   # Number of questions per respondent
+  label    = "type"
+)
+
+# Make a Bayesian D-efficient design with a prior model specified
+# Note that by speed can be improved by setting parallel = TRUE
+design_bayesian &lt;- cbc_design(
+    profiles  = profiles,
+    n_resp    = 100, # Number of respondents
+    n_alts    = 3,   # Number of alternatives per question
+    n_q       = 6,   # Number of questions per respondent
+    n_start   = 1,   # Defaults to 5, set to 1 here for a quick example
+    priors = list(
+        price     = -0.1,
+        type      = c(0.1, 0.2),
+        freshness = c(0.1, 0.2)
+    ),
+    method = "CEA",
+    parallel = FALSE
+)
+</code></pre>
+
+
+</div>

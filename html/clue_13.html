@@ -1,0 +1,139 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cl_bag</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Bagging for Clustering</h2>
+
+<h3>Description</h3>
+
+<p>Construct partitions of objects by running a base clustering algorithm
+on bootstrap samples from a given data set, and “suitably”
+aggregating these primary partitions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cl_bag(x, B, k = NULL, algorithm = "kmeans", parameters = NULL, 
+       method = "DFBC1", control = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>the data set of objects to be clustered, as appropriate for
+the base clustering algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p>an integer giving the number of bootstrap replicates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p><code>NULL</code> (default), or an integer giving the number of
+classes to be used for a partitioning base algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>algorithm</code></td>
+<td>
+<p>a character string or function specifying the base
+clustering algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parameters</code></td>
+<td>
+<p>a named list of additional arguments to be passed to
+the base algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>a character string indicating the bagging method to
+use.  Currently, only method <code>"DFBC1"</code> is available, which
+implements algorithm <em>BagClust1</em> in Dudoit &amp; Fridlyand (2003).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>a list of control parameters for the aggregation.
+Currently, not used.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Bagging for clustering is really a rather general conceptual framework
+than a specific algorithm.  If the primary partitions generated in the
+bootstrap stage form a cluster ensemble (so that class memberships of
+the objects in <code>x</code> can be obtained), consensus methods for
+cluster ensembles (as implemented, e.g., in <code>cl_consensus</code>
+and <code>cl_medoid</code>) can be employed for the aggregation
+stage.  In particular, (possibly new) bagging algorithms can easily be
+realized by directly running <code>cl_consensus</code> on the results
+of <code>cl_boot</code>.
+</p>
+<p>In BagClust1, aggregation proceeds by generating a reference partition
+by running the base clustering algorithm on the whole given data set,
+and averaging the ensemble memberships after optimally matching them
+to the reference partition (in fact, by minimizing Euclidean
+dissimilarity, see <code>cl_dissimilarity</code>).
+</p>
+<p>If the base clustering algorithm yields prototypes, aggregation can be
+based on clustering these.  This is the idea underlying the
+“Bagged Clustering” algorithm introduced in Leisch (1999) and
+implemented by function <code>bclust</code> in package
+<span class="pkg">e1071</span>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An R object representing a partition of the objects given in <code>x</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>S. Dudoit and J. Fridlyand (2003).
+Bagging to improve the accuracy of a clustering procedure.
+<em>Bioinformatics</em>, <b>19</b>/9, 1090–1099.
+<a href="https://doi.org/10.1093/bioinformatics/btg038">doi:10.1093/bioinformatics/btg038</a>.
+</p>
+<p>F. Leisch (1999).
+<em>Bagged Clustering</em>.
+Working Paper 51, SFB “Adaptive Information Systems and
+Modeling in Economics and Management Science”.
+<a href="https://epub.wu.ac.at/1272/">https://epub.wu.ac.at/1272/</a>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(1234)
+## Run BagClust1 on the Cassini data.
+data("Cassini")
+party &lt;- cl_bag(Cassini$x, 50, 3)
+plot(Cassini$x, col = cl_class_ids(party), xlab = "", ylab = "")
+## Actually, using fuzzy c-means as a base learner works much better:
+if(require("e1071", quietly = TRUE)) {
+    party &lt;- cl_bag(Cassini$x, 20, 3, algorithm = "cmeans")
+    plot(Cassini$x, col = cl_class_ids(party), xlab = "", ylab = "")
+}
+</code></pre>
+
+
+</div>

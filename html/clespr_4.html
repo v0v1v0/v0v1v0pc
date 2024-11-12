@@ -1,0 +1,195 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>func.cle.ord</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Composite Likelihood Estimation for Spatial Ordinal Data</h2>
+
+<h3>Description</h3>
+
+<p><code>func.cle.ord</code> performs composite likelihood estimation of parameters and their standard errors in a spatial ordered probit model by maximizing its composite log-likelihood.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">func.cle.ord(vec.yobs, mat.X, mat.lattice, radius, n.cat, n.sim = 100,
+  parallel = TRUE, n.core = max(detectCores()/2, 1), output = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>vec.yobs</code></td>
+<td>
+<p>a vector of observed responses for all N sites.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mat.X</code></td>
+<td>
+<p>regression (design) matrix, including intercepts.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mat.lattice</code></td>
+<td>
+<p>a data matrix containing geographical information of sites. The ith row constitutes a set of geographical coordinates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>radius</code></td>
+<td>
+<p>weight radius.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.cat</code></td>
+<td>
+<p>number of categories.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.sim</code></td>
+<td>
+<p>number of simulations used for calculate the Godambe matrix (default: 100).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+<p>logical flag indicates using parallel processing (default: <code>TRUE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.core</code></td>
+<td>
+<p>number of physical cores used for parallel processing (when <code>parallel</code> is <code>TRUE</code>, default value is <code>max(detectCores()/2,1)</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output</code></td>
+<td>
+<p>logical flag indicates whether printing out result (default: <code>TRUE</code>).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Given the design matrix, the vector of observed responses, spatial lattice data, weight radius, number of categories, and the prespecified number of simulated vectors of responses used in estimating the Godambe information, this function assumes initial values of cutoff points and <code class="reqn">\beta</code> as the estimates from the standard ordered probit regression with independent responses. After initial reparameterization, it first estimates parameters of interest by maximizing the composite log-likelihood using <code>optim</code>, then computes the reparameterized sample covariance matrix and the set of standard errors, and finally reverse the reparameterization to obtain estimates corresponding to the original parameterization.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>func.cle.ord</code> returns a list containing:
+</p>
+<p><code>vec.par</code>: a vector of estimator for <code class="reqn">\theta</code>=(cutoff,<code class="reqn">\beta,\sigma^2,\rho)</code>;
+</p>
+<p><code>vec.se</code>: a vector of standard error for the estimator;
+</p>
+<p><code>mat.asyvar</code>: estimated asymptotic covariance matrix <code class="reqn">H^{-1}(\theta)J(\theta)H^{-1}(\theta)</code> for the estimator; and
+</p>
+<p><code>vec.comp</code>: a vector of computational time for parameter and standard error estimation.
+</p>
+<p><code>CLIC</code>: Composite likelihood information criterion proposed by Varin and Vidoni (2005), i.e. <code class="reqn">-2*logCL(\theta) + 2*trace(H^{-1}(\theta)J(\theta))</code>
+</p>
+
+
+<h3>References</h3>
+
+<p>Feng, Xiaoping, Zhu, Jun, Lin, Pei-Sheng, and Steen-Adams, Michelle M. (2014) Composite likelihood Estimation for Models of Spatial Ordinal Data and Spatial Proportional Data with Zero/One values. <em>Environmetrics</em> 25(8): 571–583.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Example of n.cat = 3 (Spatial ordinal regression)
+# True parameter
+vec.cutoff &lt;- 2; vec.beta &lt;- c(1, 2, 1, 0, -1); sigmasq &lt;- 0.8; rho &lt;- 0.6; radius &lt;- 5
+vec.par &lt;- c(vec.cutoff, vec.beta, sigmasq, rho)
+
+# Coordinate matrix
+n.cat &lt;- 3; n.lati &lt;- 30; n.long &lt;- 30
+n.site &lt;- n.lati * n.long
+mat.lattice &lt;- cbind(rep(1:n.lati, n.long), rep(1:n.long, each=n.lati))
+mat.dist &lt;- as.matrix(dist(mat.lattice, upper=TRUE, diag=TRUE))
+mat.cov &lt;- sigmasq * rho^mat.dist
+
+set.seed(1228)
+# Generate regression (design) matrix with intercept
+mat.X &lt;- cbind(rep(1, n.site),scale(matrix(rnorm(n.site*(length(vec.beta)-1)),nrow=n.site)))
+vec.Z &lt;- t(chol(mat.cov)) %*% rnorm(n.site) + mat.X %*% vec.beta
+vec.epsilon &lt;- diag(sqrt(1-sigmasq), n.site) %*% rnorm(n.site)
+vec.ylat &lt;- as.numeric(vec.Z + vec.epsilon)
+
+# Convert to the vector of observation
+vec.yobs &lt;- func.obs.ord(vec.ylat, vec.alpha=c(-Inf,0,vec.cutoff,Inf))
+
+# With parallel computing
+
+## Not run: 
+ord.example &lt;- func.cle.ord(vec.yobs, mat.X, mat.lattice, radius, n.cat,
+n.sim=100, parallel = TRUE, n.core = 2)
+
+round(ord.example$vec.par,4)
+# alpha1   beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+# 1.8395  0.9550  1.9690  0.9565  0.0349 -1.0398  0.8200  0.5578
+
+round(ord.example$vec.se,4)
+# alpha1   beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+# 0.1602  0.1222  0.1463  0.0916  0.0485  0.0889  0.1935  0.1267
+
+## End(Not run)
+
+# Without parallel computing
+
+## Not run: 
+ord.example2 &lt;- func.cle.ord(vec.yobs, mat.X, mat.lattice, radius,
+n.cat, n.sim=100, parallel = FALSE)
+
+## End(Not run)
+
+# Example for n.cat = 2 (i.e. Spatial probit regression)
+# True parameter
+vec.beta &lt;- c(1, 2, 1, 0, -1); sigmasq &lt;- 0.5; rho &lt;- 0.6; radius &lt;- 5
+vec.par &lt;- c(vec.beta, sigmasq, rho)
+
+# Coordinate matrix
+n.cat &lt;- 2 ; n.lati &lt;- n.long &lt;- 40
+n.site &lt;- n.lati * n.long
+mat.lattice &lt;- cbind(rep(1:n.lati, n.long), rep(1:n.long, each=n.lati))
+mat.dist &lt;- as.matrix(dist(mat.lattice, upper=TRUE, diag=TRUE))
+mat.cov &lt;- sigmasq * rho^mat.dist
+
+set.seed(123)
+# Generate regression (design) matrix with intercept
+mat.X &lt;- cbind(rep(1, n.site),scale(matrix(rnorm(n.site*(length(vec.beta)-1)),nrow=n.site)))
+vec.Z &lt;- t(chol(mat.cov)) %*% rnorm(n.site) + mat.X %*% vec.beta
+vec.epsilon &lt;- diag(sqrt(1-sigmasq), n.site) %*% rnorm(n.site)
+vec.ylat &lt;- as.numeric(vec.Z + vec.epsilon)
+# Convert to the vector of observation
+vec.yobs &lt;- func.obs.ord(vec.ylat, vec.alpha=c(-Inf,0,Inf))
+
+## Not run: 
+probit.example &lt;- func.cle.ord(vec.yobs, mat.X, mat.lattice, radius, n.cat,
+n.sim=100, parallel = TRUE, n.core = 4)
+
+round(probit.example$vec.par,4)
+# beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+# 1.0427  2.2250  1.0422  0.0156 -1.1489  0.4402  0.6636
+
+round(probit.example$vec.se,4)
+# beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+# 0.1198  0.1413  0.0863  0.0523  0.0935  0.1600  0.1263
+
+## End(Not run)
+
+
+</code></pre>
+
+
+</div>

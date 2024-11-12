@@ -1,0 +1,217 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CrossGEESP</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Run a semi-parametric GEE model for data from a crossover experiment with
+repeated measures</h2>
+
+<h3>Description</h3>
+
+<p>Provides a GEE model for the data of a crossover design with S
+sequences of T periods. There must be at least two observations of each
+experimental unit in each period. The effect of time within period and
+the possible carryover effects are modeled by means of splines.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CrossGEESP(
+  response,
+  period,
+  treatment,
+  id,
+  time,
+  carry,
+  covar = NULL,
+  data,
+  family = gaussian,
+  correlation = "independence",
+  formula = NULL,
+  tol = 1e-04,
+  niter = 100,
+  nodes = NULL,
+  Mv = 1
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>response</code></td>
+<td>
+<p>A character string specifying the name of the
+response variable of the crossover experimental design</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>period</code></td>
+<td>
+<p>A character string specifying the name of vector with the
+observation period of the responses of  the crossover experimental design</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>treatment</code></td>
+<td>
+<p>A character string specifying the name of vector with the
+treatment applied at each observation of the crossover experimental design</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id</code></td>
+<td>
+<p>A  character string specifying the name of vector which identifies
+the experimental units. The length of ‘id’
+should be the same as the number of observations. Data are assumed to be sorted so
+that observations on each cluster appear as contiguous rows in data. If data
+is not sorted this way, the function will not identify the clusters correctly.
+If data is not sorted this way, a warning will be issued.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>A character string specifying the name of the vector with the
+measurement time within each period</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>carry</code></td>
+<td>
+<p>A vector of  character string specifying the name set of dummy
+variables that indicates the treatment applied
+in the previous period of each experimental unit. They must be 0 in period 1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covar</code></td>
+<td>
+<p>A vector of  character string specifying the name of possible
+covariates of the crossover experimental design</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data frame with all the variables of the crossover experimental design</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>See corresponding documentation to <code>glm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>correlation</code></td>
+<td>
+<p>a character string specifying the correlation structure.
+The following are permitted: "independence", "fixed", "stat_M_dep",
+"non_stat_M_dep", "exchangeable", "AR-M" and "unstructured"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>A formula related the response variable with the explanatory
+variables. If it is <code>NULL</code>, formula
+<code>response~period+treatment+carry+time+covar</code> will be evaluated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol</code></td>
+<td>
+<p>the tolerance used in the fitting algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>niter</code></td>
+<td>
+<p>the maximum number of iterations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nodes</code></td>
+<td>
+<p>Number of nodes in the estimation of the splines.
+By default, the base 2 logarithm of the number of observations per period is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Mv</code></td>
+<td>
+<p>When correlation is "stat_M_dep", "non_stat_M_dep", or "AR-M"
+then Mv must be specified.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>QIC</code> The QIC of the model: The model are fitted by <code>geeglm</code>
+</p>
+<p><code>model</code> The model fitted by <code>geeglm</code>.
+</p>
+<p><code>graphs</code> The graphs estimated by splines.
+In position 1 the graph of the effect of time appears and from then on,
+it appears one for each carryover effect declared in the <code>carry</code> option.
+The graphs are built with <code>ggplot2</code>, therefore they allow manipulation
+of axes and other graphic parameters of that library.
+</p>
+
+
+<h3>Source</h3>
+
+<p>https://doi.org/10.1177/09622802231158736
+</p>
+
+
+<h3>References</h3>
+
+<p>Cruz Gutierrez NA, Melo OO, Martinez CA. Semiparametric generalized
+estimating equations for repeated measurements in cross-over designs.
+Statistical Methods in Medical Research, 2023;32(5):1033-1050.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(Arterial)
+
+carrydata &lt;- createCarry(data=Arterial, treatment = "Treatment",
+                         period = "Period",id="Subject", carrySimple = FALSE)
+data &lt;- carrydata$data
+carry &lt;- carrydata$carryover
+model1 &lt;- CrossGEESP(response = "Pressure", treatment = "Treatment",
+                    period = "Period", id="Subject", time="Time",
+                    carry=carrydata$carryover,data=data,
+                    correlation = "exchangeable")
+
+
+model2 &lt;- CrossGEESP(response = "Pressure", treatment = "Treatment",
+                     period = "Period", id="Subject", time="Time",
+                     carry=carrydata$carryover,data=data, correlation = "AR-M")
+
+
+model1$QIC
+model2$QIC
+summary(model1$model)
+summary(model2$model)
+
+## Aproximate p-values for model 2
+
+(pvalues &lt;- 2 * pnorm(abs(coef(summary(model2$model))[,5]), lower.tail = FALSE))
+
+model1$graph[[1]]
+model1$graph[[2]]
+plot &lt;- model1$graph[[1]] + ggplot2::xlab("Time in minutes")+
+ggplot2::ylab("Change in systolic blood pressure")
+plot
+</code></pre>
+
+
+</div>

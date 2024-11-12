@@ -1,0 +1,105 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>run_pipeline_dbi</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>A wrapper for running pipelines with a DBI connection invocation query</h2>
+
+<h3>Description</h3>
+
+<p>A wrapper for running pipelines with a DBI connection invocation query
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">run_pipeline_dbi(pipeline, query, con, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>pipeline</code></td>
+<td>
+<p>User-provided function with one argument, one row of query results</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>query</code></td>
+<td>
+<p>A query to execute via the DBI connection</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>con</code></td>
+<td>
+<p>The DBI connection</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments passed to dbSendQuery() and dbFetch()</p>
+</td>
+</tr>
+</table>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Not run: 
+library(whisker)
+library(RSQLite)
+
+con &lt;- dbConnect(RSQLite::SQLite(), ":memory:")
+
+dbWriteTable(con, "mtcars", mtcars)
+
+#for each cylinder count, count the number of top 5 hps it has
+pipeline &lt;- function(params){
+
+  query &lt;- "SELECT
+    {{#list}}
+    SUM(CASE WHEN hp='{{val}}' THEN 1 ELSE 0 END )as n_hp_{{val}},
+  {{/list}}
+    cyl
+    FROM mtcars
+    GROUP BY cyl
+  ;"
+
+
+  dbGetQuery(
+    con,
+    whisker.render(query,params)
+  )
+}
+
+
+#pass the top 5 most common hps as val params
+run_pipeline_dbi(
+  pipeline,
+  '
+  SELECT "[" || GROUP_CONCAT("{ ""val"": """ || hp ||  """ }") || "]" AS list
+  FROM (
+    SELECT
+      CAST(hp as INTEGER) as HP,
+      count(hp) as cnt
+    FROM mtcars
+    GROUP BY hp
+    ORDER BY cnt DESC
+    LIMIT 5
+  )
+  ',
+  con
+)
+
+
+dbDisconnect(con)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

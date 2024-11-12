@@ -1,0 +1,213 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>modelcompK</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>CDM fit comparison - dimensionality assessment method</h2>
+
+<h3>Description</h3>
+
+<p>A procedure for determining the number of attributes underlying CDM using model fit comparison.
+For each number of attributes under exploration, a Q-matrix is estimated from the data using the <em>discrete factor loading</em> method (Wang, Song, &amp; Ding, 2018), which can be further validated using the <em>Hull</em> method (Nájera, Sorrel, de la Torre, &amp; Abad, 2020).
+Then, a CDM is fitted to the data using the resulting Q-matrix, and several fit indices are computed.
+After the desired range of number of attributes has been explored, the fit indices are compared.
+A suggested number of attributes is given for each fit index.
+The AIC index should be preferred among the other fit indices.
+For further details, see Nájera, Abad, &amp; Sorrel (2021).
+This function can be also used by directly providing different Q-matrices (instead of estimating them from the data) in order to compare their fit and select the most appropriate Q-matrix.
+Note that, if Q-matrices are provided, this function will no longer serve as a dimensionality assessment method, but just as an automated model comparison procedure.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">modelcompK(
+  dat,
+  exploreK = 1:7,
+  Qs = NULL,
+  stop = "none",
+  val.Q = TRUE,
+  estQ.args = list(criterion = "row", cor = "tet", rotation = "oblimin", fm = "uls"),
+  valQ.args = list(index = "PVAF", iterative = "test.att", maxitr = 5, CDMconv = 0.01),
+  verbose = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>dat</code></td>
+<td>
+<p>A <em>N</em> individuals x <em>J</em> items (<code>matrix</code> or <code>data.frame</code>). Missing values need to be coded as <code>NA</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>exploreK</code></td>
+<td>
+<p>Number of attributes to explore. The default is from 1 to 7 attributes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Qs</code></td>
+<td>
+<p>A list of Q-matrices to compare in terms of fit. If <code>Qs</code> is used, <code>exploreK</code> is ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stop</code></td>
+<td>
+<p>A fit index to use for stopping the procedure if a model leads to worse fit than a simpler one. This can be useful for saving time without exploring the whole exploreK when it is probable that the correct dimensionality has been already visited. It includes <code>"AIC"</code>, <code>"BIC"</code>, <code>"CAIC"</code>, <code>"SABIC"</code>, <code>"M2"</code>, <code>"SRMSR"</code>, <code>"RMSEA2"</code>, or <code>"sig.item.pairs"</code>. The latter represents the number of items that show bad fit with at least another item based on the transformed correlations (see <code>itemfit</code> function in the <code>GDINA</code> package; Ma &amp; de la Torre, 2020). It can be also <code>"none"</code>, which means that the whole <code>exploreK</code> will be examined. The default is <code>"none"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>val.Q</code></td>
+<td>
+<p>Validate the estimated Q-matrices using the <em>Hull</em> method? Note that validating the Q-matrix is expected to increase its quality, but the computation time will increase. The default is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estQ.args</code></td>
+<td>
+<p>A list of arguments for the <em>discrete factor loading</em> empirical Q-matrix estimation method (see the <code>estQ</code> function):
+</p>
+
+<dl>
+<dt><code>criterion</code></dt>
+<dd>
+<p>Dichotomization criterion to transform the factor loading matrix into the Q-matrix. The possible options include <code>"row"</code> (for row means), <code>"col"</code> (for column means), <code>"loaddiff"</code> (for the procedure based on loading differences), or a value between 0 and 1 (for a specific threshold). The default is <code>"row"</code>.</p>
+</dd>
+<dt><code>cor</code></dt>
+<dd>
+<p>Type of correlations to use. It includes <code>"cor"</code> (for Pearson correlations) and <code>"tet"</code> (for tetrachoric/polychoric correlations), among others. See <code>fa</code> function from the <code>psych</code> R package for additional details. The default is <code>"tet"</code>.</p>
+</dd>
+<dt><code>rotation</code></dt>
+<dd>
+<p>Rotation procedure to use. It includes <code>"oblimin"</code>, <code>"varimax"</code>, and <code>"promax"</code>, among others. An oblique rotation procedure is usually recommended. See <code>fa</code> function from the <code>psych</code> R package for additional details. The default is <code>"oblimin"</code>.</p>
+</dd>
+<dt><code>fm</code></dt>
+<dd>
+<p>Factoring method to use. It includes <code>"uls"</code> (for unweighted least squares), <code>"ml"</code> (for maximum likelihood), and <code>"wls"</code> (for weighted least squares), among others. See <code>fa</code> function from the <code>psych</code> R package for additional details. The default is <code>"uls"</code>.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>valQ.args</code></td>
+<td>
+<p>A list of arguments for the <em>Hull</em> empirical Q-matrix validation method. Only applicable if <code>valQ = TRUE</code> (see the <code>valQ</code> function):
+</p>
+
+<dl>
+<dt><code>index</code></dt>
+<dd>
+<p>What index to use. It includes <code>"PVAF"</code> or <code>"R2"</code>. The default is <code>"PVAF"</code>.</p>
+</dd>
+<dt><code>iterative</code></dt>
+<dd>
+<p>(Iterative) implementation procedure. It includes <code>"none"</code> (for non-iterative), <code>"test"</code> (for test-level iterations), <code>"test.att"</code> (for test-level iterations modifying the least possible amount of q-entries in each iteration), and <code>"item"</code> (for item-level iterations). The default is <code>"test.att"</code>.</p>
+</dd>
+<dt><code>maxitr</code></dt>
+<dd>
+<p>Maximum number of iterations if an iterative procedure has been selected. The default is 5.</p>
+</dd>
+<dt><code>CDMconv</code></dt>
+<dd>
+<p>Convergence criteria for the CDM estimations between iterations (only if an iterative procedure has been selected). The default is 0.01.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Show progress? The default is <code>TRUE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>modelcompK</code> returns an object of class <code>modelcompK</code>.
+</p>
+
+<dl>
+<dt><code>sug.K</code></dt>
+<dd>
+<p>The suggested number of attributes for each fit index (<code>vector</code>). Only if <code>Qs = NULL</code>.</p>
+</dd>
+<dt><code>sel.Q</code></dt>
+<dd>
+<p>The suggested Q-matrix for each fit index (<code>vector</code>).</p>
+</dd>
+<dt><code>fit</code></dt>
+<dd>
+<p>The fit indices for each fitted model (<code>matrix</code>).</p>
+</dd>
+<dt><code>exp.exploreK</code></dt>
+<dd>
+<p>Explored dimensionality (<code>vector</code>). It can be different from <code>exploreK</code> if <code>stop</code> has been used.</p>
+</dd>
+<dt><code>usedQ</code></dt>
+<dd>
+<p>Q-matrices used to fit each model (<code>list</code>). They will be the estimated (and validated) Q-matrices if <code>Qs = NULL</code>. Otherwise, they will be <code>Qs</code>.</p>
+</dd>
+<dt><code>specifications</code></dt>
+<dd>
+<p>Function call specifications (<code>list</code>).</p>
+</dd>
+</dl>
+<h3>Author(s)</h3>
+
+<p>Pablo Nájera, Universidad Pontificia Comillas <br> Miguel A. Sorrel, Universidad Autónoma de Madrid <br> Francisco J. Abad, Universidad Autónoma de Madrid
+</p>
+
+
+<h3>References</h3>
+
+<p>Ma, W., &amp; de la Torre, J. (2020). GDINA: An R package for cognitive diagnosis modeling. <em>Journal of Statistical Software</em>, <em>93</em>(14). https://doi.org/10.18637/jss.v093.i14
+</p>
+<p>Nájera, P., Abad, F. J., &amp; Sorrel, M. A. (2021). Determining the number of attributes in cognitive diagnosis modeling. <em>Frontiers in Psychology</em>, <em>12</em>:614470. https://doi.org/10.3389/fpsyg.2021.614470
+</p>
+<p>Nájera, P., Sorrel, M. A., de la Torre, J., &amp; Abad, F. J. (2020). Balancing fit and parsimony to improve Q-matrix validation. <em>British Journal of Mathematical and Statistical Psychology</em>. https://doi.org/10.1111/bmsp.12228
+</p>
+<p>Wang, W., Song, L., &amp; Ding, S. (2018). An exploratory discrete factor loading method for Q-matrix specification in cognitive diagnosis models. In: M. Wilberg, S. Culpepper, R. Janssen, J. González, &amp; D. Molenaar (Eds.), <em>Quantitative Psychology. IMPS 2017. Springer Proceedings in Mathematics &amp; Statistics</em> (Vol. 233, pp. 351-362). Springer.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+library(GDINA)
+dat &lt;- sim30GDINA$simdat
+Q &lt;- sim30GDINA$simQ
+
+#-------------------------------------
+# Assess dimensionality from CDM data
+#-------------------------------------
+mcK &lt;- modelcompK(dat = dat, exploreK = 4:7, stop = "AIC", val.Q = TRUE, verbose = TRUE)
+mcK$sug.K # Check suggested number of attributes by each fit index
+mcK$fit # Check fit indices for each K explored
+sug.Q &lt;- mcK$usedQ[[paste0("K", mcK$sug.K["AIC"])]] # Suggested Q-matrix by AIC
+sug.Q &lt;- orderQ(sug.Q, Q)$order.Q # Reorder Q-matrix attributes
+mean(sug.Q == Q) # Check similarity with the generating Q-matrix
+
+#--------------------------------------------------
+# Automatic fit comparison of competing Q-matrices
+#--------------------------------------------------
+trueQ &lt;- Q
+missQ1 &lt;- missQ(Q, .10, seed = 123)$miss.Q
+missQ2 &lt;- missQ(Q, .20, seed = 456)$miss.Q
+missQ3 &lt;- missQ(Q, .30, seed = 789)$miss.Q
+Qs &lt;- list(trueQ, missQ1, missQ2, missQ3)
+mc &lt;- modelcompK(dat = dat, Qs = Qs, verbose = TRUE)
+mc$sel.Q # Best-fitting Q-matrix for each fit index
+mc$fit # Check fit indices for each Q explored
+
+
+
+</code></pre>
+
+
+</div>

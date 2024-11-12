@@ -1,0 +1,212 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ppv_npv_ci</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate the confidence intervals for positive predictive value (PPV) and negative predictive value (NPV) based on different methods</h2>
+
+<h3>Description</h3>
+
+<p>Estimate the confidence intervals for positive predictive value (PPV) and negative predictive value (NPV) based on different methods
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ppv_npv_ci(
+  x1,
+  n1,
+  x0,
+  n0,
+  prevalence,
+  method = "gart and nam",
+  conf.level = 0.95,
+  bias_correction = FALSE,
+  continuity.correction = FALSE,
+  n_bootstraps = 1000,
+  boot.type = "bca",
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x1</code></td>
+<td>
+<p>number of positives for both reference(true) marker and testing marker.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n1</code></td>
+<td>
+<p>number of positives for reference (true) marker.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x0</code></td>
+<td>
+<p>number of negatives for both reference(true) marker and testing marker.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n0</code></td>
+<td>
+<p>number of negatives for reference (true) marker.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prevalence</code></td>
+<td>
+<p>disease prevalence.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>current support "gart and nam", "walter", "mover-j", "pepe", "zhou", "delta", "fieller", "bootstrap"; Default is "gart and nam"; Check the <code>Details</code> for additional information for each method.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conf.level</code></td>
+<td>
+<p>confidence level. default 0.95.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bias_correction</code></td>
+<td>
+<p>Logical, indicating whether to apply bias correction in the score denominator. default FALSE. This argument can be used only for 'gart and nam' method.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>continuity.correction</code></td>
+<td>
+<p>logical. default FALSE. 0.5 will be applied if TRUE except the <code>zhou</code>'s method where <code class="reqn">\frac{z_{\alpha/2}^2}{2}</code> is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_bootstraps</code></td>
+<td>
+<p>number of bootstraps for bootstrap method, default 1000</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>boot.type</code></td>
+<td>
+<p>A character string representing the type of intervals for bootstrap. The value should be any of the values c("bca", "norm", "perc"), default bca.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Other arguments passed on to method (e.g., defining the 'Beta(ai,bi)' prior distributions in mover-j method for each group (default 'ai = bi = 0.5' for Jeffreys method))</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Eight methods are supported in current version: "gart and nam", "walter", "mover-j", "pepe", "zhou", "delta", "fieller", and "bootstrap".
+</p>
+<p>Among those, <strong>gart and nam</strong>, <strong>mover-j</strong>, <strong>walter</strong>, and <strong>fieller</strong> construct the confidence intervals for PPV and NPV by converting the confidence intervals for the ratio of two binomial proportions (<code class="reqn">\phi=\frac{p_1}{p_0}</code>) where
+<code class="reqn">\phi_{PPV}=\frac{(1-specificity)}{sensitivity}</code> and <code class="reqn">\phi_{NPV}=\frac{(1-sensitivity)}{specificity}</code>.
+The sensitivity is estimated by <code class="reqn">sensitivity=\frac{x_1}{n_1}</code> and the specificity by <code class="reqn">specificity=\frac{x_0}{n_0}</code>. The confidence intervals for <code class="reqn">\phi_{PPV}</code> and <code class="reqn">\phi_{NPV}</code>
+are converted to the corresponding confidence intervals for PPV and NPV using the following equations:
+</p>
+
+<ul>
+<li> <p><code class="reqn">PPV=\frac{\rho}{\rho+(1-\rho)*\phi_{PPV}}</code>
+</p>
+</li>
+<li> <p><code class="reqn">NPV=\frac{1-\rho}{(1-\rho)+\rho*\phi_{NPV}}</code>
+</p>
+<p>where <code class="reqn">\rho</code> denotes the <code>prevalence</code>.
+</p>
+</li>
+</ul>
+<ol>
+<li>
+<p> The <strong>gart and nam</strong> method constructs the confidence interval for <code class="reqn">\phi</code> based on score method with skewness correction. See the details in the paper listed in the <code>Reference</code> section.
+This method can be applied to special situations where 'x1=n1' or 'x0=n0' but not for 'x1=0' and/or 'x0=0'. 'continuity.correction' can be considered where 'x1=0' and/or 'x0=0'.
+</p>
+</li>
+<li>
+<p> The <strong>mover-j</strong> method constructs the confidence interval for <code class="reqn">\phi</code> from separate intervals for the individual group rates (i.e., <code class="reqn">p_1</code> and <code class="reqn">p_0</code>).
+By applying the equal-tailed Jeffreys method (default 0.5 to each group), it may achieve a skewness-corrected interval for <code class="reqn">\phi</code>. <br></p>
+</li>
+<li>
+<p> The <strong>walter</strong> method constructs the confidence interval for <code class="reqn">\phi</code> based on <code class="reqn">log(\phi)</code>. 0.5 is added to 'x1', 'x0', 'n1', and 'n0'. Thus, no continuity correct should be applied additionally. This method has shown skewness concerns for
+small ratios and sample sizes.
+</p>
+</li>
+<li>
+<p> The <strong>fieller</strong> method constructs the confidence interval for <code class="reqn">\phi</code> by solving the roots of a quadratic equation, see the reference for details. <br><br>
+The <strong>pepe</strong>, <strong>zhou</strong>, and <strong>delta</strong> are three direct confidence interval methods for PPV and NPV.
+<br></p>
+</li>
+<li>
+<p> The <strong>pepe</strong> method finds the confidence intervals for PPV and NPV via diagnostic likelihood ratios (DLR) and associated logit(PPV) and logit(NPV). This method is not applicable for special
+cases when 'x1=0', 'x0=0', 'x1=n1' or 'x0=n0'. Continuity correction should be considered for those special cases.
+</p>
+</li>
+<li>
+<p> The <strong>zhou</strong> method can return confidence intervals from the four methods described in the paper. Without continuity correction, it will return the confidence intervals
+for PPV and NPV based on standard delta method and based on logit transformed method. If <code>continuity.correction=TRUE</code>, <code class="reqn">\frac{z_{\alpha/2}^2}{2}</code> will be added to 'x1', 'x0', 'n1', and 'n0', and the function will return the adjusted and adjusted logit confidence intervals
+as described in the paper.
+</p>
+</li>
+<li>
+<p> The <strong>delta</strong> method constructs the confidence intervals based on the Wald-type formulation. The estimates and variances of PPV and NPV are calculated based equations described in the Zhou's paper listed in the <code>Reference</code> section.
+</p>
+</li>
+<li>
+<p> The <strong>boot</strong> method constructs the confidence intervals based on bootstrap method.
+</p>
+</li>
+</ol>
+<h3>Value</h3>
+
+<p>A list object contains the method and the estimates of sensitivity, specificity, PPV, NPV and their confidence intervals.
+</p>
+
+
+<h3>References</h3>
+
+
+<ol>
+<li> <p>Gart JJ, Nam J (1988).
+“Approximate Interval Estimation of the Ratio of Binomial Parameters: A Review and Corrections for Skewness.”
+<em>Biometrics</em>, <b>44</b>(2), 323-338.
+</p>
+</li>
+<li> <p>Mercaldo ND, Lau KF, Zhou XH (2007).
+“Confidence intervals for predictive values with an emphasis to case-control studies.”
+<em>Statistics in Medicine</em>, <b>26</b>, 2170-2183.
+</p>
+</li>
+<li> <p>Laud PJ (2017).
+“Equal-tailed confidence intervals for comparison of rates.”
+<em>Pharmaceutical Statistics</em>, <b>16</b>(5), 334-348.
+</p>
+</li>
+<li> <p>Pepe MS (2003).
+<em>The Statistical Evaluation of Medical Tests for Classification and Prediction</em>.
+Oxford University Press, New York.
+</p>
+</li>
+<li> <p>Fieller EC (1954).
+“Some problems in interval estimation.”
+<em>Journal of the Royal Statistical Society: Series B (Methodological)</em>, <b>16</b>(2), 175-185.
+</p>
+</li>
+</ol>
+<h3>Examples</h3>
+
+<pre><code class="language-R">ppv_npv_ci(60, 65, 113, 113, prevalence = 0.02)
+</code></pre>
+
+
+</div>

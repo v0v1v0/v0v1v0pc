@@ -1,0 +1,632 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>homogen</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Automatic homogenization of climatological series</h2>
+
+<h3>Description</h3>
+
+<p>Automatic homogenization of climatological series, including missing
+data filling and detection and correction of outliers and shifts in the
+mean of the series.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">homogen(varcli, anyi, anyf, test='snht', nref=NULL, std=NA, swa=NA,
+ndec=1, niqd=c(4,1), dz.max=.01, dz.min=-dz.max, cumc=NA, wd=NULL, inht=25,
+sts=5, maxdif=NA, maxite=999, force=FALSE, wz=.001, mindat=NA, onlyQC=FALSE,
+annual=c('mean','sum','total'), x=NULL, ini=NA, na.strings="NA", vmin=NA,
+vmax=NA, hc.method='ward.D2', nclust=300, cutlev=NA, grdcol=grey(.4),
+mapcol=grey(.4), expl=FALSE, metad=FALSE, sufbrk='m', tinc=NA, tz='utc',
+rlemin=NA, rlemax=NA, cex=1.1, uni=NA, raway=TRUE, graphics=TRUE, verb=TRUE,
+logf=TRUE, snht1=NA, snht2=NA, gp=NA)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>varcli</code></td>
+<td>
+<p>Short name of the studied climatic variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>anyi</code></td>
+<td>
+<p>Initial year of the data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>anyf</code></td>
+<td>
+<p>Final year of the data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test</code></td>
+<td>
+<p>Inhomogeneity test to apply: 'snht' (the default) or 'cuct'
+(Cucconi test, experimental).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nref</code></td>
+<td>
+<p>Maximum number of references for data estimation [defaults to 10
+in the detection stages, and to 4 in the final series adjustments].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>std</code></td>
+<td>
+<p>Type of normalization:
+</p>
+
+<dl>
+<dt>1:</dt>
+<dd>
+<p>deviations from the mean,</p>
+</dd>
+<dt>2:</dt>
+<dd>
+<p>rates to the mean (only for means greater than 1),</p>
+</dd>
+<dt>3:</dt>
+<dd>
+<p>standardization (subtract the mean and divide by the sample
+standard deviation).</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>swa</code></td>
+<td>
+<p>Size of the step forward to be applied to the overlapping window
+application of the detection test [365 terms (one year) for daily data, and 60
+otherwise].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ndec</code></td>
+<td>
+<p>Number of decimal digits to round the homogenized data [1].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>niqd</code></td>
+<td>
+<p>Number of interquartilic distances to delete big outliers [4] and too long runs of identical values [1]. [Defaults to <code>c(4,1)</code>]</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dz.max</code></td>
+<td>
+<p>Threshold of outlier tolerance, in standard deviations if greater than one, or as a percentage of data to reject otherwise [0.01].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dz.min</code></td>
+<td>
+<p>Lower threshold of outlier tolerance if different from <code>dz.max</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cumc</code></td>
+<td>
+<p>Code of accumulated missing data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wd</code></td>
+<td>
+<p>Distance (in km) at which reference data will weight half of those
+located at zero distance [<code>c(0,0,100)</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inht</code></td>
+<td>
+<p>Thresholds for the change in the mean detection tests [25].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sts</code></td>
+<td>
+<p>Series tail size (no. of terms) not tested for inhomogeneities [5].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxdif</code></td>
+<td>
+<p>Maximum data difference from previous iteration [<code>ndec/2</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxite</code></td>
+<td>
+<p>Maximum number of iterations to compute means of the series
+[999].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>force</code></td>
+<td>
+<p>Force direct homogenization of daily or sub-daily series [<code>FALSE</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wz</code></td>
+<td>
+<p>Scale parameter of the vertical coordinate <code>Z</code> [0.001].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mindat</code></td>
+<td>
+<p>Minimum number of data for a split fragment to become a new
+series [<code>swa/2</code> for daily series or 12 terms otherwise].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>onlyQC</code></td>
+<td>
+<p>Set to <code>TRUE</code> if only initial Quality Controls are requested [<code>FALSE</code>]</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>annual</code></td>
+<td>
+<p>Running annual value to graph in the PDF output. One of 'mean' (the default), 'sum' or 'total' (equivalent to 'sum').</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Time vector. Only needed if data are taken at irregular intervals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ini</code></td>
+<td>
+<p>Initial date, with format <code>'YYYY-MM-DD'</code>, if series does not begin on January first (as recommended).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.strings</code></td>
+<td>
+<p>Character strings to be treated as missing data [<code>'NA'</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vmin</code></td>
+<td>
+<p>Minimum possible value (lower limit) of the studied variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vmax</code></td>
+<td>
+<p>Maximum possible value (upper limit) of the studied variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hc.method</code></td>
+<td>
+<p>Hierarchical clustering method ['ward.D2'].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nclust</code></td>
+<td>
+<p>Maximum number of series for the cluster analysis [300].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cutlev</code></td>
+<td>
+<p>Level to cut the dendrogram to define clusters [<code>NA</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grdcol</code></td>
+<td>
+<p>Color of the graphic background grids [<code>grey(0.04)</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mapcol</code></td>
+<td>
+<p>Color of coastlines and borders in the stations map [<code>grey(0.04)</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>expl</code></td>
+<td>
+<p>Perform an exploratory analysis? [<code>FALSE</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metad</code></td>
+<td>
+<p>Use the breakpoints file as metadata? [<code>FALSE</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sufbrk</code></td>
+<td>
+<p>Suffix to add to <code>varcli</code> to form the name of the provided
+metadata file [<code>'m'</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tinc</code></td>
+<td>
+<p>Time increment between data [<code>NA</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tz</code></td>
+<td>
+<p>Time zone [<code>'utc'</code>]. Only relevant for subdaily data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rlemin</code></td>
+<td>
+<p>Data run lengths will exclude values <code>&lt;= rlemin</code> in quality control [<code>NA</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rlemax</code></td>
+<td>
+<p>Data run lengths will exclude values <code>&gt;= rlemax</code> in quality control [<code>NA</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cex</code></td>
+<td>
+<p>Character expansion factor for graphic labels and titles [1.1].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>uni</code></td>
+<td>
+<p>Units to use in some axis labels [”].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>raway</code></td>
+<td>
+<p>Increase internal distances to reanalysis series to give more
+weight to observed series [<code>TRUE</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>graphics</code></td>
+<td>
+<p>Output graphics to a PDF file [<code>TRUE</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verb</code></td>
+<td>
+<p>Verbosity [<code>TRUE</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logf</code></td>
+<td>
+<p>Save console messages to a log file? [<code>TRUE</code>].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>snht1, snht2</code></td>
+<td>
+<p>Obsolete (use <code>inht</code> instead), but kept for backwards compatibility.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gp</code></td>
+<td>
+<p>Obsolete (use <code>graphics=FALSE</code> for <code>gp=0</code>, <code>onlyQC=TRUE</code> for <code>gp=1</code> or <code>annual="total"</code> for <code>gp=4</code>), but kept for backwards compatibility.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Input data must be provided in two text files, one with the data (with
+extension <code>dat</code>) and another with the station coordinates (with extension
+<code>est</code>). Both have as base name, ‘<span class="file">VRB_YEAR-YEAR</span>’, composed by
+the short name of the climatological variable, and the initial and final years
+of the data, as set in the first three parameters of the call, <code>varcli</code>,
+<code>anyi</code> and <code>anyf</code>.
+</p>
+<p>Data are stored in a free blank separated format (any number of data items per
+line is allowed), in chronological order, station by station (all data from
+station 1 go first, then all data from station 2, and so on). As dates are not
+stored in this file, all data must be present in the file, using a code for any
+missing data in the records (<code>NA</code> by default, but any other code can be
+used, provided that they are specified in the parameter <code>na.strings</code>).
+</p>
+<p>The stations file, with extension <code>est</code>, is also a blank separated text
+file where each line identifies a single station, with structure <code>'X Y Z
+CODE NAME'</code>. Coordinates <code>X</code> and <code>Y</code> are expected in geographical
+degrees (longitude and latitude, in this order and in decimal form). Otherwise
+they will be assumed to be in km, or in m if the mean of either <code>X</code> and
+<code>Y</code> is greater than 10000; elevation <code>Z</code> must be supplied in m; and
+the identification <code>CODE</code> and the full <code>NAME</code> of the station must be
+quoted if they contains blanks). Fully reliable series may be marked by putting
+an asterisk (*) at the beginning of their <code>CODE</code> to skip their outlier and
+break-point analysis. This is not recommended with observed series, but can be
+useful when using reanalysis series as references in data sparse regions.
+</p>
+<p>This function will stop with an error condition if any time step becomes void
+of data in all stations at the same time. One or more series with data in the
+void time steps must be added to successfully run <code>homogen</code> again. If no
+other series are available in the area, reanalysis series of the closer
+grid-points can be used, adding their coordinates to the <code>*.est</code> file and
+prepending an asterisk (<code>*</code>) to the codes assigned to the series as
+mentioned above.
+</p>
+<p><code>dz.max</code> (and <code>dz.min</code> if different from <code>dz.max</code>) can be a
+vector of two values, one for suspect data and the other for probable errors.
+Only the latter will be deleted, but all will be listed in the ‘<span class="file">*_out.csv</span>’
+output file. By default, the more extreme 0.01% in each tail of the
+distribution will be considered errors, and values exceeding 0.1% will be
+suspect data. Inspection of the anomalies histogram near the end of the PDF
+output file will help in tuning these parameters by setting number of standard
+deviations to be used as rejection thresholds.
+</p>
+<p><code>inht</code> has a default value of 25, which is a suitable conservative value
+for monthly values of temperature, but not so much for precipitation or for
+daily series. Therefore it is advisable to adjust it empirically with the help
+of the histograms available by the end of the graphic output. Anyway,
+inhomogeneities in daily or subdaily series should be detected on their monthly
+aggregates, which can be easily obtained by means of the function <code>dd2m</code>.
+Two values can be given to this parameter (one for each of the two detection
+stages), as in e.g.  <code>inht=c(30,25)</code>. When only one value is provided, it
+will be used for both stages. If any or both values are zeros, the
+corresponding homogenization stage will be skipped.
+</p>
+<p>The default value <code>wz=0.001</code> gives to the vertical coordinate (in m) the
+same weight as the horizontal coordinates (internally managed in km). Other
+values can be set to overweight elevation differences (wz&gt;0.001) or to
+calculate only horizontal distances (wz=0).
+</p>
+<p><code>vmin</code> and <code>vmax</code> are unset by default, but if the variable is found
+to have a skewed probability distribution with a minimum value of zero,
+<code>vmin</code> will be set to zero. The same will happen if the user sets
+<code>std=2</code>.
+</p>
+<p><code>sufbrk</code> is only relevant when <code>metad=TRUE</code>. Its default value
+<code>'m'</code> is meant to read the file of break-points detected at the monthly
+scale, but if the data were originally monthly, <code>sufbrk=''</code> should be set.
+</p>
+<p><code>tinc</code>, unset by default, can be defined for subdaily data, as in e.g.:
+<code>tinc='3 hours'</code>, especially if first and/or last years are incomplete.
+Units can be 'hours', 'mins' or 'secs'.
+</p>
+<p>The default <code>cex=1.1</code> increase by a 10% the size of labels in the graphic
+output. Note that if station names are long, they will not fit in titles when
+increasing this parameter too much.
+</p>
+<p>The graphic output file (in PDF format) begins with a first quality control of
+the series, providing box-plots for every series showing (1) the range of their
+values, (2) their increments between successive terms and (3) the length of
+segments with constant data. Too big outliers are deleted at this stage because
+they would compromise the quality of the homogenization and missing data
+filling. During the rest of the process outlier detection and deletion is based
+on spatial differences between neighboring normalized data. (Deleted data which were not errors but due to local phenomena can be restored to the homogenized series with the help of the <code>datrestore</code> function.)
+</p>
+<p>The following pages offer: (a) a summary of the data availability and frequency
+distribution; (b) a correlogram of the first differences of the series, (c) a
+dendrogram based on these correlations and a map with the station locations
+(marked with numbers if less than 100, and with symbols otherwise; (d) graphics
+of normalized spatial anomalies showing the detected breaks, the minimum
+distance to a reference data and the number of references used; (e) a histogram
+of maximum inht values found in overlapping window analysis; (d) and (e) are
+repeated for the analysis on the whole series; (f) histograms of number of
+splits per station and per year; (g) graphics of final anomalies of the series;
+(h) graphics of the reconstructed series and applied corrections; (i) a
+histogram of the normalized anomalies of all data (useful to set rejection
+thresholds for the outliers); (j) final histograms of inht values; and (k) a
+plot of quality/singularity of the stations (a bad score may be due to a bad
+quality of the series, but also to a singular siting with a peculiar
+micro-climate).
+</p>
+<p>Note that every time that a significant shift in the mean of the series is
+detected, it will be split into two (potentially) homogeneous sub-periods, and
+hence the final number of homogenized series will be increased, as complete
+homogeneous series will be reconstructed from all of them. When several
+homogeneous series have been yielded for the same location, the user can choose
+to use that reconstructed from the last sub-period (the usual behavior of
+other homogenization packages), which is perfect for climate monitoring of
+newly incoming data. However, statistics derived from all of them can be useful
+for climatic mapping, when no a priori knowledge can indicate which of the
+sub-periods will be more representative at the spatial scale of the map).
+</p>
+<p>The processing time can range from seconds (a few monthly series) to many hours
+(hundreds of daily series). If you must process a huge amount of data, you
+should consider splitting your study region into smaller areas to be
+homogenized independently.
+</p>
+
+
+<h3>Value</h3>
+
+<p>This function does not return any value, its results being saved to files
+with the same base name as the input files, and extensions:  
+</p>
+
+<dl>
+<dt>*.txt:</dt>
+<dd>
+<p>A text file that logs all the processing output,</p>
+</dd> 
+<dt>*_out.csv:</dt>
+<dd>
+<p>List of corrected outliers,</p>
+</dd> 
+<dt>*_brk.csv:</dt>
+<dd>
+<p>List of corrected breaks,</p>
+</dd> 
+<dt>*.pdf:</dt>
+<dd>
+<p>PDF file with a collection of diagnostic graphics,</p>
+</dd>
+<dt>*.rda:</dt>
+<dd>
+<p>Homogenization results in R binary format, used by the
+<code>dahstat</code> and other post-processing functions, but can be loaded
+by the user for further data manipulation with the function <code>load</code>. This
+file contains the following objects:
+</p>
+
+<dl>
+<dt>dat</dt>
+<dd>
+<p>matrix of the original series,</p>
+</dd>
+<dt>dah</dt>
+<dd>
+<p>matrix of the homogenized series,</p>
+</dd>
+<dt>nd</dt>
+<dd>
+<p>number of data (time steps) in every series,</p>
+</dd>
+<dt>ndec</dt>
+<dd>
+<p>number of decimals in the data,</p>
+</dd>
+<dt>uni</dt>
+<dd>
+<p>data units,</p>
+</dd>
+<dt>est.c</dt>
+<dd>
+<p>data frame with columns:
+</p>
+
+<dl>
+<dt>X</dt>
+<dd>
+<p>longitude,</p>
+</dd>
+<dt>Y</dt>
+<dd>
+<p>latitude,</p>
+</dd>
+<dt>Z</dt>
+<dd>
+<p>elevation,</p>
+</dd>
+<dt>Code</dt>
+<dd>
+<p>station code,</p>
+</dd>
+<dt>Name</dt>
+<dd>
+<p>station name,</p>
+</dd>
+<dt>pod</dt>
+<dd>
+<p>percentage of original data,</p>
+</dd>
+<dt>snht</dt>
+<dd>
+<p>(or <code>cuct</code> when <code>test='cuct'</code>): Remaining
+inhomogeneity test values in the homogenized series. Can be greater
+than the set <code>inht</code> threshold because of a lower number of reference
+stations,</p>
+</dd>
+<dt>rmse</dt>
+<dd>
+<p>estimated root mean squared errors of the homogenized series</p>
+</dd>
+</dl>
+</dd>
+<dt>ct</dt>
+<dd>
+<p>Cluster Analysis series groups,</p>
+</dd>
+<dt>nei</dt>
+<dd>
+<p>number of input series,</p>
+</dd>
+<dt>ne</dt>
+<dd>
+<p>number of series after the homogenization,</p>
+</dd>
+<dt>nm</dt>
+<dd>
+<p>number of "months" (data items) in a year (0=daily data),</p>
+</dd>
+<dt>std</dt>
+<dd>
+<p>type of normalization applied to the data,</p>
+</dd>
+<dt>x</dt>
+<dd>
+<p>vector of the time dimension,</p>
+</dd>
+<dt>ini</dt>
+<dd>
+<p>initial date of the period under study.</p>
+</dd>
+</dl>
+</dd> </dl>
+<h3>References</h3>
+
+<p>Guijarro JA (2014): Quality Control and Homogenization of Climatological
+Series. In Eslamian S (Ed.), Handbook of Engineering Hydrology, Vol. 1:
+Fundamentals and Applications. Francis and Taylor, CRC Group, USA, ISBN
+9781466552357, 636 pp.
+</p>
+<p>Azorin-Molina C, Guijarro JA, McVicar TR, Trewin BC, Frost AJ, Chen D (2019):
+An approach to homogenize daily peak wind gusts: An application to the
+Australian series. Int. J. Climatol., 39:2260-2277. doi: 10.1002/joc.5949
+</p>
+<p>Dumitrescu A, Cheval S, Guijarro JA (2019): Homogenization of a combined hourly
+air temperature dataset over Romania. Int. J. Climatol., 40:2599-2608, DOI:
+10.1002/joc.6353
+</p>
+<p>Visit &lt;https://climatol.eu/&gt; for updates of code and documentation (user's
+guide, links to videos, etc).
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>dahstat</code>, <code>dahgrid</code>, <code>outrename</code>, <code>datrestore</code>, <code>dd2m</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Set a temporal working directory and write input files:
+wd &lt;- tempdir()
+wd0 &lt;- setwd(wd)
+data(climatol_data)
+write.table(Temp.est,'Temp_1961-2005.est',row.names=FALSE,col.names=FALSE)
+write(Temp.dat,'Temp_1961-2005.dat')
+
+## Now run the example:
+homogen('Temp',1961,2005)
+
+## Return to user's working directory:
+setwd(wd0)
+
+## Input and output files can be found in directory:
+print(wd)
+</code></pre>
+
+
+</div>

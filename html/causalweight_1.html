@@ -1,0 +1,146 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>attrlateweight</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Local average treatment effect estimation in multiple follow-up periods with outcome attrition based on inverse probability weighting</h2>
+
+<h3>Description</h3>
+
+<p>Instrumental variable-based evaluation of local average treatment effects using weighting by the inverse of the instrument propensity score.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">attrlateweight(
+  y1,
+  y2,
+  s1,
+  s2,
+  d,
+  z,
+  x0,
+  x1,
+  weightmax = 0.1,
+  boot = 1999,
+  cluster = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y1</code></td>
+<td>
+<p>Outcome variable in the first outcome period.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y2</code></td>
+<td>
+<p>Outcome variable in the second outcome period.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>s1</code></td>
+<td>
+<p>Selection indicator for first outcome period. Must be one if <code>y1</code> is observed (non-missing) and zero if <code>y1</code> is not observed (missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>s2</code></td>
+<td>
+<p>Selection indicator for second outcome period. Must be one if <code>y1</code> is observed (non-missing) and zero if <code>y1</code> is not observed (missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+<p>Treatment, must be binary (either 1 or 0), must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>Instrument for the endogenous treatment, must be binary (either 1 or 0), must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x0</code></td>
+<td>
+<p>Baseline (pre-instrument) confounders of the instrument and outcome, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x1</code></td>
+<td>
+<p>Confounders in outcome period 1 (may include outcomes of period 1 <code>y1</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weightmax</code></td>
+<td>
+<p>Trimming rule based on the maximum relative weight a single observation may obtain in estimation - observations with higher weights are discarded. Default is 0.1 (no observation can be assigned more than 10 percent of weights)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>boot</code></td>
+<td>
+<p>Number of bootstrap replications for estimating standard errors. Default is 1999.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cluster</code></td>
+<td>
+<p>A cluster ID for block or cluster bootstrapping when units are clustered rather than iid. Must be numerical. Default is NULL (standard bootstrap without clustering).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Estimation of local average treatment effects of a binary endogenous treatment on outcomes in two follow up periods that are prone to attrition. Treatment endogeneity is tackled by a binary instrument that is assumed to be conditionally valid given observed baseline confounders <code>x0</code>. Outcome attrition is tackled by either assuming that it is missing at random (MAR), i.e. selection w.r.t. observed variables  <code>d</code>, <code>z</code>, <code>x0</code>, <code>x1</code> (in the case of <code>y2</code>), and <code>s1</code> (in the case of <code>y2</code>); or by assuming latent ignorability (LI), i.e. selection w.r.t. the treatment compliance type as well as <code>z</code>, <code>x0</code>, <code>x1</code> (in the case of <code>y2</code>), and <code>s1</code> (in the case of <code>y2</code>). Units are weighted by the inverse of their conditional instrument and selection propensities, which are estimated by probit regression. Standard errors are obtained by bootstrapping the effect.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An attrlateweight object contains one component <code>results</code>:
+</p>
+<p><code>results</code>: a 4X4 matrix containing the effect estimates in the first row ("effects"), standard errors in the second row ("se"), p-values in the third row ("p-value"), and the number of trimmed observations due to too large weights in the fourth row ("trimmed obs"). The first column provides the local average treatment effect (LATE) on <code>y1</code> among compliers under missingness at random (MAR). The second column provides the local average treatment effect (LATE) on <code>y2</code>  under missingness at random (MAR). The third column provides the local average treatment effect (LATE) on <code>y1</code>  under latent ignorability (LI). The forth column provides the local average treatment effect (LATE) on <code>y2</code> under latent ignorability (LI).
+</p>
+
+
+<h3>References</h3>
+
+<p>Frölich, M., Huber, M. (2014): "Treatment Evaluation With Multiple Outcome Periods Under Endogeneity and Attrition", Journal of the American Statistical Association, 109, 1697-1711.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># A little example with simulated data (4000 observations)
+## Not run: 
+n=4000
+e=(rmvnorm(n,rep(0,3), matrix(c(1,0.3,0.3,  0.3,1,0.3,  0.3,0.3,1),3,3) ))
+x0=runif(n,0,1)
+z=(0.25*x0+rnorm(n)&gt;0)*1
+d=(1.2*z-0.25*x0+e[,1]&gt;0.5)*1
+y1_star=0.5*x0+0.5*d+e[,2]
+s1=(0.25*x0+0.25*d+rnorm(n)&gt;-0.5)*1
+y1=s1*y1_star
+x1=(0.5*x0+0.5*rnorm(n))
+y2_star=0.5*x0+x1+d+e[,3]
+s2=s1*((0.25*x0+0.25*x1+0.25*d+rnorm(n)&gt;-0.5)*1)
+y2=s2*y2_star
+# The true LATEs on y1 and y2 are equal to 0.5 and 1, respectively.
+output=attrlateweight(y1=y1,y2=y2,s1=s1,s2=s2,d=d,z=z,x0=x0,x1=x1,boot=19)
+round(output$results,3)
+## End(Not run)
+</code></pre>
+
+
+</div>

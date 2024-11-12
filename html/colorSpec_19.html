@@ -1,0 +1,120 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>bandSpectra</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute Band-based Material Spectra, and Bands for Existing Material Spectra</h2>
+
+<h3>Description</h3>
+
+<p>A band-based material spectrum is a superimposition of bandpass filters, and (optionally) a bandstop filter.
+The 2 functions in this topic convert a vector of numbers between 0 and 1 to a band representation,
+and back again.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">bandMaterial( lambda, wavelength=380:780 )
+
+## S3 method for class 'colorSpec'
+bandRepresentation( x )
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>a numeric Mx2 matrix with wavelength pairs in the rows,
+or a vector that can be converted to such a matrix, by row.
+The two wavelengths in a row (the <em>transition wavelengths</em>) define either a bandpass or bandstop filter,
+and all the rows are superimposed to define the transmittance spectrum of the final material.
+If the 2 wavelengths are denoted by <code class="reqn">\lambda_1</code> and <code class="reqn">\lambda_2</code>,
+and <code class="reqn">\lambda_1 &lt; \lambda_2</code> then the filter is a bandpass filter.
+If the 2 wavelengths are swapped, then the spectrum is "flipped"
+and is a bandstop filter, and the band "wraps around" from long wavelengths to short.
+There can be at most 1 bandstop filter in the matrix, otherwise it is an error.
+The bands must be pairwise disjoint, otherwise it is an error.
+To get a material with transmittance identically 0, set <code>lambda</code> to a 0x2 matrix.
+To get a material with transmittance identically 1, 
+set <code>lambda</code> to a 1x2 matrix with
+<code class="reqn">\lambda_1=\beta_0</code> and <code class="reqn">\lambda_2=\beta_N</code>, where <code class="reqn">N</code> is the number of wavelengths.
+See vignette <a href="../doc/convexity.pdf"><b>Convexity and Transitions</b></a>
+for the definition of <code class="reqn">\beta_0</code> and  <code class="reqn">\beta_N</code>
+and other mathematical details.
+<br><code>lambda</code> can also be a list of such matrices, which are processed separately, see <b>Value</b>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wavelength</code></td>
+<td>
+<p>a vector of wavelengths for the returned object</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a <b>colorSpec</b> object with <code>type</code> equal to <code>'material'</code></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>bandRepresentation()</code> is a right-inverse of <code>bandMaterial()</code>, 
+see <b>Examples</b> and the test script <code>test-bands.R</code>. 
+For more mathematical details, see the vignette
+<a href="../doc/convexity.pdf"><b>Convexity and Transitions</b></a>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>bandMaterial()</code> returns a
+<b>colorSpec</b> object with <code>quantity</code> equal to <code>'transmitance'</code>.
+If <code>lambda</code> is a matrix, then the object has 1 spectrum.
+If <code>lambda</code> is a list of matrices with length N, then the object has N spectra.
+</p>
+<p><code>bandRepresentation()</code>
+returns a list of matrices with 2 columns.
+There is a matrix in the list for each spectrum in <code>x</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>rectangularMaterial()</code>,
+vignette <a href="../doc/convexity.pdf"><b>Convexity and Transitions</b></a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#  make a vector superimposing a bandpass and a bandstop filter, and of the proper length 401
+vec = c( rep(1,100), 0.5, rep(0,40), .25, rep(1,50), 0.9, rep(0,100), 0.4, rep(1,107) )
+
+#	 convert that vector to a colorSpec object, with a single spectrum
+spec = colorSpec( vec, wavelength=380:780, quantity='transmittance', specnames='sample' )
+
+#	 extract and print the 2 bands
+lambda = bandRepresentation( spec ) ;  print(lambda)
+
+##  $sample
+##      lambda1 lambda2
+##  BS   673.10   480.0
+##  BP1  521.25   572.4
+
+#  convert the 2 bands  (the transition wavelengths) back to a vector of length 401
+#  and compare with the original vector
+delta = vec - coredata( bandMaterial(lambda) )
+
+range(delta)
+##  [1] -9.092727e-14  2.275957e-14
+</code></pre>
+
+
+</div>

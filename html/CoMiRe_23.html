@@ -1,0 +1,325 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>comire.gibbs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Gibbs sampler for CoMiRe model</h2>
+
+<h3>Description</h3>
+
+<p>Posterior inference via Gibbs sampler for CoMiRe model
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">comire.gibbs(y, x, z = NULL, family = 'continuous', 
+       grid = NULL, mcmc, prior, 
+       state = NULL, seed, max.x = max(x), z.val = NULL, verbose = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>numeric vector for the response:
+when <code>family="continuous"</code> <code>y</code> must be a numeric vector; if <code>family="binary"</code> <code>y</code> must assume values <code>0</code> or <code>1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>numeric vector for the covariate relative to the dose of exposure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>numeric vector for the confunders; a vector if there is only one 
+confounder or a matrix for two or more confunders</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>type of <code>y</code>. This can be <code>"continuous"</code> or <code>"binary"</code>. Default  <code>"continuous"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grid</code></td>
+<td>
+<p>a list giving the parameters for plotting the posterior mean density and the posterior mean <code class="reqn">\beta(x)</code> over finite grids
+if <code>family="continuous"</code> and <code>z=NULL</code>. It must include the following values:
+</p>
+
+<ul>
+<li> <p><code>grids</code>, logical value (if <code>TRUE</code> the provided grids are used, otherwise standard grids are automatically used); 
+</p>
+</li>
+<li> <p><code>xgrid</code> and <code>ygrid</code>, numerical vectors with the actual values of the grid for y and x.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcmc</code></td>
+<td>
+<p>a list giving the MCMC parameters. It must include the following integers: <code>nb</code> giving the number of burn-in iterations, <code>nrep</code> giving the total number of iterations, <code>thin</code> giving the thinning interval, <code>ndisplay</code> giving the multiple of iterations to be displayed on screen while the algorithm is running (a message will be printed every <code>ndisplay</code> iterations).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior</code></td>
+<td>
+<p>a list containing the values of the hyperparameters. 
+</p>
+<p>If <code>family = "continuous"</code>, it must include the following values: 
+</p>
+
+<ul>
+<li> <p><code>mu.theta</code>, the prior mean <code class="reqn">\mu_\theta</code> for each location parameter <code class="reqn">\theta_{0h}</code> and <code class="reqn">\theta_1</code>, 
+</p>
+</li>
+<li> <p><code>k.theta</code>, the prior variance <code class="reqn">k_\theta</code> for each location paramter <code class="reqn">\theta_{0h}</code> and <code class="reqn">\theta_1</code>, 
+</p>
+</li>
+<li> <p><code>mu.gamma</code> (if <code>p</code> confounding covariates are included in the model) a <code>p</code>-dimentional vector of prior means <code class="reqn">\mu_\gamma</code> of the parameters <code class="reqn">\gamma</code> corresponding to the confounders,
+</p>
+</li>
+<li> <p><code>k.gamma</code>, the prior variance <code class="reqn">k_\gamma</code> for parameter corresponding to the confounding covariate (if <code>p=1</code>) or <code>sigma.gamma</code> (if <code>p&gt;1</code>), that is the covariance matrix <code class="reqn">\Sigma_\gamma</code> for the parameters corresponding to the <code>p</code> confounding covariates; this must be a symmetric positive definite matrix.
+</p>
+</li>
+<li> <p><code>eta</code>, numeric vector of size <code>J</code> for the Dirichlet prior on the beta basis weights, 
+</p>
+</li>
+<li> <p><code>alpha</code>, prior for the mixture weights,
+</p>
+</li>
+<li> <p><code>a</code> and <code>b</code>, prior scale and shape parameter for the gamma distribution of each precision parameter, 
+</p>
+</li>
+<li> <p><code>J</code>, parameter controlling the number of elements of the I-spline basis,
+</p>
+</li>
+<li> <p><code>H</code>, total number of components in the mixture at <code class="reqn">x_0</code>.
+</p>
+</li>
+</ul>
+<p>If <code>family="binary"</code> it must include the following values: 
+</p>
+
+<ul>
+<li> <p><code>eta</code>, numeric vector of size <code>J</code> for the Dirichlet prior on the beta basis weights, 
+</p>
+</li>
+<li> <p><code>a.pi0</code> and <code>b.pi0</code>, the prior parameters of the prior beta distribution for <code class="reqn">\pi_0</code>,
+</p>
+</li>
+<li> <p><code>J</code>, parameter controlling the number of elements of the Ispline basis.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>state</code></td>
+<td>
+<p>if <code>family="continuous"</code>, a list giving the current value of the parameters. This list is used if the current analysis is the continuation of a previous analysis or if we want to start the MCMC algorithm from some particular value of the parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>seed for random initialization.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.x</code></td>
+<td>
+<p>maximum value allowed for <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z.val</code></td>
+<td>
+<p>optional numeric vector containing a fixed value of interest for each of the confounding covariates to be used for the plots. Default value is <code>mean(z)</code> for numeric covariates or the mode for factorial covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>logical, if <code>TRUE</code> a message on the status of the MCMC algorithm is printed to the console. Default is <code>TRUE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function fit a convex mixture regression (<code>CoMiRe</code>) model (Canale, Durante, Dunson, 2018) via Gibbs sampler. 
+For continuous outcome <code class="reqn">y \in \mathcal{Y}</code>, adverse esposure level <code class="reqn">x \in \mathcal{X}</code> and no confunding 
+variables, one can set <code>family = 'continuous'</code> and <code>z = NULL</code> and fit model
+<br><code class="reqn"> f_x(y) = \{1-\beta(x)\} \sum_{h=1}^{H}\nu_{0h} \phi(y; \theta_{0h}, \tau_{0h}^{-1}) + \beta(x) \phi(y; \theta_{\infty}, \tau_{\infty}^{-1})</code> ;<br><br>
+where <code class="reqn">\beta(x) = \sum_{j=1}^{J} \omega_j \psi_j(x), x\ge0,</code> 
+is a a monotone nondecreasing interpolation function, constrained between 0 and 1 and  <code class="reqn">\psi_1,...,\psi_J</code> are monotone nondecreasing I-splines basis. 
+<br>
+If <code class="reqn">p \ge 1</code> confounding covariates <code class="reqn">z \in \mathcal{Z}</code> are available, passing the argument <code>z</code> 
+the function fits model<br><br><code class="reqn">f(y; x,z) = \{1-\beta(x)\} f_0(y;z) + \beta(x) f_\infty(y;z)</code> ;<br><br>
+where: <br><code class="reqn">f_0(y;z)= \sum_{h=1}^{H} \nu_{0h} \phi(y;\theta_{0h}+z^\mathsf{T}\gamma,\tau_{0h}^{-1})</code>, and 
+<code class="reqn">f_\infty(y;z)= \phi(y;\theta_\infty+ z^\mathsf{T}\gamma,\tau_{\infty}^{-1})</code>. <br><br>
+Finally, if <code class="reqn">y</code> is a binary response, one can set <code>family = 'binary'</code> and fit model <br><br><code class="reqn">p_x(y) = (\pi_x)^y (1 - \pi_x)^{1-y}</code> ; <br><br>
+where <code class="reqn">\pi_x = P(Y=1 | x)</code> is 
+<code class="reqn">\pi_x = \{1-\beta(x)\} \pi_0 + \beta(x) \pi_\infty</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of the class <code>classCoMiRe</code>, i.e. a list of arguments for generating posterior output. It contains:
+</p>
+
+<ul>
+<li>
+<p><code>call</code>the model formula
+</p>
+</li>
+<li>
+<p><code>post.means</code> a list containing the posterior mean density beta over the grid, of all the mixture parameters and, 
+if <code>family = "continuous"</code> and <code>z = NULL</code>, of <code class="reqn">f_0</code> and <code class="reqn">f_{inf}</code> over the <code>y.grid</code>.
+</p>
+</li>
+<li>
+<p><code>ci</code> a list containing the 95% credible intervals for all the quantities stored in <code>post.means</code>.
+</p>
+</li>
+<li>
+<p><code>mcmc</code> a list containing all the MCMC chains.
+</p>
+</li>
+<li>
+<p><code>z</code> the same of the input
+</p>
+</li>
+<li>
+<p><code>z.val</code> the same of the input
+</p>
+</li>
+<li>
+<p><code>f0,f1</code> MCMC replicates of the density in the two extremes (only if <code>family = 'continuous'</code>)
+</p>
+</li>
+<li>
+<p><code>nrep,nb</code> the same values of the list <code>mcmc</code> in the input arguments
+</p>
+</li>
+<li>
+<p><code>bin</code> logical, equal to <code>TRUE</code> if <code>family = 'binary'</code>
+</p>
+</li>
+<li>
+<p><code>univariate</code> logical, equal to <code>TRUE</code> if <code>z</code> is null or a vector
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Antonio Canale [aut, cre], Daniele Durante [ctb], Arianna Falcioni [aut], Luisa Galtarossa [aut], Tommaso Rigon [ctb]
+</p>
+
+
+<h3>References</h3>
+
+<p>Canale, A., Durante, D., and Dunson, D. (2018), Convex Mixture Regression for Quantitative Risk Assessment, Biometrics, 74, 1331-1340
+</p>
+<p>Galtarossa, L., Canale, A., (2019), A Convex Mixture Model for Binomial Regression, Book of Short Papers SIS 2019
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">{
+
+data(CPP)
+attach(CPP)
+
+n &lt;- NROW(CPP)
+J &lt;- H &lt;- 10
+
+premature &lt;- as.numeric(gestage&lt;=37)
+
+mcmc &lt;- list(nrep=5000, nb=2000, thin=5, ndisplay=4)
+
+## too few iterations to be meaningful. see below for safer and more comprehensive results
+
+mcmc &lt;- list(nrep=10, nb=2, thin=1, ndisplay=4) 
+
+
+prior &lt;- list(mu.theta=mean(gestage), k.theta=10, eta=rep(1, J)/J, 
+              alpha=rep(1,H)/H, a=2, b=2, J=J, H=H)
+              
+fit.dummy &lt;- comire.gibbs(gestage, dde, family="continuous", 
+                     mcmc=mcmc, prior=prior, seed=1, max.x=180)
+                     
+summary(fit.dummy)
+ 
+
+
+## safer procedure with more iterations (it may take some time)
+
+mcmc &lt;- list(nrep=5000, nb=2000, thin=5, ndisplay=4) 
+
+## 1. binary case ##
+
+prior &lt;- list(pi0=mean(gestage), eta=rep(1, J)/J, 
+             a.pi0=27, b.pi0=360, J=J)
+             
+fit_binary&lt;- comire.gibbs(premature, dde, family="binary", 
+                          mcmc=mcmc, prior=prior, seed=5, max.x=180)
+                          
+                          
+## 2. continuous case ##
+
+prior &lt;- list(mu.theta=mean(gestage), k.theta=10, eta=rep(1, J)/J, 
+              alpha=rep(1,H)/H, a=2, b=2, J=J, H=H)
+              
+fit1 &lt;- comire.gibbs(gestage, dde, family="continuous", 
+                     mcmc=mcmc, prior=prior, seed=5, max.x=180)
+
+
+## 2.2 One confunder ##
+
+mage_std &lt;- scale(mage, center = TRUE, scale = TRUE) 
+
+prior &lt;- list(mu.theta=mean(gestage), k.theta=10, mu.gamma=0, k.gamma=10, 
+              eta=rep(1, J)/J, alpha=1/H, a=2, b=2, H=H, J=J)
+              
+fit2 &lt;- comire.gibbs(gestage, dde, mage_std, family="continuous", 
+              mcmc=mcmc, prior=prior, seed=5, max.x=180)
+
+
+## 2.3 More confunders ##
+
+Z &lt;- cbind(mage, mbmi, sei)
+Z &lt;- scale(Z, center = TRUE, scale = TRUE)
+Z &lt;- as.matrix(cbind(Z, CPP$smoke))
+colnames(Z) &lt;- c("age", "BMI", "sei", "smoke")
+
+mod &lt;- lm(gestage ~ dde + Z)
+prior &lt;- list(mu.theta = mod$coefficients[1], k.theta = 10,
+              mu.gamma = mod$coefficients[-c(1, 2)], sigma.gamma = diag(rep(10, 4)),
+              eta = rep(1, J)/J, alpha = 1/H, a = 2, b = 2, H = H, J = J)
+              
+fit3 &lt;- comire.gibbs(y = gestage, x = dde, z = Z, family = "continuous", mcmc = mcmc, 
+                     prior = prior, seed = 5)
+
+ 
+}
+
+
+
+</code></pre>
+
+
+</div>

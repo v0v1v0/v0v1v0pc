@@ -1,0 +1,302 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>kfoldcv</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>K-fold cross-validation wrapper</h2>
+
+<h3>Description</h3>
+
+<p>Does k-fold cross-validation for a given model training function and
+prediction function. The hyperparameter to be cross-validated is assumed
+to be 'lambda'. The training and prediction functions are assumed to be
+able to fit/predict for multiple 'lambda' values at the same time.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">kfoldcv(
+  x,
+  y,
+  train_fun,
+  predict_fun,
+  type.measure = "deviance",
+  family = "gaussian",
+  lambda = NULL,
+  train_params = list(),
+  predict_params = list(),
+  train_row_params = c(),
+  predict_row_params = c(),
+  nfolds = 10,
+  foldid = NULL,
+  parallel = FALSE,
+  grouped = TRUE,
+  keep = FALSE,
+  save_cvfits = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Input matrix of dimension 'nobs' by 'nvars'; each row is an
+observation vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Response variable. Either a vector or a matrix, depending on the
+type of model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>train_fun</code></td>
+<td>
+<p>The model training function. This needs to take in an
+input matrix as 'x' and a response variable as 'y'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predict_fun</code></td>
+<td>
+<p>The prediction function. This needs to take in the
+output of 'train_fun' as 'object' and new input matrix as 'newx'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type.measure</code></td>
+<td>
+<p>Loss function to use for cross-validation. See
+'availableTypeMeasures()' for possible values for 'type.measure'. Note that
+the package does not check if the user-specified measure is appropriate
+for the family.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>Model family; used to determine the correct loss function.
+One of "gaussian", "binomial", "poisson", "cox", "multinomial",
+"mgaussian", or a class "family" object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>Option user-supplied sequence representing the values of the
+hyperparameter to be cross-validated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>train_params</code></td>
+<td>
+<p>Any parameters that should be passed to
+'train_fun' to fit the model (other than 'x' and 'y'). Default is the
+empty list.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predict_params</code></td>
+<td>
+<p>Any other parameters that should be passed tp
+'predict_fun' to get predictions (other than 'object' and 'newx'). Default
+is the empty list.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>train_row_params</code></td>
+<td>
+<p>A vector which is a subset of 'names(train_params)',
+indicating which parameters have to be subsetted in the CV loop (other
+than 'x' and 'y'. Default is 'c()'.
+Other parameters which should probably be included here
+are "weights" (for observation weights) and "offset".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predict_row_params</code></td>
+<td>
+<p>A vector which is a subset of
+'names(predict_params)', indicating which parameters have to be subsetted
+in the CV loop (other than 'newx'). Default is 'c()'.
+Other parameters which should probably be included here
+are "newoffset".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nfolds</code></td>
+<td>
+<p>Number of folds (default is 10). Smallest allowable value
+is 3.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>foldid</code></td>
+<td>
+<p>An optional vector of values between '1' and 'nfolds'
+(inclusive) identifying which fold each observation is in. If supplied,
+'nfolds' can be missing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+<p>If 'TRUE', use parallel 'foreach' to fit each
+fold.  Must register parallel backend before hand. Default is 'FALSE'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grouped</code></td>
+<td>
+<p>This is an experimental argument, with default 'TRUE',
+and can be ignored by most users. For all models except 'family = "cox"',
+this refers to computing 'nfolds' separate statistics, and then using
+their mean and estimated standard error to describe the CV curve. If
+'FALSE', an error matrix is built up at the observation level
+from the predictions from the 'nfolds' fits, and then summarized (does
+not apply to 'type.measure="auc"'). For the "cox" family,
+'grouped=TRUE' obtains the CV partial likelihood for the Kth fold by
+<em>subtraction</em>; by subtracting the log partial likelihood evaluated on
+the full dataset from that evaluated on the on the (K-1)/K dataset. This
+makes more efficient use of risk sets. With 'grouped=FALSE' the log
+partial likelihood is computed only on the Kth fold.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep</code></td>
+<td>
+<p>If 'keep = TRUE', a prevalidated array is returned containing
+fitted values for each observation and each value of lambda. This means
+these fits are computed with this observation and the rest of its fold
+omitted. The 'foldid' vector is also returned. Default is 'keep = FALSE'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save_cvfits</code></td>
+<td>
+<p>If 'TRUE', the model fits for each CV fold are returned
+as a list. Default is 'FALSE'.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The model training function is assumed to take in the data matrix as 'x',
+the response as 'y', and the hyperparameter to be cross-validated as
+'lambda'. It is assumed that in its returned output, the hyperparameter
+values actually used are stored as 'lambda'. The prediction function
+is assumed to take in the new data matrix as 'newx', and a 'lambda'
+sequence as 's'.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class "cvobj".
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>The values of lambda used in the fits.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cvm</code></td>
+<td>
+<p>The mean cross-validated error: a vector of length
+'length(lambda)'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cvsd</code></td>
+<td>
+<p>Estimate of standard error of 'cvm'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cvup</code></td>
+<td>
+<p>Upper curve = 'cvm + cvsd'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cvlo</code></td>
+<td>
+<p>Lower curve = 'cvm - cvsd'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.min</code></td>
+<td>
+<p>Value of 'lambda' that gives minimum 'cvm'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.1se</code></td>
+<td>
+<p>Largest value of 'lambda' such that the error is within
+1 standard error of the minimum.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>index</code></td>
+<td>
+<p>A one-column matrix with the indices of 'lambda.min' and
+'lambda.1se' in the sequence of coefficients, fits etc.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p>A text string indicating the loss function used (for plotting
+purposes).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fit.preval</code></td>
+<td>
+<p>If 'keep=TRUE', this is the array of prevalidated fits.
+Some entries can be 'NA', if that and subsequent values of 'lambda' are not
+reached for that fold.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>foldid</code></td>
+<td>
+<p>If 'keep=TRUE', the fold assignments used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>overallfit</code></td>
+<td>
+<p>Model fit for the entire dataset.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cvfitlist</code></td>
+<td>
+<p>If 'save_cvfits=TRUE', a list containing the model
+fits for each CV fold.</p>
+</td>
+</tr>
+</table>
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(1)
+x &lt;- matrix(rnorm(500), nrow = 50)
+y &lt;- rnorm(50)
+cv_fit &lt;- kfoldcv(x, y, train_fun = glmnet::glmnet,
+                  predict_fun = predict)
+
+</code></pre>
+
+
+</div>

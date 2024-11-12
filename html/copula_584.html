@@ -1,0 +1,148 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>tauAMH</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Ali-Mikhail-Haq ("AMH")'s and Joe's Kendall's Tau</h2>
+
+<h3>Description</h3>
+
+<p>Compute Kendall's Tau of an Ali-Mikhail-Haq ("AMH") or Joe Archimedean
+copula with parameter <code>theta</code>.  In both cases, analytical
+expressions are available, but need alternatives in some cases.
+</p>
+
+<dl>
+<dt>
+<code>tauAMH()</code>:</dt>
+<dd>
+<p>Analytically, given as
+</p>
+<p style="text-align: center;"><code class="reqn">1-\frac{2((1-\theta)^2\log(1-\theta) + \theta)}{3\theta^2},</code>
+</p>
+
+<p>for <code>theta</code><code class="reqn">=\theta</code>;
+numerically, care has to be taken when <code class="reqn">\theta \to 0</code>,
+avoiding accuracy loss already, for example, for <code class="reqn">\theta</code> as
+large as <code>theta = 0.001</code>.</p>
+</dd>
+<dt>
+<code>tauJoe()</code>:</dt>
+<dd>
+<p>Analytically,
+</p>
+<p style="text-align: center;"><code class="reqn">1- 4\sum_{k=1}^\infty\frac{1}{k(\theta k+2)(\theta(k-1)+2)},</code>
+</p>
+
+<p>the infinite sum can be expressed by three <code class="reqn">\psi()</code>
+(<code>psigamma</code>) function terms.
+</p>
+</dd>
+</dl>
+<h3>Usage</h3>
+
+<pre><code class="language-R">tauAMH(theta)
+tauJoe(theta, method = c("hybrid", "digamma", "sum"), noTerms=446)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+<p>numeric vector with values in <code class="reqn">[-1,1]</code> for AMH, or
+<code class="reqn">[0.238734, Inf)</code> for Joe.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>string specifying the method for <code>tauJoe()</code>.  Use the
+default, unless for research about the method.  Up to <span class="pkg">copula</span>
+version 0.999-0, the only (implicit) method was <code>"sum"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>noTerms</code></td>
+<td>
+<p>the number of summation terms for the <code>"sum"</code>
+method; its default, <code>446</code> gives an absolute error smaller
+than <code class="reqn">10^{-5}</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+
+<dl>
+<dt>
+<code>tauAMH()</code>:</dt>
+<dd>
+<p>For small <code>theta</code> (<code class="reqn">=\theta</code>), we use Taylor series
+approximations of up to order 7,
+</p>
+<p style="text-align: center;"><code class="reqn">\tau_A(\theta) = \frac{2}{9}\theta\Bigl(1 + \theta\Bigl(\frac 1 4 +
+      \frac{\theta}{10}\Bigl(1 + \theta\Bigl(\frac 1 2 + \theta \frac 2
+      7\Bigr) \Bigr)\Bigr)\Bigr) + O(\theta^6),</code>
+</p>
+
+<p>where we found that dropping the last two terms (e.g., only using 5 terms
+from the <code class="reqn">k=7</code> term Taylor polynomial) is actually numerically
+advantageous.</p>
+</dd>
+<dt>
+<code>tauJoe()</code>:</dt>
+<dd>
+<p>The <code>"sum"</code> method simply replaces the infinite sum by a finite
+sum (with <code>noTerms</code> terms.  The more accurate or faster methods,
+use analytical summation formulas, using the <code>digamma</code>
+aka <code class="reqn">\psi</code> function, see, e.g.,
+<a href="https://en.wikipedia.org/wiki/Digamma_function#Series_formula">https://en.wikipedia.org/wiki/Digamma_function#Series_formula</a>.
+
+
+
+</p>
+<p>The smallest sensible <code class="reqn">\theta</code> value, i.e., <code>th</code> for which
+<code>tauJoe(th) == -1</code> is easily determined via
+<code>str(uniroot(function(th) tauJoe(th)-(-1), c(0.1, 0.3), tol = 1e-17), digits=12)</code>
+to be <code>0.2387339899</code>.</p>
+</dd>
+</dl>
+<h3>Value</h3>
+
+<p>a vector of the same length as <code>theta</code> (<code class="reqn">= \theta</code>), with
+<code class="reqn">\tau</code> values
+</p>
+<p>for <code>tauAMH</code>: in <code class="reqn">[(5 - 8 log 2)/3, 1/3] ~= [-0.1817, 0.3333]</code>,
+of <code class="reqn">\tau_A(\theta) = 1 -
+    2(\theta+(1-\theta)^2\log(1-\theta))/(3\theta^2)</code>,
+numerically accurately, to at least around 12 decimal digits.
+</p>
+<p>for  <code>tauJoe</code>: in [-1,1].
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>acopula-families</code>, and their class definition,
+<code>"acopula"</code>.  <code>etau()</code> for
+method-of-moments estimators based on Kendall's tau.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">tauAMH(c(0, 2^-40, 2^-20))
+curve(tauAMH,  0, 1)
+curve(tauAMH, -1, 1)# negative taus as well
+curve(tauAMH, 1e-12, 1, log="xy") # linear, tau ~= 2/9*theta in the limit
+
+curve(tauJoe, 1,      10)
+curve(tauJoe, 0.2387, 10)# negative taus (*not* valid for Joe: no 2-monotone psi()!)
+</code></pre>
+
+
+</div>

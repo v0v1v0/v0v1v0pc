@@ -1,0 +1,146 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>coef_simu</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simulate coefficients, calculate Confidence Intervals and Variance-Covariance Matrix for a <code>cirls</code> object.</h2>
+
+<h3>Description</h3>
+
+<p><code>confint</code> computes confidence intervals for one of more parameters in a GLM fitted via cirls.fit. <code>vcov</code> compute the variance-covariance matrix of the parameters. Both methods are based on <code>coef_simu</code> that simulates coefficients from a Truncated Multivariate Normal distribution. These methods supersede the default confint and vcov methods for <code>cirls</code> objects.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">coef_simu(object, nsim = 1000)
+
+## S3 method for class 'cirls'
+confint(object, parm, level = 0.95, nsim = 1000, ...)
+
+## S3 method for class 'cirls'
+vcov(object, nsim = 1000, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>A fitted <code>cirls</code> object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsim</code></td>
+<td>
+<p>The number of simulations to consider. Corresponds to <code>n</code> in rtmvnorm. See details().</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parm</code></td>
+<td>
+<p>A specification of which parameters to compute the confidence intervals for. Either a vector of numbers or a vector of names. If missing, all parameters are considered.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>level</code></td>
+<td>
+<p>The confidence level required.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments passed to or from other methods. Currently ignored.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>These functions are custom methods for cirls objects to supersede the default methods used for glm objects.
+</p>
+<p>Both methods rely on the fact that <code class="reqn">C\hat{\beta}</code> (with <code class="reqn">C</code> the constraint matrix) follows a <em>Truncated Multivariate Normal</em> distribution
+</p>
+<p style="text-align: center;"><code class="reqn">C\hat{\beta} \sim TMVN(C\beta, CVC^T), l, u</code>
+</p>
+
+<p>where TMVN represents a truncated Multivariate Normal distribution. <code class="reqn">C</code> is the constraint matrix (<code>object$control$Cmat</code>) with bound <code class="reqn">l</code> and <code class="reqn">u</code>, while <code class="reqn">V</code> is the unconstrained variance-covariance matrix (such as returned by <code>vcov.glm</code>).
+</p>
+<p><code>coef_simu</code> simulates from the TMVN above and transforms back the realisations into the coefficients space. These realisations are then used by the <code>confint</code> and <code>vcov</code> methods which compute empirical quantiles and variance-covariance matrix, respectively. <code>coef_simu</code> is called internally by <code>confint</code> and <code>vcov</code> and doesn't need to be used directly, but it can be used to check other summaries of the coefficients distribution.
+</p>
+
+
+<h3>Value</h3>
+
+<p>For <code>confint</code>, a two-column matrix with columns giving lower and upper confidence limits for each parameter.
+</p>
+<p>For <code>vcov</code>, a matrix of the estimated covariances between the parameter estimates of the model.
+</p>
+<p>For <code>coef_simu</code>, a matrix with <code>nsim</code> rows containing simulated coefficients.
+</p>
+
+
+<h3>Note</h3>
+
+<p>These methods only work when <code>Cmat</code> is of full row rank. If not the case, <code>Cmat</code> can be inspected through <code>check_cmat()</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Geweke, J.F., 1996. Bayesian Inference for Linear Models Subject to Linear Inequality Constraints, in: Lee, J.C., Johnson, W.O., Zellner, A. (Eds.), Modelling and Prediction Honoring Seymour Geisser. <em>Springer, New York, NY</em>, pp. 248–263. <a href="https://doi.org/10.1007/978-1-4612-2414-3_15">doi:10.1007/978-1-4612-2414-3_15</a>
+</p>
+<p>Botev, Z.I., 2017, The normal law under linear restrictions: simulation and estimation via minimax tilting, <em>Journal of the Royal Statistical Society, Series B</em>, <strong>79</strong> (<strong>1</strong>), pp. 1–24.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>rtmvnorm for the underlying routine to simulate from a TMVN. <code>check_cmat()</code> to check if the contraint matrix can be reduced.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">####################################################
+# Isotonic regression
+
+#----- Perform isotonic regression
+
+# Generate data
+set.seed(222)
+p1 &lt;- 5; p2 &lt;- 3
+x1 &lt;- matrix(rnorm(100 * p1), 100, p1)
+x2 &lt;- matrix(rnorm(100 * p2), 100, p2)
+b1 &lt;- runif(p1) |&gt; sort()
+b2 &lt;- runif(p2)
+y &lt;- x1 %*% b1 + x2 %*% b2 + rnorm(100, sd = 2)
+
+# Fit model
+Ciso &lt;- diff(diag(p1))
+resiso &lt;- glm(y ~ x1 + x2, method = cirls.fit, Cmat = list(x1 = Ciso))
+
+#----- Extract uncertainty
+
+# Extract variance covariance
+vcov(resiso)
+
+# Extract confidence intervals
+confint(resiso)
+
+# We can extract the usual unconstrained vcov
+summary(resiso)$cov.scaled
+all.equal(vcov(resiso), summary(resiso)$cov.scaled)
+
+# Simulate from the distribution of coefficients
+sims &lt;- coef_simu(resiso, nsim = 10)
+
+# Check that all simulated coefficient vectors are feasible
+apply(resiso$Cmat %*% t(sims) &gt;= resiso$lb, 2, all)
+</code></pre>
+
+
+</div>

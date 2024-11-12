@@ -1,0 +1,118 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cdmSubsetCohort</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Subset a cdm to the individuals in one or more cohorts</h2>
+
+<h3>Description</h3>
+
+<p><code>cdmSubset</code> will return a new cdm object that contains lazy queries pointing
+to each of the cdm tables but subset to individuals in a generated cohort.
+Since the cdm tables are lazy queries, the subset operation will only be
+done when the tables are used. <code>computeQuery</code> can be used to run the SQL
+used to subset a cdm table and store it as a new table in the database.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cdmSubsetCohort(cdm, cohortTable = "cohort", cohortId = NULL, verbose = FALSE)
+
+cdm_subset_cohort(
+  cdm,
+  cohort_table = "cohort",
+  cohort_id = NULL,
+  verbose = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cdm</code></td>
+<td>
+<p>A cdm_reference object</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cohortTable, cohort_table</code></td>
+<td>
+<p>The name of a cohort table in the cdm reference</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cohortId, cohort_id</code></td>
+<td>
+<p>IDs of the cohorts that we want to subset from the cohort
+table. If NULL (default) all cohorts in cohort table are considered.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Should subset messages be printed? TRUE or FALSE (default)</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt="[Experimental]"></a>
+</p>
+
+
+<h3>Value</h3>
+
+<p>A modified cdm_reference with all clinical tables subset
+to just the persons in the selected cohorts.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+library(CDMConnector)
+library(dplyr, warn.conflicts = FALSE)
+
+con &lt;- DBI::dbConnect(duckdb::duckdb(), eunomia_dir())
+
+cdm &lt;- cdm_from_con(con, cdm_schema = "main", write_schema = "main")
+
+# generate a cohort
+path &lt;- system.file("cohorts2", mustWork = TRUE, package = "CDMConnector")
+
+cohortSet &lt;- readCohortSet(path) %&gt;%
+  filter(cohort_name == "GIBleed_male")
+
+# subset cdm to persons in the generated cohort
+cdm &lt;- generateCohortSet(cdm, cohortSet = cohortSet, name = "gibleed")
+
+cdmGiBleed &lt;- cdmSubsetCohort(cdm, cohortTable = "gibleed")
+
+cdmGiBleed$person %&gt;%
+  tally()
+#&gt; # Source:   SQL [1 x 1]
+#&gt; # Database: DuckDB 0.6.1
+#&gt;       n
+#&gt;   &lt;dbl&gt;
+#&gt; 1   237
+
+cdm$person %&gt;%
+  tally()
+#&gt; # Source:   SQL [1 x 1]
+#&gt; # Database: DuckDB 0.6.1
+#&gt;       n
+#&gt;   &lt;dbl&gt;
+#&gt; 1  2694
+
+
+DBI::dbDisconnect(con, shutdown = TRUE)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

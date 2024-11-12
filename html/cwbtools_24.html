@@ -1,0 +1,174 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>encode</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Encode CWB Corpus.</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt="[Experimental]"></a>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">encode(x, ...)
+
+## S4 method for signature 'data.frame'
+encode(
+  x,
+  corpus,
+  s_attributes = NULL,
+  encoding = "utf8",
+  registry_dir = fs::path(tempdir(), "cwb_registry"),
+  data_dir = fs::path(tempdir(), "cwb_data_dir", tolower(corpus)),
+  properties = c(),
+  method = c("R", "CWB"),
+  verbose = TRUE,
+  compress = FALSE,
+  reload = TRUE,
+  quietly = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A <code>data.frame</code> or an object inheriting from <code>data.frame</code> (such as
+<code>tibble</code>, <code>data.table</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments (unused).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>corpus</code></td>
+<td>
+<p>ID of the CWB corpus to create.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>s_attributes</code></td>
+<td>
+<p>A <code>list</code> of <code>data.frame</code> objects with columns 'cpos_left'
+and 'cpos_right' and columns with s-attributes, the names of which will
+serve as names of s-attributes. It <code>s_attributes</code> is a <code>data.frame</code>, it will
+be coerced to a <code>list</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>encoding</code></td>
+<td>
+<p>Encoding as defined in the charset corpus property of the
+registry file for the corpus ('latin1' to 'latin9', and 'utf8').</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>registry_dir</code></td>
+<td>
+<p>Registry directory.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data_dir</code></td>
+<td>
+<p>The data directory for the binary files of the corpus.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>properties</code></td>
+<td>
+<p>A named <code>character</code> vector with corpus properties that will
+be added to the registry file describing the corpus. Names of the vector
+indicate a property (such as "version") and the values of the vector the
+values of a corpus property.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Either 'CWB' or 'R', defaults to 'R'. See section 'Details'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>A <code>logical</code> value, whether to output progress messages.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>compress</code></td>
+<td>
+<p>A <code>logical</code> value, whether to run <code>RcppCWB::cwb_huffcode()</code>
+and <code>RcppCWB::cwb_compress_rdx()</code> (method 'R'), or command line tools
+<code>cwb-huffcode</code> and <code>cwb-compress-rdx</code> (method 'CWB'). Defaults to <code>FALSE</code>
+as compression is not stable on Windows.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reload</code></td>
+<td>
+<p>A logical value, whether to reload the corpus to make it
+immediatedly available.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quietly</code></td>
+<td>
+<p>A <code>logical</code> value passed into <code>RcppCWB::cwb_makeall()</code>,
+<code>RcppCWB::cwb_huffcode()</code> and <code>RcppCWB::cwb_compress_rdx</code> to control
+verbosity of these functions.</p>
+</td>
+</tr>
+</table>
+<h3>Examples</h3>
+
+<pre><code class="language-R"># This is an example we run conditionally as packages are suggested.
+
+dplyr_available &lt;- requireNamespace("dplyr")
+tidytext_available &lt;- requireNamespace("tidytext")
+quanteda_available &lt;- requireNamespace("quanteda")
+
+if (dplyr_available &amp;&amp; tidytext_available &amp;&amp; quanteda_available){
+
+library(dplyr) # pipe would not be available otherwise
+library(tidytext)
+
+registry_tmp &lt;- fs::path(tempdir(), "cwb_registry")
+dir.create(registry_tmp)
+
+tidydata &lt;- quanteda::data_char_ukimmig2010 %&gt;%
+   as.data.frame() %&gt;%
+   as_tibble(rownames = "party") %&gt;%
+   rename(`text` = ".")
+   
+tokenstream &lt;- tidydata %&gt;%
+   unnest_tokens(word, text, to_lower = FALSE, strip_punct = FALSE) %&gt;%
+   mutate(cpos = 0L:(nrow(.) - 1L))
+   
+metadata &lt;- tokenstream %&gt;% 
+  group_by(party) %&gt;% 
+  summarise(cpos_left = min(cpos), cpos_right = max(cpos))
+
+tokenstream %&gt;%
+  select(-cpos, -party) %&gt;%
+  encode(
+    corpus = "UKIMMIG2010",
+    s_attributes = metadata,
+    properties = c(lang = "en")
+  )
+  
+}
+</code></pre>
+
+
+</div>

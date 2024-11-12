@@ -1,0 +1,177 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>estimate_squared_change_ancestors</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate ancestral states for a continuous character under squared-change parsimony</h2>
+
+<h3>Description</h3>
+
+<p>Given a phylogeny and set of continuous tip values, returns a single estimate of ancestral states that minimise the total squared-change cost on the tree.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">estimate_squared_change_ancestors(tree, tip_values)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>tree</code></td>
+<td>
+<p>A tree (object of class <code>phylo</code>) with or without branch lengths and having tip labels that match the elements of <code>tip_values</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tip_values</code></td>
+<td>
+<p>A labelled vector of continuous tip values, where the labels match the tip labels in <code>tree</code>. Tip values can be single numbers or a minimum-maximum range, see details.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Multiple algorithms exist for estimating ancestral states for a univariate continuous character. This function specifically provides an ancestral state estimation that minimises the squared-change cost between each internal node and every other node that node is directly connected to. Note: in practice this approach can be identical to maximum likelihood ancestral state estimation under Brownian motion (e.g., Maddison 1991), leading Goloboff (2022) to argue that it isn't strictly a parsimony approach. However, this function extends squared-change parsimony to allow for ranges in tip values (see below) as well as implementing squared-change parsimony where branch lengths are variable and (hard) polytomies are permitted. As such it may still be of use to some users as distinct from other ancestral state estimation approaches for continuous characters.
+</p>
+<p><b>Algorithm</b>
+</p>
+<p>Although squared-change parsimony ancestral state estimates can be directly calculated using the approach of Maddison (1991), the algorithm used here is an optimisation approach as this allows tip ranges to be accommodated (see below). In practice this leads to minimal speed reduction in most cases as an initial estimate is made using the <code>fastAnc</code> function from the phytools package (Revell 2024) that will frequently be identical to the final solution (except where ranges in tip values are used).
+</p>
+<p>The optimisation used here is the Broyden-Fletcher-Goldfarb-Shanno (BFGS) algorithm which was independently developed by Broyden (1970), Fletcher (1970), Goldfarb (1970), and Shanno (1970) and is implemented as the <code>"L-BFGS-B"</code> method in the R <code>stats</code> function <code>optim()</code>. The choice of this method is what allows ranges in tip values to be accommodated by treating these as an additional parameter to be estimated but with box constraints (i.e., minimum and maximum possible values - the ranges for the tip value) applied.
+</p>
+<p><b>Ranges in tip values</b>
+</p>
+<p>Unlike other implementations of squared-change parsimony (to the best of my knowledge at least) this function removes the constraint that each tip must be represented by a single numeric value. Instead, any number of tip values can instead be represented by a range of values (i.e., a minimum and maximum value). These must be specified in the <code>tip_values</code> variable by separating the minimum and maximum values with an underscore character (_). E.g., <code>"0.33_0.53"</code> is the range 0.33 to 0.53. Note: an underscore is used rather than a dash as negative values are permitted and the dash symbol is reserved to indicate these.
+</p>
+<p>In practice ranges are treated as an additional paramater to be estimated (alongside the internal node estimates) with the same criterion of minimising the total length, or cost (cum of squares), for the tree as a whole. As such this is truly a parsimony algorithm and negates the criticism of Goloboff (2022) that squared-change parsimony is not a true parsimony algorithm and also differs from (say) a maximum likelihood estimate that assumes a central tendency (i.e., midpoint) to the range of values at a tip.
+</p>
+<p>The estimated tip values can also be examined a posteriori using the <code>tip_values</code> value from the function output.
+</p>
+<p><b>Polytomies in the input tree</b>
+</p>
+<p>The function can also handle polytomies in the input tree, albeit it only does so by treating these as "hard" polytomies. I.e., it does not permute the minimum sum of squares for every possible resolution of a polytomy.
+</p>
+<p><b>"Weighted" squared-change parsimony and branch lengths in the input tree</b>
+</p>
+<p>By default the function will apply so-called "unweighted" squared-change parsimony, meaning the user does not need to provide an input tree with branch lengths (only the topology). However, in practice "unweighted" parsimony really means treating every branch as having unit length (which is still <em>a</em> weighting). However, a user may wish to estimate ancestral states where variable branch lengths are accounted for (e.g., such that a cherry with variable terminal branch lengths means the subtending node is more strongly influenced by the tip value at the end of the shorter terminal).
+</p>
+<p>In practice the function will implement weighted squared-change parsimony whenever the input tree already has edge-lengths applied. As such if the user does wish to implement "unweighted" squared-change parsimony they should be careful to supply an input tree where there are either no edge lengths or every edge is set to length one.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The function returns a list with three elements:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>ancestral_state_estimates</code></td>
+<td>
+<p>A single set of ancestral state estimates that represent a solution that minimises the total cost, or length, of the tree.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tip_values</code></td>
+<td>
+<p>The (estimated) tip values that minimise the sum of squares. This will be identical to the <code>tip_values</code> input if no ranges in tip values were used, but otherwise will show a single tip value that minimised the total cost, or length, of the tree.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sum_of_squares</code></td>
+<td>
+<p>A single numeric value indicating the total cost, or length, of the tree which is the sum of the squared length of each edge of the tree.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Graeme T. Lloyd <a href="mailto:graemetlloyd@gmail.com">graemetlloyd@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Broyden, C. G., 1970. The convergence of a class of double-rank minimization algorithms. <em>Journal of the Institute of Mathematics and Its Applications</em>, <b>6</b>, 76-90.
+</p>
+<p>Fletcher, R., 1970. A new approach to variable metric algorithms. <em>Computer Journal</em>, <b>13</b>, 317-322.
+</p>
+<p>Goloboff, P. A., 2022. <em>Phylogenetic Analysis of Morphological Data, Volume 2: Refining Phylogenetic Analyses</em>. CRC Press, Boca Raton. 291 pp.
+</p>
+<p>Goldfarb, D., 1970. A family of variable metric updates derived by variational means. <em>Mathematics of Computation</em>, <b>24</b>, 23-26.
+</p>
+<p>Maddison, W. P., 1991. Squared-change parsimony reconstructions of ancestral states for continuous-valued characters on a phylogenetic tree. <em>Systematic Zoology</em>, <b>40</b>, 304-314.
+</p>
+<p>Revell, L. J., 2024. phytools 2.0: an updated R ecosystem for phylogenetic comparative methods (and other things). <em>PeerJ</em>, <b>12</b>, e16505.
+</p>
+<p>Shanno, D. F., 1970. Conditioning of quasi-Newton methods for function minimization. <em>Mathematics of Computation</em>, <b>24</b>, 647-656.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Estimate squared-change parsimony for four tips with single values:
+scp &lt;- estimate_squared_change_ancestors(
+  tree = ape::read.tree(text = "((A,B),(C,D));"),
+  tip_values = tip_values &lt;- c("A" = 3.6, "B" = 4.1, "C" = 7.3, "D" = 8.8)
+)
+
+# Plot results:
+ape::plot.phylo(
+  x = ape::read.tree(text = "((A,B),(C,D));"),
+  main = paste("Sum of squares =", scp$sum_of_squares)
+)
+ape::tiplabels(text = scp$tip_values)
+ape::nodelabels(text = round(x = scp$ancestral_state_estimates, digits = 2))
+
+# Estimate squared-change parsimony for four tips with a ranged value:
+scp &lt;- estimate_squared_change_ancestors(
+  tree = ape::read.tree(text = "((A,B),(C,D));"),
+  tip_values = tip_values &lt;- c("A" = "3.6", "B" = "4.1", "C" = "7.3", "D" = "8.8_9.3")
+)
+
+# Plot results:
+ape::plot.phylo(
+  x = ape::read.tree(text = "((A,B),(C,D));"),
+  main = paste("Sum of squares =", scp$sum_of_squares)
+)
+ape::tiplabels(text = scp$tip_values)
+ape::nodelabels(text = round(x = scp$ancestral_state_estimates, digits = 2))
+
+# Estimate weighted squared-change parsimony for four tips with single values:
+scp &lt;- estimate_squared_change_ancestors(
+  tree = ape::read.tree(text = "((A:1,B:2):2,(C:2,D:3):4);"),
+  tip_values = tip_values &lt;- c("A" = 3.6, "B" = 4.1, "C" = 7.3, "D" = 8.8)
+)
+
+# Plot results:
+ape::plot.phylo(
+  x = ape::read.tree(text = "((A:1,B:2):2,(C:2,D:3):4);"),
+  main = paste("Sum of squares =", scp$sum_of_squares)
+)
+ape::tiplabels(text = scp$tip_values)
+ape::nodelabels(text = round(x = scp$ancestral_state_estimates, digits = 2))
+
+# Estimate squared-change parsimony for four tips with single values and a single polytomy:
+scp &lt;- estimate_squared_change_ancestors(
+  tree = ape::read.tree(text = "(A,(B,C,D));"),
+  tip_values = tip_values &lt;- c("A" = 3.6, "B" = 4.1, "C" = 7.3, "D" = 8.8)
+)
+
+# Plot results:
+ape::plot.phylo(
+  x = ape::read.tree(text = "(A,(B,C,D));"),
+  main = paste("Sum of squares =", scp$sum_of_squares)
+)
+ape::tiplabels(text = scp$tip_values)
+ape::nodelabels(text = round(x = scp$ancestral_state_estimates, digits = 2))
+
+</code></pre>
+
+
+</div>

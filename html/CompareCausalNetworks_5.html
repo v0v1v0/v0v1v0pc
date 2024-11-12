@@ -1,0 +1,399 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>getRanking</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate a ranking of edges for causal relations in the underlying graph structure
+using stability ranking.</h2>
+
+<h3>Description</h3>
+
+<p>Estimates a ranking of edges for a given query, e.g. for 
+parental relations in the underlying causal graph structure, using 
+various possible methods. 
+</p>
+<p>Supported methods at the moment are ARGES,
+backShift, bivariateANM, bivariateCAM, CAM, FCI, FCI+, GES, GIES, hiddenICP, 
+ICP, LINGAM, MMHC, rankARGES, rankFci, rankGES, rankGIES, rankPC, 
+regression, RFCI and PC.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">getRanking(
+  X,
+  environment,
+  interventions = NULL,
+  queries = c("isParent", "isMaybeParent", "isNoParent", "isAncestor",
+    "isMaybeAncestor", "isNoAncestor"),
+  method = c("ICP", "hiddenICP", "backShift", "pc", "LINGAM", "ges", "gies", "CAM",
+    "fci", "rfci", "regression", "bivariateANM", "bivariateCAM")[1],
+  alpha = 0.1,
+  variableSelMat = NULL,
+  excludeTargetInterventions = TRUE,
+  onlyObservationalData = FALSE,
+  indexObservationalData = NULL,
+  setOptions = list(),
+  assumeNoSelectionVars = TRUE,
+  nsim = 100,
+  sampleSettings = 1/sqrt(2),
+  sampleObservations = 1/sqrt(2),
+  verbose = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>A <code class="reqn">(n x p)</code>-data matrix with <code class="reqn">n</code> observations of <code class="reqn">p</code> variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>environment</code></td>
+<td>
+<p>A vector of length <code class="reqn">n</code>, where the entry for 
+observation <code class="reqn">i</code> is an index for the environment in which observation <code class="reqn">i</code> took 
+place (simplest case entries <code>1</code> for observational data and entries
+<code>2</code> for interventional data of unspecified type). Is required for 
+methods <code>ICP</code>, <code>hiddenICP</code>, <code>backShift</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interventions</code></td>
+<td>
+<p>A optional list of length n. The entry for observation
+i is a numeric vector that specifies the variables on which interventions 
+happened for observation i (a scalar if an intervention happened on just 
+one variable and <code>numeric(0)</code> if no intervention occured for this 
+observation). Is used for method <code>gies</code> but will generate the vector 
+<code>environment</code> if this is set to <code>NULL</code> (even though it might 
+generate too many different environments for some data so a hand-picked 
+vector <code>environment</code> is preferable). Is also used for <code>ICP</code> and 
+<code>hiddenICP</code> to exclude interventions on the target variable of 
+interest.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>queries</code></td>
+<td>
+<p>One (or more of) "isParent", "isMaybeParent", "isNoParent",
+"isAncestor","isMaybeAncestor", "isNoAncestor"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>A string that specfies the method to use. The methods 
+<code>pc</code> (PC-algorithm), <code>LINGAM</code> (LINGAM), <code>arges</code> (Adaptively 
+restricted greedy equivalence search), <code>ges</code> 
+(Greedy equivalence search), <code>gies</code> (Greedy interventional equivalence 
+search),  <code>fci</code> (Fast causal inference)  
+and <code>rfci</code> (Really fast causal inference) are imported from the 
+package "pcalg" and are documented there in more detail, including the 
+additional options that can be supplied via <code>setOptions</code>. The method 
+<code>CAM</code> (Causal additive models) is documented in the package "CAM" and 
+the methods <code>ICP</code> (Invariant causal prediction), <code>hiddenICP</code> 
+(Invariant causal prediction with hidden variables) are from the package 
+"InvariantCausalPrediction". The method <code>backShift</code> comes from the 
+package "backShift". The method <code>mmhc</code> comes from the 
+package "bnlearn". 
+Finally, the methods <code>bivariateANM</code> and 
+<code>bivariateCAM</code> are for now implemented internally but will hopefully 
+be part of another package at some point in the near future.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>The level at which tests are done. This leads to confidence 
+intervals for <code>ICP</code> and <code>hiddenICP</code> and is used internally for 
+<code>pc</code> and <code>rfci</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>variableSelMat</code></td>
+<td>
+<p>An optional logical matrix of dimension (pxp). An 
+entry <code>TRUE</code> for entry (i,j) says that variable i should be considered 
+as a potential parent for variable j and vice versa for <code>FALSE</code>. If the 
+default value of <code>NULL</code> is used, all variables will be considered, but 
+this can be very slow, especially for methods <code>pc</code>, <code>ges</code>, 
+<code>gies</code>, <code>rfci</code> and <code>CAM</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>excludeTargetInterventions</code></td>
+<td>
+<p>When looking for parents of variable k 
+in 1,...,p, set to <code>TRUE</code> if observations where an intervention on 
+variable k occured should be excluded. Default is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>onlyObservationalData</code></td>
+<td>
+<p>If set to <code>TRUE</code>, only observational data 
+is used. It will take the index in <code>environment</code> specified by 
+<code>indexObservationalData</code>. If <code>environment</code> is <code>NULL</code>, all 
+observations are used. Default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>indexObservationalData</code></td>
+<td>
+<p>Index in <code>environment</code> that encodes 
+observational data. Default is <code>1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>setOptions</code></td>
+<td>
+<p>A list that can take method-specific options; see the 
+individual documentations of the methods for more options and their 
+possible values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>assumeNoSelectionVars</code></td>
+<td>
+<p>Set to <code>TRUE</code> is you want to assume the absence 
+of selection variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsim</code></td>
+<td>
+<p>The number of resamples for stability selection.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sampleSettings</code></td>
+<td>
+<p>The fraction of different environments to resample 
+in each resampling (at least two different environments will be selected so 
+the argument is without effect if there are just two different environments 
+in total).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sampleObservations</code></td>
+<td>
+<p>The fraction of samples to resample in each 
+environment.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>If <code>TRUE</code>, detailed output is provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Parameters to be passed to underlying method's function.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For both parental and ancestral relations, three queries are supported. 
+The existence of a relation is assessed by the queries <code>isParent</code> and 
+<code>isAncestor</code>; the absence of a relation is assessed by the queries 
+<code>isNoParent</code> and <code>isNoAncestor</code>; the potential existence of a 
+relation is addressed by the queries <code>isMaybeParent</code> and 
+<code>isMaybeAncestor</code>.
+</p>
+<p>All queries return a connectivity matrix which we denote by <code class="reqn">A</code>. 
+The interpretation of the entries of <code class="reqn">A</code> differs according to the considered query:
+</p>
+<p><strong>Parental relations:</strong> Queries concerning parental relations can only 
+be answered by those methods under consideration that return a DAG, a CPDAG 
+or a directed cyclic graph. When we say that a particular method cannot 
+answer a given query, then the method's output with respect to this query 
+will be the zero matrix. However, the eventual ranking for such a query will 
+not necessarily be random due to the tie breaking scheme that is applied 
+when ranking pairs of variables (see below).
+</p>
+
+<ol>
+<li> <p><code>isParent</code> In the connectivity matrix <code class="reqn">A</code> returned by this 
+query, the entry <code class="reqn">A_{i,j} = 1</code> means that there is <em>a directed edge</em> 
+from node <code class="reqn">i</code> to node <code class="reqn">j</code> in the graph structure estimated by the 
+method under consideration. Otherwise, <code class="reqn">A_{i,j} = 0</code>.
+</p>
+</li>
+<li> <p><code>isMaybeParent</code> <code class="reqn">A_{i,j} = 1</code> means that there is 
+<em>a directed or an undirected edge</em> from node <code class="reqn">i</code> to node <code class="reqn">j</code>
+in the estimated graph structure. Otherwise, <code class="reqn">A_{i,j} = 0</code>.
+</p>
+</li>
+<li> <p><code>isNoParent</code> <code class="reqn">A_{i,j} = 1</code> means that there is neither a 
+directed nor an undirected edge from node <code class="reqn">i</code> to node <code class="reqn">j</code> in the 
+estimated graph structure. Otherwise, <code class="reqn">A_{i,j} = 0</code>.
+</p>
+</li>
+</ol>
+<p><strong>Ancestral relations:</strong> Queries concerning ancestral relations can be 
+answered by all methods under consideration.
+</p>
+
+<ol>
+<li> <p><code>isAncestor</code> <code class="reqn">A_{i,j} = 1</code> means that there is a 
+<em>directed path</em> from node <code class="reqn">i</code> to node <code class="reqn">j</code> in the estimated graph 
+structure. Otherwise, <code class="reqn">A_{i,j} = 0</code>. In case of PAGs, directed paths can 
+contain the edge types <code class="reqn">i --&gt; j</code> and <code class="reqn">i --o j</code>. Including the latter 
+edge type in this category implies that we exclude the existence of selection 
+variables.
+</p>
+</li>
+<li> <p><code>isMaybeAncestor</code> <code class="reqn">A_{i,j} = 1</code> then means that there is a 
+path from node <code class="reqn">i</code> to node <code class="reqn">j</code> that contains directed and/or undirected 
+edges. Otherwise, <code class="reqn">A_{i,j} = 0</code>.	For PAGs, such paths can contain the edge 
+types <code class="reqn">i --&gt; j</code>, <code class="reqn">i --o j</code>, <code class="reqn">i o-o j</code> and/or 
+<code class="reqn">i o-&gt; j</code>. Otherwise, <code class="reqn">A_{i,j} = 0</code>.
+</p>
+</li>
+<li> <p><code>isNoAncestor</code> <code class="reqn">A_{i,j} = 1</code> means that there is neither a 
+directed path nor a partially directed path from node <code class="reqn">i</code> to node <code class="reqn">j</code>
+in the estimated graph structure. Otherwise, <code class="reqn">A_{i,j} = 0</code>.
+</p>
+</li>
+</ol>
+<p><strong>Stability ranking:</strong> To obtain a ranking of edges for a given set of 
+queries, we run the method under consideration on <code>nsims</code> random 
+subsamples of the data. In each round, we draw samples from a fraction of 
+settings, where the size of the fraction is specified by <code>sampleSettings</code>. 
+In each chosen setting, we sample a fraction of observations 
+uniformly at random without replacement, where the size of the fraction is 
+specified by  <code>sampleObservations</code>. 
+</p>
+<p>For each subsample we randomly 
+permute the order of the variables in the input. 
+Methods that are order-dependent can therefore not exploit any potential 
+advantage stemming from a data matrix with columns ordered according to the 
+causal ordering or a similar one. We then run the method on each subsample. 
+</p>
+<p>For each subsample and a particular query, we obtain the corresponding 
+connectivity matrix <code class="reqn">A</code>. We can then rank all pairs of nodes <code class="reqn">i,j</code> 
+according to the frequency of the occurrence of <code class="reqn">A_{i,j} = 1</code> across 
+subsamples. Ties between pairs of variables can be broken with the results 
+of the other queries if they are also computed as specified by <code>queries</code>; 
+otherwise ties are broken at random:
+</p>
+
+<ul>
+<li>
+<p> If the query is <code>isParent</code>, ties are broken with counts for 
+<code>isMaybeParent</code>. 
+</p>
+</li>
+<li>
+<p> For the query <code>isMaybeParent</code> ties are broken with counts for 
+<code>isParent</code>, i.e. in case of equal counts we give a preference to the 
+edge that was considered more often to be a 'certain' parent. For methods 
+returning DAGs this scheme makes the ranking for <code>isMaybeParent</code> equal 
+to the result for <code>isParent</code>, up to the random tie breaking that is 
+applied for <code>isParent</code>.
+</p>
+</li>
+<li>
+<p> If the query is <code>isNoParent</code>, ties are broken according to which 
+edge was selected less often in the query <code>isMaybeParent</code>. 
+</p>
+</li>
+<li>
+<p> If the query is <code>isAncestor</code>, ties are broken with counts for 
+<code>isMaybeAncestor</code>. 
+</p>
+</li>
+<li>
+<p> For the query <code>isMaybeAncestor</code> ties are broken with counts 
+for <code>isAncestor</code>, i.e. in case of equal counts we give a preference 
+to the edge that was considered more often to be a 'certain' ancestor. 
+For methods returning DAGs this scheme makes the ranking for <code>isMaybeAncestor</code> 
+equal to the result for <code>isAncestor</code>, up to the random tie breaking 
+that is applied for <code>isAncestor</code>.
+</p>
+</li>
+<li>
+<p> If the query is <code>isNoAncestor</code>, ties are broken according to 
+which one was selected less often in the query <code>isMaybeAncestor</code>. 
+</p>
+</li>
+</ul>
+<p>If the tie breaking matrix defined according to these rules is 0, 
+a matrix with standard normal random entries is used to break ties. 
+Similarly, if there are remaining ties after applying the tie breaking rules 
+described above, ties are broken randomly.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with the following entries:
+</p>
+
+<ul>
+<li> <p><code>ranking</code> A list of length <code>length(queries)</code>. For each query,
+the corresponding list entry contains a matrix of dimension <code class="reqn">(p x p) x 2</code> 
+with the ranking of edges. E.g. the first row indicates that the edge from 
+ranking$isParent[1,1] to ranking$isParent[1,2] is the most likely edge according
+to the method under consideration. 
+</p>
+</li>
+<li> <p><code>resList</code>  A list of length <code>length(queries)</code>. For each query,
+the corresponding list entry contains a matrix  of dimension <code class="reqn">(p x p)</code> with the counts for 
+<code class="reqn">A_{i,j} = 1</code> across the <code>nsim</code> subsamples.
+</p>
+</li>
+<li> <p><code>simEstimates</code> A list of length <code>nsim</code> with the method's 
+output for each of the <code>nsim</code> subsamples.
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Christina Heinze-Deml <a href="mailto:heinzedeml@stat.math.ethz.ch">heinzedeml@stat.math.ethz.ch</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>getParents</code> for the underlying point-estimate of 
+the causal graph.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data("simDataInv")
+X &lt;- simDataInv$X
+set.seed(1)
+if(require(pcalg)){
+  rank &lt;- getRanking(X,
+                environment = simDataInv$environment,
+                queries = c("isParent","isMaybeParent"),
+                method = c("LINGAM"),
+                verbose = FALSE)
+  # estimated ranking
+  print(rank$ranking$isParent)
+ 
+  # true adjacency matrix
+  print(simDataInv$configs$trueA)
+}else{
+  cat("\nThe packages 'pcalg' is needed for the example to
+work. Please install it.")
+}
+
+</code></pre>
+
+
+</div>

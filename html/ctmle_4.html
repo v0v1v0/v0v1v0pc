@@ -1,0 +1,269 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ctmleGeneral</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>General Template for Collaborative Targeted Maximum Likelihood Estimation</h2>
+
+<h3>Description</h3>
+
+<p>This function computes the Collaborative Targeted Maximum Likelihood Estimator.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ctmleGeneral(Y, A, W, Wg = W, Q, ctmletype, gn_candidates,
+  gn_candidates_cv = NULL, alpha = 0.995, family = "gaussian",
+  gbound = 0.025, like_type = "RSS", fluctuation = "logistic",
+  verbose = FALSE, detailed = FALSE, PEN = FALSE, g1W = NULL,
+  g1WPrev = NULL, V = 5, folds = NULL, stopFactor = 10^6)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Y</code></td>
+<td>
+<p>continuous or binary outcome variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>A</code></td>
+<td>
+<p>binary treatment indicator, 1 for treatment, 0 for control</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>W</code></td>
+<td>
+<p>vector, matrix, or dataframe containing baseline covariates for Q bar</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Wg</code></td>
+<td>
+<p>vector, matrix, or dataframe containing baseline covariates for propensity score model
+(defaults to W if not supplied by user)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Q</code></td>
+<td>
+<p>n by 2 matrix of initial values for Q0W, Q1W in columns 1 and 2, respectively.
+Current version does not support SL for automatic initial estimation of Q bar</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ctmletype</code></td>
+<td>
+<p>1 or 3. Type of general C-TMLE. Type 1 uses cross-validation to select best gn,
+while Type 3 directly solves extra clever covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gn_candidates</code></td>
+<td>
+<p>matrix or dataframe, each column stand for a estimate of propensity score.
+Estimate in the column with larger index should have smaller empirical loss</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gn_candidates_cv</code></td>
+<td>
+<p>matrix or dataframe, each column stand for a the cross-validated estimate.
+For example, the (i,j)-th element is the predicted propensity score by j-th estimator,
+for i-th observation, when it is in the validation set</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>used to keep predicted initial values bounded away from (0,1) for logistic fluctuation,
+0.995 (default)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>family specification for working regression models, generally 'gaussian' for continuous
+outcomes (default), 'binomial' for binary outcomes</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gbound</code></td>
+<td>
+<p>bound on P(A=1|W), defaults to 0.025</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>like_type</code></td>
+<td>
+<p>'RSS' or 'loglike'. The metric to use for forward selection and cross-validation</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fluctuation</code></td>
+<td>
+<p>'logistic' (default) or 'linear', for targeting step</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>print status messages if TRUE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>detailed</code></td>
+<td>
+<p>boolean number. If it is TRUE, return more detailed results</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PEN</code></td>
+<td>
+<p>boolean. If true, penalized loss is used in cross-validation step</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>g1W</code></td>
+<td>
+<p>Only used when type is 3. a user-supplied propensity score estimate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>g1WPrev</code></td>
+<td>
+<p>Only used when type is 3. a user-supplied propensity score estimate,
+with small fluctuation compared to g1W.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>V</code></td>
+<td>
+<p>Number of folds. Only used if folds is not specified</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>folds</code></td>
+<td>
+<p>The list of indices for cross-validation step. We recommend the cv-splits in C-TMLE matchs that in gn_candidate_cv</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stopFactor</code></td>
+<td>
+<p>Numerical value with default 1e6.
+If the current empirical likelihood is stopFactor times larger than the best previous one,
+the construction would stop</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>best_k  the index of estimate that selected by cross-validation
+</p>
+<p>est estimate of psi_0
+</p>
+<p>CI  IC-based 95
+</p>
+<p>pvalue pvalue for the null hypothesis that Psi = 0
+</p>
+<p>likelihood sum of squared residuals, based on selected estimator evaluated on all obs or, logistic loglikelihood if like_type != "RSS"
+</p>
+<p>varIC empirical variance of the influence curve adjusted for estimation of g
+</p>
+<p>varDstar empirical variance of the influence curve
+</p>
+<p>var.psi variance of the estimate
+</p>
+<p>varIC.cv cross-validated variance of the influence curve
+</p>
+<p>penlikelihood.cv penalized cross-validatedlikelihood
+</p>
+<p>cv.res all cross-validation results for each fold
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">N &lt;- 1000
+p = 100
+V = 5
+Wmat &lt;- matrix(rnorm(N * p), ncol = p)
+gcoef &lt;- matrix(c(-1,-1,rep(-(3/((p)-2)),(p)-2)),ncol=1)
+
+W &lt;- as.data.frame(Wmat)
+g &lt;- 1/(1+exp(Wmat%*%gcoef / 3))
+A &lt;- rbinom(N, 1, prob = g)
+
+# Build potential outcome pairs, and the observed outcome Y
+beta1 &lt;- 4+2*Wmat[,1]+2*Wmat[,2]+2*Wmat[,5]+2*Wmat[,6]+2*Wmat[,8]
+beta0 &lt;- 2+2*Wmat[,1]+2*Wmat[,2]+2*Wmat[,5]+2*Wmat[,6]+2*Wmat[,8]
+
+tau = 2
+sigma &lt;- 1
+epsilon &lt;-rnorm(N,0,sigma)
+Y  &lt;- beta0 + tau * A + epsilon
+# Initial estimate of Q
+Q &lt;- cbind(rep(mean(Y[A == 1]), N), rep(mean(Y[A == 0]), N))
+
+folds &lt;-by(sample(1:N,N), rep(1:V, length=N), list)
+
+lasso_fit &lt;- cv.glmnet(x = as.matrix(W), y = A, alpha = 1, nlambda = 100, nfolds = 10)
+lasso_lambdas &lt;- lasso_fit$lambda[lasso_fit$lambda &lt;= lasso_fit$lambda.min][1:5]
+# Build template for glmnet
+SL.glmnet_new &lt;- function (Y, X, newX, family, obsWeights, id, alpha = 1,
+                          nlambda = 100, lambda = 0,...)
+{
+    # browser()
+    if (!is.matrix(X)) {
+          X &lt;- model.matrix(~-1 + ., X)
+         newX &lt;- model.matrix(~-1 + ., newX)
+   }
+   fit &lt;- glmnet::glmnet(x = X, y = Y,
+                         lambda = lambda,
+                         family = family$family, alpha = alpha)
+   pred &lt;- predict(fit, newx = newX, type = "response")
+     fit &lt;- list(object = fit)
+   class(fit) &lt;- "SL.glmnet"
+   out &lt;- list(pred = pred, fit = fit)
+   return(out)
+}
+
+# Use a sequence of LASSO estimators to build gn sequence:
+SL.cv1lasso &lt;- function (... , alpha = 1, lambda = lasso_lambdas[1]){
+   SL.glmnet_new(... , alpha = alpha, lambda = lambda)
+}
+
+SL.cv2lasso &lt;- function (... , alpha = 1, lambda = lasso_lambdas[2]){
+    SL.glmnet_new(... , alpha = alpha, lambda = lambda)
+}
+
+SL.cv3lasso &lt;- function (... , alpha = 1, lambda = lasso_lambdas[3]){
+    SL.glmnet_new(... , alpha = alpha, lambda = lambda)
+}
+
+SL.cv4lasso &lt;- function (... , alpha = 1, lambda = lasso_lambdas[4]){
+     SL.glmnet_new(... , alpha = alpha, lambda = lambda)
+}
+
+SL.library = c('SL.cv1lasso', 'SL.cv2lasso', 'SL.cv3lasso', 'SL.cv4lasso', 'SL.glm')
+
+# Build the sequence. See more details in the function build_gn_seq, and package SuperLearner
+gn_seq &lt;- build_gn_seq(A = A, W = W, SL.library = SL.library, folds = folds)
+
+
+# Use the output of build_gn_seq for ctmle general templates
+ctmle_fit &lt;- ctmleGeneral(Y = Y, A = A, W = W, Q = Q, ctmletype = 1,
+                     gn_candidates = gn_seq$gn_candidates,
+                     gn_candidates_cv = gn_seq$gn_candidates_cv,
+                     folds = gn_seq$folds, V = length(folds))
+</code></pre>
+
+
+</div>

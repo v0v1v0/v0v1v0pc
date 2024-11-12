@@ -1,0 +1,205 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CytomeTree</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Binary tree algorithm for cytometry data analysis.</h2>
+
+<h3>Description</h3>
+
+<p>Binary tree algorithm for cytometry data analysis.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CytomeTree(M, minleaf = 1, t = 0.1, verbose = TRUE, force_first_markers = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>M</code></td>
+<td>
+<p>A matrix of size n x p containing cytometry measures
+of n cells on p markers.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minleaf</code></td>
+<td>
+<p>An integer indicating the minimum number of cells
+per population. Default is <code>1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>t</code></td>
+<td>
+<p>A real positive-or-null number used for comparison with
+the normalized AIC computed at each node of the tree.
+A higher value limits the height of the tree.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>A logical controlling if a text progress bar is displayed 
+during the execution of the algorithm. By default is TRUE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>force_first_markers</code></td>
+<td>
+<p>a vector of index to split the data on first.
+This argument is used in the semi-supervised setting, forcing the algorithm to consider 
+those markers first, in the order they appear in this <code>force_first_markers</code> vector, 
+and forcing the split at every node. Default is <code>NULL</code>, in which case
+the clustering algorithm is unsupervised.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The algorithm is based on the construction of a binary tree,
+the nodes of which are subpopulations of cells. At each node,
+observed cells and markers are modeled by both a family of normal
+distributions and a family of bi-modal normal mixture distributions.
+Splitting is done according to a normalized difference of AIC between
+the two families.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class 'cytomeTree' providing a partitioning
+of the set of n cells.
+</p>
+
+<ul>
+<li>
+<p><code>annotation</code> A <code>data.frame</code> containing the annotation of each 
+cell population underlying the tree pattern.
+</p>
+</li>
+<li>
+<p><code>labels</code> The partitioning of the set of n cells.
+</p>
+</li>
+<li>
+<p><code>M</code> The input matrix.
+</p>
+</li>
+<li>
+<p><code>mark_tree</code> A two level list containing markers used
+for node splitting.
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Chariff Alkhassim, Boris Hejblum
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">head(DLBCL)
+
+# number of cell event
+N &lt;- nrow(DLBCL)
+
+# Cell events
+cellevents &lt;- DLBCL[, c("FL1", "FL2", "FL4")]
+
+
+# Manual partitioning of the set N (from FlowCAP-I)
+manual_labels &lt;- DLBCL[, "label"]
+
+
+# Build the binary tree
+Tree &lt;- CytomeTree(cellevents, minleaf = 1, t=.1)
+
+
+# Retreive the resulting partition of the set N
+Tree_Partition &lt;- Tree$labels
+
+
+# Plot node distributions
+par(mfrow=c(1, 2))
+plot_nodes(Tree)
+
+# Choose a node to plot
+plot_nodes(Tree,"FL4.1")
+
+# Plot a graph of the tree
+par(mfrow=c(1,1))
+plot_graph(Tree,edge.arrow.size=.3, Vcex =.5, vertex.size = 30)
+
+# Run the annotation algorithm
+Annot &lt;- Annotation(Tree,plot=FALSE)
+Annot$combinations
+
+
+# Compare to the annotation gotten from the tree
+Tree$annotation
+
+
+# Example of sought phenotypes
+# Variable in which sought phenotypes can be entered in the form of matrices.
+phenotypes &lt;- list()
+
+# Sought phenotypes:
+## FL2+ FL4-.
+phenotypes[[1]] &lt;- rbind(c("FL2", 1), c("FL4", 0))
+
+## FL2- FL4+.
+phenotypes[[2]] &lt;- rbind(c("FL2", 0), c("FL4", 1))
+
+## FL2+ FL4+.
+phenotypes[[3]] &lt;- rbind(c("FL2", 1), c("FL4", 1))
+
+# Retreive cell populations found using Annotation.
+PhenoInfos &lt;- RetrievePops(Annot, phenotypes)
+PhenoInfos$phenotypesinfo
+
+# F-measure ignoring cells labeled 0 as in FlowCAP-I.
+
+# Use FmeasureC() in any other case.
+FmeasureC_no0(ref=manual_labels, pred=Tree_Partition)
+
+
+
+if(interactive()){
+
+# Scatterplots.
+library(ggplot2)
+
+# Ignoring cells labeled 0 as in FlowCAP-I.
+rm_zeros &lt;- which(!manual_labels)
+
+# Building the data frame to scatter plot the data.
+FL1 &lt;- cellevents[-c(rm_zeros),"FL1"]
+FL2 &lt;- cellevents[-c(rm_zeros),"FL2"]
+FL4 &lt;- cellevents[-c(rm_zeros),"FL4"]
+n &lt;- length(FL1)
+Labels &lt;- c(manual_labels[-c(rm_zeros)]%%2+1, Tree_Partition[-c(rm_zeros)])
+Labels &lt;- as.factor(Labels)
+method &lt;- as.factor(c(rep("FlowCap-I",n),rep("CytomeTree",n)))
+
+scatter_df &lt;- data.frame("FL2" = FL2, "FL4" = FL4, "labels" = Labels, "method" = method)
+p &lt;- ggplot2::ggplot(scatter_df,  ggplot2::aes_string(x = "FL2", y = "FL4", colour = "labels")) +
+ ggplot2::geom_point(alpha = 1,cex = 1) +
+ ggplot2::scale_colour_manual(values = c("green","red","blue")) +
+ ggplot2::facet_wrap(~ method) +
+ ggplot2::theme_bw() +
+ ggplot2::theme(legend.position="bottom")
+p
+
+}
+</code></pre>
+
+
+</div>

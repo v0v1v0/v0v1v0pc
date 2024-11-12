@@ -1,0 +1,1619 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Cape-class</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>The CAPE data object</h2>
+
+<h3>Description</h3>
+
+<p>The CAPE data object
+</p>
+<p>The CAPE data object
+</p>
+
+
+<h3>Details</h3>
+
+<p>Class <code>Cape</code> defines a CAPE analysis object.
+</p>
+
+
+<h3>Slots</h3>
+
+
+<dl>
+<dt><code>parameter_file</code></dt>
+<dd>
+<p>string, full path to YAML file with initialization
+parameters</p>
+</dd>
+<dt><code>yaml_parameters</code></dt>
+<dd>
+<p>string representing YAML CAPE parameters. See the
+vignette for more descriptions of individual parameter settings.</p>
+</dd>
+<dt><code>results_path</code></dt>
+<dd>
+<p>string, full path to directory for storing results
+(optional, a directory will be created if one is not specified)</p>
+</dd>
+<dt><code>save_results</code></dt>
+<dd>
+<p>Whether to save cape results. Defaults to FALSE.</p>
+</dd>
+<dt><code>use_saved_results</code></dt>
+<dd>
+<p>Whether to use existing results from a 
+previous run. This can save time if re-running an analysis, but
+can lead to problems if the old run and new run have competing settings.
+If errors arise, and use_saved_results is set to TRUE, try setting it 
+to FALSE, or deleting previous results.</p>
+</dd>
+<dt><code>pheno</code></dt>
+<dd>
+<p>A matrix containing the traits to be analyzed. Traits are in
+columns and individuals are in rows.</p>
+</dd>
+<dt><code>chromosome</code></dt>
+<dd>
+<p>A vector the same length as the number of markers indicating
+which chromosome each marker lives on.</p>
+</dd>
+<dt><code>marker_num</code></dt>
+<dd>
+<p>A vector the same length as the number of markers indicating
+the index of each marker</p>
+</dd>
+<dt><code>marker_location</code></dt>
+<dd>
+<p>A vector the same length as the number of markers indicating
+the genomic position of each marker. The positions are primarily used for plotting
+and can be in base pairs, centiMorgans, or dummy variables.</p>
+</dd>
+<dt><code>marker_selection_method</code></dt>
+<dd>
+<p>A string indicating how markers should be 
+selected for the pairscan. Options are "top_effects" or "from_list."
+If "top_effects," markers are selected using main effect sizes. 
+If "from_list" markers are specified using a vector of marker names. 
+See <code>select_markers_for_pairscan</code>.</p>
+</dd>
+<dt><code>geno_names</code></dt>
+<dd>
+<p>The dimnames of the genotype array. The genotype array is a three-dimensional
+array in which rows are individuals, columns are alleles, and the third dimension houses
+the markers. Genotypes are pulled for analysis using <code>get_geno</code> based on
+geno_names. Only the individuals, alleles, and markers listed in geno_names are
+taken from the genotype matrix. Functions that remove markers and individuals from
+analysis always operate on geno_names in addition to other relevant slots.
+The names of geno_names must be "mouse", "allele", "locus."</p>
+</dd>
+<dt><code>geno</code></dt>
+<dd>
+<p>A three dimensional array holding genotypes for each animal for each allele
+at each marker. The genotypes are continuously valued probabilities ranging from 0 to 1. 
+The dimnames of geno must be "mouse", "allele", and "locus," even if the individuals are
+not mice.</p>
+</dd>
+<dt><code>geno_for_pairscan</code></dt>
+<dd>
+<p>A two-dimensional matrix holding the genotypes that will be analyzed
+in the pairscan. Alleles are in columns and individuals are in rows. As in the geno array, 
+values are continuous probabilities ranging from 0 to 1.</p>
+</dd>
+<dt><code>peak_density</code></dt>
+<dd>
+<p>The density parameter for <code>select_markers_for_pairscan</code>.
+Determines how densely markers under an individual effect size peak are selected 
+for the pairscan if marker_selection_method is TRUE. Defaults to 0.5.</p>
+</dd>
+<dt><code>window_size</code></dt>
+<dd>
+<p>The window size used by <code>select_markers_for_pairscan</code>.
+It specifies how many markers are used to smooth effect size curves for automatic peak
+identification. If set to NULL, window_size is determined automatically. Used when 
+marker_selection_method is TRUE.</p>
+</dd>
+<dt><code>tolerance</code></dt>
+<dd>
+<p>The wiggle room afforded to <code>select_markers_for_pairscan</code> in 
+finding a target number of markers. If num_alleles_in_pairscan is 100 and the tolerance 
+is 5, the algorithm will stop when it identifies anywhere between 95 and 105 markers 
+for the pairscan.</p>
+</dd>
+<dt><code>ref_allele</code></dt>
+<dd>
+<p>A string of length 1 indicating which allele to use as the reference allele.
+In two-parent crosses, this is usually allele A. In DO/CC populations, we recommend using
+B as the reference allele. B is the allele from the C57Bl6/J mouse, which is often used as
+a reference strain.</p>
+</dd>
+<dt><code>alpha</code></dt>
+<dd>
+<p>The significance level for calculating effect size thresholds in the 
+<code>singlescan</code>. If singlescan_perm is 0, this parameter is ignored.</p>
+</dd>
+<dt><code>covar_table</code></dt>
+<dd>
+<p>A matrix of covariates with covariates in columns and individuals
+in rows. Must be numeric.</p>
+</dd>
+<dt><code>num_alleles_in_pairscan</code></dt>
+<dd>
+<p>The number of alleles to test in the pairwise scan. 
+Because Cape is computationally intensive, we usually need to test only a subset
+of available markers in the pairscan, particularly if the kinship correction is
+being used.</p>
+</dd>
+<dt><code>max_pair_cor</code></dt>
+<dd>
+<p>the maximum Pearson correlation between two markers. If their
+correlation exceeds this value, they will not be tested against each other in the
+pairscan. This threshold is set to prevent false positive arising from testing
+highly correlated markers. If this value is set to NULL, min_per_genotype must
+be specified.</p>
+</dd>
+<dt><code>min_per_genotype</code></dt>
+<dd>
+<p>minimum The minimum number of individuals allowable per
+genotype combination in the pair scan. If for a given marker pair, one of the 
+genotype combinations is underrepresented, the marker pair is not tested. If 
+this value is NULL, max_pair_cor must be specified.</p>
+</dd>
+<dt><code>pairscan_null_size</code></dt>
+<dd>
+<p>The total size of the null distribution.
+This is DIFFERENT than the number of permutations to run. Each permutation
+generates n choose 2 elements for the pairscan. So for example, a permutation
+that tests 100 pairs of markers will generate a null distribution of size 4950.
+This process is repeated until the total null size is reached. If the null size
+is set to 5000, two permutations of 100 markers would be done to get to a null
+distribution size of 5000.</p>
+</dd>
+<dt><code>p_covar</code></dt>
+<dd>
+<p>A vector of strings specifying the names of covariates derived
+from traits. See <code>pheno2covar</code>.</p>
+</dd>
+<dt><code>g_covar</code></dt>
+<dd>
+<p>A vector of strings specifying the names of covariates derived 
+from genetic markers. See <code>marker2covar</code>.</p>
+</dd>
+<dt><code>p_covar_table</code></dt>
+<dd>
+<p>A matrix holding the individual values for each
+trait-derived covariate. 
+See <code>pheno2covar</code>.</p>
+</dd>
+<dt><code>g_covar_table</code></dt>
+<dd>
+<p>A matrix holding the individual values for each 
+marker-derived covariate. See <code>marker2covar</code>.</p>
+</dd>
+<dt><code>model_family</code></dt>
+<dd>
+<p>Indicates the model family of the phenotypes
+This can be either "gaussian" or "binomial". If this argument
+is length 1, all phenotypes will be assigned to the same
+family. Phenotypes can be assigned different model families by
+providing a vector of the same length as the number of phenotypes,
+indicating how each phenotype should be modeled. See <code>singlescan</code>.</p>
+</dd>
+<dt><code>scan_what</code></dt>
+<dd>
+<p>A string indicating whether "eigentraits", "normalized_traits", or 
+"raw_traits" should be analyzed. See <code>get_pheno</code>.</p>
+</dd>
+<dt><code>ET</code></dt>
+<dd>
+<p>A matrix holding the eigentraits to be analyzed.</p>
+</dd>
+<dt><code>singular_values</code></dt>
+<dd>
+<p>Added by <code>get_eigentraits</code>. A vector holding 
+the singular values from the singular
+value decomposition of the trait matrix. They are used in rotating the 
+final direct influences back to trait space from eigentrait space. See
+<code>get_eigentraits</code> and <code>direct_influence</code>.</p>
+</dd>
+<dt><code>right_singular_vectors</code></dt>
+<dd>
+<p>Added by <code>get_eigentraits</code>. A matrix 
+containing the right singular vectors from the singular
+value decomposition of the trait matrix. They are used in rotating the 
+final direct influences back to trait space from eigentrait space. See
+<code>get_eigentraits</code> and <code>direct_influence</code>.</p>
+</dd>
+<dt><code>traits_scaled</code></dt>
+<dd>
+<p>Whether the traits should be mean-centered and standardized
+before analyzing.</p>
+</dd>
+<dt><code>traits_normalized</code></dt>
+<dd>
+<p>Whether the traits should be rank Z normalized before
+analyzing.</p>
+</dd>
+<dt><code>var_to_var_influences_perm</code></dt>
+<dd>
+<p>added in <code>error_prop</code> 
+The list of results from the error propagation of permuted coefficients.</p>
+</dd>
+<dt><code>var_to_var_influences</code></dt>
+<dd>
+<p>added in <code>error_prop</code> 
+The list of results from the error propagation of coefficients.</p>
+</dd>
+<dt><code>pval_correction</code></dt>
+<dd>
+<p>Options are "holm", "hochberg", "hommel", "bonferroni", "BH", "BY","fdr", "none"</p>
+</dd>
+<dt><code>linkage_blocks_collapsed</code></dt>
+<dd>
+<p>A list containing assignments of markers to linkage blocks 
+calculated by <code>linkage_blocks_network</code> and <code>plot_network</code>.
+In this list there can be multiple markers assigned to a single linkage block.</p>
+</dd>
+<dt><code>linkage_blocks_full</code></dt>
+<dd>
+<p>A list containing assignments of markers to linkage blocks 
+when no linkage blocks are calculated. In this list there can only be one marker
+per "linkage block". See <code>linkage_blocks_network</code> and <code>plot_network</code>.</p>
+</dd>
+<dt><code>var_to_var_p_val</code></dt>
+<dd>
+<p>The final table of cape interaction results calculated by <code>error_prop</code>.</p>
+</dd>
+<dt><code>max_var_to_pheno_influence</code></dt>
+<dd>
+<p>The final table of cape direct influences of markers to traits
+calculated by <code>direct_influence</code>.</p>
+</dd>
+<dt><code>collapsed_net</code></dt>
+<dd>
+<p>An adjacency matrix holding significant cape interactions between
+linkage blocks. See <code>plot_network</code> and <code>get_network</code>.</p>
+</dd>
+<dt><code>full_net</code></dt>
+<dd>
+<p>An adjacency matrix holding significant cape interactions between
+individual markers. See <code>plot_network</code> and <code>get_network</code>.</p>
+</dd>
+<dt><code>use_kinship</code></dt>
+<dd>
+<p>Whether to use a kinship correction in the analysis.</p>
+</dd>
+<dt><code>kinship_type</code></dt>
+<dd>
+<p>Which type of kinship matrix to use. Either "overall" 
+for the overall kinship matrix or "ltco" for leave-two-chromosomes-out.</p>
+</dd>
+<dt><code>transform_to_phenospace</code></dt>
+<dd>
+<p>whether to transform to phenospace or not.</p>
+</dd>
+</dl>
+<h3>Public fields</h3>
+
+<div class="r6-fields">
+
+<dl>
+<dt><code>parameter_file</code></dt>
+<dd>
+<p>full path to YAML file with initialization parameters.</p>
+</dd>
+<dt><code>yaml_parameters</code></dt>
+<dd>
+<p>string representing YAML CAPE parameters. See the vignette for more descriptions 
+of individual parameter settings.</p>
+</dd>
+<dt><code>results_path</code></dt>
+<dd>
+<p>string, full path to directory for storing results (optional, a directory will be 
+created if one is not specified).</p>
+</dd>
+<dt><code>save_results</code></dt>
+<dd>
+<p>Whether to save cape results. Defaults to FALSE.</p>
+</dd>
+<dt><code>use_saved_results</code></dt>
+<dd>
+<p>Whether to use existing results from a previous run. This can save time if 
+re-running an analysis, but can lead to problems if the old run and new run have competing settings.
+If errors arise, and use_saved_results is set to TRUE, try setting it to FALSE, or deleting previous results.</p>
+</dd>
+<dt><code>pheno</code></dt>
+<dd>
+<p>A matrix containing the traits to be analyzed. Traits are in columns and individuals are in rows.</p>
+</dd>
+<dt><code>chromosome</code></dt>
+<dd>
+<p>A vector the same length as the number of markers indicating which chromosome each marker lives on.</p>
+</dd>
+<dt><code>marker_num</code></dt>
+<dd>
+<p>A vector the same length as the number of markers indicating the index of each marker.</p>
+</dd>
+<dt><code>marker_location</code></dt>
+<dd>
+<p>A vector the same length as the number of markers indicating the genomic position of each marker.
+The positions are primarily used for plotting and can be in base pairs, centiMorgans, or dummy variables.</p>
+</dd>
+<dt><code>geno_names</code></dt>
+<dd>
+<p>The dimnames of the genotype array. The genotype array is a three-dimensional array in which rows 
+are individuals, columns are alleles, and the third dimension houses the markers. Genotypes are pulled for analysis 
+using <code>get_geno</code> based on geno_names. Only the individuals, alleles, and markers listed in geno_names are
+taken from the genotype matrix. Functions that remove markers and individuals from analysis always operate on geno_names 
+in addition to other relevant slots. The names of geno_names must be "mouse", "allele", "locus."</p>
+</dd>
+<dt><code>geno</code></dt>
+<dd>
+<p>A three dimensional array holding genotypes for each animal for each allele at each marker. The genotypes
+are continuously valued probabilities ranging from 0 to 1. The dimnames of geno must be "mouse", "allele", and "locus,"
+even if the individuals are not mice.</p>
+</dd>
+<dt><code>peak_density</code></dt>
+<dd>
+<p>The density parameter for 
+<code>select_markers_for_pairscan</code>.  Determines how densely
+markers under an individual effect size peak are selected for the 
+pairscan if marker_selection_method is TRUE.
+Defaults to 0.5.</p>
+</dd>
+<dt><code>window_size</code></dt>
+<dd>
+<p>The window size used by 
+<code>select_markers_for_pairscan</code>. It specifies how many markers
+are used to smooth effect size curves for automatic peak identification. If set to NULL, window_size is determined
+automatically. Used when marker_selection_method is TRUE.</p>
+</dd>
+<dt><code>tolerance</code></dt>
+<dd>
+<p>The wiggle room afforded to <code>select_markers_for_pairscan</code> in finding a target number
+of markers. If num_alleles_in_pairscan is 100 and the tolerance is 5, the algorithm will stop when it identifies
+anywhere between 95 and 105 markers for the pairscan.</p>
+</dd>
+<dt><code>ref_allele</code></dt>
+<dd>
+<p>A string of length 1 indicating which allele to use as the reference allele. In two-parent crosses,
+this is usually allele A. In DO/CC populations, we recommend using B as the reference allele. B is the allele from
+the C57Bl6/J mouse, which is often used as a reference strain.</p>
+</dd>
+<dt><code>alpha</code></dt>
+<dd>
+<p>The significance level for calculating effect size thresholds in the <code>singlescan</code>.
+If singlescan_perm is 0, this parameter is ignored.</p>
+</dd>
+<dt><code>covar_table</code></dt>
+<dd>
+<p>A matrix of covariates with covariates in columns and individuals in rows. Must be numeric.</p>
+</dd>
+<dt><code>num_alleles_in_pairscan</code></dt>
+<dd>
+<p>The number of alleles to test in the pairwise scan. Because Cape is computationally
+intensive, we usually need to test only a subset of available markers in the pairscan, particularly if the kinship
+correction is being used.</p>
+</dd>
+<dt><code>max_pair_cor</code></dt>
+<dd>
+<p>The maximum Pearson correlation between two markers. If their correlation exceeds this value,
+they will not be tested against each other in the pairscan. This threshold is set to prevent false positive arising
+from testing highly correlated markers. If this value is set to NULL, min_per_genotype must be specified.</p>
+</dd>
+<dt><code>min_per_genotype</code></dt>
+<dd>
+<p>minimum The minimum number of individuals allowable per genotype combination in the pair scan.
+If for a given marker pair, one of the genotype combinations is underrepresented, the marker pair is not tested.
+If this value is NULL, max_pair_cor must be specified.</p>
+</dd>
+<dt><code>pairscan_null_size</code></dt>
+<dd>
+<p>The total size of the null distribution. This is DIFFERENT than the number of permutations
+to run. Each permutation generates n choose 2 elements for the pairscan. So for example, a permutation that tests 100
+pairs of markers will generate a null distribution of size 4950. This process is repeated until the total null size
+is reached. If the null size is set to 5000, two permutations of 100 markers would be done to get to a null
+distribution size of 5000.</p>
+</dd>
+<dt><code>p_covar</code></dt>
+<dd>
+<p>A vector of strings specifying the names of covariates derived from traits. See <code>pheno2covar</code>.</p>
+</dd>
+<dt><code>g_covar</code></dt>
+<dd>
+<p>A vector of strings specifying the names of covariates derived from genetic markers.
+See <code>marker2covar</code>.</p>
+</dd>
+<dt><code>p_covar_table</code></dt>
+<dd>
+<p>A matrix holding the individual values for each trait-derived covariate. See <code>pheno2covar</code>.</p>
+</dd>
+<dt><code>g_covar_table</code></dt>
+<dd>
+<p>A matrix holding the individual values for each marker-derived covariate. See <code>marker2covar</code>.</p>
+</dd>
+<dt><code>model_family</code></dt>
+<dd>
+<p>Indicates the model family of the phenotypes. This can be either "gaussian" or "binomial".
+If this argument is length 1, all phenotypes will be assigned to the same family. Phenotypes can be assigned
+different model families by providing a vector of the same length as the number of phenotypes, indicating how
+each phenotype should be modeled. See <code>singlescan</code>.</p>
+</dd>
+<dt><code>scan_what</code></dt>
+<dd>
+<p>A string indicating whether "eigentraits", "normalized_traits", or "raw_traits" should be analyzed.
+See <code>get_pheno</code>.</p>
+</dd>
+<dt><code>ET</code></dt>
+<dd>
+<p>A matrix holding the eigentraits to be analyzed.</p>
+</dd>
+<dt><code>singular_values</code></dt>
+<dd>
+<p>Added by <code>get_eigentraits</code>. A vector holding the singular values from the singular
+value decomposition of the trait matrix. They are used in rotating the final direct influences back to trait space
+from eigentrait space. See <code>get_eigentraits</code> and <code>direct_influence</code>.</p>
+</dd>
+<dt><code>right_singular_vectors</code></dt>
+<dd>
+<p>Added by <code>get_eigentraits</code>. A matrix containing the right singular vectors
+from the singular value decomposition of the trait matrix. They are used in rotating the final direct influences
+back to trait space from eigentrait space. See <code>get_eigentraits</code> and <code>direct_influence</code>.</p>
+</dd>
+<dt><code>traits_scaled</code></dt>
+<dd>
+<p>Whether the traits should be mean-centered and standardized before analyzing.</p>
+</dd>
+<dt><code>traits_normalized</code></dt>
+<dd>
+<p>Whether the traits should be rank Z normalized before analyzing.</p>
+</dd>
+<dt><code>var_to_var_influences_perm</code></dt>
+<dd>
+<p>added in <code>error_prop</code>. The list of results from the error propagation
+of permuted coefficients.</p>
+</dd>
+<dt><code>var_to_var_influences</code></dt>
+<dd>
+<p>added in <code>error_prop</code>. The list of results from the error propagation of coefficients.</p>
+</dd>
+<dt><code>pval_correction</code></dt>
+<dd>
+<p>Options are "holm", "hochberg", "hommel", "bonferroni", "BH", "BY","fdr", "none".</p>
+</dd>
+<dt><code>var_to_var_p_val</code></dt>
+<dd>
+<p>The final table of cape interaction results calculated by <code>error_prop</code>.</p>
+</dd>
+<dt><code>max_var_to_pheno_influence</code></dt>
+<dd>
+<p>The final table of cape direct influences of markers to traits calculated
+by <code>direct_influence</code>.</p>
+</dd>
+<dt><code>full_net</code></dt>
+<dd>
+<p>An adjacency matrix holding significant cape interactions between individual markers. See
+<code>plot_network</code> and <code>get_network</code>.</p>
+</dd>
+<dt><code>use_kinship</code></dt>
+<dd>
+<p>Whether to use a kinship correction in the analysis.</p>
+</dd>
+<dt><code>kinship_type</code></dt>
+<dd>
+<p>which type of kinship matrix to use</p>
+</dd>
+<dt><code>transform_to_phenospace</code></dt>
+<dd>
+<p>whether to transform to phenospace or not.</p>
+</dd>
+</dl>
+</div>
+
+
+<h3>Active bindings</h3>
+
+<div class="r6-active-bindings">
+
+<dl>
+<dt><code>geno_for_pairscan</code></dt>
+<dd>
+<p>geno for pairscan</p>
+</dd>
+<dt><code>marker_selection_method</code></dt>
+<dd>
+<p>marker selection method</p>
+</dd>
+<dt><code>linkage_blocks_collapsed</code></dt>
+<dd>
+<p>linkage blocks collapsed</p>
+</dd>
+<dt><code>linkage_blocks_full</code></dt>
+<dd>
+<p>linkage blocks full</p>
+</dd>
+<dt><code>collapsed_net</code></dt>
+<dd>
+<p>collapsed net</p>
+</dd>
+</dl>
+</div>
+
+
+<h3>Methods</h3>
+
+
+
+<h4>Public methods</h4>
+
+
+<ul>
+<li> <p><a href="#method-Cape-assign_parameters"><code>Cape$assign_parameters()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Cape-check_inputs"><code>Cape$check_inputs()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Cape-check_geno_names"><code>Cape$check_geno_names()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Cape-new"><code>Cape$new()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Cape-plotSVD"><code>Cape$plotSVD()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Cape-plotSinglescan"><code>Cape$plotSinglescan()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Cape-plotPairscan"><code>Cape$plotPairscan()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Cape-plotVariantInfluences"><code>Cape$plotVariantInfluences()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Cape-plotNetwork"><code>Cape$plotNetwork()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Cape-plotFullNetwork"><code>Cape$plotFullNetwork()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Cape-writeVariantInfluences"><code>Cape$writeVariantInfluences()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Cape-set_pheno"><code>Cape$set_pheno()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Cape-set_geno"><code>Cape$set_geno()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Cape-create_covar_table"><code>Cape$create_covar_table()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Cape-save_rds"><code>Cape$save_rds()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Cape-read_rds"><code>Cape$read_rds()</code></a>
+</p>
+</li>
+</ul>
+<hr>
+<a id="method-Cape-assign_parameters"></a>
+
+
+
+<h4>Method <code>assign_parameters()</code>
+</h4>
+
+<p>Assigns variables from the parameter file to attributes in the Cape object.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$assign_parameters()</pre></div>
+
+
+<hr>
+<a id="method-Cape-check_inputs"></a>
+
+
+
+<h4>Method <code>check_inputs()</code>
+</h4>
+
+<p>Checks the dimensionality of inputs and its consistency.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$check_inputs()</pre></div>
+
+
+<hr>
+<a id="method-Cape-check_geno_names"></a>
+
+
+
+<h4>Method <code>check_geno_names()</code>
+</h4>
+
+<p>Checks genotype names.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$check_geno_names()</pre></div>
+
+
+<hr>
+<a id="method-Cape-new"></a>
+
+
+
+<h4>Method <code>new()</code>
+</h4>
+
+<p>Initialization method.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$new(
+  parameter_file = NULL,
+  yaml_parameters = NULL,
+  results_path = NULL,
+  save_results = FALSE,
+  use_saved_results = TRUE,
+  pheno = NULL,
+  chromosome = NULL,
+  marker_num = NULL,
+  marker_location = NULL,
+  geno_names = NULL,
+  geno = NULL,
+  .geno_for_pairscan = NULL,
+  peak_density = NULL,
+  window_size = NULL,
+  tolerance = NULL,
+  ref_allele = NULL,
+  alpha = NULL,
+  covar_table = NULL,
+  num_alleles_in_pairscan = NULL,
+  max_pair_cor = NULL,
+  min_per_genotype = NULL,
+  pairscan_null_size = NULL,
+  p_covar = NULL,
+  g_covar = NULL,
+  p_covar_table = NULL,
+  g_covar_table = NULL,
+  model_family = NULL,
+  scan_what = NULL,
+  ET = NULL,
+  singular_values = NULL,
+  right_singular_vectors = NULL,
+  traits_scaled = NULL,
+  traits_normalized = NULL,
+  var_to_var_influences_perm = NULL,
+  var_to_var_influences = NULL,
+  pval_correction = NULL,
+  var_to_var_p_val = NULL,
+  max_var_to_pheno_influence = NULL,
+  full_net = NULL,
+  use_kinship = NULL,
+  kinship_type = NULL,
+  transform_to_phenospace = NULL,
+  plot_pdf = NULL
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>parameter_file</code></dt>
+<dd>
+<p>string, full path to YAML file with initialization
+parameters</p>
+</dd>
+<dt><code>yaml_parameters</code></dt>
+<dd>
+<p>string representing YAML CAPE parameters. See the
+vignette for more descriptions of individual parameter settings.</p>
+</dd>
+<dt><code>results_path</code></dt>
+<dd>
+<p>string, full path to directory for storing results
+(optional, a directory will be created if one is not specified)</p>
+</dd>
+<dt><code>save_results</code></dt>
+<dd>
+<p>Whether to save cape results. Defaults to TRUE.</p>
+</dd>
+<dt><code>use_saved_results</code></dt>
+<dd>
+<p>Whether to use existing results from a 
+previous run. This can save time if re-running an analysis, but
+can lead to problems if the old run and new run have competing settings.
+If errors arise, and use_saved_results is set to TRUE, try setting it 
+to FALSE, or deleting previous results.</p>
+</dd>
+<dt><code>pheno</code></dt>
+<dd>
+<p>A matrix containing the traits to be analyzed. Traits are in
+columns and individuals are in rows.</p>
+</dd>
+<dt><code>chromosome</code></dt>
+<dd>
+<p>A vector the same length as the number of markers indicating
+which chromosome each marker lives on.</p>
+</dd>
+<dt><code>marker_num</code></dt>
+<dd>
+<p>A vector the same length as the number of markers indicating
+the index of each marker</p>
+</dd>
+<dt><code>marker_location</code></dt>
+<dd>
+<p>A vector the same length as the number of markers indicating
+the genomic position of each marker. The positions are primarily used for plotting
+and can be in base pairs, centiMorgans, or dummy variables.</p>
+</dd>
+<dt><code>geno_names</code></dt>
+<dd>
+<p>The dimnames of the genotype array. The genotype array is a three-dimensional
+array in which rows are individuals, columns are alleles, and the third dimension houses
+the markers. Genotypes are pulled for analysis using <code>get_geno</code> based on
+geno_names. Only the individuals, alleles, and markers listed in geno_names are
+taken from the genotype matrix. Functions that remove markers and individuals from
+analysis always operate on geno_names in addition to other relevant slots.
+The names of geno_names must be "mouse", "allele", "locus."</p>
+</dd>
+<dt><code>geno</code></dt>
+<dd>
+<p>A three dimensional array holding genotypes for each animal for each allele
+at each marker. The genotypes are continuously valued probabilities ranging from 0 to 1. 
+The dimnames of geno must be "mouse", "allele", and "locus," even if the individuals are
+not mice.</p>
+</dd>
+<dt><code>.geno_for_pairscan</code></dt>
+<dd>
+<p>A two-dimensional matrix holding the genotypes that will be analyzed
+in the pairscan. Alleles are in columns and individuals are in rows. As in the geno array, 
+values are continuous probabilities ranging from 0 to 1.</p>
+</dd>
+<dt><code>peak_density</code></dt>
+<dd>
+<p>The density parameter for <code>select_markers_for_pairscan</code>.
+Determines how densely markers under an individual effect size peak are selected 
+for the pairscan if marker_selection_method is TRUE. Defaults to 0.5.</p>
+</dd>
+<dt><code>window_size</code></dt>
+<dd>
+<p>The window size used by <code>select_markers_for_pairscan</code>.
+It specifies how many markers are used to smooth effect size curves for automatic peak
+identification. If set to NULL, window_size is determined automatically. Used when 
+marker_selection_method is TRUE.</p>
+</dd>
+<dt><code>tolerance</code></dt>
+<dd>
+<p>The wiggle room afforded to <code>select_markers_for_pairscan</code> in 
+finding a target number of markers. If num_alleles_in_pairscan is 100 and the tolerance 
+is 5, the algorithm will stop when it identifies anywhere between 95 and 105 markers 
+for the pairscan.</p>
+</dd>
+<dt><code>ref_allele</code></dt>
+<dd>
+<p>A string of length 1 indicating which allele to use as the reference allele.
+In two-parent crosses, this is usually allele A. In DO/CC populations, we recommend using
+B as the reference allele. B is the allele from the C57Bl6/J mouse, which is often used as
+a reference strain.</p>
+</dd>
+<dt><code>alpha</code></dt>
+<dd>
+<p>The significance level for calculating effect size thresholds in the 
+<code>singlescan</code>. If singlescan_perm is 0, this parameter is ignored.</p>
+</dd>
+<dt><code>covar_table</code></dt>
+<dd>
+<p>A matrix of covariates with covariates in columns and individuals
+in rows. Must be numeric.</p>
+</dd>
+<dt><code>num_alleles_in_pairscan</code></dt>
+<dd>
+<p>The number of alleles to test in the pairwise scan. 
+Because Cape is computationally intensive, we usually need to test only a subset
+of available markers in the pairscan, particularly if the kinship correction is
+being used.</p>
+</dd>
+<dt><code>max_pair_cor</code></dt>
+<dd>
+<p>the maximum Pearson correlation between two markers. If their
+correlation exceeds this value, they will not be tested against each other in the
+pairscan. This threshold is set to prevent false positive arising from testing
+highly correlated markers. If this value is set to NULL, min_per_genotype must
+be specified.</p>
+</dd>
+<dt><code>min_per_genotype</code></dt>
+<dd>
+<p>minimum The minimum number of individuals allowable per
+genotype combination in the pair scan. If for a given marker pair, one of the 
+genotype combinations is underrepresented, the marker pair is not tested. If 
+this value is NULL, max_pair_cor must be specified.</p>
+</dd>
+<dt><code>pairscan_null_size</code></dt>
+<dd>
+<p>The total size of the null distribution.
+This is DIFFERENT than the number of permutations to run. Each permutation
+generates n choose 2 elements for the pairscan. So for example, a permutation
+that tests 100 pairs of markers will generate a null distribution of size 4950.
+This process is repeated until the total null size is reached. If the null size
+is set to 5000, two permutations of 100 markers would be done to get to a null
+distribution size of 5000.</p>
+</dd>
+<dt><code>p_covar</code></dt>
+<dd>
+<p>A vector of strings specifying the names of covariates derived
+from traits. See <code>pheno2covar</code>.</p>
+</dd>
+<dt><code>g_covar</code></dt>
+<dd>
+<p>A vector of strings specifying the names of covariates derived 
+from genetic markers. See <code>marker2covar</code>.</p>
+</dd>
+<dt><code>p_covar_table</code></dt>
+<dd>
+<p>A matrix holding the individual values for each
+trait-derived covariate. See <code>pheno2covar</code>.</p>
+</dd>
+<dt><code>g_covar_table</code></dt>
+<dd>
+<p>A matrix holding the individual values for each 
+marker-derived covariate. See <code>marker2covar</code>.</p>
+</dd>
+<dt><code>model_family</code></dt>
+<dd>
+<p>Indicates the model family of the phenotypes
+This can be either "gaussian" or "binomial". If this argument
+is length 1, all phenotypes will be assigned to the same
+family. Phenotypes can be assigned different model families by
+providing a vector of the same length as the number of phenotypes,
+indicating how each phenotype should be modeled. See <code>singlescan</code>.</p>
+</dd>
+<dt><code>scan_what</code></dt>
+<dd>
+<p>A string indicating whether "eigentraits", "normalized_traits", or 
+"raw_traits" should be analyzed. See <code>get_pheno</code>.</p>
+</dd>
+<dt><code>ET</code></dt>
+<dd>
+<p>A matrix holding the eigentraits to be analyzed.</p>
+</dd>
+<dt><code>singular_values</code></dt>
+<dd>
+<p>Added by <code>get_eigentraits</code>. A vector holding 
+the singular values from the singular
+value decomposition of the trait matrix. They are used in rotating the 
+final direct influences back to trait space from eigentrait space. See
+<code>get_eigentraits</code> and <code>direct_influence</code>.</p>
+</dd>
+<dt><code>right_singular_vectors</code></dt>
+<dd>
+<p>Added by <code>get_eigentraits</code>. A matrix 
+containing the right singular vectors from the singular
+value decomposition of the trait matrix. They are used in rotating the 
+final direct influences back to trait space from eigentrait space. See
+<code>get_eigentraits</code> and <code>direct_influence</code>.</p>
+</dd>
+<dt><code>traits_scaled</code></dt>
+<dd>
+<p>Whether the traits should be mean-centered and standardized
+before analyzing.</p>
+</dd>
+<dt><code>traits_normalized</code></dt>
+<dd>
+<p>Whether the traits should be rank Z normalized before
+analyzing.</p>
+</dd>
+<dt><code>var_to_var_influences_perm</code></dt>
+<dd>
+<p>added in <code>error_prop</code> 
+The list of results from the error propagation of permuted coefficients.</p>
+</dd>
+<dt><code>var_to_var_influences</code></dt>
+<dd>
+<p>added in <code>error_prop</code> 
+The list of results from the error propagation of coefficients.</p>
+</dd>
+<dt><code>pval_correction</code></dt>
+<dd>
+<p>Options are "holm", "hochberg", "hommel", "bonferroni", "BH", "BY","fdr", "none"</p>
+</dd>
+<dt><code>var_to_var_p_val</code></dt>
+<dd>
+<p>The final table of cape interaction results calculated by <code>error_prop</code>.</p>
+</dd>
+<dt><code>max_var_to_pheno_influence</code></dt>
+<dd>
+<p>The final table of cape direct influences of markers to traits
+calculated by <code>direct_influence</code>.</p>
+</dd>
+<dt><code>full_net</code></dt>
+<dd>
+<p>An adjacency matrix holding significant cape interactions between
+individual markers. See <code>plot_network</code> and <code>get_network</code>.</p>
+</dd>
+<dt><code>use_kinship</code></dt>
+<dd>
+<p>Whether to use a kinship correction in the analysis.</p>
+</dd>
+<dt><code>kinship_type</code></dt>
+<dd>
+<p>Which type of kinship matrix to use. Either "overall" or "ltco."</p>
+</dd>
+<dt><code>transform_to_phenospace</code></dt>
+<dd>
+<p>whether to transform to phenospace or not.</p>
+</dd>
+<dt><code>plot_pdf</code></dt>
+<dd>
+<p>logical. If TRUE, results are generated as pdf</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Cape-plotSVD"></a>
+
+
+
+<h4>Method <code>plotSVD()</code>
+</h4>
+
+<p>Plot Eigentraits
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$plotSVD(filename)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>filename</code></dt>
+<dd>
+<p>filename of result plot</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Cape-plotSinglescan"></a>
+
+
+
+<h4>Method <code>plotSinglescan()</code>
+</h4>
+
+<p>Plot results of single-locus scans
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$plotSinglescan(
+  filename,
+  singlescan_obj,
+  width = 20,
+  height = 6,
+  units = "in",
+  res = 300,
+  standardized = TRUE,
+  allele_labels = NULL,
+  alpha = alpha,
+  include_covars = TRUE,
+  line_type = "l",
+  pch = 16,
+  cex = 0.5,
+  lwd = 3,
+  traits = NULL
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>filename</code></dt>
+<dd>
+<p>filename of result plot.</p>
+</dd>
+<dt><code>singlescan_obj</code></dt>
+<dd>
+<p>a singlescan object from <code>singlescan</code></p>
+</dd>
+<dt><code>width</code></dt>
+<dd>
+<p>width of result plot, default is 20.</p>
+</dd>
+<dt><code>height</code></dt>
+<dd>
+<p>height of result plot, default is 6.</p>
+</dd>
+<dt><code>units</code></dt>
+<dd>
+<p>units of result plot, default is "in".</p>
+</dd>
+<dt><code>res</code></dt>
+<dd>
+<p>resolution of result plot, default is 300.</p>
+</dd>
+<dt><code>standardized</code></dt>
+<dd>
+<p>If TRUE t statistics are plotted. If FALSE, effect sizes are plotted, default is TRUE</p>
+</dd>
+<dt><code>allele_labels</code></dt>
+<dd>
+<p>A vector of labels for the alleles if different that those
+stored in the data_object.</p>
+</dd>
+<dt><code>alpha</code></dt>
+<dd>
+<p>the alpha significance level. Lines for significance values will only
+be plotted if n_perm &gt; 0 when <code>singlescan</code> was run. And only alpha values
+specified in <code>singlescan</code> can be plotted.</p>
+</dd>
+<dt><code>include_covars</code></dt>
+<dd>
+<p>Whether to include covariates in the plot.</p>
+</dd>
+<dt><code>line_type</code></dt>
+<dd>
+<p>as defined in plot</p>
+</dd>
+<dt><code>pch</code></dt>
+<dd>
+<p>see the "points()" R function. Default is 16 (a point).</p>
+</dd>
+<dt><code>cex</code></dt>
+<dd>
+<p>see the "points()" R function. Default is 0.5.</p>
+</dd>
+<dt><code>lwd</code></dt>
+<dd>
+<p>line width, default is 3.</p>
+</dd>
+<dt><code>traits</code></dt>
+<dd>
+<p>a vector of trait names to plot. Defaults to all traits.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Cape-plotPairscan"></a>
+
+
+
+<h4>Method <code>plotPairscan()</code>
+</h4>
+
+<p>Plot the result of the pairwise scan
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$plotPairscan(
+  filename,
+  pairscan_obj,
+  phenotype = NULL,
+  show_marker_labels = TRUE,
+  show_alleles = FALSE
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>filename</code></dt>
+<dd>
+<p>filename of result plot.</p>
+</dd>
+<dt><code>pairscan_obj</code></dt>
+<dd>
+<p>a pairscan object from <code>pairscan</code></p>
+</dd>
+<dt><code>phenotype</code></dt>
+<dd>
+<p>The names of the phenotypes to be plotted. If NULL, all phenotypes are plotted.</p>
+</dd>
+<dt><code>show_marker_labels</code></dt>
+<dd>
+<p>If TRUE marker labels are plotted along the axes. If FALSE, they are omitted.</p>
+</dd>
+<dt><code>show_alleles</code></dt>
+<dd>
+<p>If TRUE, the allele of each marker is indicated by color.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Cape-plotVariantInfluences"></a>
+
+
+
+<h4>Method <code>plotVariantInfluences()</code>
+</h4>
+
+<p>Plot cape coefficients
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$plotVariantInfluences(
+  filename,
+  width = 10,
+  height = 7,
+  p_or_q = p_or_q,
+  standardize = FALSE,
+  not_tested_col = "lightgray",
+  covar_width = NULL,
+  pheno_width = NULL
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>filename</code></dt>
+<dd>
+<p>filename of result plot.</p>
+</dd>
+<dt><code>width</code></dt>
+<dd>
+<p>width of result plot, default is 10.</p>
+</dd>
+<dt><code>height</code></dt>
+<dd>
+<p>height of result plot, default is 7.</p>
+</dd>
+<dt><code>p_or_q</code></dt>
+<dd>
+<p>A threshold indicating the maximum p value (or q value if FDR was used) of significant 
+interactions and main effects.</p>
+</dd>
+<dt><code>standardize</code></dt>
+<dd>
+<p>Whether to plot effect sizes (FALSE) or standardized effect sizes (TRUE), 
+default is TRUE.</p>
+</dd>
+<dt><code>not_tested_col</code></dt>
+<dd>
+<p>The color to use for marker pairs not tested. Takes the same values as 
+pos_col and neg_col, default is "lightgray".</p>
+</dd>
+<dt><code>covar_width</code></dt>
+<dd>
+<p>See pheno_width. This is the same effect for covariates.</p>
+</dd>
+<dt><code>pheno_width</code></dt>
+<dd>
+<p>Each marker and trait gets one column in the matrix. If there are many markers, 
+this makes the effects on the traits difficult  to see. pheno_width increases the number of columns
+given to the phenotypes. For example, if pheno_width = 11, the phenotypes will be shown 11 times wider
+than individual markers.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Cape-plotNetwork"></a>
+
+
+
+<h4>Method <code>plotNetwork()</code>
+</h4>
+
+<p>Plots cape results as a circular network
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$plotNetwork(
+  filename,
+  label_gap = 10,
+  label_cex = 1.5,
+  show_alleles = FALSE
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>filename</code></dt>
+<dd>
+<p>filename of result plot.</p>
+</dd>
+<dt><code>label_gap</code></dt>
+<dd>
+<p>A numeric value indicating the size of the gap the chromosomes and their labels, 
+default is 10.</p>
+</dd>
+<dt><code>label_cex</code></dt>
+<dd>
+<p>A numeric value indicating the size of the labels, default is 1.5.</p>
+</dd>
+<dt><code>show_alleles</code></dt>
+<dd>
+<p>TRUE show the alleles, FALSE does not show alleles. Default is FALSE.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Cape-plotFullNetwork"></a>
+
+
+
+<h4>Method <code>plotFullNetwork()</code>
+</h4>
+
+<p>Plot the final epistatic network in a traditional network view.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$plotFullNetwork(
+  filename,
+  zoom = 1.2,
+  node_radius = 0.3,
+  label_nodes = TRUE,
+  label_offset = 0.4,
+  label_cex = 0.5,
+  bg_col = "lightgray",
+  arrow_length = 0.1,
+  layout_matrix = "layout_with_kk",
+  legend_position = "topright",
+  edge_lwd = 1,
+  legend_radius = 2,
+  legend_cex = 0.7,
+  xshift = -1
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>filename</code></dt>
+<dd>
+<p>filename of result plot.</p>
+</dd>
+<dt><code>zoom</code></dt>
+<dd>
+<p>Allows the user to zoom in and out on the image if the network is either 
+running off the edges of the plot or too small in the middle of the plot, default is 1.2.</p>
+</dd>
+<dt><code>node_radius</code></dt>
+<dd>
+<p>The size of the pie chart for each node, default is 0.3.</p>
+</dd>
+<dt><code>label_nodes</code></dt>
+<dd>
+<p>A logical value indicating whether the nodes should be labeled.
+Users may want to remove labels for large networks, default is TRUE.</p>
+</dd>
+<dt><code>label_offset</code></dt>
+<dd>
+<p>The amount by which to offset the node labels from the center of
+the nodes, default is 0.4.</p>
+</dd>
+<dt><code>label_cex</code></dt>
+<dd>
+<p>The size of the node labels, default is 0.5.</p>
+</dd>
+<dt><code>bg_col</code></dt>
+<dd>
+<p>The color to be used in pie charts for non-significant main effects.
+Takes the same values as pos_col, default is "lightgray".</p>
+</dd>
+<dt><code>arrow_length</code></dt>
+<dd>
+<p>The length of the head of the arrow, default is 0.1.</p>
+</dd>
+<dt><code>layout_matrix</code></dt>
+<dd>
+<p>Users have the option of providing their own layout matrix for the
+network. This should be a two column matrix indicating the x and y coordinates of each 
+node in the network, default is "layout_with_kk".</p>
+</dd>
+<dt><code>legend_position</code></dt>
+<dd>
+<p>The position of the legend on the plot, default is "topright".</p>
+</dd>
+<dt><code>edge_lwd</code></dt>
+<dd>
+<p>The thickness of the arrows showing the interactions, default is 1.</p>
+</dd>
+<dt><code>legend_radius</code></dt>
+<dd>
+<p>The size of the legend indicating which pie piece corresponds to which
+traits, default is 2.</p>
+</dd>
+<dt><code>legend_cex</code></dt>
+<dd>
+<p>The size of the labels in the legend, default is 0.7.</p>
+</dd>
+<dt><code>xshift</code></dt>
+<dd>
+<p>A constant by which to shift the x values of all nodes in the network,
+default is -1.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Cape-writeVariantInfluences"></a>
+
+
+
+<h4>Method <code>writeVariantInfluences()</code>
+</h4>
+
+<p>Write significant cape interactions to a csv file.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$writeVariantInfluences(
+  filename,
+  p_or_q = 0.05,
+  include_main_effects = TRUE
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>filename</code></dt>
+<dd>
+<p>filename of csv file</p>
+</dd>
+<dt><code>p_or_q</code></dt>
+<dd>
+<p>A threshold indicating the maximum adjusted p value considered 
+significant. If an FDR method has been used to correct for multiple testing, 
+this value specifies the maximum q value considered significant, default is 0.05.</p>
+</dd>
+<dt><code>include_main_effects</code></dt>
+<dd>
+<p>Whether to include main effects (TRUE) or only
+interaction effects (FALSE) in the output table, default is TRUE.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Cape-set_pheno"></a>
+
+
+
+<h4>Method <code>set_pheno()</code>
+</h4>
+
+<p>Set phenotype
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$set_pheno(val)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>val</code></dt>
+<dd>
+<p>phenotype value.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Cape-set_geno"></a>
+
+
+
+<h4>Method <code>set_geno()</code>
+</h4>
+
+<p>Set genotype
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$set_geno(val)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>val</code></dt>
+<dd>
+<p>genotype value.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Cape-create_covar_table"></a>
+
+
+
+<h4>Method <code>create_covar_table()</code>
+</h4>
+
+<p>Create covariate table
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$create_covar_table(value)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>value</code></dt>
+<dd>
+<p>covariate values</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Cape-save_rds"></a>
+
+
+
+<h4>Method <code>save_rds()</code>
+</h4>
+
+<p>Save to RDS file
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$save_rds(object, filename)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>object</code></dt>
+<dd>
+<p>data to be saved.</p>
+</dd>
+<dt><code>filename</code></dt>
+<dd>
+<p>filename of result RDS file.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-Cape-read_rds"></a>
+
+
+
+<h4>Method <code>read_rds()</code>
+</h4>
+
+<p>Read RDS file
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Cape$read_rds(filename)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>filename</code></dt>
+<dd>
+<p>RDS filename to be read.</p>
+</dd>
+</dl>
+</div>
+
+
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+param_file &lt;- "cape_parameters.yml"
+results_path = "."
+cape_obj &lt;- read_population("cross.csv")
+combined_obj &lt;- cape2mpp(cape_obj)
+pheno_obj &lt;- combined_obj$data_obj
+geno_obj &lt;- combined_obj$geno_obj
+
+data_obj &lt;- Cape$new(parameter_file = param_file,
+results_path = results_path, pheno = pheno_obj$pheno, chromosome = pheno_obj$chromosome, 
+marker_num = pheno_obj$marker_num, marker_location = pheno_obj$marker_location, 
+geno_names = pheno_obj$geno_names, geno = geno_obj)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

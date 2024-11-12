@@ -1,0 +1,286 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>target_encoding_mean</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Target-encoding methods</h2>
+
+<h3>Description</h3>
+
+<p>Methods to apply target-encoding to individual categorical variables. The functions implemented are:
+</p>
+
+<ul>
+<li> <p><code>target_encoding_mean()</code>: Each group is identified by the mean of the response over the group cases. The argument <code>smoothing</code> controls pushes the mean of small groups towards the global mean to avoid overfitting. White noise can be added via the <code>white_noise</code> argument. Columns encoded with this function are identified by the suffix "__encoded_mean". If <code>white_noise</code> is used, then the amount of white noise is also added to the suffix.
+</p>
+</li>
+<li> <p><code>target_encoding_rank()</code>: Each group is identified by the rank of the mean of the response variable over the group cases. The group with the lower mean receives the rank 1. White noise can be added via the <code>white_noise</code> argument. Columns encoded with this function are identified by the suffix "__encoded_rank". If <code>white_noise</code> is used, then the amount of noise is also added to the suffix.
+</p>
+</li>
+<li> <p><code>target_encoding_rnorm()</code>: Each case in a group receives a value coming from a normal distribution with the mean and the standard deviation of the response over the cases of the group. The argument <code>rnorm_sd_multiplier</code> multiplies the standard deviation to reduce the spread of the obtained values. Columns encoded with this function are identified by the suffix "__encoded_rnorm_rnorm_sd_multiplier_X", where X is the amount of <code>rnorm_sd_multiplier</code> used.
+</p>
+</li>
+<li> <p><code>target_encoding_loo()</code>: The suffix "loo" stands for "leave-one-out". Each case in a group is encoded as the average of the response over the other cases of the group. Columns encoded with this function are identified by the suffix "__encoded_loo".
+</p>
+</li>
+</ul>
+<h3>Usage</h3>
+
+<pre><code class="language-R">target_encoding_mean(
+  df,
+  response,
+  predictor,
+  smoothing = 0,
+  white_noise = 0,
+  seed = 1,
+  replace = FALSE,
+  verbose = TRUE
+)
+
+target_encoding_rnorm(
+  df,
+  response,
+  predictor,
+  rnorm_sd_multiplier = 1,
+  seed = 1,
+  replace = FALSE,
+  verbose = TRUE
+)
+
+target_encoding_rank(
+  df,
+  response,
+  predictor,
+  white_noise = 0,
+  seed = 1,
+  replace = FALSE,
+  verbose = TRUE
+)
+
+target_encoding_loo(
+  df,
+  response,
+  predictor,
+  white_noise = 0,
+  seed = 1,
+  replace = FALSE,
+  verbose = TRUE
+)
+
+add_white_noise(df, response, predictor, white_noise = 0.1, seed = 1)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>(required; data frame, tibble, or sf) A training data frame. Default: NULL</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>response</code></td>
+<td>
+<p>(required; character string) Name of the response. Must be a column name of <code>df</code>. Default: NULL</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predictor</code></td>
+<td>
+<p>(required; character) Name of the categorical variable to encode. Default: NULL</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smoothing</code></td>
+<td>
+<p>(optional; numeric) Argument of <code>target_encoding_mean()</code>. Minimum group size that keeps the mean of the group. Groups smaller than this have their means pulled towards the global mean of the response. Default: 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>white_noise</code></td>
+<td>
+<p>(optional; numeric) Numeric with white noise values in the range 0-1, representing a fraction of the range of the response to be added as noise to the encoded variable. Controls the variability in the encoded variables to mitigate potential overfitting. Default: 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>(optional; integer) Random seed to facilitate reproducibility. Default: 1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>replace</code></td>
+<td>
+<p>(optional; logical) Advanced option that changes the behavior of the function. Use only if you really know exactly what you need. If <code>TRUE</code>, it replaces each categorical variable with its encoded version, and returns the input data frame with the replaced variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>(optional; logical) If TRUE, messages and plots generated during the execution of the function are displayed. Default: TRUE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rnorm_sd_multiplier</code></td>
+<td>
+<p>(optional; numeric) Numeric with multiplier of the standard deviation of each group in the categorical variable, in the range 0-1. Controls the variability in the encoded variables to mitigate potential overfitting. Default: 1</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The input data frame with a target-encoded variable.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Blas M. Benito
+</p>
+
+
+<h3>References</h3>
+
+
+<ul><li>
+<p> Micci-Barreca, D. (2001) A Preprocessing Scheme for High-Cardinality Categorical Attributes in Classification and Prediction Problems. SIGKDD Explor. Newsl. 3, 1, 27-32 <a href="https://doi.org/10.1145/507533.507538">doi:10.1145/507533.507538</a>
+</p>
+</li></ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data(vi)
+
+#subset to limit example run time
+vi &lt;- vi[1:1000, ]
+
+#mean encoding
+#-------------
+
+#without noise
+df &lt;- target_encoding_mean(
+  df = vi,
+  response = "vi_mean",
+  predictor = "soil_type",
+  replace = TRUE
+)
+
+plot(
+  x = df$soil_type,
+  y = df$vi_mean,
+  xlab = "encoded variable",
+  ylab = "response"
+)
+
+#with noise
+df &lt;- target_encoding_mean(
+  df = vi,
+  response = "vi_mean",
+  predictor = "soil_type",
+  white_noise = 0.1,
+  replace = TRUE
+)
+
+plot(
+  x = df$soil_type,
+  y = df$vi_mean,
+  xlab = "encoded variable",
+  ylab = "response"
+)
+
+
+#group rank
+#----------
+
+df &lt;- target_encoding_rank(
+  df = vi,
+  response = "vi_mean",
+  predictor = "soil_type",
+  replace = TRUE
+)
+
+plot(
+  x = df$soil_type,
+  y = df$vi_mean,
+  xlab = "encoded variable",
+  ylab = "response"
+)
+
+
+#leave-one-out
+#-------------
+
+#without noise
+df &lt;- target_encoding_loo(
+  df = vi,
+  response = "vi_mean",
+  predictor = "soil_type",
+  replace = TRUE
+)
+
+plot(
+  x = df$soil_type,
+  y = df$vi_mean,
+  xlab = "encoded variable",
+  ylab = "response"
+)
+
+#with noise
+df &lt;- target_encoding_loo(
+  df = vi,
+  response = "vi_mean",
+  predictor = "soil_type",
+  white_noise = 0.1,
+  replace = TRUE
+)
+
+plot(
+  x = df$soil_type,
+  y = df$vi_mean,
+  xlab = "encoded variable",
+  ylab = "response"
+)
+
+
+#rnorm
+#-----
+
+#without sd multiplier
+df &lt;- target_encoding_rnorm(
+  df = vi,
+  response = "vi_mean",
+  predictor = "soil_type",
+  replace = TRUE
+)
+
+plot(
+  x = df$soil_type,
+  y = df$vi_mean,
+  xlab = "encoded variable",
+  ylab = "response"
+)
+
+#with sd multiplier
+df &lt;- target_encoding_rnorm(
+  df = vi,
+  response = "vi_mean",
+  predictor = "soil_type",
+  rnorm_sd_multiplier = 0.1,
+  replace = TRUE
+)
+
+plot(
+  x = df$soil_type,
+  y = df$vi_mean,
+  xlab = "encoded variable",
+  ylab = "response"
+)
+
+
+</code></pre>
+
+
+</div>

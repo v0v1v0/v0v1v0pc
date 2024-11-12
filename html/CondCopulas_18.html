@@ -1,0 +1,213 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CKT.predict.kNN</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Prediction of conditional Kendall's tau using nearest neighbors</h2>
+
+<h3>Description</h3>
+
+<p>Let <code class="reqn">X_1</code> and <code class="reqn">X_2</code> be two random variables.
+The goal of this function is to estimate the conditional Kendall's tau
+(a dependence measure) between <code class="reqn">X_1</code> and <code class="reqn">X_2</code> given <code class="reqn">Z=z</code>
+for a conditioning variable <code class="reqn">Z</code>.
+Conditional Kendall's tau between <code class="reqn">X_1</code> and <code class="reqn">X_2</code> given <code class="reqn">Z=z</code>
+is defined as:
+</p>
+<p style="text-align: center;"><code class="reqn">P( (X_{1,1} - X_{2,1})(X_{1,2} - X_{2,2}) &gt; 0 | Z_1 = Z_2 = z)</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">- P( (X_{1,1} - X_{2,1})(X_{1,2} - X_{2,2}) &lt; 0 | Z_1 = Z_2 = z),</code>
+</p>
+
+<p>where <code class="reqn">(X_{1,1}, X_{1,2}, Z_1)</code> and <code class="reqn">(X_{2,1}, X_{2,2}, Z_2)</code>
+are two independent and identically distributed copies of <code class="reqn">(X_1, X_2, Z)</code>.
+In other words, conditional Kendall's tau is the difference
+between the probabilities of observing concordant and discordant pairs
+from the conditional law of </p>
+<p style="text-align: center;"><code class="reqn">(X_1, X_2) | Z=z.</code>
+</p>
+
+<p>This function estimates conditional Kendall's tau using a
+<strong>nearest neighbors</strong>. This is possible by the relationship between
+estimation of conditional Kendall's tau and classification problems
+(see Derumigny and Fermanian (2019)): estimation of conditional Kendall's tau
+is equivalent to the prediction of concordance in the space of pairs
+of observations.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CKT.predict.kNN(
+  datasetPairs,
+  designMatrix = datasetPairs[, 2:(ncol(datasetPairs) - 3), drop = FALSE],
+  newZ,
+  number_nn,
+  weightsVariables = 1,
+  normLp = 2,
+  constantA = 1,
+  partition = NULL,
+  verbose = 1,
+  lengthVerbose = 100,
+  methodSort = "partial.sort"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>datasetPairs</code></td>
+<td>
+<p>the matrix of pairs and corresponding values of the kernel
+as provided by <code>datasetPairs</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>designMatrix</code></td>
+<td>
+<p>the matrix of predictors.
+They must have the same number of variables as <code>newZ</code> and
+the same number of observations as <code>inputMatrix</code>,
+i.e. there should be one "multivariate observation" of the predictor for each pair.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newZ</code></td>
+<td>
+<p>the matrix of predictors for which we want to
+estimate the conditional Kendall's taus at these values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>number_nn</code></td>
+<td>
+<p>vector of numbers of nearest neighbors to use.
+If several number of neighbors are given (local) aggregation is performed
+using Lepski's method on the subset determined by the <code>partition</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weightsVariables</code></td>
+<td>
+<p>optional argument to give
+different weights <code class="reqn">w_j</code> to each variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>normLp</code></td>
+<td>
+<p>the p in the weighted p-norm <code class="reqn">|| x ||_p = \sum_j w_j * x_j^p</code>
+used to determine the distance in the computation of the nearest neighbors.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>constantA</code></td>
+<td>
+<p>a tuning parameter that controls the adaptation.
+The higher, the smoother it is; while the smaller, the least smooth it is.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>partition</code></td>
+<td>
+<p>used only if <code>length(number_nn) &gt; 1</code>.
+It is the number of subsets to consider for the local choice of the
+number of nearest neighbors ; or a vector giving the id of each observations
+among the subsets.
+If <code>NULL</code>, only one set is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>if TRUE, this print information each <code>lengthVerbose</code> iterations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lengthVerbose</code></td>
+<td>
+<p>number of iterations at each time for which progress is printed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>methodSort</code></td>
+<td>
+<p>is the sorting method used to find the nearest neighbors.
+Possible choices are
+<code>ecdf</code> (uses the ecdf to order the points to find the neighbors)
+and <code>partial.sort</code> uses a partial sorting algorithm.
+This parameter should not matter except for the computation time.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a list with two components
+</p>
+
+<ul>
+<li> <p><code>estimatedCKT</code> the estimated conditional Kendall's tau, a vector of
+the same size as the number of rows in <code>newZ</code>;
+</p>
+</li>
+<li> <p><code>vect_k_chosen</code> the locally selected number of nearest neighbors,
+a vector of the same size as the number of rows in <code>newZ</code>.
+</p>
+</li>
+</ul>
+<h3>References</h3>
+
+<p>Derumigny, A., &amp; Fermanian, J. D. (2019).
+A classification point-of-view about conditional Kendall’s tau.
+Computational Statistics &amp; Data Analysis, 135, 70-94.
+(Algorithm 5)
+<a href="https://doi.org/10.1016/j.csda.2019.01.013">doi:10.1016/j.csda.2019.01.013</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>See also other estimators of conditional Kendall's tau:
+<code>CKT.fit.tree</code>, <code>CKT.fit.randomForest</code>,
+<code>CKT.fit.nNets</code>, <code>CKT.fit.randomForest</code>,
+<code>CKT.fit.GLM</code>, <code>CKT.kernel</code>,
+<code>CKT.kendallReg.fit</code>,
+and the more general wrapper <code>CKT.estimate</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># We simulate from a conditional copula
+set.seed(1)
+N = 800
+Z = rnorm(n = N, mean = 5, sd = 2)
+conditionalTau = -0.9 + 1.8 * pnorm(Z, mean = 5, sd = 2)
+simCopula = VineCopula::BiCopSim(N=N , family = 1,
+    par = VineCopula::BiCopTau2Par(1 , conditionalTau ))
+X1 = qnorm(simCopula[,1])
+X2 = qnorm(simCopula[,2])
+
+newZ = seq(2,10,by = 0.1)
+datasetP = datasetPairs(X1 = X1, X2 = X2, Z = Z, h = 0.07, cut = 0.9)
+estimatedCKT_knn &lt;- CKT.predict.kNN(
+  datasetPairs = datasetP,
+  newZ = matrix(newZ,ncol = 1),
+  number_nn = c(50,80, 100, 120,200),
+  partition = 8)
+
+# Comparison between true Kendall's tau (in black)
+# and estimated Kendall's tau (in red)
+trueConditionalTau = -0.9 + 1.8 * pnorm(newZ, mean = 5, sd = 2)
+plot(newZ, trueConditionalTau , col="black",
+   type = "l", ylim = c(-1, 1))
+lines(newZ, estimatedCKT_knn$estimatedCKT, col = "red")
+
+</code></pre>
+
+
+</div>

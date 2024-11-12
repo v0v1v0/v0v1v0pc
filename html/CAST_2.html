@@ -1,0 +1,295 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>aoa</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Area of Applicability</h2>
+
+<h3>Description</h3>
+
+<p>This function estimates the Dissimilarity Index (DI) and the derived
+Area of Applicability (AOA) of spatial prediction models by
+considering the distance of new data (i.e. a SpatRaster of spatial predictors
+used in the models) in the predictor variable space to the data used for model
+training. Predictors can be weighted based on the internal
+variable importance of the machine learning algorithm used for model training.
+The AOA is derived by applying a threshold on the DI which is the (outlier-removed)
+maximum DI of the cross-validated training data.
+Optionally, the local point density is calculated which indicates the number of similar training data points up to the DI threshold.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">aoa(
+  newdata,
+  model = NA,
+  trainDI = NA,
+  train = NULL,
+  weight = NA,
+  variables = "all",
+  CVtest = NULL,
+  CVtrain = NULL,
+  method = "L2",
+  useWeight = TRUE,
+  LPD = FALSE,
+  maxLPD = 1,
+  indices = FALSE,
+  verbose = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>newdata</code></td>
+<td>
+<p>A SpatRaster, stars object or data.frame containing the data
+the model was meant to make predictions for.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>A train object created with caret used to extract weights from (based on variable importance) as well as cross-validation folds.
+See examples for the case that no model is available or for models trained via e.g. mlr3.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trainDI</code></td>
+<td>
+<p>A trainDI object. Optional if <code>trainDI</code> was calculated beforehand.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>train</code></td>
+<td>
+<p>A data.frame containing the data used for model training. Optional. Only required when no model is given</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weight</code></td>
+<td>
+<p>A data.frame containing weights for each variable. Optional. Only required if no model is given.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>variables</code></td>
+<td>
+<p>character vector of predictor variables. if "all" then all variables
+of the model are used or if no model is given then of the train dataset.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CVtest</code></td>
+<td>
+<p>list or vector. Either a list where each element contains the data points used for testing during the cross validation iteration (i.e. held back data).
+Or a vector that contains the ID of the fold for each training point.
+Only required if no model is given.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CVtrain</code></td>
+<td>
+<p>list. Each element contains the data points used for training during the cross validation iteration (i.e. held back data).
+Only required if no model is given and only required if CVtrain is not the opposite of CVtest (i.e. if a data point is not used for testing, it is used for training).
+Relevant if some data points are excluded, e.g. when using <code>nndm</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Character. Method used for distance calculation. Currently euclidean distance (L2) and Mahalanobis distance (MD) are implemented but only L2 is tested. Note that MD takes considerably longer.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>useWeight</code></td>
+<td>
+<p>Logical. Only if a model is given. Weight variables according to importance in the model?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>LPD</code></td>
+<td>
+<p>Logical. Indicates whether the local point density should be calculated or not.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxLPD</code></td>
+<td>
+<p>numeric or integer. Only if <code>LPD = TRUE</code>. Number of nearest neighbors to be considered for the calculation of the LPD. Either define a number between 0 and 1 to use a percentage of the number of training samples for the LPD calculation or a whole number larger than 1 and smaller than the number of training samples. CAUTION! If not all training samples are considered, a fitted relationship between LPD and error metric will not make sense (@seealso <code>DItoErrormetric</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>indices</code></td>
+<td>
+<p>logical. Calculate indices of the training data points that are responsible for the LPD of a new prediction location? Output is a matrix with the dimensions num(raster_cells) x maxLPD. Each row holds the indices of the training data points that are relevant for the specific LPD value at that location. Can be used in combination with exploreAOA(aoa) function from the <a href="https://github.com/fab-scm/CASTvis">CASTvis package</a> for a better visual interpretation of the results. Note that the matrix can be quite big for examples with a high resolution and a larger number of training samples, which can cause memory issues.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Logical. Print progress or not?</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The Dissimilarity Index (DI), the Local Data Point Density (LPD) and the corresponding Area of Applicability (AOA) are calculated.
+If variables are factors, dummy variables are created prior to weighting and distance calculation.
+</p>
+<p>Interpretation of results: If a location is very similar to the properties
+of the training data it will have a low distance in the predictor variable space
+(DI towards 0) while locations that are very different in their properties
+will have a high DI. For easier interpretation see <code>normalize_DI</code>
+See Meyer and Pebesma (2021) for the full documentation of the methodology.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>aoa</code> containing:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>parameters</code></td>
+<td>
+<p>object of class trainDI. see <code>trainDI</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>DI</code></td>
+<td>
+<p>SpatRaster, stars object or data frame. Dissimilarity index of newdata</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>LPD</code></td>
+<td>
+<p>SpatRaster, stars object or data frame. Local Point Density of newdata.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>AOA</code></td>
+<td>
+<p>SpatRaster, stars object or data frame. Area of Applicability of newdata. AOA has values 0 (outside AOA) and 1 (inside AOA)</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>If classification models are used, currently the variable importance can only
+be automatically retrieved if models were trained via train(predictors,response) and not via the formula-interface.
+Will be fixed.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Hanna Meyer, Fabian Schumacher
+</p>
+
+
+<h3>References</h3>
+
+<p>Meyer, H., Pebesma, E. (2021): Predicting into unknown space?
+Estimating the area of applicability of spatial prediction models.
+Methods in Ecology and Evolution 12: 1620-1633. <a href="https://doi.org/10.1111/2041-210X.13650">doi:10.1111/2041-210X.13650</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>trainDI</code>, <code>normalize_DI</code>, <code>errorProfiles</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+library(sf)
+library(terra)
+library(caret)
+library(viridis)
+
+# prepare sample data:
+data(cookfarm)
+dat &lt;- aggregate(cookfarm[,c("VW","Easting","Northing")],
+   by=list(as.character(cookfarm$SOURCEID)),mean)
+pts &lt;- st_as_sf(dat,coords=c("Easting","Northing"),crs=26911)
+pts$ID &lt;- 1:nrow(pts)
+set.seed(100)
+pts &lt;- pts[1:30,]
+studyArea &lt;- rast(system.file("extdata","predictors_2012-03-25.tif",package="CAST"))[[1:8]]
+trainDat &lt;- extract(studyArea,pts,na.rm=FALSE)
+trainDat &lt;- merge(trainDat,pts,by.x="ID",by.y="ID")
+
+# visualize data spatially:
+plot(studyArea)
+plot(studyArea$DEM)
+plot(pts[,1],add=TRUE,col="black")
+
+# train a model:
+set.seed(100)
+variables &lt;- c("DEM","NDRE.Sd","TWI")
+model &lt;- train(trainDat[,which(names(trainDat)%in%variables)],
+trainDat$VW, method="rf", importance=TRUE, tuneLength=1,
+trControl=trainControl(method="cv",number=5,savePredictions=T))
+print(model) #note that this is a quite poor prediction model
+prediction &lt;- predict(studyArea,model,na.rm=TRUE)
+plot(varImp(model,scale=FALSE))
+
+#...then calculate the AOA of the trained model for the study area:
+AOA &lt;- aoa(studyArea, model)
+plot(AOA)
+plot(AOA$AOA)
+#... or if preferred calculate the aoa and the LPD of the study area:
+AOA &lt;- aoa(studyArea, model, LPD = TRUE, maxLPD = 1)
+plot(AOA$LPD)
+
+####
+#The AOA can also be calculated without a trained model.
+#All variables are weighted equally in this case:
+####
+AOA &lt;- aoa(studyArea,train=trainDat,variables=variables)
+
+
+####
+# The AOA can also be used for models trained via mlr3 (parameters have to be assigned manually):
+####
+
+library(mlr3)
+library(mlr3learners)
+library(mlr3spatial)
+library(mlr3spatiotempcv)
+library(mlr3extralearners)
+
+# initiate and train model:
+train_df &lt;- trainDat[, c("DEM","NDRE.Sd","TWI", "VW")]
+backend &lt;- as_data_backend(train_df)
+task &lt;- as_task_regr(backend, target = "VW")
+lrn &lt;- lrn("regr.randomForest", importance = "mse")
+lrn$train(task)
+
+# cross-validation folds
+rsmp_cv &lt;- rsmp("cv", folds = 5L)$instantiate(task)
+
+## predict:
+prediction &lt;- predict(studyArea,lrn$model,na.rm=TRUE)
+
+### Estimate AOA
+AOA &lt;- aoa(studyArea,
+           train = as.data.frame(task$data()),
+           variables = task$feature_names,
+           weight = data.frame(t(lrn$importance())),
+           CVtest = rsmp_cv$instance[order(row_id)]$fold)
+
+
+## End(Not run)
+</code></pre>
+
+
+</div>

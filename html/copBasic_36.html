@@ -1,0 +1,189 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>duCOP</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>The Dual of a Copula Function</h2>
+
+<h3>Description</h3>
+
+<p>Compute the <em>dual of a copula (function)</em> from a copula (Nelsen, 2006, pp. 33–34), which is defined as
+</p>
+<p style="text-align: center;"><code class="reqn">\mathrm{Pr}[U \le v \mathrm{\ or\ } V \le v] = \tilde{\mathbf{C}}(u,v) = u + v - \mathbf{C}(u,v)\mbox{,}</code>
+</p>
+
+<p>where <code class="reqn">\tilde{\mathbf{C}}(u,v)</code> is the dual of a copula and <code class="reqn">u</code> and <code class="reqn">v</code> are nonexceedance probabilities. The dual of a copula is the expression for the probability that either <code class="reqn">U \le u</code> <b>or</b> <code class="reqn">V \le v</code>, which is unlike the <em>co-copula (function)</em> (see <code>coCOP</code>) that provides <code class="reqn">\mathrm{Pr}[U &gt; u \mathrm{\ or\ } V &gt; v]</code>. The dual of a copula is a function and not in itself a copula. The dual of the  <em>survival copula</em> (<code>surCOP</code>) is the <em>co-copula (function)</em> (<code>coCOP</code>). Some rules of copulas mean that
+</p>
+<p style="text-align: center;"><code class="reqn">\hat{\mathbf{C}}(u',v') + \tilde{\mathbf{C}}(u,v) = 1\mbox{,}</code>
+</p>
+
+<p>where <code class="reqn">\hat{\mathbf{C}}(u',v')</code> is the survival copula in terms of exceedance probabilities <code class="reqn">u'</code> and <code class="reqn">v'</code> or in <span class="pkg">copBasic</span> code that the functions <code>surCOP</code> + <code>duCOP</code> equal unity.
+</p>
+<p>The function <code>duCOP</code> gives “protection” against simultaneous (concurrent or dual) risk by failure if and only if failure is caused (defined) by both hazard sources <code class="reqn">U</code> and <code class="reqn">V</code> being by themselves responsible for failure. Expressing this in terms of an annual probability of occurrence (<code class="reqn">q</code>), one has
+</p>
+<p style="text-align: center;"><code class="reqn">q = 1 - \mathrm{Pr}[U \le v \mathrm{\ or\ } V \le v] = 1 - \tilde{\mathbf{C}}(u,v)\mbox{\ or}</code>
+</p>
+
+<p>in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> code <code>q &lt;- 1 - duCOP(u,v)</code>. So, as a mnemonic: <em>A dual of a copula is the probabililty of nonexceedance if the hazard sources must <b>dual</b> (concur, link, pair, twin, twain) between each other to cause failure.</em> An informative graphic is shown within <code>copBasic-package</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">duCOP(u, v, cop=NULL, para=NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">u</code> in the <code class="reqn">X</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>v</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">v</code> in the <code class="reqn">Y</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cop</code></td>
+<td>
+<p>A copula function;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>Vector of parameters or other data structure, if needed, to pass to the copula; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass (such as parameters, if needed, for the copula in the form of a list.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Value(s) for the dual of a copula are returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>There can be confusion in the interpretation and implemenation of the <b>or</b> condition of <em>joint probability</em> provided by <code class="reqn">\tilde{\mathbf{C}}(u,v)</code>. Two types of <b>or</b>'s seemingly exist depending on one's concept of the meaning of “or.”  To start, there is the “either or both” conceptualization (<b>joint or</b>) that encompasses either “event” (say a loss) of importance for random variables <code class="reqn">U</code> and <code class="reqn">V</code> <em>as well as</em> the <b>joint and</b> conditions where both variables simultaneously are generating an event of importance.
+</p>
+<p>Let us continue by performing a massive simulation for the <code class="reqn">\mathbf{PSP}(u,v)</code> copula (<code>PSP</code>) and set an either event standard on the margins as 10 percent for an arbitrary starting point. The <code class="reqn">\mathbf{PSP}</code> has positive association with lower tail dependency, and the example here considers the left tail as the risk tail.
+</p>
+<pre>
+  Event &lt;- 0.1; nn &lt;- 100000; set.seed(9238)
+  UV &lt;- simCOP(n=nn, cop=PSP, graphics=FALSE) # 1E5 realizations
+</pre>
+<p>Next, let us step through counting and then make theoretical comparisons using copula theory. The <b>joint and</b> condition as nonexceedances is
+</p>
+<pre>
+  ANDs &lt;- length(UV$U[UV$U &lt;= Event &amp; UV$V &lt;= Event]) / nn
+  ANDt &lt;- COP(Event, Event, cop=PSP)
+  message(   "Joint AND by simulation = ", round(ANDs, digits=5),
+           "\n    Joint AND by theory = ", round(ANDt, digits=5))
+  # ANDs = 0.05348 and ANDt = 0.05263 (numerical congruence)
+</pre>
+<p>where it is obvious that the simulations and theory estimate about the same <b>joint and</b> condition. Now, the <b>joint or</b> condition as nonexceedances is
+</p>
+<pre>
+  ORs &lt;- length(UV$U[UV$U &lt;= Event | UV$V &lt;= Event]) / nn
+  ORt &lt;- duCOP(Event, Event, cop=PSP)
+  message(   "Joint OR by simulation = ", round(ORs, digits=5),
+           "\n    Joint OR by theory = ", round(ORt, digits=5))
+  # ORs = 0.14779 and ORt = 0.14737 (numerical congruence)
+</pre>
+<p>where it is obvious that the simulations and theory estimate about the same <b>joint or</b> condition. Finally, the joint <b>mutually exclusive or</b> condition as nonexceedances is
+</p>
+<pre>
+  eORs &lt;- length((UV$U[(UV$U &lt;= Event | UV$V &lt;= Event) &amp;
+                     ! (UV$U &lt;= Event &amp; UV$V &lt;= Event)])) / nn
+  eORt &lt;- ORt - ANDt # theoretical computation
+  message(   "Joint exclusive OR by simulation = ", round(eORs, digits=5),
+           "\n    Joint exclusive OR by theory = ", round(eORt, digits=5))
+  # eORs = 0.09431 and eORt = 0.09474 (numerical congruence)
+</pre>
+<p>where it is obvious that the simulations and theory estimate about the same joint <b>mutually exclusive or</b> condition, and where it is shown that the prior two theoretical joint probabilities can be subtracted from each to yield the <b>mutually exclusive or</b> condition.
+</p>
+<p>Let us then play out a scenario in which it is judged that of the events causing damage that the simultaneous occurrance is worse but that engineering against about 5 percent of events not occurring at the same time represents the most funding available. Using numerical methods, it is possible to combine <code class="reqn">\tilde{\mathbf{C}}</code> and <code class="reqn">\mathbf{C}</code> and assume equal marginal risk in <code class="reqn">U</code> and <code class="reqn">V</code> as the following list shows:
+</p>
+<pre>
+  "designf" &lt;- function(t) { # a one-off function just for this example
+     duCOP(t, t, cop=PSP) - COP(t, t, cop=PSP) - 5/100 # 5 percent
+  }
+  dThres &lt;- uniroot(designf, c(.Machine$double.eps,0.5))$root
+</pre>
+<p>where the <code>uniroot</code> function performs the optimization and the <code>.Machine$double.eps</code> value is used because the <code class="reqn">\mathbf{PSP}</code> is <code>NaN</code> for zero probability. (It is unity for unity marginal probabilities.)
+</p>
+<p>The design threshold on the margins then is <code>dThres</code> <code class="reqn">\approx</code> 0.05135. In other words, the <code>designThres</code> is the marginal probability that results in about 5 percent of events not occurring at the same time. Then considering the simulated sample and counting the nonexceedances by code one achieves:
+</p>
+<pre>
+  Damage       &lt;- length( UV$U[ UV$U &lt;= dThres | UV$V &lt;= dThres ])
+  SimDamage    &lt;- length( UV$U[ UV$U &lt;= dThres &amp; UV$V &lt;= dThres ])
+  NonSimDamage &lt;- length((UV$U[(UV$U &lt;= dThres | UV$V &lt;= dThres) &amp;
+                             ! (UV$U &lt;= dThres &amp; UV$V &lt;= dThres)]) )
+  message(  "                 Damaging Events (sim.) = ", Damage,
+          "\n    Simultaneous damaging events (sim.) = ", SimDamage,
+          "\n Nonsimultaneous damaging events (sim.) = ", NonSimDamage)
+</pre>
+<p>but also the theoretical expectations are readily computed using copula theory:
+</p>
+<pre>
+  tDamage       &lt;- as.integer(duCOP(dThres, dThres, cop=PSP) * nn)
+  tSimDamage    &lt;- as.integer(  COP(dThres, dThres, cop=PSP) * nn)
+  tNonSimDamage &lt;- tDamage - tSimDamage
+  message(  "                 Damaging Events (theory) = ", tDamage,
+          "\n    Simultaneous damaging events (theory) = ", tSimDamage,
+          "\n Nonsimultaneous damaging events (theory) = ", tNonSimDamage)
+</pre>
+<p>The counts from the former listing are 7,670; 2,669; and 5,001, whereas the respective counts from the later listing are 7,635; 2,635; and 5,000. Numerical congruency in the counts thus exists.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Nelsen, R.B., 2006, An introduction to copulas: New York, Springer, 269 p.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>COP</code>, <code>coCOP</code>, <code>surCOP</code>, <code>jointCOP</code>, <code>joint.curvesCOP</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">u &lt;- runif(1); t &lt;- runif(1)
+duCOP(cop=W,u,t)    # joint or probability for perfect negative dependence
+duCOP(cop=P,u,t)    # joint or probability for perfect        independence
+duCOP(cop=M,u,t)    # joint or probability for perfect positive dependence
+duCOP(cop=PSP,u,t)  # joint or probability for some positive    dependence
+
+# Next demonstrate COP + duCOP = unity.
+"MOcop.formula" &lt;- function(u,v, para=para, ...) {
+   alpha &lt;- para[1]; beta &lt;- para[2]; return(min(v*u^(1-alpha), u*v^(1-beta)))
+}
+"MOcop" &lt;- function(u,v, ...) { asCOP(u,v, f=MOcop.formula, ...) }
+
+u &lt;- 0.2; v &lt;- 0.75; ab &lt;- c(1.5, 0.3)
+surCOP(1-u,1-v, cop=MOcop, para=ab) + duCOP(u,v, cop=MOcop, para=ab) # UNITY
+
+# See extended code listings and discussion in the Note section</code></pre>
+
+
+</div>

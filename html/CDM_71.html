@@ -1,0 +1,160 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>data.hr</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Dataset <code>data.hr</code> (Ravand et al., 2013)
+</h2>
+
+<h3>Description</h3>
+
+<p>Dataset <code>data.hr</code> used for illustrating some functionalities
+of the <span class="pkg">CDM</span> package (Ravand, Barati, &amp; Widhiarso, 2013).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">data(data.hr)
+</code></pre>
+
+
+<h3>Format</h3>
+
+<p>The format of the dataset is:
+</p>
+<p><code>List of 2</code> <br><code> $ data    : num [1:1550, 1:35] 1 0 1 1 1 0 1 1 1 0 ...</code> <br><code> $ q.matrix:'data.frame':</code> <br><code>  ..$ Skill1: int [1:35] 0 0 0 0 0 0 1 0 0 0 ...</code> <br><code>  ..$ Skill2: int [1:35] 0 0 0 0 1 0 0 0 0 0 ...</code> <br><code>  ..$ Skill3: int [1:35] 0 1 1 1 1 0 0 1 0 0 ...</code> <br><code>  ..$ Skill4: int [1:35] 1 0 0 0 0 0 0 0 1 1 ...</code> <br><code>  ..$ Skill5: int [1:35] 0 0 0 0 0 1 0 0 1 1 ...</code> <br></p>
+
+
+<h3>Source</h3>
+
+<p>Simulated data according to Ravand et al. (2013).
+</p>
+
+
+<h3>References</h3>
+
+<p>Ravand, H., Barati, H., &amp; Widhiarso, W. (2013). Exploring diagnostic capacity
+of a high stakes reading comprehension test: A pedagogical demonstration.
+<em>Iranian Journal of Language Testing, 3</em>(1), 1-27.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+data(data.hr, package="CDM")
+
+dat &lt;- data.hr$data
+Q &lt;- data.hr$q.matrix
+
+#*************
+# Model 1: DINA model
+mod1 &lt;- CDM::din( dat, q.matrix=Q )
+summary(mod1)       # summary
+
+# plot results
+plot(mod1)
+
+# inspect coefficients
+coef(mod1)
+
+# posterior distribution
+posterior &lt;- mod1$posterior
+round( posterior[ 1:5, ], 4 )  # first 5 entries
+
+# estimate class probabilities
+mod1$attribute.patt
+
+# individual classifications
+mod1$pattern[1:5,]   # first 5 entries
+
+#*************
+# Model 2: GDINA model
+mod2 &lt;- CDM::gdina( dat, q.matrix=Q)
+summary(mod2)
+
+#*************
+# Model 3: Reduced RUM model
+mod3 &lt;- CDM::gdina( dat, q.matrix=Q, rule="RRUM" )
+summary(mod3)
+
+#--------
+# model comparisons
+
+# DINA vs GDINA
+anova( mod1, mod2 )
+  ##       Model   loglike Deviance Npars      AIC      BIC    Chisq df  p
+  ##   1 Model 1 -31391.27 62782.54   101 62984.54 63524.49 195.9099 20  0
+  ##   2 Model 2 -31293.32 62586.63   121 62828.63 63475.50       NA NA NA
+
+# RRUM vs. GDINA
+anova( mod2, mod3 )
+  ##       Model   loglike Deviance Npars      AIC      BIC    Chisq df  p
+  ##   2 Model 2 -31356.22 62712.43   105 62922.43 63483.76 125.7924 16  0
+  ##   1 Model 1 -31293.32 62586.64   121 62828.64 63475.50       NA NA NA
+
+# DINA vs. RRUM
+anova(mod1,mod3)
+  ##       Model   loglike Deviance Npars      AIC      BIC    Chisq df  p
+  ##   1 Model 1 -31391.27 62782.54   101 62984.54 63524.49 70.11246  4  0
+  ##   2 Model 2 -31356.22 62712.43   105 62922.43 63483.76       NA NA NA
+
+#-------
+# model fit
+
+# DINA
+fmod1 &lt;- CDM::modelfit.cor.din( mod1, jkunits=0)
+summary(fmod1)
+  ##   Test of Global Model Fit
+  ##          type    value       p
+  ##   1   max(X2) 16.35495 0.03125
+  ##   2 abs(fcor)  0.10341 0.01416
+  ##
+  ##   Fit Statistics
+  ##                       est
+  ##   MADcor          0.01911
+  ##   SRMSR           0.02445
+  ##   MX2             0.93157
+  ##   100*MADRESIDCOV 0.39100
+  ##   MADQ3           0.02373
+
+# GDINA
+fmod2 &lt;- CDM::modelfit.cor.din( mod2, jkunits=0)
+summary(fmod2)
+  ##   Test of Global Model Fit
+  ##          type   value p
+  ##   1   max(X2) 7.73670 1
+  ##   2 abs(fcor) 0.07215 1
+  ##
+  ##   Fit Statistics
+  ##                       est
+  ##   MADcor          0.01830
+  ##   SRMSR           0.02300
+  ##   MX2             0.82584
+  ##   100*MADRESIDCOV 0.37390
+  ##   MADQ3           0.02383
+
+# RRUM
+fmod3 &lt;- CDM::modelfit.cor.din( mod3, jkunits=0)
+summary(fmod3)
+  ##   Test of Global Model Fit
+  ##          type    value       p
+  ##   1   max(X2) 15.49369 0.04925
+  ##   2 abs(fcor)  0.10076 0.02201
+  ##
+  ##   Fit Statistics
+  ##                       est
+  ##   MADcor          0.01868
+  ##   SRMSR           0.02374
+  ##   MX2             0.87999
+  ##   100*MADRESIDCOV 0.38409
+  ##   MADQ3           0.02416
+
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,211 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>elo</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Elo method</h2>
+
+<h3>Description</h3>
+
+<p>Functions to compute rating and ranking
+using Elo method.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">rate_elo(cr_data, K = 30, ksi = 400, initial_ratings = 0)
+
+rank_elo(cr_data, K = 30, ksi = 400, initial_ratings = 0,
+  keep_rating = FALSE, ties = c("average", "first", "last", "random", "max",
+  "min"), round_digits = 7)
+
+add_elo_ratings(cr_data, K = 30, ksi = 400, initial_ratings = 0)
+
+elo(rating1, score1, rating2, score2, K = 30, ksi = 400)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cr_data</code></td>
+<td>
+<p>Competition results in format ready for
+as_longcr().</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K</code></td>
+<td>
+<p>K-factor for Elo formula.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ksi</code></td>
+<td>
+<p>Normalization coefficient for Elo formula.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>initial_ratings</code></td>
+<td>
+<p>Initial ratings (see Iterative ratings).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep_rating</code></td>
+<td>
+<p>Whether to keep rating column in ranking output.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ties</code></td>
+<td>
+<p>Value for <code>ties</code> in <code>round_rank()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>round_digits</code></td>
+<td>
+<p>Value for <code>round_digits</code> in <code>round_rank()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rating1</code></td>
+<td>
+<p>Rating of player1 before the game.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>score1</code></td>
+<td>
+<p>Score of player1 in the game.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rating2</code></td>
+<td>
+<p>Rating of player2 before the game.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>score2</code></td>
+<td>
+<p>Score of player2 in the game.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>rate_elo()</code> and <code>add_elo_ratings()</code> are wrappers for
+<code>rate_iterative()</code> and <code>add_iterative_ratings()</code> correspondingly. Rate
+function is based on Elo algorithm of updating ratings:
+</p>
+
+<ol>
+<li>
+<p> Probability of player1 (with rating r1) winning against player2 (with
+rating r2) is computed based on rating difference and sigmoid function:
+<code>P = 1 / (1 + 10^( (r2 - r1) / ksi ) )</code>. <code>ksi</code> defines the spread of ratings.
+</p>
+</li>
+<li>
+<p> Result of the game from player1 perspective is computed based on rule:
+<code>S = 1</code> (if <code>score1</code> &gt; <code>score2</code>), <code>S = 0.5</code> (if <code>score1</code> == <code>score2</code>) and
+<code>S = 0</code> (if <code>score1</code> &lt; <code>score2</code>).
+</p>
+</li>
+<li>
+<p> Rating delta is computed: <code>d = K * (S - P)</code>. The more the <code>K</code> the more the
+delta (with other being equal).
+</p>
+</li>
+<li>
+<p> New ratings are computed: <code>r1_new = r1 + d</code>, <code>r2_new = r2 - d</code>.
+</p>
+</li>
+</ol>
+<p><code>elo()</code> function implements this algorithm. It is vectorized over all its
+arguments with standard R recycling functionality. <strong>Note</strong> that not this
+function is used in <code>rate_elo()</code> and <code>add_elo_ratings()</code> because of its not
+appropriate output format, but rather its non-vectorized reimplementation is.
+</p>
+<p>Ratings are computed based only on games between players of interest (see
+Players) and <code>NA</code> values.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>rate_elo()</code> returns a tibble with columns
+<code>player</code> (player identifier) and <code>rating_elo</code> (Elo
+ratings, based on row order, by the end of competition
+results). <strong>Bigger value indicates better player performance</strong>.
+</p>
+<p><code>rank_elo()</code> returns a <code>tibble</code> with columns <code>player</code>, <code>rating_elo</code> (if
+<code>keep_rating = TRUE</code>) and <code>ranking_elo</code> (Elo ranking
+computed with <code>round_rank()</code>).
+</p>
+<p><code>add_elo_ratings()</code> returns a widecr form of <code>cr_data</code>
+with four rating columns added:
+</p>
+
+<ul>
+<li> <p><strong>rating1Before</strong> - Rating of player1 before the game.
+</p>
+</li>
+<li> <p><strong>rating2Before</strong> - Rating of player2 before the game.
+</p>
+</li>
+<li> <p><strong>rating1After</strong> - Rating of player1 after the game.
+</p>
+</li>
+<li> <p><strong>rating2After</strong> - Rating of player2 after the game.
+</p>
+</li>
+</ul>
+<p><code>elo()</code> always returns a matrix with two columns containing ratings after the
+game. Rows represent games, columns - players.
+</p>
+
+
+<h3>Players</h3>
+
+<p><code>comperank</code> offers a possibility to handle certain set of players. It is done
+by having <code>player</code> column (in longcr format) as factor
+with levels specifying all players of interest. In case of factor the result
+is returned only for players from its levels. Otherwise - for all present
+players.
+</p>
+
+
+<h3>References</h3>
+
+<p><a href="https://en.wikipedia.org/wiki/Elo_rating_system">Wikipedia
+page</a> for Elo rating system.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Elo ratings
+rate_elo(ncaa2005)
+
+rank_elo(ncaa2005)
+
+rank_elo(ncaa2005, keep_rating = TRUE)
+
+add_elo_ratings(ncaa2005, initial_ratings = 100)
+
+# Elo function
+elo((0:12)*100, 1, 0, 0)
+elo((0:12)*100, 1, 0, 0, K = 10)
+elo((0:12)*10, 1, 0, 0, ksi = 40)
+
+</code></pre>
+
+
+</div>

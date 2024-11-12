@@ -1,0 +1,156 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>compOKriging</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compositional Ordinary Kriging</h2>
+
+<h3>Description</h3>
+
+<p>Geostatistical prediction for compositional data with missing values.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">compOKriging(comp,X,Xnew,vg,err=FALSE)
+          </code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>comp</code></td>
+<td>
+<p>an acomp compositional dataset</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>A dataset of locations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Xnew</code></td>
+<td>
+<p>The locations, where a geostatistical prediction should be
+computed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vg</code></td>
+<td>
+<p>A compositional variogram function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>err</code></td>
+<td>
+<p>boolean: If true kriging errors are computed additionally. A bug was found here; the argument is currently disabled.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function performes multivariate ordinary kriging of compositions
+based on transformes addapted to the missings in every case. The
+variogram is assumed to be a clr variogram.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of class <code>"logratioVariogram"</code>
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>The new locations as given by Xnew</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Z</code></td>
+<td>
+<p>The predicted values as acomp compositions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>err</code></td>
+<td>
+<p>A bug has been found here. This output is currently disabled (An ncol(Z)xDxD array with the clr kriging errors.)</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>K.Gerald v.d. Boogaart <a href="http://www.stat.boogaart.de">http://www.stat.boogaart.de</a></p>
+
+
+<h3>References</h3>
+
+<p>Pawlowsky-Glahn, Vera and Olea, Ricardo A. (2004) Geostatistical
+Analysis of Compositional Data, Oxford University Press, Studies in
+Mathematical Geology
+</p>
+<p>Tolosana (2008) ...
+</p>
+<p>Tolosana, van den Boogaart, Pawlowsky-Glahn (2009) Estimating and
+modeling variograms of compositional data with occasional missing
+variables in R, StatGis09
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>vgram2lrvgram</code>,
+<code>CompLinModCoReg</code>,
+<code>vgmFit</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+# Load data
+data(juraset)
+X &lt;- with(juraset,cbind(X,Y))
+comp &lt;- acomp(juraset,c("Cd","Cu","Pb","Co","Cr"))
+lrv &lt;- logratioVariogram(comp,X,maxdist=1,nbins=10)
+plot(lrv)
+
+# Fit a variogram model
+vgModel &lt;- CompLinModCoReg(~nugget()+sph(0.5)+R1*exp(0.7),comp)
+fit &lt;- vgmFit2lrv(lrv,vgModel)
+fit
+plot(lrv,lrvg=vgram2lrvgram(fit$vg))
+
+# Define A grid
+x &lt;- (0:10/10)*6
+y &lt;- (0:10/10)*6
+Xnew &lt;- cbind(rep(x,length(y)),rep(y,each=length(x)))
+
+# Kriging
+erg &lt;- compOKriging(comp,X,Xnew,fit$vg,err=FALSE)
+par(mar=c(0,0,1,0))
+pairwisePlot(erg$Z,panel=function(a,b,xlab,ylab) {image(x,y,
+                     structure(log(a/b),dim=c(length(x),length(y))),
+                     main=paste("log(",xlab,"/",ylab,")",sep=""));points(X,pch=".")})
+
+
+# Check interpolation properties 
+ergR &lt;- compOKriging(comp,X,X,fit$vg,err=FALSE)
+pairwisePlot(ilr(comp),ilr(ergR$Z))
+ergR &lt;- compOKriging(comp,X,X+1E-7,fit$vg,err=FALSE)
+pairwisePlot(ilr(comp),ilr(ergR$Z))
+ergR &lt;- compOKriging(comp,X,X[rev(1:31),],fit$vg,err=FALSE)
+pairwisePlot(ilr(comp)[rev(1:31),],ilr(ergR$Z))
+
+## End(Not run)
+</code></pre>
+
+
+</div>

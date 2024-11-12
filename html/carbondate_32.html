@@ -1,0 +1,301 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>PPcalibrate</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Model Occurrence of Multiple Radiocarbon Samples as a
+Variable-Rate Poisson Process</h2>
+
+<h3>Description</h3>
+
+<p>This function calibrates a set of radiocarbon (<code class="reqn">{}^{14}</code>C) samples, and provides an estimate
+of how the underlying rate at which the samples occurred varies over calendar time (including any
+specific changepoints in the rate). The method can be used as an alternative approach to summarise
+calendar age information contained in a set of related <code class="reqn">{}^{14}</code>C samples, enabling inference
+on the latent <em>activity</em> rate which led to their creation.
+</p>
+<p>It takes as an input a set of <code class="reqn">{}^{14}</code>C determinations and associated <code class="reqn">1\sigma</code>
+uncertainties, as well as the radiocarbon age calibration curve to be used. The (calendar age)
+occurrence of these radiocarbon (<code class="reqn">{}^{14}</code>C) samples is modelled as a Poisson process. The
+underlying rate of this Poisson process <code class="reqn">\lambda(t)</code>, which represents the rate at which the
+samples occurred, is considered unknown and assumed to vary over calendar time.
+</p>
+<p>Specifically, the sample occurrence rate <code class="reqn">\lambda(t)</code> is modelled as piecewise constant, but with
+an unknown number of changepoints, which can occur at unknown times. The value of <code class="reqn">\lambda(t)</code>
+between any set of changepoints is also unknown. The function jointly calibrates the given <code class="reqn">{}^{14}</code>C
+samples under this model, and simultaneously provides an estimate of <code class="reqn">\lambda(t)</code>. Fitting is performed
+using reversible-jump MCMC within Gibbs.
+</p>
+<p>It returns estimates for the calendar age of each individual radiocarbon sample in the input set;
+and broader output on the estimated value of <code class="reqn">\lambda(t)</code> which can be used by other library functions.
+Analysis of the estimated changepoints in the piecewise <code class="reqn">\lambda(t)</code> permits wider inference on whether
+the occurrence rate of samples changed significantly at any particular calendar time and, if so, when and
+by how much.
+</p>
+<p>For more information read the vignette: <br><code>vignette("Poisson-process-modelling", package = "carbondate")</code>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">PPcalibrate(
+  rc_determinations,
+  rc_sigmas,
+  calibration_curve,
+  F14C_inputs = FALSE,
+  n_iter = 1e+05,
+  n_thin = 10,
+  use_F14C_space = TRUE,
+  show_progress = TRUE,
+  calendar_age_range = NA,
+  calendar_grid_resolution = 1,
+  prior_h_shape = NA,
+  prior_h_rate = NA,
+  prior_n_internal_changepoints_lambda = 3,
+  k_max_internal_changepoints = 30,
+  rescale_factor_rev_jump = 0.9,
+  bounding_range_prob_cutoff = 0.001,
+  initial_n_internal_changepoints = 10,
+  grid_extension_factor = 0.1,
+  use_fast = TRUE,
+  fast_approx_prob_cutoff = 0.001
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>rc_determinations</code></td>
+<td>
+<p>A vector of observed radiocarbon determinations. Can be provided either as
+<code class="reqn">{}^{14}</code>C ages (in <code class="reqn">{}^{14}</code>C yr BP) or as F<code class="reqn">{}^{14}</code>C concentrations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rc_sigmas</code></td>
+<td>
+<p>A vector of the (1-sigma) measurement uncertainties for the
+radiocarbon determinations. Must be the same length as <code>rc_determinations</code> and
+given in the same units.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>calibration_curve</code></td>
+<td>
+<p>A dataframe which must contain one column <code>calendar_age_BP</code>, and also
+columns <code>c14_age</code> and <code>c14_sig</code> or <code>f14c</code> and <code>f14c_sig</code> (or both sets).
+This format matches the curves supplied with this package, e.g., intcal20,
+intcal13, which contain all 5 columns.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>F14C_inputs</code></td>
+<td>
+<p><code>TRUE</code> if the provided <code>rc_determinations</code> are F<code class="reqn">{}^{14}</code>C
+concentrations and <code>FALSE</code> if they are radiocarbon ages. Defaults to <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_iter</code></td>
+<td>
+<p>The number of MCMC iterations (optional). Default is 100,000.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_thin</code></td>
+<td>
+<p>How much to thin the MCMC output (optional). Will store every
+<code>n_thin</code><code class="reqn">{}^\textrm{th}</code> iteration. 1 is no thinning, while a larger number will result
+in more thinning. Default is 10. Must choose an integer greater than 1. Overall
+number of MCMC realisations stored will be <code class="reqn">n_{\textrm{out}} =
+\textrm{floor}( n_{\textrm{iter}}/n_{\textrm{thin}}) + 1</code> so do not choose
+<code>n_thin</code> too large to ensure there are enough samples from the posterior to
+use for later inference.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use_F14C_space</code></td>
+<td>
+<p>If <code>TRUE</code> (default) the calculations within the function are carried
+out in F<code class="reqn">{}^{14}</code>C space. If <code>FALSE</code> they are carried out in <code class="reqn">{}^{14}</code>C
+age space. We recommend selecting <code>TRUE</code> as, for very old samples, calibrating in
+F<code class="reqn">{}^{14}</code>C space removes the potential affect of asymmetry in the radiocarbon age
+uncertainty.
+<em>Note:</em> This flag can be set independently of the format/scale on which
+<code>rc_determinations</code> were originally provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>show_progress</code></td>
+<td>
+<p>Whether to show a progress bar in the console during
+execution. Default is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>calendar_age_range</code></td>
+<td>
+<p>(Optional) Overall minimum and maximum calendar ages (in cal yr BP) permitted
+for the set of radiocarbon samples, i.e., <code>calendar_age_range[1]</code> &lt; <code class="reqn">\theta_1, \ldots, \theta_n</code> &lt;
+<code>calendar_age_range[1]</code>. This is used to bound the start and end of the Poisson process (so no events
+will be permitted to occur outside this interval). If not selected then automated selection will be
+made based on given <code>rc_determinations</code> and value of <code>bounding_range_prob_cutoff</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>calendar_grid_resolution</code></td>
+<td>
+<p>The spacing of the calendar age grid on which to restrict
+the potential calendar ages of the samples, e.g., calendar ages of samples are limited to being one of
+<code style="white-space: pre;">⁠t, t + resolution, t + 2 * resolution, ...⁠</code> Default is 1 (i.e., all calendar years in the overall
+calendar range are considered). Primarily used to speed-up code if have large range, when may select
+larger resolution.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior_h_shape, prior_h_rate</code></td>
+<td>
+<p>(Optional) Prior for the value of the Poisson Process rate (the height <code>rate_h</code>)
+in any specific interval:
+</p>
+<p style="text-align: center;"><code class="reqn">\textrm{rate}\_\textrm{h} \sim \textrm{Gamma}(
+\textrm{shape} = \textrm{prior}\_\textrm{h}\_\textrm{shape},
+\textrm{rate} = \textrm{prior}\_\textrm{h}\_\textrm{rate}).</code>
+</p>
+
+<p>If they are both <code>NA</code> then <code>prior_h_shape</code> is selected to be 1 (so <code>rate_h</code> follows an Exponential
+distribution) and <code>prior_h_rate</code> chosen adaptively (internally) to match <code>n_observations</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior_n_internal_changepoints_lambda</code></td>
+<td>
+<p>Prior mean for the number of internal changepoints
+in the rate <code class="reqn">\lambda(t)</code>.
+</p>
+<p style="text-align: center;"><code class="reqn">\textrm{n}\_\textrm{internal}\_\textrm{changepoints} \sim
+\textrm{Po}(\textrm{prior}\_\textrm{n}\_\textrm{internal}\_\textrm{changepoints}\_\textrm{lambda})</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k_max_internal_changepoints</code></td>
+<td>
+<p>Maximum permitted number of internal changepoints</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rescale_factor_rev_jump</code></td>
+<td>
+<p>Factor weighting probability of dimension change
+in the reversible jump update step for Poisson process <code>rate_h</code> and <code>rate_s</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bounding_range_prob_cutoff</code></td>
+<td>
+<p>Probability cut-off for choosing the bounds for the
+potential calendar ages for the observations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>initial_n_internal_changepoints</code></td>
+<td>
+<p>Number of internal changepoints to initialise MCMC sampler with.
+The default is 10 (so initialise with diffuse state). Will place these initial changepoints uniformly at random
+within overall calendar age range.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grid_extension_factor</code></td>
+<td>
+<p>If you adaptively select the <code>calendar_age_range</code> from <code>rc_determinations</code>, how
+far you wish to extend the grid beyond this adaptive minimum and maximum. The final range will be extended
+(equally on both sides) to cover <code>(1 + grid_extension_factor) * (calendar_age_range)</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use_fast, fast_approx_prob_cutoff</code></td>
+<td>
+<p>A flag to allow trimming the calendar age likelihood (i.e., reducing the
+range of calendar ages) for each individual sample to speed up the sampler. If <code>TRUE</code> (default), for each
+individual sample, those tail calendar ages (in the overall <code>calendar_age_grid</code>) with very small likelihoods will
+be trimmed (speeding up the updating of the calendar ages). If <code>TRUE</code> the probability cut-off to remove the tails
+is <code>fast_approx_prob_cutoff</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list with 7 items. The first 4 items contain output of the model, each of
+which has one dimension of size <code class="reqn">n_{\textrm{out}} =
+\textrm{floor}( n_{\textrm{iter}}/n_{\textrm{thin}}) + 1</code>. The rows in these items store
+the state of the MCMC from every <code class="reqn">n_{\textrm{thin}}</code><code class="reqn">{}^\textrm{th}</code> iteration:
+</p>
+
+<dl>
+<dt><code>rate_s</code></dt>
+<dd>
+<p>A list of length <code class="reqn">n_{\textrm{out}}</code> each entry giving the current set of
+(calendar age) changepoint locations in the piecewise-constant rate <code class="reqn">\lambda(t)</code>.</p>
+</dd>
+<dt><code>rate_h</code></dt>
+<dd>
+<p>A list of length <code class="reqn">n_{\textrm{out}}</code> each entry giving the current set of
+heights (values for the rate) in each piecewise-constant section of <code class="reqn">\lambda(t)</code>.</p>
+</dd>
+<dt><code>calendar_ages</code></dt>
+<dd>
+<p>An <code class="reqn">n_{\textrm{out}}</code> by <code class="reqn">n_{\textrm{obs}}</code>
+matrix. Gives the current estimate for the calendar age of each individual
+observation.</p>
+</dd>
+<dt><code>n_internal_changes</code></dt>
+<dd>
+<p>A vector of length <code class="reqn">n_{\textrm{out}}</code> giving the current number of
+internal changes in the value of <code class="reqn">\lambda(t)</code>.</p>
+</dd>
+</dl>
+<p>where <code class="reqn">n_{\textrm{obs}}</code> is the number of radiocarbon observations, i.e.,
+the length of <code>rc_determinations</code>.
+</p>
+<p>The remaining items give information about input data, input parameters (or
+those calculated) and update_type
+</p>
+
+<dl>
+<dt><code>update_type</code></dt>
+<dd>
+<p>A string that always has the value "RJPP".</p>
+</dd>
+<dt><code>input_data</code></dt>
+<dd>
+<p>A list containing the <code class="reqn">{}^{14}</code>C data used, and the name of
+the calibration curve used.</p>
+</dd>
+<dt><code>input_parameters</code></dt>
+<dd>
+<p>A list containing the values of the fixed
+parameters <code>pp_cal_age_range</code>, <code>prior_n_internal_changepoints_lambda</code>,
+<code>k_max_internal_changepoints</code>, <code>prior_h_shape</code>, <code>prior_h_rate</code>, <code>rescale_factor_rev_jump</code>,
+<code>calendar_age_grid</code>, <code>calendar_grid_resolution</code>, <code>n_iter</code> and <code>n_thin</code>.</p>
+</dd>
+</dl>
+<h3>Examples</h3>
+
+<pre><code class="language-R"># NOTE: This example is shown with a small n_iter to speed up execution.
+# When you run ensure n_iter gives convergence (try function default).
+
+pp_output &lt;- PPcalibrate(
+    pp_uniform_phase$c14_age,
+    pp_uniform_phase$c14_sig,
+    intcal20,
+    n_iter = 100,
+    show_progress = FALSE)
+</code></pre>
+
+
+</div>

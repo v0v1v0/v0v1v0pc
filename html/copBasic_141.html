@@ -1,0 +1,122 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>surfuncCOP</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>The Joint Survival Function</h2>
+
+<h3>Description</h3>
+
+<p>Compute the <em>joint survival function</em> for a copula (Nelsen, 2006, p. 33), which is defined as
+</p>
+<p style="text-align: center;"><code class="reqn">\overline{\mathbf{C}}(u,v) = \mathrm{Pr}[U &gt; u, V &gt; v] = 1 - u - v + \mathbf{C}(u,v) = \hat{\mathbf{C}}(1-u, 1-v)\mbox{,}</code>
+</p>
+
+<p>where <code class="reqn">\hat{\mathbf{C}}(u',v')</code> is the <em>survival copula</em> (<code>surCOP</code>), which is defined by
+</p>
+<p style="text-align: center;"><code class="reqn">\hat{\mathbf{C}}(u',v') = \mathrm{Pr}[U &gt; u, V &gt; v] =  u' + v' - 1 + \mathbf{C}(1-u',1-v')\mbox{.}</code>
+</p>
+
+<p>Although the joint survival function is an expression of the probability that both <code class="reqn">U &gt; v</code> and <code class="reqn">U &gt; v</code>, <code class="reqn">\overline{\mathbf{C}}(u,v)</code> is not a copula.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">surfuncCOP(u, v, cop=NULL, para=NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">u</code> in the <code class="reqn">X</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>v</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">v</code> in the <code class="reqn">Y</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cop</code></td>
+<td>
+<p>A copula function;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>Vector of parameters or other data structure, if needed, to pass to the copula; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass (such as parameters, if needed, for the copula in the form of a list.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Value(s) for the joint survival function are returned.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Nelsen, R.B., 2006, An introduction to copulas: New York, Springer, 269 p.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>surCOP</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">"MOcop.formula" &lt;- function(u,v, para=para, ...) {
+   alpha &lt;- para[1]; beta &lt;- para[2]; return(min(v*u^(1-alpha), u*v^(1-beta)))
+}
+"MOcop" &lt;- function(u,v, ...) { asCOP(u,v, f=MOcop.formula, ...) }
+u &lt;- 0.2; v &lt;- 0.75; ab &lt;- c(1.5, 0.3)
+# U **and** V are less than or equal to a threshold +
+# U **or**  V are less than or equal to a threshold
+surCOP(1-u,1-v, cop=MOcop, para=ab) + duCOP(u,v, cop=MOcop, para=ab) # UNITY
+surfuncCOP(u,v, cop=MOcop, para=ab) + duCOP(u,v, cop=MOcop, para=ab) # UNITY
+
+## Not run: 
+# The joint survival function is not a copula. So, it does not increases to the upper
+# right with increasing exceedance probabilities. Let us show that by hacking the surCOP
+# function into a copula for feeding back into the algorithmic framework of copBasic.
+UsersCop &lt;- function(u,v, para=NULL) {
+     afunc &lt;- function(u,v, theta=para) { surfuncCOP(u, v, cop=N4212cop, para=theta) }
+     return(asCOP(u,v, f=afunc)) }
+image(gridCOP(cop=UsersCop, para=1.15), col=terrain.colors(20),
+      xlab="U, NONEXCEEDANCE PROBABILITY", ylab="V, NONEXCEEDANCE PROBABILITY") #
+## End(Not run)
+
+## Not run: 
+# Conditional return period (Salvadori et al., 2007, p. 159)
+UV &lt;- simCOP(n=100000, cop=PLACKETTcop, para=5, graphics=FALSE)
+u &lt;- 0.5; v &lt;- 0.99; cd &lt;- UV$V[UV$U &gt; u]
+by.counting &lt;- length(cd[cd &gt; v]) / length(cd)                  # 0.0172
+by.theo     &lt;- surfuncCOP(u,v, cop=PLACKETTcop, para=5) / (1-u) # 0.0166
+by.ec       &lt;- surfuncCOP(u,v, cop=EMPIRcop, para=UV)   / (1-u) # 0.0189
+print(1/by.theo) # conditional return period for V &gt; 0.99 given U &gt; 0.5 
+## End(Not run)
+</code></pre>
+
+
+</div>

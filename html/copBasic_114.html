@@ -1,0 +1,159 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>PLACKETTpar</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate the Parameter of the Plackett Copula</h2>
+
+<h3>Description</h3>
+
+<p>The parameter <code class="reqn">\Theta</code> of the <em>Plackett copula</em> (Nelsen, 2006, pp. 89–92) (<code>PLACKETTcop</code> or <code>PLcop</code>) is related to the <em>Spearman Rho</em> (<code class="reqn">\rho_S \ne 1</code>, see <code>rhoCOP</code>)
+</p>
+<p style="text-align: center;"><code class="reqn">\rho_S(\Theta) = \frac{\Theta + 1}{\Theta - 1} - \frac{2\Theta\log(\Theta)}{(\Theta - 1)^2}\mbox{.}</code>
+</p>
+
+<p>Alternatively, the parameter can be estimated using a <em>median-split estimator</em>, which is best shown as an algorithm. First, compute the two medians:
+</p>
+<pre>
+  medx &lt;- median(x); medy &lt;- median(y)
+</pre>
+<p>Second and third, compute the number of occurrences where both values are less than their medians and express that as a probability:
+</p>
+<pre>
+  k &lt;- length(x[x &lt; medx &amp; y &lt; medy]); m &lt;- k / length(x)
+</pre>
+<p>Finally, the median-split estimator of  <code class="reqn">\Theta</code> is computed by
+</p>
+<p style="text-align: center;"><code class="reqn">\Theta = \frac{4m^2}{(1-2m)^2}\mbox{.}</code>
+</p>
+
+<p>Nelsen (2006, p. 92) and Salvadori <em>et al.</em> (2007, p. 247) provide further details. The input values <code>x</code> and <code>y</code> are <em>not used</em> for the median-split estimator if <em>Spearman Rho</em> (see <code>rhoCOP</code>) is provided by <code>rho</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">PLACKETTpar(x, y, rho=NULL, byrho=FALSE, cor=NULL, ...)
+      PLpar(x, y, rho=NULL, byrho=FALSE, cor=NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Vector of values for random variable <code class="reqn">X</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Vector of values for random variable <code class="reqn">Y</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rho</code></td>
+<td>
+<p>Spearman Rho and <code>byrho</code> is set to <code>TRUE</code> automatically;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>byrho</code></td>
+<td>
+<p>Should Spearman Rho be used instead of the median-split estimator;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cor</code></td>
+<td>
+<p>A <span class="pkg">copBasic</span> syntax for “the correlation coefficient” suitable for the copula—a synonym for <code>rho</code>; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A value for the Plackett copula <code class="reqn">\Theta</code> is returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Evidently there “does not appear to be a closed form for <code class="reqn">\tau(\Theta)</code>” (Fredricks and Nelsen, 2007, p. 2147),  but given <code class="reqn">\rho(\Theta)</code>, the equivalent <code class="reqn">\tau(\Theta)</code> can be computed by either the <code>tauCOP</code> function or by approximation. One of the Examples sweeps through <code class="reqn">\rho \mapsto [0,1; \Delta\rho{=}\delta]</code>, fits the Plackett <code class="reqn">\theta(\rho)</code>, and then solves for Kendall Tau <code class="reqn">\tau(\theta)</code> using <code>tauCOP</code>. A polynomial is then fit between <code class="reqn">\tau</code> and <code class="reqn">\rho</code> to provide rapid conversion between <code class="reqn">|\rho|</code> and <code class="reqn">\tau</code>, where the residual standard error is 0.0005705, adjusted R-squared is <code class="reqn">\approx 1</code>, the maximum residual is <code class="reqn">\epsilon &lt; 0.006</code>. Because of symmetry, it is only necessary to fit positive association and reflect the result by the sign of <code class="reqn">\rho</code>. This polynomial is from the <code>Examples</code> is
+</p>
+<pre>
+  rho &lt;- 0.920698
+  "getPLACKETTtau" &lt;- function(rho) {
+     taupoly &lt;-   0.6229945*abs(rho)   +   1.1621854*abs(rho)^2 -
+                 10.7424188*abs(rho)^3 +  48.9687845*abs(rho)^4 -
+                119.0640264*abs(rho)^5 + 160.0438496*abs(rho)^6 -
+                111.8403591*abs(rho)^7 +  31.8054602*abs(rho)^8
+     return(sign(rho)*taupoly)
+  }
+  getPLACKETTtau(rho) # 0.7777726
+</pre>
+<p>The following code might be useful in some applications for the inversion of the polynomial for the <code class="reqn">\rho</code> as a function of <code class="reqn">\tau</code>:
+</p>
+<pre>
+  "fun" &lt;- function(rho, tau=NULL) {tp &lt;- getPLACKETTtau(rho); return(tau-tp)}
+   tau  &lt;- 0.78
+   rho  &lt;- uniroot(fun, interval=c(0, 1), tau=tau)$root # 0.9220636
+</pre>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Fredricks, G.A, and Nelsen, R.B., 2007, On the relationship between Spearman's rho and Kendall's tau for pairs of continuous random variables: Journal of Statistical Planning and Inference, v. 137, pp. 2143–2150.
+</p>
+<p>Nelsen, R.B., 2006, An introduction to copulas: New York, Springer, 269 p.
+</p>
+<p>Salvadori, G., De Michele, C., Kottegoda, N.T., and Rosso, R., 2007, Extremes in Nature—An approach using copulas: Springer, 289 p.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>PLACKETTcop</code>, <code>PLcop</code>, <code>PLACKETTsim</code>, <code>rhoCOP</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+Q1 &lt;- rnorm(1000); Q2 &lt;- Q1 + rnorm(1000)
+PLpar(Q1, Q2); PLpar(Q1, Q2, byrho=TRUE) # two estimates for same data
+PLpar(rho= 0.76) # positive association
+PLpar(rho=-0.76) # negative association
+tauCOP(cop=PLcop, para=PLpar(rho=-0.15, by.rho=TRUE)) #
+## End(Not run)
+
+## Not run: 
+RHOS &lt;- seq(0, 0.990, by=0.002); TAUS &lt;- rep(NA, length(RHOS))
+for(i in 1:length(RHOS)) {
+   #message("Spearman Rho: ", RHOS[i])
+   theta &lt;- PLACKETTpar(rho=RHOS[i], by.rho=TRUE); tau &lt;- NA
+   try(tau &lt;- tauCOP(cop=PLACKETTcop, para=theta), silent=TRUE)
+   TAUS[i] &lt;- ifelse(is.null(tau), NA, tau)
+}
+LM &lt;- lm(TAUS~  RHOS    + I(RHOS^2) + I(RHOS^3) + I(RHOS^4) +
+              I(RHOS^5) + I(RHOS^6) + I(RHOS^7) + I(RHOS^8) - 1)
+plot(RHOS,TAUS, type="l", xlab="abs(Spearman Rho)", ylab="abs(Kendall Tau)")
+lines(RHOS,fitted.values(LM), col=3)#
+## End(Not run)
+</code></pre>
+
+
+</div>

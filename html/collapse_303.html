@@ -1,0 +1,172 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fquantile</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fast (Weighted) Sample Quantiles and Range</h2>
+
+<h3>Description</h3>
+
+<p>A faster alternative to <code>quantile</code> (written fully in C), that supports sampling weights, and can also quickly compute quantiles from an ordering vector (e.g. <code>order(x)</code>). <code>frange</code> provides a fast alternative to <code>range</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fquantile(x, probs = c(0, 0.25, 0.5, 0.75, 1), w = NULL,
+          o = if(length(x) &gt; 1e5L &amp;&amp; length(probs) &gt; log(length(x)))
+              radixorder(x) else NULL,
+          na.rm = .op[["na.rm"]], type = 7L, names = TRUE,
+          check.o = is.null(attr(o, "sorted")))
+
+# Programmers version: no names, intelligent defaults, or checks
+.quantile(x, probs = c(0, 0.25, 0.5, 0.75, 1), w = NULL, o = NULL,
+          na.rm = TRUE, type = 7L, names = FALSE, check.o = FALSE)
+
+# Fast range (min and max)
+frange(x, na.rm = .op[["na.rm"]], finite = FALSE)
+.range(x, na.rm = TRUE, finite = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a numeric or integer vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>probs</code></td>
+<td>
+<p>numeric vector of probabilities with values in [0,1].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>a numeric vector of sampling weights. Missing weights are only supported if <code>x</code> is also missing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>o</code></td>
+<td>
+<p>integer. An vector giving the ordering of the elements in <code>x</code>, such that <code>identical(x[o], sort(x))</code>. If available this considerably speeds up the estimation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.rm</code></td>
+<td>
+<p>logical. Remove missing values, default <code>TRUE</code>. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>finite</code></td>
+<td>
+<p>logical. Omit all non-finite values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>integer. Quantile types 5-9. See <code>quantile</code>. Further details are provided in Hyndman and Fan (1996) who recommended type 8. The default method is type 7.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>names</code></td>
+<td>
+<p>logical. Generates names of the form <code>paste0(round(probs * 100, 1), "%")</code> (in C). Set to <code>FALSE</code> for speedup. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>check.o</code></td>
+<td>
+<p>logical. If <code>o</code> is supplied, <code>TRUE</code> runs through <code>o</code> once and checks that it is valid, i.e. that each element is in <code>[1, length(x)]</code>. Set to <code>FALSE</code> for significant speedup if <code>o</code> is known to be valid. </p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>fquantile</code> is implemented using a quickselect algorithm in C, inspired by <em>data.table</em>'s <code>gmedian</code>. The algorithm is applied incrementally to different sections of the array to find individual quantiles. If many quantile probabilities are requested, sorting the whole array with the fast <code>radixorder</code> algorithm is more efficient. The default threshold for this (<code>length(x) &gt; 1e5L &amp;&amp; length(probs) &gt; log(length(x))</code>) is conservative, given that quickselect is generally more efficient on longitudinal data with similar values repeated by groups. With random data, my investigations yield that a threshold of <code>length(probs) &gt; log10(length(x))</code> would be more appropriate.
+</p>
+<p>Weighted quantile estimation, in a nutshell, is done by internally calling <code>radixorder(x)</code> (unless <code>o</code> is supplied), and summing the weights in order until the lowest required order statistic <code>j</code> is found, which corresponds to exceeding a target sum of weights that is a function of the probability <code>p</code>, the quantile method (see <code>quantile</code>), the total sum of weights, and the smallest (non-zero) weight. For quantile type 7 the target sum is <code>sumwp = (sum(w) - min(w)) * p</code> (resembling <code>(n - 1) * p</code> in the unweighted case). Then, a continuous index <code>h</code> in [0, 1] is determined as one minus the difference between the sum of weights associated with <code>j</code> and the target sum, divided by the weight of element <code>j</code>, that is <code>h = 1 - (sumwj - sumwp) / w[j]</code>. A weighted quantile can then be computed as a weighted average of 2 order statistics, exactly as in the unweighted case: <code>WQ[i](p) = (1 - h) x[j] + h x[j+1]</code>. If the order statistic <code>j+1</code> has a zero weight, <code>j+2</code> is taken (or <code>j+3</code> if <code>j+2</code> also has zero weight etc..). The Examples section provides a demonstration in R that is roughly equivalent to the algorithm just outlined.
+</p>
+<p><code>frange</code> is considerably more efficient than <code>range</code>, which calls both <code>min</code> and <code>max</code>, and thus requires 2 full passes instead of 1 required by <code>frange</code>. If only probabilities <code>0</code> and <code>1</code> are requested, <code>fquantile</code> internally calls <code>frange</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A vector of quantiles. If <code>names = TRUE</code>, <code>fquantile</code> generates names as <code>paste0(round(probs * 100, 1), "%")</code> (in C).
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fnth</code>, Fast Statistical Functions, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">frange(mtcars$mpg)
+
+## Checking computational equivalence to stats::quantile()
+w = alloc(abs(rnorm(1)), 32)
+o = radixorder(mtcars$mpg)
+for (i in 5:9) print(all_obj_equal(fquantile(mtcars$mpg, type = i),
+                                   fquantile(mtcars$mpg, type = i, w = w),
+                                   fquantile(mtcars$mpg, type = i, o = o),
+                                   fquantile(mtcars$mpg, type = i, w = w, o = o),
+                                    quantile(mtcars$mpg, type = i)))
+
+## Demonstaration: weighted quantiles type 7 in R
+wquantile7R &lt;- function(x, w, probs = c(0.25, 0.5, 0.75), na.rm = TRUE, names = TRUE) {
+  if(na.rm &amp;&amp; anyNA(x)) {             # Removing missing values (only in x)
+    cc = whichNA(x, invert = TRUE)    # The C code first calls radixorder(x), which places
+    x = x[cc]; w = w[cc]              # missing values last, so removing = early termination
+  }
+  if(anyv(w, 0)) {                    # Removing zero weights
+    nzw = whichv(w, 0, invert = TRUE) # In C, skipping zero weight order statistics is built
+    x = x[nzw]; w = w[nzw]            # into the quantile algorithm, as outlined above
+  }
+  o = radixorder(x)                   # Ordering
+  wo = w[o]
+  w_cs = cumsum(wo)                   # Cumulative sum
+  sumwp = sum(w)                      # Computing sum(w) - min(w)
+  sumwp = sumwp - wo[1L]
+  sumwp = sumwp * probs               # Target sums of weights for quantile type 7
+  res = sapply(sumwp, function(tsump) {
+    j = which.max(w_cs &gt; tsump)           # Lower order statistic
+    hl = (w_cs[j] - tsump) / wo[j]        # Index weight of x[j]  (h = 1 - hl)
+    hl * x[o[j]] + (1 - hl) * x[o[j+1L]]  # Weighted quantile
+  })
+  if(names) names(res) = paste0(as.integer(probs * 100), "%")
+  res
+} # Note: doesn't work for min and max. Overall the C code is significantly more rigorous.
+
+wquantile7R(mtcars$mpg, mtcars$wt)
+
+all.equal(wquantile7R(mtcars$mpg, mtcars$wt),
+          fquantile(mtcars$mpg, c(0.25, 0.5, 0.75), mtcars$wt))
+
+## Efficient grouped quantile estimation: use .quantile for less call overhead
+BY(mtcars$mpg, mtcars$cyl, .quantile, names = TRUE, expand.wide = TRUE)
+BY(mtcars, mtcars$cyl, .quantile, names = TRUE)
+library(magrittr)
+mtcars |&gt; fgroup_by(cyl) |&gt; BY(.quantile)
+
+## With weights
+BY(mtcars$mpg, mtcars$cyl, .quantile, w = mtcars$wt, names = TRUE, expand.wide = TRUE)
+BY(mtcars, mtcars$cyl, .quantile, w = mtcars$wt, names = TRUE)
+mtcars |&gt; fgroup_by(cyl) |&gt; fselect(-wt) |&gt; BY(.quantile, w = mtcars$wt)
+mtcars |&gt; fgroup_by(cyl) |&gt; fsummarise(across(-wt, .quantile, w = wt))
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,266 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>calibrate</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fit model parameters to experimental data</h2>
+
+<h3>Description</h3>
+
+<p>The function <code>calibrate()</code> performs the calibration (fitting) of model
+parameters to observed data. The data can originate from one or more experiments or
+trials. Experimental conditions, such as model parameters and exposure
+level, can differ between trials; fitting can be performed on all datasets
+at the same time.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">calibrate(x, ...)
+
+## S4 method for signature 'EffectScenario'
+calibrate(
+  x,
+  par,
+  data,
+  endpoint = deprecated(),
+  output,
+  by,
+  metric_fun = deprecated(),
+  err_fun,
+  as_tibble = deprecated(),
+  catch_errors = deprecated(),
+  verbose = TRUE,
+  ...
+)
+
+## S4 method for signature 'CalibrationSet'
+calibrate(x, par, output, err_fun, verbose = TRUE, ...)
+
+## S4 method for signature 'list'
+calibrate(
+  x,
+  par,
+  endpoint = deprecated(),
+  output,
+  metric_fun = deprecated(),
+  metric_total = deprecated(),
+  err_fun,
+  as_tibble = deprecated(),
+  catch_errors = deprecated(),
+  verbose = TRUE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>either a single scenario or a list of caliset objects to be fitted</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional parameters passed on to <code>stats::optim()</code> and <code>simulate()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>par</code></td>
+<td>
+<p>named numeric vector with parameters to fit and their start values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p><code>data.frame</code> with two or more columns with experimental data,
+1st column must contain time points, the following columns may values
+which the scenario is fitted to.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>endpoint</code></td>
+<td>
+<p><em>deprecated</em> <code>character</code>, please use <code>output</code> instead</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output</code></td>
+<td>
+<p><code>character</code>, name of a single output column of <code>simulate()</code> to
+optimize on</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by</code></td>
+<td>
+<p>optional <code>character</code>, groups and splits the experimental data
+into multiple distinct trials and datasets before fitting</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metric_fun</code></td>
+<td>
+<p><em>deprecated</em>, please use <code>err_fun</code> instead</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>err_fun</code></td>
+<td>
+<p>vectorized error function to calculate an error term that is
+minimized during optimization, must accept exactly four vectorized
+arguments, defaults to sum of squared errors</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>as_tibble</code></td>
+<td>
+<p><em>deprecated</em>, result can no longer be returned as a tibble</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>catch_errors</code></td>
+<td>
+<p><em>deprecated</em>, simulation errors are always caught</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p><code>logical</code>, if <code>TRUE</code> then debug outputs are displayed during
+optimization</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metric_total</code></td>
+<td>
+<p><em>deprecated</em></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Fitting of model parameters can be performed in two ways:
+</p>
+
+<ol>
+<li>
+<p> A single scenario is fitted to a single dataset.
+The dataset must represent a time-series of an output variable of the
+model, e.g. observed biomass over time (effect data). The dataset can represent
+results of one or more experimental replicates under identical conditions.
+</p>
+</li>
+<li>
+<p> One or more datasets of observed data are fitted each to a scenario which
+describes the experimental conditions during observation, such as exposure
+level and environmental properties. Each combination of dataset and scenario
+is represented by a calibration set. During fitting,
+all <em>calibration sets</em> are evaluated and a total error term is calculated
+over all observed and predicted values.
+</p>
+</li>
+</ol>
+<h4>Observed data</h4>
+
+<p>Experimental, or effect, data must be supplied as a <code>data.frame</code> in long format
+with at least two columns: the first column contains <code>numeric</code> timestamps and
+the remaining columns must contain the observed quantity. The dataset must
+contain a column that which matches with the contents of parameter <code>output</code>.
+</p>
+<p>As an example, the simulation result of Lemna_Schmitt model contains the
+output column <em>biomass</em> (<code>BM</code>), amongst others. To fit model parameters of said
+<em>Lemna_Schmitt</em> scenario based on observed biomass, the observed data must
+contain a column named <code>BM</code> which represents the observed biomass.
+A minimal observed dataset could look like this:
+</p>
+<div class="sourceCode"><pre>observed &lt;- data.frame(time=c(0,  7, 14, 21),
+                       BM=c( 12, 23, 37, 56))
+</pre></div>
+
+
+
+<h4>Error function</h4>
+
+<p>By default, the total sum of squared errors is used as the target
+function which is minimized during fitting. A custom error function can be
+supplied by the user: The function must accept four vectorized
+arguments and return a numeric of length one, i.e. the total error value
+which gets <em>minimized</em> by <code>calibrate()</code>.
+</p>
+<p>Example of a custom error function which returns the sum of absolute errors:
+</p>
+<div class="sourceCode"><pre>my_absolute_error &lt;- function(observed, predicted, weights, tags) {
+  sum(abs(observed - predicted))
+}
+</pre></div>
+<p>The arguments to the error function will contain all observed and predicted
+values, as well as any weights and tags that were defined by the <em>calibration sets</em>.
+As tags are optional, the fourth argument may be a list containing <code>NULL</code> values.
+The fourth argument can be used to pass additional information to the error
+function: For example, the tag may identify the study from where the data
+originates from and the error function could group and evaluate the data
+accordingly.
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>A list of fitted parameters (as produced by <code>stats::optim()</code>)
+is returned.
+</p>
+
+
+<h3>Methods (by class)</h3>
+
+
+<ul>
+<li> <p><code>calibrate(EffectScenario)</code>: Fit single scenario using a dataset
+</p>
+</li>
+<li> <p><code>calibrate(CalibrationSet)</code>: Fit using a CalibrationSet
+</p>
+</li>
+<li> <p><code>calibrate(list)</code>: Fit using a list of caliset objects
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(dplyr)
+
+# Get observed biomass during control experiment by Schmitt et al. (2013)
+observed &lt;- Schmitt2013 %&gt;%
+  filter(ID == "T0") %&gt;%
+  select(t, BM=obs)
+
+# Create a scenario that represents conditions during experiment
+scenario &lt;- metsulfuron %&gt;%
+  set_param(c(k_phot_fix=TRUE, k_resp=0, Emax=1)) %&gt;%
+  set_init(c(BM=12)) %&gt;%
+  set_noexposure()
+
+# Fit parameter 'k_phot_max' to observed biomass growth from experiment
+calibrate(
+  scenario,
+  par=c(k_phot_max=1),
+  data=observed,
+  output="BM",
+  method="Brent", # Brent is recommended for one-dimensional optimization
+  lower=0,        # lower parameter boundary
+  upper=0.5       # upper parameter boundary
+) -&gt; fit
+fit$par
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,229 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>conText</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Embedding regression</h2>
+
+<h3>Description</h3>
+
+<p>Estimates an embedding regression model with options to use bootstrapping to estimate confidence
+intervals and a permutation test for inference (see https://github.com/prodriguezsosa/conText for details.)
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">conText(
+  formula,
+  data,
+  pre_trained,
+  transform = TRUE,
+  transform_matrix,
+  bootstrap = TRUE,
+  num_bootstraps = 100,
+  confidence_level = 0.95,
+  stratify = FALSE,
+  permute = TRUE,
+  num_permutations = 100,
+  window = 6L,
+  valuetype = c("glob", "regex", "fixed"),
+  case_insensitive = TRUE,
+  hard_cut = FALSE,
+  verbose = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>a symbolic description of the model to be fitted with a target word as a DV e.g.
+<code>immigrant ~ party + gender</code>. To use a phrase as a DV, place it in quotations e.g.
+<code>"immigrant refugees" ~ party + gender</code>. To use all covariates included in the data,
+you can use <code>.</code> on RHS, e.g.<code>immigrant ~ .</code>. If you wish to treat the full document as you DV, rather
+than a single target word, use <code>.</code> on the LHS e.g. <code>. ~ party + gender</code>. If you wish to use all covariates
+on the RHS use <code>immigrant ~ .</code>. Any <code>character</code> or <code>factor</code> covariates will automatically be converted
+to a set of binary (<code>0/1</code>s) indicator variables for each group, leaving the first level out of the regression.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a quanteda <code>tokens-class</code> object with the necessary document variables. Covariates must be
+either binary indicator variables or "trasnformable" into binary indicator variables. conText will automatically
+transform any non-indicator variables into binary indicator variables (multiple if more than 2 classes),
+leaving out a "base" category.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pre_trained</code></td>
+<td>
+<p>(numeric) a F x D matrix corresponding to pretrained embeddings.
+F = number of features and D = embedding dimensions.
+rownames(pre_trained) = set of features for which there is a pre-trained embedding.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>transform</code></td>
+<td>
+<p>(logical) if TRUE (default) apply the 'a la carte' transformation,
+if FALSE ouput untransformed averaged embeddings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>transform_matrix</code></td>
+<td>
+<p>(numeric) a D x D 'a la carte' transformation matrix.
+D = dimensions of pretrained embeddings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bootstrap</code></td>
+<td>
+<p>(logical) if TRUE, use bootstrapping – sample from texts with replacement and
+re-run regression on each sample. Required to get std. errors.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>num_bootstraps</code></td>
+<td>
+<p>(numeric) number of bootstraps to use (at least 100)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>confidence_level</code></td>
+<td>
+<p>(numeric in (0,1)) confidence level e.g. 0.95</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stratify</code></td>
+<td>
+<p>(logical) if TRUE, stratify by discrete covariates when bootstrapping.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>permute</code></td>
+<td>
+<p>(logical) if TRUE, compute empirical p-values using permutation test</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>num_permutations</code></td>
+<td>
+<p>(numeric) number of permutations to use</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>window</code></td>
+<td>
+<p>the number of context words to be displayed around the keyword</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>valuetype</code></td>
+<td>
+<p>the type of pattern matching: <code>"glob"</code> for "glob"-style
+wildcard expressions; <code>"regex"</code> for regular expressions; or <code>"fixed"</code> for
+exact matching. See valuetype for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>case_insensitive</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, ignore case when matching a
+<code>pattern</code> or dictionary values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hard_cut</code></td>
+<td>
+<p>(logical) - if TRUE then a context must have <code>window</code> x 2 tokens,
+if FALSE it can have <code>window</code> x 2 or fewer (e.g. if a doc begins with a target word,
+then context will have <code>window</code> tokens rather than <code>window</code> x 2)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>(logical) - if TRUE, report the documents that had
+no overlapping features with the pretrained embeddings provided.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a <code>conText-class</code> object - a D x M matrix with D = dimensions
+of the pre-trained feature embeddings provided and M = number of covariates
+including the intercept. These represent the estimated regression coefficients.
+These can be combined to compute ALC embeddings for different combinations of covariates.
+The object also includes various informative attributes, importantly
+a <code>data.frame</code> with the following columns:
+</p>
+
+<dl>
+<dt><code>coefficient</code></dt>
+<dd>
+<p>(character) name of (covariate) coefficient.</p>
+</dd>
+<dt><code>value</code></dt>
+<dd>
+<p>(numeric) norm of the corresponding beta coefficient.</p>
+</dd>
+<dt><code>std.error</code></dt>
+<dd>
+<p>(numeric) (if bootstrap = TRUE) std. error of the norm of the beta coefficient.</p>
+</dd>
+<dt><code>lower.ci</code></dt>
+<dd>
+<p>(numeric) (if bootstrap = TRUE) lower bound of the confidence interval.</p>
+</dd>
+<dt><code>upper.ci</code></dt>
+<dd>
+<p>(numeric) (if bootstrap = TRUE) upper bound of the confidence interval.</p>
+</dd>
+<dt><code>p.value</code></dt>
+<dd>
+<p>(numeric) (if permute = TRUE) empirical p.value of the norm of the coefficient.</p>
+</dd>
+</dl>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+library(quanteda)
+
+# tokenize corpus
+toks &lt;- tokens(cr_sample_corpus)
+
+## given the target word "immigration"
+set.seed(2021L)
+model1 &lt;- conText(formula = immigration ~ party + gender,
+                 data = toks,
+                 pre_trained = cr_glove_subset,
+                 transform = TRUE, transform_matrix = cr_transform,
+                 bootstrap = TRUE,
+                 num_bootstraps = 100,
+                 confidence_level = 0.95,
+                 stratify = FALSE,
+                 permute = TRUE, num_permutations = 10,
+                 window = 6, case_insensitive = TRUE,
+                 verbose = FALSE)
+
+# notice, character/factor covariates are automatically "dummified"
+rownames(model1)
+
+# the beta coefficient 'partyR' in this case corresponds to the alc embedding
+# of "immigration" for Republican party speeches
+
+# (normed) coefficient table
+model1@normed_coefficients
+
+</code></pre>
+
+
+</div>

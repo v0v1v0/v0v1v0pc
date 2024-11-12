@@ -1,0 +1,106 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Closed Testing</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Closed Testing for Exploratory Research</h2>
+
+<h3>Description</h3>
+
+<p>Performs the closed testing procedure for user-specified local test.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R"> closed (test, hypotheses, alpha = 0.05, adjust=FALSE) </code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>test</code></td>
+<td>
+<p>A function that performs the local test. The function should accept a subvector of the <code>hypotheses</code> argument as input, and return a p-value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hypotheses</code></td>
+<td>
+<p>Identifiers of the collection of elementary hypotheses.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>The significance level of the test procedure. If set to <code>NA</code>, the function calculates adjusted p-values for each hypothesis in the closure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>adjust</code></td>
+<td>
+<p>Whether adjusted p-values should be calculated.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function <code>closed</code> performs the closed testing procedure on the collection <code>hypotheses</code>, testing all their intersection hypotheses and controlling the familywise error rate.</p>
+
+
+<h3>Value</h3>
+
+<p>The function <code>closed</code> returns an object of class <code>closure</code>.</p>
+
+
+<h3>Note</h3>
+
+<p>The number of intersection hypotheses is exponential in the number of elementary hypotheses. The number of elementary hypotheses is therefore limited to <code>log2(.Machine$integer.max+1)</code> (typically 31) for computational reasons.
+</p>
+<p>It is possible to set both <code>adjust</code> to <code>TRUE</code> and specify <code>alpha</code>. In that case, adjusted p-values are calculated up to a value <code>alpha</code>; all higher p-values are set to 1.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jelle Goeman: <a href="mailto:j.j.goeman@lumc.nl">j.j.goeman@lumc.nl</a></p>
+
+
+<h3>References</h3>
+
+<p>Goeman and Solari (2011) Statistical Science 26 (4) 584-597.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">  # Example: the birthwt data set from the MASS library
+  # We want to find variables associated with low birth weight
+  library(MASS)
+  fullfit &lt;- glm(low~age+lwt+race+smoke+ptl+ht+ui+ftv, family=binomial, data=birthwt)
+  hypotheses &lt;- c("age", "lwt", "race", "smoke", "ptl", "ht", "ui", "ftv")
+
+  # Define the local test to be used in the closed testing procedure
+  mytest &lt;- function(hyps) {
+    others &lt;- setdiff(hypotheses, hyps)
+    form &lt;- formula(paste(c("low~",  paste(c("1", others), collapse="+"))))
+    anov &lt;- anova(glm(form, data=birthwt, family=binomial), fullfit, test="Chisq")
+    res &lt;- anov$"Pr("[2]                    # for R &gt;= 2.14.0
+    if (is.null(res)) res &lt;- anov$"P("[2]   # earlier versions
+    res
+  }
+
+  # perform the closed testing
+  cl &lt;- closed(mytest, hypotheses)
+  cl
+
+  # how many variables among a chosen set are associated with the response?
+  pick(cl, c("ht", "lwt", "smoke", "ui"))
+  
+  # adjusted p-values and a confidence distribution
+  cl &lt;- closed(mytest, hypotheses, alpha=NA)
+  pick(cl, c("ht", "lwt", "smoke", "ui"))
+</code></pre>
+
+
+</div>

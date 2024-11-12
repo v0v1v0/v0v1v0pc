@@ -1,0 +1,189 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CSMES.ensNomCurve</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>CSMES Training Stage 2: Extract an ensemble nomination curve (cost curve- or Brier curve-based) from a set of Pareto-optimal ensemble classifiers</h2>
+
+<h3>Description</h3>
+
+<p>Generates an ensemble nomination curve from a set of Pareto-optimal ensemble definitions as identified through <code>CSMES.ensSel)</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CSMES.ensNomCurve(
+  ensSelModel,
+  memberPreds,
+  y,
+  curveType = c("costCurve", "brierSkew", "brierCost"),
+  method = c("classPreds", "probPreds"),
+  plotting = FALSE,
+  nrBootstraps = 1
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>ensSelModel</code></td>
+<td>
+<p>ensemble selection model (output of <code>CSMES.ensSel</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>memberPreds</code></td>
+<td>
+<p>matrix containing ensemble member library predictions</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Vector with true class labels. Currently, a dichotomous outcome variable is supported</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>curveType</code></td>
+<td>
+<p>the type of cost curve used to construct the ensemble nomination curve. Shoul be "brierCost","brierSkew" or "costCurve" (default).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>how are candidate ensemble learner predictions used to generate the ensemble nomination front? "classPreds" for class predictions (default), "probPreds" for probability predictions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plotting</code></td>
+<td>
+<p><code>TRUE</code> or <code>FALSE</code>: Should a plot be generated showing the Brier curve? Defaults to <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nrBootstraps</code></td>
+<td>
+<p>optionally, the ensemble nomination curve can be generated through bootstrapping. This argument specifies the number of iterations/bootstrap samples. Default is 1.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An object of the class <code>CSMES.ensNomCurve</code> which is a list with the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>nomcurve</code></td>
+<td>
+<p>the ensemble nomination curve</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>curves</code></td>
+<td>
+<p>individual cost curves or brier curves of ensemble members</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>intervals</code></td>
+<td>
+<p>resolution of the ensemble nomination curve</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>incidence</code></td>
+<td>
+<p>incidence (positive rate) of the outcome variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>area_under_curve</code></td>
+<td>
+<p>area under the ensemble nomination curve</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>method used to generate the ensemble nomination front:"classPreds" for class predictions (default), "probPreds" for probability predictions</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>curveType</code></td>
+<td>
+<p>the type of cost curve used to construct the ensemble nomination curve</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nrBootstraps</code></td>
+<td>
+<p>number of boostrap samples over which the ensemble nomination curve was estimated</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Koen W. De Bock, <a href="mailto:kdebock@audencia.com">kdebock@audencia.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>De Bock, K.W., Lessmann, S. And Coussement, K., Cost-sensitive business failure prediction
+when misclassification costs are uncertain: A heterogeneous ensemble selection approach,
+European Journal of Operational Research (2020), doi: 10.1016/j.ejor.2020.01.052.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>CSMES.ensSel</code>, <code>CSMES.predictPareto</code>, <code>CSMES.predict</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">##load data
+library(rpart)
+library(zoo)
+library(ROCR)
+library(mco)
+data(BFP)
+##generate random order vector
+BFP_r&lt;-BFP[sample(nrow(BFP),nrow(BFP)),]
+size&lt;-nrow(BFP_r)
+##size&lt;-300
+train&lt;-BFP_r[1:floor(size/3),]
+val&lt;-BFP_r[ceiling(size/3):floor(2*size/3),]
+test&lt;-BFP_r[ceiling(2*size/3):size,]
+##generate a list containing model specifications for 100 CART decisions trees varying in the cp
+##and minsplit parameters, and trained on bootstrap samples (bagging)
+rpartSpecs&lt;-list()
+for (i in 1:100){
+  data&lt;-train[sample(1:ncol(train),size=ncol(train),replace=TRUE),]
+  str&lt;-paste("rpartSpecs$rpart",i,"=rpart(as.formula(Class~.),data,method=\"class\",
+  control=rpart.control(minsplit=",round(runif(1, min = 1, max = 20)),",cp=",runif(1,
+  min = 0.05, max = 0.4),"))",sep="")
+  eval(parse(text=str))
+}
+##generate predictions for these models
+hillclimb&lt;-mat.or.vec(nrow(val),100)
+for (i in 1:100){
+  str&lt;-paste("hillclimb[,",i,"]=predict(rpartSpecs[[i]],newdata=val)[,2]",sep="")
+  eval(parse(text=str))
+}
+##score the validation set used for ensemble selection, to be used for ensemble selection
+ESmodel&lt;-CSMES.ensSel(hillclimb,val$Class,obj1="FNR",obj2="FPR",selType="selection",
+generations=10,popsize=12,plot=TRUE)
+## Create Ensemble nomination curve
+enc&lt;-CSMES.ensNomCurve(ESmodel,hillclimb,val$Class,curveType="costCurve",method="classPreds",
+plot=FALSE)
+</code></pre>
+
+
+</div>

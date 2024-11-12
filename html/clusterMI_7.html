@@ -1,0 +1,220 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>chooser</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Kfold cross-validation for specifying threshold r</h2>
+
+<h3>Description</h3>
+
+<p><code>chooser</code> returns a list specifying the optimal threshold r for each outcome as well as the associated set of explanatory variables selected, and the cross-validation errror for each value of the grid
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">chooser(
+  res.varsel,
+  K = 10,
+  seed = 12345,
+  listvar = NULL,
+  grid.r = seq(0, 1, 1/1000),
+  graph = TRUE,
+  printflag = TRUE,
+  nb.clust = NULL,
+  nnodes = NULL,
+  sizeblock = NULL,
+  method.select = NULL,
+  B = NULL,
+  modelNames = NULL,
+  nbvarused = NULL,
+  path.outfile = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>res.varsel</code></td>
+<td>
+<p>an output from the varselbest function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K</code></td>
+<td>
+<p>an integer given the number of folds</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>a integer</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>listvar</code></td>
+<td>
+<p>a vector of characters specifiying variables (outcomes) for which cross-validation should be done. By default, all variables that have been considered for varselbest are used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grid.r</code></td>
+<td>
+<p>a grid for the tuning parameter r</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>graph</code></td>
+<td>
+<p>a boolean. If TRUE, cross-validation results are printed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>printflag</code></td>
+<td>
+<p>a boolean. If TRUE, messages are printed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nb.clust</code></td>
+<td>
+<p>number of clusters. By default, the same as the one used in varselbest</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nnodes</code></td>
+<td>
+<p>an integer specifying the number of nodes for parallel computing. By default, the same as  the one used in varselbest</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sizeblock</code></td>
+<td>
+<p>number of sampled variables at each iteration. By default, the same as the one used in varselbest</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method.select</code></td>
+<td>
+<p>variable selection method used. By default, the same as the one used in varselbest</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p>number of iterations. By default, the same as the one used in varselbest</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelNames</code></td>
+<td>
+<p>mixture model specification for imputation of subsets. By default, the same as the one used in varselbest</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nbvarused</code></td>
+<td>
+<p>a maximal number of selected variables (can be required for a dataset with a large number of variables)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>path.outfile</code></td>
+<td>
+<p>a path for message redirection</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>varselbest</code> performs variable selection on random subsets of variables and, then, combines them to recover which explanatory variables are related to the response.
+More precisely, the outline of the algorithm are as follows: let consider a random subset of <code>sizeblock</code> among p variables.
+By choosing <code>sizeblock</code> small, this subset is low dimensional, allowing treatment of missing values by standard imputation method for clustered individuals.
+Then, any selection variable scheme can be applied (lasso, stepwise and knockoff are proposed by tuning the <code>method.select</code> argument).
+By resampling <code>B</code> times, a sample of size <code>sizeblock</code> among the p variables, we may count how many times, a variable is considered as significantly related to the response and how many times it is not.
+We need to define a threshold (<code>r</code>) to conclude if a given variable is significantly related to the response. <code>chooser</code> aims at finding the optimal value for the threshold r using Kfold cross-validation.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list where each object refers to an outcome variable called in the listvar argument. Each element is composed of three objects
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>r</code></td>
+<td>
+<p>the optimal value for the threshold</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>error</code></td>
+<td>
+<p>the cross-validation error for each value in <code>grid.r</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>selection</code></td>
+<td>
+<p>the subset of selected variables for the optimal threshold</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Bar-Hen, A. and Audigier, V., An ensemble learning method for variable selection: application to high dimensional data and missing values, Journal of Statistical Computation and Simulation, &lt;doi:10.1080/00949655.2022.2070621&gt;, 2022.
+</p>
+<p>Schafer, J. L. (1997) Analysis of Incomplete Multivariate Data. Chapman &amp; Hall, Chapter 9.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(wine)
+
+require(parallel)
+set.seed(123456)
+ref &lt;- wine$cult
+nb.clust &lt;- 3
+wine.na &lt;- wine
+wine.na$cult &lt;- NULL
+wine.na &lt;- prodna(wine.na)
+
+
+nnodes &lt;- 2 # parallel::detectCores()
+B &lt;- 100 #  Number of iterations
+m &lt;- 5 # Number of imputed data sets
+
+# variables selection for incomplete variable "alco"
+listvar &lt;- "alco"
+res.varsel &lt;- varselbest(data.na = wine.na,
+                         nb.clust = nb.clust,
+                         listvar = listvar,
+                         B = B,
+                         nnodes = nnodes)
+
+# frequency of selection
+propselect &lt;- res.varsel$proportion[listvar, ]
+
+#predictormatrix with the default threshold value                         
+predictmat &lt;- res.varsel$predictormatrix
+
+# r optimal and associated predictor matrix 
+res.chooser &lt;- chooser(res.varsel = res.varsel)
+thresh &lt;- res.chooser[[listvar]]$r
+is.selected &lt;- propselect&gt;=thresh
+predictmat[listvar, names(is.selected)] &lt;- as.numeric(is.selected)
+
+
+# imputation
+res.imp.select &lt;- imputedata(data.na = wine.na, method = "FCS-homo",
+                     nb.clust = nb.clust, predictmat = predictmat, m = m)
+
+
+</code></pre>
+
+
+</div>

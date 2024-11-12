@@ -1,0 +1,101 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>comparison_fft_ccf</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate translation alignment between a cell/region pair based on the
+Cross-Correlation Theorem.</h2>
+
+<h3>Description</h3>
+
+<p>Estimate translation alignment between a cell/region pair based on the
+Cross-Correlation Theorem.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">comparison_fft_ccf(cellHeightValues, regionHeightValues)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cellHeightValues</code></td>
+<td>
+<p>list/tibble column of x3p objects containing a
+reference scan's cells (as returned by comparison_cellDivision)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>regionHeightValues</code></td>
+<td>
+<p>list/tibble column of x3p objects containing a
+target scan's regions (as returned by comparison_getTargetRegions)</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list of the same length as the input containing data frames of the
+translation (x,y) values at which each reference cell is estimated to align
+in its associated target region and the CCF value at this alignment.
+</p>
+<p>a data frame containing the translation (x,y) at which the CCF was
+maximized in aligning a target scan region to its associated reference scan
+cell.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The FFT is not defined for matrices containing missing values. The
+missing values in the cell and region need to be replaced before using this
+function. See the comparison_replaceMissing function to replace
+missing values after standardization.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><a href="https://mathworld.wolfram.com/Cross-CorrelationTheorem.html">https://mathworld.wolfram.com/Cross-CorrelationTheorem.html</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data(fadul1.1_processed,fadul1.2_processed)
+
+cellTibble &lt;- fadul1.1_processed %&gt;%
+comparison_cellDivision(numCells = c(8,8)) %&gt;%
+dplyr::mutate(regionHeightValues =
+             comparison_getTargetRegions(cellHeightValues = cellHeightValues,
+                                         target = fadul1.2_processed)) %&gt;%
+dplyr::mutate(cellPropMissing =
+           comparison_calcPropMissing(heightValues = cellHeightValues),
+              regionPropMissing =
+           comparison_calcPropMissing(heightValues = regionHeightValues)) %&gt;%
+dplyr::filter(cellPropMissing &lt;= .85 &amp; regionPropMissing &lt;= .85) %&gt;%
+dplyr::mutate(cellHeightValues =
+        comparison_standardizeHeights(heightValues = cellHeightValues),
+             regionHeightValues =
+        comparison_standardizeHeights(heightValues = regionHeightValues)) %&gt;%
+dplyr::mutate(cellHeightValues =
+                  comparison_replaceMissing(heightValues = cellHeightValues),
+             regionHeightValues =
+            comparison_replaceMissing(heightValues = regionHeightValues)) %&gt;%
+dplyr::mutate(fft_ccf_df = comparison_fft_ccf(cellHeightValues,
+                                             regionHeightValues))
+
+cellTibble %&gt;%
+tidyr::unnest(cols = fft_ccf_df) %&gt;%
+head()
+
+</code></pre>
+
+
+</div>

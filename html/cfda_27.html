@@ -1,0 +1,130 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>predict.fmca</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Predict the principal components for new trajectories</h2>
+
+<h3>Description</h3>
+
+<p>Predict the principal components for new trajectories
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'fmca'
+predict(
+  object,
+  newdata = NULL,
+  method = c("precompute", "parallel"),
+  verbose = TRUE,
+  nCores = max(1, ceiling(detectCores()/2)),
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>output of compute_optimal_encoding function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdata</code></td>
+<td>
+<p>data.frame containing <code>id</code>, id of the trajectory, <code>time</code>, time at which a change occurs and
+<code>state</code>, associated state. All individuals must begin at the same time T0 and end at the same time Tmax
+(use <code>cut_data</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>computation method: "parallel" or "precompute": precompute all integrals
+(efficient when the number of unique time values is low)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>if TRUE print some information</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nCores</code></td>
+<td>
+<p>number of cores used for parallelization (only if method == "parallel"). Default is half the cores.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>parameters for <code>integrate</code> function (see details).</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>principal components for the individuals
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Quentin Grimonprez
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other encoding functions: 
+<code>compute_optimal_encoding()</code>,
+<code>get_encoding()</code>,
+<code>plot.fmca()</code>,
+<code>plotComponent()</code>,
+<code>plotEigenvalues()</code>,
+<code>print.fmca()</code>,
+<code>summary.fmca()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Simulate the Jukes-Cantor model of nucleotide replacement
+K &lt;- 4
+Tmax &lt;- 6
+PJK &lt;- matrix(1 / 3, nrow = K, ncol = K) - diag(rep(1 / 3, K))
+lambda_PJK &lt;- c(1, 1, 1, 1)
+d_JK &lt;- generate_Markov(
+  n = 10, K = K, P = PJK, lambda = lambda_PJK, Tmax = Tmax,
+  labels = c("A", "C", "G", "T")
+)
+d_JK2 &lt;- cut_data(d_JK, Tmax)
+
+# create basis object
+m &lt;- 6
+b &lt;- create.bspline.basis(c(0, Tmax), nbasis = m, norder = 4)
+
+# compute encoding
+encoding &lt;- compute_optimal_encoding(d_JK2, b, computeCI = FALSE, nCores = 1)
+
+# predict principal components
+d_JK_predict &lt;- generate_Markov(
+  n = 5, K = K, P = PJK, lambda = lambda_PJK, Tmax = Tmax,
+  labels = c("A", "C", "G", "T")
+)
+d_JK_predict2 &lt;- cut_data(d_JK, Tmax)
+
+pc &lt;- predict(encoding, d_JK_predict2, nCores = 1)
+
+
+</code></pre>
+
+
+</div>

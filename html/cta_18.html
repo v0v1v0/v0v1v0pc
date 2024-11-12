@@ -1,0 +1,1392 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>mph.fit</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fitting MPH and HLP Models
+</h2>
+
+<h3>Description</h3>
+
+<p>Computes maximum likelihood estimates and fit statistics for
+multinomial-Poisson homogeneous (MPH) and homogeneous linear predictor
+(HLP) models for contingency tables.
+</p>
+<p>More detailed <a href="https://homepage.divms.uiowa.edu/~jblang/mph.fitting/">DOCUMENTATION and EXAMPLES</a> of <code>mph.fit</code> are <a href="https://homepage.divms.uiowa.edu/~jblang/mph.fitting/">online</a>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">mph.fit(y, h.fct = constraint, constraint = NULL, h.mean = FALSE,
+        L.fct = link, link = NULL, L.mean = FALSE, X = NULL,
+        strata = rep(1, length(y)), fixed.strata = "all",
+        check.homog.tol = 1e-9, check.HLP.tol = 1e-9, maxiter = 100,
+        step = 1, change.step.after = 0.25 * maxiter, y.eps = 0,
+        iter.orig = 5, m.initial = y, norm.diff.conv = 1e-6,
+        norm.score.conv = 1e-6, max.score.diff.iter = 10,
+        derht.fct = NULL, derLt.fct = NULL, pdlambda = 2/3,
+        verbose = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Vector (not matrix) of table counts.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>h.fct</code></td>
+<td>
+<p>Function object that defines the constraint function <code class="reqn">h(\cdot)</code>.
+It must return a column vector. <code>h.fct</code> can also be set to
+<code>0</code>, in which case <code class="reqn">h(\cdot)</code> is viewed as the <code class="reqn">0</code>
+function, so no constraints are imposed.
+</p>
+<p>By default, <code class="reqn">h(\cdot)</code> is viewed as a function of the table
+probabilities <code class="reqn">p</code>. If <code>h.mean</code> is set to <code>h.mean = TRUE</code>,
+then <code class="reqn">h(\cdot)</code> is viewed as a function of the expected counts
+<code class="reqn">m</code>.
+</p>
+<p>Default: <code>h.fct = NULL</code>. If both <code>h.fct = NULL</code>
+and <code>L.fct = NULL</code>, then <code>h.fct</code> is set to <code>0</code> and
+no constraints are imposed. If <code>h.fct = NULL</code> and <code>L.fct</code>
+is not <code>NULL</code>, then <code>h.fct</code> will be computed as
+<code>t(U) %*% L.fct</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>constraint</code></td>
+<td>
+<p>Alias for the argument <code>h.fct</code>. Argument <code>constraint</code>
+is secondary to the primary argument <code>h.fct</code> in the                           following senses: If <code>constraint</code> and <code>h.fct</code> are not
+equal, <code>h.fct</code> is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>h.mean</code></td>
+<td>
+<p>Logical argument. If <code>h.mean = FALSE</code> (the default), <code>h.fct</code>
+is treated as a function of <code class="reqn">p</code>. If <code>h.mean = TRUE</code>, then
+<code>h.fct</code> is treated as a function of <code class="reqn">m</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>L.fct</code></td>
+<td>
+<p>Function object that defines the link <code class="reqn">L(\cdot)</code> in the HLP model;
+it must return a column vector. Or ... <code>L.fct = keyword</code>,
+where candidate keywords include <code>"logp"</code> and <code>"logm"</code>.
+</p>
+<p>Entering <code>L.fct = "logp"</code> tells the program to create the
+function object as <code>L.fct &lt;- function(p) {log(p)}</code>.
+<code>L.fct = "logm"</code> tells the program to (i) create the
+function object as <code>L.fct &lt;- function(m) {log(m)}</code> and
+(ii) set <code>L.mean = TRUE</code>.
+</p>
+<p>By default, <code>L.fct</code> is treated as a function of the table
+probabilities <code class="reqn">p</code> (even if the argument in the <code>L.fct</code>
+function object is <code>m</code> ). If <code>L.mean</code> is set to
+<code>L.mean = TRUE</code>, then <code>L.fct</code> is treated as a function
+of the expected counts <code class="reqn">m</code>. Default: <code>L.fct = NULL</code> means
+no constraints of the form <code class="reqn">L(p) = X\beta</code> are imposed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link</code></td>
+<td>
+<p>Alias for the argument <code>L.fct</code>. Argument <code>link</code> is
+secondary to the primary argument <code>L.fct</code> in the following
+senses: If <code>link</code> and <code>L.fct</code> are not equal, <code>L.fct</code>
+is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>L.mean</code></td>
+<td>
+<p>Logical argument. If <code>L.mean = FALSE</code> (the default), <code>L.fct</code>
+is treated as a function of <code class="reqn">p</code>. If <code>L.mean = TRUE</code>,
+<code>L.fct</code> is treated as a function of <code class="reqn">m</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>HLP model design matrix, assumed to be full rank. Default:
+<code>X = NULL</code>; i.e., it is left unspecified and unused.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>strata</code></td>
+<td>
+<p>Vector of the same length as <code>y</code> that gives the stratum
+membership identifier. Default: <code>strata = rep(1, length(y))</code>;
+i.e. the default is the single stratum (non-stratified) setting.
+Examples: <code>strata = A</code>, or
+<code>strata = c(1,1,1,2,2,2,3,3,3)</code>, or
+<code>strata = paste(sep = "", "A=", A, ", B=", B)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixed.strata</code></td>
+<td>
+<p>The object that gives information on which stratum have
+fixed sample sizes. It can equal one of the keywords,
+<code>fixed.strata = "all"</code> or <code>fixed.strata = "none"</code>,
+or it can be a vector of stratum membership identifiers,
+e.g. <code>fixed.strata = c(1,3)</code> or
+<code>fixed.strata = c("pop1", "pop5")</code>. Default:
+<code>fixed.strata = "all"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>check.homog.tol</code></td>
+<td>
+<p>Round-off tolerance for <code class="reqn">Z</code> homogeneity check.
+Default: <code>check.homog.tol = 1e-9</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>check.HLP.tol</code></td>
+<td>
+<p>Round-off tolerance for HLP link status check. Default:
+<code>check.HLP.tol = 1e-9</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxiter</code></td>
+<td>
+<p>Maximum number of iterations. Default: <code>maxiter = 100</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>step</code></td>
+<td>
+<p>Step-size value. Default: <code>step = 1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>change.step.after</code></td>
+<td>
+<p>If the score value increases for more than
+<code>change.step.after</code> iterations in a row, then
+the initial step size is halved. Default:
+<code>change.step.after = 0.25 * maxiter</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y.eps</code></td>
+<td>
+<p>Non-negative constant to be temporarily added to the original
+counts in <code>y</code>. Default: <code>y.eps = 0</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iter.orig</code></td>
+<td>
+<p>Iteration at which the original counts will be used. Default:
+<code>iter.orig = 5</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>m.initial</code></td>
+<td>
+<p>Initial estimate of <code class="reqn">m</code>. Default: <code>m.initial = y</code>.
+See Input Note 6 below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>norm.diff.conv</code></td>
+<td>
+<p>Convergence criteria value; see <code>norm.diff</code> in the
+<b>Value</b> section. Default: <code>norm.diff.conv = 1e-6</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>norm.score.conv</code></td>
+<td>
+<p>Convergence criteria value; see <code>norm.score</code> in the
+<b>Value</b> section. Default:
+<code>norm.score.conv = 1e-6</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.score.diff.iter</code></td>
+<td>
+<p>The variable <code>score.diff.iter</code> keeps track of
+how long <code>norm.score</code> is smaller than
+<code>norm.score.conv</code>, but <code>norm.diff</code> is
+greater than <code>norm.diff.conv</code>. If this is the
+case too long (i.e.
+<code>score.diff.iter &gt;= max.score.diff.iter</code>),
+then stop the iterations because the solution likely
+includes at least one ML fitted value of <code class="reqn">0</code>.
+Default: <code>max.score.diff.iter = 10</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>derht.fct</code></td>
+<td>
+<p>Function object that computes analytic derivative of the
+transpose of the constraint function <code class="reqn">h(\cdot)</code> with respect
+to <code class="reqn">m</code>. If <code class="reqn">h(\cdot)</code> maps from <code class="reqn">R^p</code> to <code class="reqn">R^q</code>
+(i.e. there are <code class="reqn">q</code> constraints), then <code>derht.fct</code>
+returns a <code class="reqn">p</code>-by-<code class="reqn">q</code> matrix of partial derivatives.
+Default: <code>derht.fct = NULL</code>. This means that the
+derivative is calculated numerically.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>derLt.fct</code></td>
+<td>
+<p>Function object that computes analytic derivative of the
+transpose of the link function <code class="reqn">L(\cdot)</code> with respect to
+<code class="reqn">m</code>. If <code class="reqn">L(\cdot)</code> maps from <code class="reqn">R^p</code> to <code class="reqn">R^q</code> (i.e.
+there are <code class="reqn">q</code> link components), then <code>derLt.fct</code>
+returns a <code class="reqn">p</code>-by-<code class="reqn">q</code> matrix of partial derivatives.
+Default: <code>derLt.fct = NULL</code>, i.e. by default this
+derivative is calculated numerically.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pdlambda</code></td>
+<td>
+<p>The index parameter <code class="reqn">\lambda</code> in the power-divergence
+statistic.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Logical argument. If <code>verbose = FALSE</code>, do not print out
+iteration information. If <code>verbose = TRUE</code>, then
+iteration information is printed out. Default:
+<code>verbose = FALSE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>In the following, let <code class="reqn">y</code> be the vector of contingency table counts, <code class="reqn">p</code>
+be the unknown vector of contingency table probabilities, <code class="reqn">s</code> be a vector of
+strata identifiers, and <code class="reqn">F</code> be the set of strata with a priori fixed sample
+sizes.
+</p>
+<p>Although <code>mph.fit</code> can fit more general models (see below), two important
+special cases include:
+</p>
+
+<ul>
+<li>
+<p> MPH (Special-Case): <code class="reqn">y</code> is
+a realization of random vector <code class="reqn">Y</code>, where <code class="reqn">Y \sim MP(\gamma, p | \texttt{strata} = s, \texttt{fixed} = F)</code>, <code class="reqn">h(p) = 0</code>.
+</p>
+</li>
+<li>
+<p> HLP (Special-Case): <code class="reqn">y</code> is
+a realization of random vector <code class="reqn">Y</code>, where <code class="reqn">Y \sim MP(\gamma, p | \texttt{strata} = s, \texttt{fixed} = F)</code>, <code class="reqn">L(p) = X \beta</code>.
+</p>
+</li>
+</ul>
+<p>Here, <code class="reqn">h(\cdot)</code> is a smooth constraint function and <code class="reqn">L(\cdot)</code> is a smooth link function. It is assumed that the constraints in <code class="reqn">h(p) = 0</code> are non-redundant so that the Jacobian, <code class="reqn">\partial h'(p) / \partial p</code>, is full column rank.
+</p>
+<p>The link <code class="reqn">L(\cdot)</code> is allowed to be many-to-one and row-rank deficient, so this
+HLP model is quite general. It is only required that the implied constraints,
+<code class="reqn">U'L(p) = 0</code>, where <code class="reqn">null(U') = span(X)</code>, are non-redundant.
+</p>
+<p>Here, MP stands for the multinomial-Poisson distribution. The parameters are
+<code class="reqn">\gamma</code>, the vector of expected sample sizes, and <code class="reqn">p</code>, the vector of table
+probabilities.
+</p>
+<p>The notation </p>
+<p style="text-align: center;"><code class="reqn">Y \sim MP(\gamma, p | \texttt{strata} = s, \texttt{fixed} = F)</code>
+</p>
+<p> means that the random vector <code class="reqn">Y</code> is composed of independent blocks of multinomial and/or Poisson random variables. The strata vector <code class="reqn">s</code> determines the blocks and <code class="reqn">F</code> determines which blocks are multinomial and which blocks comprise independent Poisson random variables. More specifically, suppose there are <code class="reqn">K</code> strata, so <code class="reqn">s</code> contains <code class="reqn">K</code> distinct strata identifiers. The components in
+<code class="reqn">Y</code> corresponding to <code class="reqn">s = \texttt{identifier[k]}</code> make up a block. If
+<code>identifier[k]</code> is included in <code class="reqn">F</code>, then this block has a multinomial distribution and <code class="reqn">\gamma_{k}</code> is the a priori known, i.e. fixed, sample size. If <code>identifier[k]</code> is not in <code class="reqn">F</code>, then this block comprises independent Poisson random variables and <code class="reqn">\gamma_{k}</code> is an unknown expected sample size.
+</p>
+<p>Note: Given the observed counts <code class="reqn">y</code>, the pair <code class="reqn">\texttt{(strata, fixed)} = (s, F)</code>
+contains the same information as the sampling plan triple <code class="reqn">(Z, Z_{F}, n_{F})</code> described in Lang (2004, 2005). Specifically, <code class="reqn">Z = Z(s)</code>, the strata/population matrix, is determined by <code class="reqn">s</code>. <code class="reqn">Z_{F} = Z_{F}(s, F)</code>, the sampling constraint matrix, is determined by <code class="reqn">s</code> and <code class="reqn">F</code>. <code class="reqn">n_{F} = Z_{F}'y</code> is the vector of a priori fixed sample sizes.
+</p>
+<p>Special case MP distributions include...
+</p>
+
+<ul>
+<li>
+<p> Full Multinomial:
+<code class="reqn">MP(\gamma, p | \texttt{strata = 1, fixed = "all"})</code>.
+A simple random sample of fixed size <code class="reqn">\gamma</code> is taken from a single strata
+(population).
+</p>
+</li>
+<li>
+<p> Product Multinomial:
+<code class="reqn">MP(\gamma, p | \texttt{strata = s, fixed = "all"})</code>.
+A stratified random sample of fixed sample sizes <code class="reqn">\gamma = (\gamma_{1}, \ldots, \gamma_{K})'</code> is taken from the <code class="reqn">K</code> strata determined by <code class="reqn">s</code>.
+</p>
+</li>
+<li>
+<p> Full Poisson:
+<code class="reqn">MP(\gamma, p | \texttt{strata = 1, fixed = "none"})</code>.
+A simple random sample is taken from a single strata (population). The sample size is random and follows a Poisson distribution with unknown mean <code class="reqn">\gamma</code>.
+</p>
+</li>
+<li>
+<p> Product Poisson:
+<code class="reqn">MP(\gamma, p | \texttt{strata = s, fixed = "none"})</code>.
+A stratified random sample is taken from <code class="reqn">K</code> strata. The sample sizes are all random and distributed as Poissons with unknown means in
+<code class="reqn">\gamma = (\gamma_{1}, \ldots, \gamma_{K})'</code>.
+</p>
+</li>
+</ul>
+<p>Specifying the MP distribution in <code>mph.fit</code>...
+</p>
+<p>The user need only enter <code>(strata, fixed.strata)</code>, the input variables corresponding to <code class="reqn">(s, F)</code>. Keywords, <code>fixed.strata = "all"</code> [<code>"none"</code>] means that all [none] of the strata have a priori fixed sample sizes.
+</p>
+<p>To fit MPH (Special Case), the user must enter the counts <code>y</code>, the constraint function <code>h.fct</code> (alias <code>constraint</code>), and the sampling plan variables, <code>strata</code> and <code>fixed.strata</code>. Note: The user can omit the sampling plan variables if the default, multinomial sampling <code>(strata = 1, fixed = "all")</code>, can be assumed.
+</p>
+<p>To fit HLP (Special Case), the user must enter the counts <code>y</code>, the link function <code>L.fct</code> (alias <code>link</code>), the model matrix <code>X</code>, and the sampling plan variables, <code>strata</code> and <code>fixed.strata</code>. Note: The user can omit the sampling plan variables if the default, multinomial sampling, can be assumed.
+</p>
+<p>IMPORTANT: When specifying the model and creating the input objects for
+<code>mph.fit</code>, keep in mind that the interpretation of the table probabilities <code class="reqn">p</code> depends on the sampling plan!
+</p>
+<p>Specifically, if the <code class="reqn">i^{th}</code> count <code class="reqn">y_{i}</code> is in block <code class="reqn">k</code> (i.e. corresponds with strata <code>identifier[k]</code>), then the <code class="reqn">i^{th}</code> table probability <code class="reqn">p_{i}</code> is the conditional probability defined as <code class="reqn">p_{i}</code> = probability of a Type <code class="reqn">i</code> outcome GIVEN that the outcome is one of the types in stratum <code class="reqn">k</code>.
+</p>
+<p>For example, in an <code class="reqn">I</code>-by-<code class="reqn">J</code> table with row variable <code class="reqn">A</code> and column variable <code class="reqn">B</code>, if row-stratified sampling is used, the table probabilities have the interpretation, <code class="reqn">p_{ij} =</code> prob of a Type <code class="reqn">(i, j)</code> outcome GIVEN that the outcome is one of the types in stratum <code class="reqn">i</code> (i.e. one of <code class="reqn">(i, 1), \ldots, (i, J)</code>) <code class="reqn"> = P(A = i, B = j | A = i)</code> <code class="reqn"> = P(B = j | A = i)</code>. For column-stratified sampling, <code class="reqn">p_{ij} = P(A = i | B = j)</code>. And for non-stratified sampling, <code class="reqn">p_{ij} = P(A = i, B = j)</code>.
+</p>
+<p>Log-Linear Models: Log-linear models specified as <code class="reqn">\log(p) = X\beta</code>, are HLP models.
+</p>
+<p>As with any HLP model, <code class="reqn">\log(p) = X\beta</code> can be restated as a collection of constraints; specifically, <code class="reqn">\log(p) = X\beta</code> is equivalent to <code class="reqn">h(p) = U'\log(p) = 0</code>, where <code class="reqn">null(U') = span(X)</code>. Noting that <code class="reqn">Z'p = 1</code>, we see that to avoid redundant constraints, <code class="reqn">span(X)</code> should contain <code class="reqn">span(Z)</code>. Loosely, fixed-by-sampling-design parameters should be included.
+</p>
+<p>Log-linear models of the form <code class="reqn">\log(p) = X\beta</code> are simple to fit using <code>mph.fit</code>. For example,<br><code>&gt; mph.fit(y, link = "logp", X = model.matrix(~ A + B))</code>,<br>
+or, equivalently,<br><code>&gt; mph.fit(y, link = function(p) {log(p)}, X = model.matrix(~ A + B))</code>.
+</p>
+<p>MORE GENERAL MPH and HLP MODELS...
+</p>
+<p>Instead of <code class="reqn">(\gamma, p)</code>, the MP distribution can alternatively be parameterized in terms of the vector of expected table counts, <code class="reqn">m = E(Y)</code>. Formally, <code class="reqn">(\gamma, p)</code> and <code class="reqn">m</code> are in one-to-one correspondence and satisfy:
+</p>
+<p style="text-align: center;"><code class="reqn">m = Diag(Z\gamma)p,</code>
+</p>
+<p> and </p>
+<p style="text-align: center;"><code class="reqn">\gamma = Z'm, p = Diag^{-1}(ZZ'm)m.</code>
+</p>
+<p> Here, <code class="reqn">Z = Z(s)</code> is the <code class="reqn">c</code>-by-<code class="reqn">K</code> strata/population matrix determined by strata vector <code class="reqn">s</code>. Specifically, <code class="reqn">Z_{ik}  =  I\{s_{i} = \texttt{identifier[k]}\}</code>.
+</p>
+<p>The MPH (Special-Case) Model given above is a special case because it constrains the expected counts <code class="reqn">m</code> only through the table probabilities <code class="reqn">p</code>. Similarly, the HLP (Special-Case) Model given above is a special case because it uses a link function that depends on <code class="reqn">m</code> only through the table probabilities <code class="reqn">p</code>.
+</p>
+<p>More generally, <code>mph.fit</code> computes maximum likelihood estimates and fit
+statistics for MPH and HLP models of the form...
+</p>
+
+<ul>
+<li>
+<p>  MPH: <code class="reqn">y</code> is
+a realization of random vector <code class="reqn">Y</code>, where <code class="reqn">Y \sim MP(\gamma, p | \texttt{strata} = s, \texttt{fixed} = F), h(m) = 0</code>.
+</p>
+</li>
+<li>
+<p>  HLP: <code class="reqn">y</code> is
+a realization of random vector <code class="reqn">Y</code>, where <code class="reqn">Y \sim MP(\gamma, p | \texttt{strata} = s, \texttt{fixed} = F), L(m) = X\beta</code>.
+</p>
+</li>
+</ul>
+<p>Here, <code class="reqn">h(\cdot)</code> is a smooth constraint function that must also be <code class="reqn">Z</code> (i.e. strata <code class="reqn">s</code>) homogeneous. <code class="reqn">L(\cdot)</code> is a smooth link function that must also satisfy the HLP conditions with respect to <code class="reqn">Z</code> (i.e. strata <code class="reqn">s</code>) and <code class="reqn">X</code>.
+That is,
+</p>
+
+<ul>
+<li>
+<p> (1) <code class="reqn">L(\cdot)</code> has HLP link status with respect to <code class="reqn">Z</code>, and
+</p>
+</li>
+<li>
+<p> (2) The implied constraint function <code class="reqn">h(m) = U'L(m)</code> is <code class="reqn">Z</code> homogeneous. Here, <code class="reqn">null(U') = span(X)</code>.
+</p>
+</li>
+</ul>
+<p>Here, (1) <code class="reqn">L(\cdot)</code> has HLP link status with respect to <code class="reqn">Z</code> if, for <code class="reqn">m = Diag(Z\gamma) p</code>,
+</p>
+
+<ul>
+<li>
+<p> (1)(a) <code class="reqn">L(m) = a(\gamma) + L(p)</code>, where
+<code class="reqn">a(\gamma_{1}/\gamma_{2}) - a(1) = a(\gamma_{1}) - a(\gamma_{2})</code>, i.e. <code class="reqn">a(\gamma)</code> has the form
+<code class="reqn">C \log \gamma + \texttt{constant}</code>;
+or
+</p>
+</li>
+<li>
+<p> (1)(b) <code class="reqn">L(m) = G(\gamma) L(p)</code>, where <code class="reqn">G(\gamma)</code> is a diagonal matrix with
+diagonal elements that are powers of the <code class="reqn">\gamma</code> elements, i.e. <code class="reqn">L(\cdot)</code> is
+<code class="reqn">Z</code> homogeneous (see Lang (2004));
+or
+</p>
+</li>
+<li>
+<p> (1)(c) The components of <code class="reqn">L(\cdot)</code> are a mixture of types (a) and (b):
+<code class="reqn">L_{j}(m) = a_{j}(\gamma) + L_{j}(p)</code> or <code class="reqn">L_{j}(m) = G_{j}(\gamma) L_{j}(p)</code>,
+<code class="reqn">j = 1, \ldots, l</code>.
+</p>
+</li>
+</ul>
+<p>Lang (2005) described HLP models that satisfied (1)(a) and (2), but the definition
+of HLP models can be broadened to include those models satisfying (1) and (2).
+That is, HLP models can be defined so they also include models that satisfy (1)(b)
+and (2) or (1)(c) and (2). <code>mph.fit</code> uses this broader definition
+of HLP Model.
+</p>
+<p>Note: The input variable <code>h.mean</code> must be set to <code>TRUE</code> to fit this more general MPH model. Similarly, the input variable <code>L.mean</code> must be set to
+<code>TRUE</code> to fit this more general HLP model. (An exception: If the link function
+is specified using the keyword <code>"logm"</code> then <code>L.mean</code> is automatically
+set to <code>TRUE</code>.)
+</p>
+<p>Note: <code>mph.fit</code> carries out "necessary-condition" checks
+of <code class="reqn">Z</code> homogeneity of <code class="reqn">h(\cdot)</code> and HLP link status of <code class="reqn">L(\cdot)</code> for these general models.
+</p>
+<p>Log-Linear Models: Log-linear models of the form <code class="reqn">\log(m) = X\beta</code> are HLP models
+provided the <code class="reqn">span(X)</code> contains the <code class="reqn">span(Z)</code>. Loosely, provided fixed-by-design
+parameters are included, the log-linear model is a special case HLP model.
+</p>
+<p>Log-linear models of the form <code class="reqn">\log(m) = X\beta</code> are simple to fit using
+<code>mph.fit</code>. For example,<br><code>&gt; mph.fit(y, link = "logm", X = model.matrix(~ A + B))</code>,<br>
+or, equivalently,<br><code>&gt; mph.fit(y, link = function(m) {log(m)}, L.mean = TRUE, X = model.matrix(~ A + B))</code>.
+</p>
+<p>Note: Most reasonable generalized log-linear models, which have the form
+<code class="reqn">L(m) = C \log Mm  = X\beta</code>, are also HLP models. See Lang (2005).
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>mph.fit</code> returns a list, which includes the following objects:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Vector of counts used in the algorithm for ML estimation. Usually, this
+vector is identical to the observed table counts.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>m</code></td>
+<td>
+<p>Vector of ML fitted values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covm</code></td>
+<td>
+<p>Approximate covariance matrix of fitted values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p>Vector of cell probability ML estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covp</code></td>
+<td>
+<p>Approximate covariance matrix of cell probability estimators.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>Vector of Lagrange multiplier ML estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covlambda</code></td>
+<td>
+<p>Approximate covariance matrix of multiplier estimators.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resid</code></td>
+<td>
+<p>Vector of raw residuals (i.e. observed minus fitted counts).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>presid</code></td>
+<td>
+<p>Vector of Pearson residuals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>adjresid</code></td>
+<td>
+<p>Vector of adjusted residuals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covresid</code></td>
+<td>
+<p>Approximate covariance matrix of raw residuals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Gsq</code></td>
+<td>
+<p>Likelihood ratio statistic for testing <code class="reqn">H_{0}: h(m) = 0</code> vs.
+<code class="reqn">H_{1}:</code> not <code class="reqn">H_{0}</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Xsq</code></td>
+<td>
+<p>Pearson's score statistic (same as Lagrange multiplier statistic)
+for testing <code class="reqn">H_{0}: h(m) = 0</code> vs. <code class="reqn">H_{1}:</code> not <code class="reqn">H_{0}</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Wsq</code></td>
+<td>
+<p>Generalized Wald statistic for testing <code class="reqn">H_{0}: h(m) = 0</code> vs.
+<code class="reqn">H_{1}:</code> not <code class="reqn">H_{0}</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PD.stat</code></td>
+<td>
+<p>Power-divergence statistic (with index parameter <code>pdlambda</code>)
+for testing <code class="reqn">H_{0}: h(m) = 0</code> vs. <code class="reqn">H_{1}:</code> not <code class="reqn">H_{0}</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>Degrees of freedom associated with <code>Gsq</code>, <code>Xsq</code>, and <code>PD.stat</code>.
+<code class="reqn">df = \dim(h)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta</code></td>
+<td>
+<p>Vector of HLP model parameter ML estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covbeta</code></td>
+<td>
+<p>Approximate covariance matrix of HLP model parameter estimators.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>L</code></td>
+<td>
+<p>Vector of HLP model link ML estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Lobs</code></td>
+<td>
+<p>Vector of HLP model observed link values, <code class="reqn">L(y)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covL</code></td>
+<td>
+<p>Approximate covariance matrix of HLP model link estimators.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Lresid</code></td>
+<td>
+<p>Vector of adjusted link residuals of the form
+</p>
+<p style="text-align: center;"><code class="reqn">(L(\texttt{obs}) - L(\texttt{fitted})) / ase(L(\texttt{obs}) - L(\texttt{fitted})).</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iter</code></td>
+<td>
+<p>Number of update iterations performed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>norm.diff</code></td>
+<td>
+<p>Distance between last and second last <code>theta</code> iterates
+(<code>theta</code> is the vector of log fitted values and Lagrange
+multipliers).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>norm.score</code></td>
+<td>
+<p>Distance between the score vector and zero.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>h.fct</code></td>
+<td>
+<p>Constraint function used in algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>h.input.fct</code></td>
+<td>
+<p>Constraint function as originally input.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>h.mean</code></td>
+<td>
+<p>Logical variable. If <code>h.mean = FALSE</code>, <code>h.fct</code> is treated as a
+function of <code class="reqn">p</code>. If <code>h.mean = TRUE</code>, <code>h.fct</code> is treated as
+a function of <code class="reqn">m</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>derht.fct</code></td>
+<td>
+<p>Analytic function used in algorithm that computes derivative of
+transpose of constraint function <code class="reqn">h</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>L.fct</code></td>
+<td>
+<p>Link function used in algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>L.input.fct</code></td>
+<td>
+<p>Link function as originally input.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>L.mean</code></td>
+<td>
+<p>Logical variable. If <code>L.mean = FALSE</code>, <code>L.fct</code> is treated as a
+function of <code class="reqn">p</code>. If <code>L.mean = TRUE</code>, <code>L.fct</code> is treated as
+a function of <code class="reqn">m</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>derLt.fct</code></td>
+<td>
+<p>Analytic function used in algorithm that computes derivative of
+transpose of link function <code class="reqn">L</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>HLP model design matrix used in algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>U</code></td>
+<td>
+<p>Orthogonal complement of design matrix <code class="reqn">X</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>triple</code></td>
+<td>
+<p>A list object containing the sampling plan triple <code class="reqn">(Z, Z_{F}, n)</code>,
+where <code class="reqn">Z</code> is the population (or strata) matrix, <code class="reqn">Z_{F}</code> is the
+sampling constraint matrix, and <code class="reqn">n</code> is the collection of fixed
+sample sizes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>strata</code></td>
+<td>
+<p><code>strata</code> variable used as input.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixed.strata</code></td>
+<td>
+<p>The strata corresponding to fixed sample sizes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>warn.message</code></td>
+<td>
+<p>Message stating whether or not the original counts were used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>warn.message.score</code></td>
+<td>
+<p>Message stating whether or not the norm score convergence
+criterion was met.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>warn.message.diff</code></td>
+<td>
+<p>Message stating whether or not the norm diff convergence
+criterion was met.</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>Input Notes:
+</p>
+
+<ol>
+<li>
+<p> CONSTRAINT FUNCTION.
+</p>
+<p><code>constraint</code> is an alias for <code>h.fct</code>. If <code>h.fct</code> is a function object, it must return a column vector.
+</p>
+<p>By default, <code>h.fct</code> is treated as a function of the table probabilities
+<code class="reqn">p</code>. To treat <code>h.fct</code> as a function of the expected counts <code class="reqn">m</code>,
+you must set <code>h.mean = TRUE</code> (by default, <code>h.mean = FALSE</code>).
+</p>
+<p>The fitting algorithm will fail if the constraints in <code>h.fct</code> <code class="reqn">= 0</code>
+are redundant.
+</p>
+</li>
+<li>
+<p> MODEL WITH NO CONSTRAINTS.
+</p>
+<p>The model with no constraints can be specified using <code>h.fct = 0</code>. The
+no-constraint model is the default when neither <code>h.fct</code> nor <code>L.fct</code>        are input (i.e. when <code>h.fct = NULL</code> and <code>L.fct = NULL</code>).
+</p>
+</li>
+<li>
+<p> HLP MODEL SPECIFICATION.
+</p>
+<p><code>link</code> is an alias for <code>L.fct</code>. For HLP models, both <code>L.fct</code> and <code>X</code> must be specified. The design matrix <code class="reqn">X</code> must be of full column rank. <code>mph.fit</code> recognizes two keywords for link specification, <code>"logp"</code> and <code>"logm"</code>. These are convenient for log-linear modeling. If <code>L.fct</code> is a function object, it must return a column vector.
+</p>
+<p>By default, <code>L.fct</code> is treated as a function of the table probabilities
+<code class="reqn">p</code>. To treat <code>L.fct</code> as a function of the expected counts <code class="reqn">m</code>,
+you must set <code>L.mean = TRUE</code> (by default, <code>L.mean = FALSE</code>).
+</p>
+<p>The constraint function <code>h.fct</code> is typically left unspecified for HLP
+models, but it need not be.
+</p>
+<p>If <code>h.fct</code> is left unspecified, it is created within the program as
+<code>h.fct(m) &lt;- function(m) {t(U) %*% L.fct(m)}</code>, where matrix
+<code class="reqn">U</code> is an orthogonal complement of <code class="reqn">X</code>. If <code>h.fct</code> is specified, the constraints implied by <code>L.fct</code><code class="reqn">(p) = X\beta</code>, or <code>L.fct</code><code class="reqn">(m) = X\beta</code>, are ignored.
+</p>
+<p>Note: Although the HLP constraints are ignored when <code>h.fct</code> is
+specified, estimates of <code class="reqn">\beta</code> and the link are computed under the
+model with constraints <code>h.fct</code><code class="reqn">(p) = 0</code> or
+<code>h.fct</code><code class="reqn">(m) = 0</code>.
+</p>
+<p>The fitting algorithm will fail to converge if the implied constraints,
+<code class="reqn">U' </code><code> L.fct </code><code class="reqn"> = 0</code>, include redundancies.
+</p>
+</li>
+<li>
+<p> EXTENDED ML ESTIMATES.
+</p>
+<p>When ML estimates are non-existent owing to zero counts, <code>norm.diff</code>
+will not converge to zero, instead it tends to level off at some constant
+positive value. This is because at least one ML fitted value is <code class="reqn">0</code>,
+which on the log scale is <code class="reqn">\log(0) = -\infty</code>, and the log-scale iterates
+slowly move toward <code class="reqn">-\infty</code>. One solution to this problem is to set the
+convergence value <code>norm.diff.conv</code> to some large number so only the
+score convergence criterion is used. In this case, the algorithm often
+converges to a solution that can be viewed as an extended ML estimate, for
+which <code class="reqn">0</code> estimates are allowed. <code>mph.fit</code> automates the
+detection of such problems. See the description of the input variable
+<code>max.score.diff.iter</code> above and the MISC COMPUTATIONAL NOTES in <a href="https://homepage.divms.uiowa.edu/~jblang/mph.fitting/mph.fit.documentation.htm">
+<code>mph.fit</code> online documentation</a>.
+</p>
+</li>
+<li>
+<p> CONVERGENCE PROBLEMS / FINE TUNING ITERATIONS.
+</p>
+<p>First check to make sure that the model is correctly specified and redundant
+constraints are avoided.
+</p>
+<p>When ML estimates exist, but there are non-convergence problems (perhaps
+caused by zero counts), a modification to the tuning parameters <code>step</code>,
+<code>change.step.after</code>, <code>y.eps</code>, and/or <code>iter.orig</code> will often
+lead to convergence.
+</p>
+<p>With zero counts, it might help to set <code>y.eps = 0.1</code> (or some other
+positive number) and <code>iter.orig = 5</code> (the default). This tells the
+program to initially use <code>y + y.eps</code> rather than the original counts
+<code>y</code>. At iteration <code class="reqn">5</code> <code class="reqn">=</code> <code>iter.orig</code>, after the algorithm
+has had time to move toward a non-boundary solution, the original counts are
+again used.
+</p>
+<p>To further mitigate non-convergence problems, the parameter <code>step</code> can
+be set to a smaller value (default: <code>step = 1</code>) so the iterates do not
+change as much.
+</p>
+</li>
+<li>
+<p> The initial estimate of <code class="reqn">m</code> is actually
+<code>m.initial + y.eps + 0.01 * ((m.initial + y.eps) == 0)</code>. The program
+defaults are <code>m.initial = y</code> and <code>y.eps = 0</code>. Note: If
+<code>m.initial &gt; 0</code> and <code>y.eps = 0</code>, then the initial estimate of
+<code class="reqn">m</code> is simply <code>m.initial</code>.
+</p>
+</li>
+</ol>
+<p>Output Notes:
+</p>
+
+<ol>
+<li>
+<p> ITERATION HISTORY.
+</p>
+<p>An iteration history is printed out when <code>verbose</code> is set equal to
+<code>TRUE</code>. A single line of the history looks like the following:
+</p>
+<p>"<code>iter= 18[0] norm.diff= 3.574936e-08 norm.score= 1.901705e-15</code>".
+</p>
+<p>Here, <code>iter</code> is the number of update iterations performed. The number
+in <code>[]</code> gives the number of step size searches required within each
+iteration. <code>norm.diff</code> and <code>norm.score</code> are defined above.
+Finally, the time elapsed is output. Note: For the model with no
+restrictions (<code>h.fct = 0</code>), there are no step size changes.
+</p>
+</li>
+<li>
+<p> STORING and VIEWING RESULTS.
+</p>
+<p>To store the results of <code>mph.fit</code>, issue a command like the following
+example
+</p>
+<p><code>&gt;  results &lt;-  mph.fit(y, h.fct = h.fct)</code>
+</p>
+<p>Use program <code>mph.summary</code> to view the results of <code>mph.fit</code>.
+Specifically, if the results of <code>mph.fit</code> are saved in object
+<code>results</code>, submit the command <code>mph.summary(results)</code>
+[or <code>mph.summary(results, TRUE)</code> or <code>mph.summary(results, TRUE, TRUE)</code>
+depending on how much of the output you need to see.]
+</p>
+</li>
+<li>
+<p>  The output objects <code>beta</code>, <code>covbeta</code>, <code>L</code>, <code>covL</code>,
+and <code>Lresid</code> will be set to <code>NA</code> unless an HLP model is
+specified (i.e. <code>L.fct</code> and <code>X</code> are input).
+</p>
+</li>
+</ol>
+<h3>Author(s)</h3>
+
+<p>Joseph B. Lang</p>
+
+
+<h3>References</h3>
+
+<p>Lang, J. B. (2004) Multinomial-Poisson homogeneous models for contingency tables, <em>Annals of Statistics</em>, <b>32</b>, 340–383.
+</p>
+<p>Lang, J. B. (2005) Homogeneous linear predictor models for contingency tables, <em>Journal of the American Statistical Association</em>, <b>100</b>, 121–134.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>mph.summary</code>, <code>create.Z.ZF</code>, <code>create.U</code>, <code>num.deriv.fct</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Listed below is a collection of Basic Examples:
+# https://homepage.divms.uiowa.edu/~jblang/mph.fitting/mph.basic.numerical.examples.htm
+
+# Another collection of Less Basic Examples is online:
+# https://homepage.divms.uiowa.edu/~jblang/mph.fitting/mph.numerical.examples.htm
+
+
+# EXAMPLE 1. Test whether a binomial probability equals 0.5.
+#
+# y = (15, 22) &lt;- Y ~ MP(gamma, p | strata = 1, fixed = "all");
+# i.e. Y ~ multinomial.
+#
+# In other symbols,
+#
+# y = (15, 22) &lt;- Y = (Y[1], Y[2]) ~ multinomial(37, p = (p[1], p[2])).
+#
+# GOAL: Test H0: p[1] = 0.5 vs. H1: not H0.
+
+a1 &lt;- mph.fit(y = c(15, 22), constraint = function(p) {p[1] - 0.5})
+
+# Alternative specifications...
+a2 &lt;- mph.fit(y = c(15, 22), constraint = function(p) {p[1] - p[2]})
+a3 &lt;- mph.fit(y = c(15, 22), constraint = function(p) {log(p[1] / p[2])})
+a4 &lt;- mph.fit(y = c(15, 22), constraint = function(m) {m[1] - m[2]},
+              h.mean = TRUE)
+a5 &lt;- mph.fit(y = c(15, 22), link = function(p) {p}, X = matrix(1, 2, 1))
+a6 &lt;- mph.fit(y = c(15, 22), link = "logm", X = matrix(1, 2, 1))
+
+# Alternatively, assume that
+#
+# y = (15, 22) &lt;- Y ~ MP(gamma, p | strata = 1, fixed = "none");
+# i.e. Y ~ indep Poisson.
+#
+# In other symbols,
+#
+# y = (15, 22) &lt;- Y = (Y[1], Y[2]), where
+# Y[i] indep ~ Poisson(gamma * p[i]), i = 1, 2.
+#
+# GOAL: Test H0: p[1] = 0.5 vs. H1: not H0.
+
+b1 &lt;- mph.fit(y = c(15, 22), constraint = function(p) {p[1] - 0.5},
+              fixed.strata = "none")
+
+mph.summary(a1, TRUE)
+mph.summary(b1, TRUE)
+
+
+# EXAMPLE 2. Test whether a multinomial probability vector is uniform.
+#            Test whether a multinomial probability vector equals a
+#            specific value.
+#
+# y &lt;- Y = (Y[1], ..., Y[6]) ~ MP(gamma, p | strata = 1, fixed = "all");
+# i.e. Y ~ multinomial.
+#
+# In other symbols,
+#
+# y &lt;- Y ~ multinomial(15, p = (p[1], ..., p[6]))
+#
+# GOAL: Test H0: p[1] = p[2] = ... = p[6] vs. H1: not H0.
+
+y &lt;- rmultinom(1, 15, rep(1, 6))
+a1 &lt;- mph.fit(y, L.fct = function(p) {p}, X = matrix(1, 6, 1),
+              y.eps = 0.1)
+
+# Alternative specification...
+a2 &lt;- mph.fit(y, h.fct = function(p) {as.matrix(p[-6] - 1/6)},
+              y.eps = 0.1)
+
+mph.summary(a1, TRUE)
+mph.summary(a2, TRUE)
+
+# Test whether p = (1, 2, 3, 1, 2, 3) / 12 .
+
+p0 &lt;- c(1, 2, 3, 1, 2, 3) / 12
+b &lt;- mph.fit(y, h.fct = function(p) {as.matrix(p[-6] - p0[-6])},
+             y.eps = 0.1)
+mph.summary(b, TRUE)
+
+
+# EXAMPLE 3. Test whether a multinomial probability vector satisfies a
+#            particular constraint.
+#
+# Data Source: Agresti 25:2002.
+#
+# y = (30, 63, 63) &lt;- Y ~ MP(gamma, p | strata = 1, fixed = "all");
+# i.e. Y ~ multinomial.
+#
+# In other symbols,
+#
+# y = (30, 63, 63) &lt;- Y ~ multinomial(156, p = (p[1], p[2], p[3]))
+#
+# GOAL: Test H0: p[1] + p[2] = p[1] / (p[1] + p[2]) vs. H1: not H0.
+
+y &lt;- c(30, 63, 63)
+h.fct &lt;- function(p) {
+    (p[1] + p[2]) - p[1] / (p[1] + p[2])
+}
+a &lt;- mph.fit(y, h.fct = h.fct)
+mph.summary(a, TRUE)
+
+
+# EXAMPLE 4. Test of Independence in a 2-by-2 Table.
+#
+# y = (y[1, 1], y[1, 2], y[2, 1], y[2, 2]) = (25, 18, 13, 21)
+#   &lt;- Y ~ MP(gamma, p | strata = 1, fixed = "all");
+# i.e. Y ~ multinomial.
+#
+# In other symbols,
+# y = (y[1, 1], y[1, 2], y[2, 1], y[2, 2])
+#   &lt;- Y ~ multinomial(77, p = (p[1, 1], p[1, 2], p[2, 1], p[2, 2]))
+#
+# GOAL: Test H0: p[1, 1] * p[2, 2] / p[1, 2] / p[2, 1] = 1
+#        vs. H1: not H0.
+
+d &lt;- data.frame(A = c(1, 1, 2, 2), B = c(1, 2, 1, 2),
+                count = c(25, 18, 13, 21))
+
+a1 &lt;- mph.fit(y = d$count, h.fct = function(p)
+              {log(p[1] * p[4] / p[2] / p[3])})
+
+# Alternative specifications of independence....
+a2 &lt;- mph.fit(y = d$count, h.fct = function(p)
+              {p &lt;- matrix(p, 2, 2, byrow = TRUE);
+               log(p[1, 1] * p[2, 2] / p[1, 2] / p[2, 1])})
+a3 &lt;- mph.fit(y = d$count, h.fct = function(p)
+              {p[1] * p[4] / p[2] / p[3] - 1})
+a4 &lt;- mph.fit(y = d$count, h.fct = function(p)
+              {p[1] / (p[1] + p[2]) - p[3] / (p[3] + p[4])})
+a5 &lt;- mph.fit(y = d$count, L.fct = "logm",
+              X = model.matrix(~ A + B, data = d))
+
+# Suppose we wished to output observed and fitted values of
+# log OR, OR, and P(B = 1 | A = 1) - P(B = 1 | A = 2)...
+
+L.fct &lt;- function(p) {
+  L &lt;- as.matrix(c(
+    log(p[1] * p[4] / p[2] / p[3]),
+    p[1] * p[4] / p[2] / p[3],
+    p[1] / (p[1] + p[2]) - p[3] / (p[3] + p[4])
+  ))
+  rownames(L) &lt;- c("log OR", "OR",
+                   "P(B = 1 | A = 1) - P(B = 1 | A = 2)")
+  L
+}
+
+a6 &lt;- mph.fit(y = d$count, h.fct = function(p)
+              {log(p[1] * p[4] / p[2] / p[3])},
+              L.fct = L.fct, X = diag(3))
+
+# Unrestricted Model...
+b &lt;- mph.fit(y = d$count, L.fct = L.fct, X = diag(3))
+
+mph.summary(a6, TRUE)
+mph.summary(b, TRUE)
+
+
+# EXAMPLE 5. Test of Independence in a 4-by-4 Table.
+#            (Using Log-Linear Model.)
+#
+# Data Source: Table 2.8, Agresti, 57:2002.
+#
+# y &lt;- Y ~ MP(gamma, p | strata = 1, fixed = "all");
+# i.e. Y ~ multinomial.
+#
+# In other symbols,
+# y &lt;- Y ~ multinomial(96, p = (p[1, 1], p[1, 2], p[2, 1], p[2, 2]))
+#
+# GOAL: Test H0: p[1, 1] * p[2, 2] / p[1, 2] / p[2, 1] = 1 vs. H1: not H0.
+
+d &lt;- data.frame(Income = c("&lt;15", "&lt;15", "&lt;15", "&lt;15", "15-25", "15-25",
+                           "15-25", "15-25", "25-40", "25-40", "25-40",
+                           "25-40", "&gt;40", "&gt;40", "&gt;40", "&gt;40"),
+                JobSatisf = c("VD", "LD", "MS", "VS", "VD", "LD", "MS", "VS",
+                              "VD", "LD", "MS", "VS", "VD", "LD", "MS", "VS"),
+                count = c(1, 3, 10, 6, 2, 3, 10, 7, 1, 6, 14, 12, 0, 1, 9, 11))
+
+a &lt;- mph.fit(y = d$count, link = "logp",
+             X = model.matrix(~ Income + JobSatisf, data = d))
+mph.summary(a)
+
+# Alternatively,
+b &lt;- mph.fit(y = d$count, link = "logm",
+             X = model.matrix(~ Income + JobSatisf, data = d))
+mph.summary(b)
+
+
+# EXAMPLE 6. Test Marginal Homogeneity in a 3-by-3 Table.
+#
+# Data Source: Table 10.16, Agresti, 445:2002.
+#
+# y &lt;- Y ~ MP(gamma, p | strata = 1, fixed = "all");
+# i.e. Y ~ multinomial.
+#
+# Specifically,
+# y &lt;- Y ~ multinomial(160, p = (p[1, 1], ..., p[3, 3]))
+#
+# GOAL: Test H0: p[1, +] = p[+, 1], p[2, +] = p[+, 2], p[3, +] = p[+, 3]
+#        vs. H1: not H0.
+
+d &lt;- data.frame(Siskel = c("Pro", "Pro", "Pro", "Mixed", "Mixed",
+                           "Mixed", "Con", "Con", "Con"),
+                Ebert = c("Pro", "Mixed", "Con", "Pro", "Mixed",
+                          "Con", "Pro", "Mixed", "Con"),
+                count = c(64, 9, 10, 11, 13, 8, 13, 8, 24))
+
+h.fct &lt;- function(p){
+    p.Siskel &lt;- M.fct(d$Siskel) %*% p
+    p.Ebert  &lt;- M.fct(d$Ebert) %*% p
+    as.matrix(c(p.Siskel[-3] - p.Ebert[-3]))
+}
+a1 &lt;- mph.fit(y = d$count, h.fct = h.fct)
+mph.summary(a1, TRUE)
+
+# Suppose that we wish to report on the observed and fitted
+# marginal probabilities.
+
+L.fct &lt;- function(p) {
+    p.Siskel &lt;- M.fct(d$Siskel) %*% p
+    p.Ebert &lt;- M.fct(d$Ebert) %*% p
+    L &lt;- as.matrix(c(p.Siskel, p.Ebert))
+    rownames(L) &lt;- c(paste(sep = "", "P(Siskel=", levels(as.factor(d$Siskel)), ")"),
+                     paste(sep = "", "P(Ebert=", levels(as.factor(d$Ebert)), ")"))
+    L
+}
+a2 &lt;- mph.fit(y = d$count, h.fct = h.fct, L.fct = L.fct, X = diag(6))
+mph.summary(a2, TRUE)
+
+# M.fct(factor) %*% p gives the marginal probabilities corresponding to
+# the levels of 'factor'. The marginal probabilities are ordered by the
+# levels of 'factor'.
+#
+# Alternatively, in this rectangular table setting, we can find the
+# marginal probabilities using the apply(...) function. In this case,
+# the marginal probabilities are ordered as they are entered in the
+# data set.
+
+h.fct &lt;- function(p) {
+    p &lt;- matrix(p, 3, 3, byrow = TRUE)
+    p.Siskel &lt;- apply(p, 1, sum)
+    p.Ebert &lt;- apply(p, 2, sum)
+    as.matrix(c(p.Siskel[-3] - p.Ebert[-3]))
+}
+
+L.fct &lt;- function(p) {
+    p &lt;- matrix(p, 3, 3, byrow = TRUE)
+    p.Siskel &lt;- apply(p, 1, sum)
+    p.Ebert &lt;- apply(p, 2, sum)
+    L &lt;- as.matrix(c(p.Siskel, p.Ebert))
+    rownames(L) &lt;- c("P(Siskel=Pro)", "P(Siskel=Mixed)",
+                     "P(Siskel=Con)", "P(Ebert=Pro)",
+                     "P(Ebert=Mixed)", "P(Ebert=Con)")
+    L
+}
+b &lt;- mph.fit(y = d$count, h.fct = h.fct, L.fct = L.fct, X = diag(6))
+
+
+# EXAMPLE 7. Log-Linear Model for 2-by-2-by-2 Table.
+#
+# Data Source: Table 8.16, Agresti 347:2002
+#
+# y &lt;- Y ~ MP(gamma, p | strata = 1, fixed = "all");
+# i.e. Y ~ multinomial.
+#
+# Specifically,
+#
+# y &lt;- Y ~ multinomial(621, p).
+#
+# The counts in y are cross-classification counts for variables
+# G = Gender, I = Information Opinion, H = Health Opinion.
+#
+# GOAL: Fit the loglinear models [GI, GH, IH] and [G, IH].
+
+d &lt;- data.frame(G = c("Male", "Male", "Male", "Male",
+                      "Female", "Female", "Female", "Female"),
+                I = c("Support", "Support", "Oppose", "Oppose",
+                      "Support", "Support", "Oppose", "Oppose"),
+                H = c("Support", "Oppose", "Support", "Oppose",
+                      "Support", "Oppose", "Support", "Oppose"),
+                count = c(76, 160, 6, 25, 114, 181, 11, 48))
+
+# Fit loglinear model [GI, GH, IH]...
+
+a1 &lt;- mph.fit(y = d$count, link = "logm",
+              X = model.matrix(~ G + I + H + G:I + G:H + I:H, data = d))
+
+# Fit loglinear model [G, IH]...
+
+a2 &lt;- mph.fit(y = d$count, link = "logm",
+              X = model.matrix(~ G + I + H + I:H, data = d))
+
+# Different Sampling Distribution Assumptions:
+#
+# Alternatively, assume
+# y &lt;- Y ~ MP(gamma, p | strata = 1, fixed = "none");
+# that is, Y ~ indep Poisson.
+#
+# In other symbols,
+# y &lt;- Y, where Y[i] indep ~ Poisson(m[i] = gamma * p[i]).
+# Here, gamma is the unknown expected sample size.
+
+b2 &lt;- mph.fit(y = d$count, link = "logm",
+              X = model.matrix(~ G + I + H + I:H, data = d),
+              fixed = "none")
+
+# Alternatively, assume
+# y &lt;- Y ~ MP(gamma, p | strata = Gender, fixed = "all");
+# that is, Y ~ prod multinomial.
+#
+# In other symbols,
+# y &lt;- Y = (Y[1, 1, 1], Y[1, 1, 2], ..., Y[2, 2, 2]),
+# where (Y[i, 1, 1], ..., Y[i, 2, 2]) indep ~ multinomial(n[i], p[i, , ]).
+# Here, p[i, j, k] = P(I = j, H = k | G = i) and n[1] = 267 and
+# n[2] = 354 are the a priori fixed sample sizes for males and females.
+
+c2 &lt;- mph.fit(y = d$count, link = "logm",
+              X = model.matrix(~ G + I + H + I:H, data = d),
+              strata = d$G)
+
+# Alternatively, assume
+# y &lt;- Y ~ MP(gamma, p | strata = Gender, fixed = "none");
+# that is, Y ~ prod Poisson.
+#
+# In other symbols,
+# y &lt;- Y = (Y[1, 1, 1], Y[1, 1, 2], ..., Y[2, 2, 2]),
+# where Y[i, j, k] indep ~ Poisson(m[i, j, k] = gamma[i] * p[i, j, k]).
+# Here, p[i, j, k] = P(I = j, H = k | G = i) and gamma[1] and gamma[2] are the
+# unknown expected sample sizes for males and for females.
+
+d2 &lt;- mph.fit(y = d$count, link = "logm",
+              X = model.matrix(~ G + I + H + I:H, data = d),
+              strata = d$G, fixed = "none")
+
+cbind(a2$m, b2$m, c2$m, d2$m, sqrt(diag(a2$covm)), sqrt(diag(b2$covm)),
+      sqrt(diag(c2$covm)), sqrt(diag(d2$covm)))
+cbind(a2$p, b2$p, c2$p, d2$p, sqrt(diag(a2$covp)), sqrt(diag(b2$covp)),
+      sqrt(diag(c2$covp)), sqrt(diag(d2$covp)))
+
+
+# EXAMPLE 8. Fit Linear-by-Linear Log-Linear Model
+#
+# Data Source: Table 8.15, Agresti, 345:2002
+#
+# y &lt;- Y ~ MP(gamma, p | strata = 1, fixed = "all");
+# i.e. Y ~ multinomial.
+#
+# Specifically,
+# y &lt;- Y ~ multinomial(1425, p)
+#
+# GOAL: Assess the fit of the linear-by-linear log-linear model.
+
+d &lt;- list(Schooling = c("&lt;HS", "&lt;HS", "&lt;HS", "HS", "HS", "HS", "&gt;HS", "&gt;HS", "&gt;HS"),
+          Abortion = c("Disapprove", "Middle", "Approve", "Disapprove", "Middle",
+                       "Approve", "Disapprove", "Middle", "Approve"),
+          count = c(209, 101, 237, 151, 126, 426, 16, 21, 138))
+
+Schooling.score &lt;- -1 * (d$Schooling == "&lt;HS") +
+                    0 * (d$Schooling == "HS") +
+                    1 * (d$Schooling == "&gt;HS")
+Abortion.score  &lt;- -1 * (d$Abortion == "Disapprove") +
+                    0 * (d$Abortion == "Middle") +
+                    1 * (d$Abortion == "Approve")
+
+d &lt;- data.frame(d, Schooling.score, Abortion.score)
+
+a &lt;- mph.fit(y = d$count, link = "logm",
+             X = model.matrix(~ Schooling + Abortion +
+             Schooling.score : Abortion.score, data = d))
+mph.summary(a, TRUE)
+
+
+# EXAMPLE 9. Marginal Standardization of a Contingency Table.
+#
+# Data Source: Table 8.15, Agresti 345:2002.
+#
+# GOAL: For a two-way table, find the standardized values of y, say y*,
+# that satisfy (i) y* has the same odds ratios as y, and
+#             (ii) y* has row and column totals equal to 100.
+#
+# Note: This is equivalent to the problem of finding the fitted values
+# for the following model...
+# x &lt;- Y ~ multinomial(n, p = (p[1, 1], ..., p[3, 3]))
+#      p[1, +] = p[2, +] = p[3, +] = p[+, 1] = p[+, 2] = p[+, 3] = 1/3
+#      p[1, 1] * p[2, 2] / p[2, 1] / p[1, 2] = or[1, 1]
+#      p[1, 2] * p[2, 3] / p[2, 2] / p[1, 3] = or[1, 2]
+#      p[2, 1] * p[3, 2] / p[3, 1] / p[2, 2] = or[2, 1]
+#      p[2, 2] * p[3, 3] / p[3, 2] / p[2, 3] = or[2, 2],
+# where or[i, j] = y[i, j] * y[i + 1, j + 1] / y[i + 1, j] / y[i, j + 1]
+# are the observed (y) odds ratios.
+# If m is the vector of fitted values, then y* = m * 300 / sum(m)
+# are the standardized values of y.
+# Here x can be any vector of 9 counts.
+# Choosing x so that the sum is 300 leads to sum(m) = 300, so that
+# y* = m in this case.
+
+d &lt;- data.frame(Schooling = c("&lt;HS", "&lt;HS", "&lt;HS", "HS", "HS", "HS", "&gt;HS", "&gt;HS", "&gt;HS"),
+                Abortion = c("Disapprove", "Middle", "Approve", "Disapprove", "Middle",
+                             "Approve", "Disapprove", "Middle", "Approve"),
+                count = c(209, 101, 237, 151, 126, 426, 16, 21, 138))
+
+h.fct &lt;- function(p) {
+   p.Schooling &lt;- M.fct(d$Schooling) %*% p
+   p.Abortion  &lt;- M.fct(d$Abortion) %*% p
+   p &lt;- matrix(p, 3, 3, byrow = TRUE)
+   as.matrix(c(
+     p.Schooling[-3] - 1/3, p.Abortion[-3] - 1/3,
+     p[1, 1] * p[2, 2] / p[2, 1] / p[1, 2] - 209 * 126 / 151 / 101,
+     p[1, 2] * p[2, 3] / p[2, 2] / p[1, 3] - 101 * 426 / 126 / 237,
+     p[2, 1] * p[3, 2] / p[3, 1] / p[2, 2] - 151 * 21 / 16 / 126,
+     p[2, 2] * p[3, 3] / p[3, 2] / p[2, 3] - 126 * 138 / 21 / 426
+   ))
+}
+
+b &lt;- mph.fit(y = d$count, h.fct = h.fct)
+ystar &lt;- b$m * 300 / sum(b$m)
+matrix(round(ystar, 1), 3, 3, byrow = TRUE)
+
+x &lt;- c(rep(33, 8), 36)
+b &lt;- mph.fit(y = x, h.fct = h.fct)
+ystar &lt;- b$m
+matrix(round(ystar, 1), 3, 3, byrow = TRUE)
+
+
+# EXAMPLE 10. Cumulative Logit Model.
+#
+# Data Source: Table 7.19, Agresti, 306:2002.
+#
+# y &lt;- Y ~ MP(gamma, p | strata = Therapy * Gender, fixed = "all");
+# i.e. Y ~ prod multinomial.
+#
+# Here, y[i, j, k] is the cross-classification count corresponding to
+# Therapy = i, Gender = j, Response = k.
+#
+# The table probabilities are defined as
+# p[i, j, k] = P(Response = k | Therapy = i, Gender = j).
+#
+# Goal: Fit the cumulative logit proportional odds model that includes
+# the main effect of Therapy and Gender.
+
+d &lt;- data.frame(Therapy = c("Sequential", "Sequential", "Sequential", "Sequential",
+                            "Sequential", "Sequential", "Sequential", "Sequential",
+                            "Alternating", "Alternating", "Alternating", "Alternating",
+                            "Alternating", "Alternating", "Alternating", "Alternating"),
+                Gender = c("Male", "Male", "Male", "Male", "Female", "Female",
+                           "Female", "Female", "Male", "Male", "Male", "Male",
+                           "Female", "Female", "Female", "Female"),
+                Response = c("Progressive", "NoChange", "Partial", "Complete",
+                             "Progressive", "NoChange", "Partial", "Complete",
+                             "Progressive", "NoChange", "Partial", "Complete",
+                             "Progressive", "NoChange", "Partial", "Complete"),
+                count = c(28, 45, 29, 26, 4, 12, 5, 2, 41, 44, 20, 20, 12, 7, 3, 1))
+
+strata &lt;- paste(sep = "", d$Therapy, ".", d$Gender)
+d &lt;- data.frame(d, strata)
+
+d3 &lt;- subset(d, Response != "Complete")
+levels(d3$Response) &lt;- c(NA, "NoChange", "Partial", "Progressive")
+
+L.fct &lt;- function(p) {
+   p &lt;- matrix(p, 4, 4, byrow = TRUE)
+   clogit &lt;- c()
+   for (s in 1:4) {
+     clogit &lt;- c(clogit,
+                 log(sum(p[s, 1])   / sum(p[s, 2:4])),
+                 log(sum(p[s, 1:2]) / sum(p[s, 3:4])),
+                 log(sum(p[s, 1:3]) / sum(p[s, 4]))
+     )
+   }
+   L &lt;- as.matrix(clogit)
+   rownames(L) &lt;- c(paste(sep = "", "log odds(R &lt; ", 2:4, "|",
+                          d3$strata, ")"))
+   L
+}
+
+a &lt;- mph.fit(d$count, link = L.fct,
+             X = model.matrix(~ -1 + Response + Therapy + Gender,
+                              data = d3),
+             strata = strata)
+
+# Fit the related non-proportional odds cumulative logit model
+b &lt;- mph.fit(d$count, link = L.fct,
+             X = model.matrix(~ Response + Response * Therapy +
+                                Response * Gender - 1 - Therapy - Gender,
+                              data = d3),
+             strata = strata)
+
+mph.summary(a, TRUE)
+mph.summary(b, TRUE)
+
+</code></pre>
+
+
+</div>

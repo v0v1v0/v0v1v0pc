@@ -1,0 +1,222 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>qF-qG-finteraction</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fast Factor Generation, Interactions and Vector Grouping
+</h2>
+
+<h3>Description</h3>
+
+<p><code>qF</code>, shorthand for 'quick-factor' implements very fast factor generation from atomic vectors using either radix ordering or index hashing followed by sorting.
+</p>
+<p><code>qG</code>, shorthand for 'quick-group', generates a kind of factor-light without the levels attribute but instead an attribute providing the number of levels. Optionally the levels / groups can be attached, but without converting them to character (which can have large performance implications). Objects have a class 'qG'.
+</p>
+<p><code>finteraction</code> generates a factor or 'qG' object by interacting multiple vectors or factors. In that process missing values are always replaced with a level and unused levels/combinations are always dropped.
+</p>
+<p><em>collapse</em> internally makes optimal use of factors and 'qG' objects when passed as grouping vectors to statistical functions (<code>g/by</code>, or <code>t</code> arguments) i.e. typically no further grouping or ordering is performed and objects are used directly by statistical C/C++ code.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">qF(x, ordered = FALSE, na.exclude = TRUE, sort = .op[["sort"]], drop = FALSE,
+   keep.attr = TRUE, method = "auto")
+
+qG(x, ordered = FALSE, na.exclude = TRUE, sort = .op[["sort"]],
+   return.groups = FALSE, method = "auto")
+
+is_qG(x)
+
+as_factor_qG(x, ordered = FALSE, na.exclude = TRUE)
+
+finteraction(..., factor = TRUE, ordered = FALSE, sort = factor &amp;&amp; .op[["sort"]],
+             method = "auto", sep = ".")
+itn(...) # Shorthand for finteraction
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a atomic vector, factor or quick-group.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ordered</code></td>
+<td>
+<p>logical. Adds a class 'ordered'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.exclude</code></td>
+<td>
+<p>logical. <code>TRUE</code> preserves missing values (i.e. no level is generated for <code>NA</code>). <code>FALSE</code> attaches an additional class <code>"na.included"</code> which is used to skip missing value checks performed before sending objects to C/C++. See Details. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sort</code></td>
+<td>
+<p>logical. <code>TRUE</code> sorts the levels in ascending order (like <code>factor</code>); <code>FALSE</code> provides the levels in order of first appearance, which can be significantly faster. Note that if a factor is passed as input, only <code>sort = FALSE</code> takes effect and unused levels will be dropped (as factors usually have sorted levels and checking sortedness can be expensive).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop</code></td>
+<td>
+<p>logical. If <code>x</code> is a factor, <code>TRUE</code> efficiently drops unused factor levels beforehand using <code>fdroplevels</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.attr</code></td>
+<td>
+<p>logical. If <code>TRUE</code> and <code>x</code> has additional attributes apart from 'levels' and 'class', these are preserved in the conversion to factor.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>an integer or character string specifying the method of computation:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<em> Int. </em>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> String </em>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> Description </em>  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 1 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "auto"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> automatic selection: <code>if(is.double(x) &amp;&amp; sort) "radix" else if(sort &amp;&amp; length(x) &lt; 1e5) "rcpp_hash" else "hash"</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 2 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "radix" </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> use radix ordering to generate factors. Supports <code>sort = FALSE</code> only for character vectors. See Details. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 3 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "hash"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> use hashing to generate factors. Since v1.8.3 this is a fast hybrid implementation using <code>group</code> and radix ordering applied to the unique elements. See Details. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 4 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "rcpp_hash" </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> the previous "hash" algorithm prior to v1.8.3: uses <code>Rcpp::sugar::sort_unique</code> and <code>Rcpp::sugar::match</code>. Only supports <code>sort = TRUE</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+  </td>
+</tr>
+</table>
+<p>Note that for <code>finteraction</code>, <code>method = "hash"</code> is always unsorted and <code>method = "rcpp_hash"</code> is not available.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return.groups</code></td>
+<td>
+<p>logical. <code>TRUE</code> returns the unique elements / groups / levels of <code>x</code> in an attribute called <code>"groups"</code>. Unlike <code>qF</code>, they are not converted to character.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>factor</code></td>
+<td>
+<p>logical. <code>TRUE</code> returns an factor, <code>FALSE</code> returns a 'qG' object. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sep</code></td>
+<td>
+<p>character. The separator passed to <code>paste</code> when creating factor levels from multiple grouping variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>multiple atomic vectors or factors, or a single list of equal-length vectors or factors. See Details. </p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Whenever a vector is passed to a Fast Statistical Function such as <code>fmean(mtcars, mtcars$cyl)</code>, is is grouped using <code>qF</code>, or <code>qG</code> if <code>use.g.names = FALSE</code>.
+</p>
+<p><code>qF</code> is a combination of <code>as.factor</code> and <code>factor</code>. Applying it to a vector i.e. <code>qF(x)</code> gives the same result as <code>as.factor(x)</code>. <code>qF(x, ordered = TRUE)</code> generates an ordered factor (same as <code>factor(x, ordered = TRUE)</code>), and <code>qF(x, na.exclude = FALSE)</code> generates a level for missing values (same as <code>factor(x, exclude = NULL)</code>). An important addition is that <code>qF(x, na.exclude = FALSE)</code> also adds a class 'na.included'. This prevents <em>collapse</em> functions from checking missing values in the factor, and is thus computationally more efficient. Therefore factors used in grouped operations should preferably be generated using <code>qF(x, na.exclude = FALSE)</code>. Setting <code>sort = FALSE</code> gathers the levels in first-appearance order (unless <code>method = "radix"</code> and <code>x</code> is numeric, in which case the levels are always sorted). This often gives a noticeable speed improvement. 
+</p>
+<p>There are 3 internal methods of computation: radix ordering, hashing, and Rcpp sugar hashing. Radix ordering is done by combining the functions <code>radixorder</code> and <code>groupid</code>. It is generally faster than hashing for large numeric data and pre-sorted data (although there are exceptions). Hashing uses <code>group</code>, followed by <code>radixorder</code> on the unique elements if <code>sort = TRUE</code>. It is generally fastest for character data. Rcpp hashing uses <code>Rcpp::sugar::sort_unique</code> and <code>Rcpp::sugar::match</code>. This is often less efficient than the former on large data, but the sorting properties (relying on <code>std::sort</code>) may be superior in borderline cases where <code>radixorder</code> fails to deliver exact lexicographic ordering of factor levels.  
+</p>
+<p>Regarding speed: In general <code>qF</code> is around 5x faster than <code>as.factor</code> on character data and about 30x faster on numeric data. Automatic method dispatch typically does a good job delivering optimal performance.
+</p>
+<p><code>qG</code> is in the first place a programmers function. It generates a factor-'light' class 'qG' consisting of only an integer grouping vector and an attribute providing the number of groups. It is slightly faster and more memory efficient than <code>GRP</code> for grouping atomic vectors, and also convenient as it can be stored in a data frame column, which are the main reasons for its existence. 
+</p>
+<p><code>finteraction</code> is simply a wrapper around <code>as_factor_GRP(GRP.default(X))</code>, where X is replaced by the arguments in '...' combined in a list (so its not really an interaction function but just a multivariate grouping converted to factor, see <code>GRP</code> for computational details). In general: All vectors, factors, or lists of vectors / factors passed can be interacted. Interactions always create a level for missing values and always drop unused levels.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>qF</code> returns an (ordered) factor. <code>qG</code> returns an object of class 'qG': an integer grouping vector with an attribute <code>"N.groups"</code> indicating the number of groups, and, if <code>return.groups = TRUE</code>, an attribute <code>"groups"</code> containing the vector of unique groups / elements in <code>x</code> corresponding to the integer-id. <code>finteraction</code> can return either.
+</p>
+
+
+<h3>Note</h3>
+
+<p>An efficient alternative for character vectors with multithreading support is provided by <code>kit::charToFact</code>.
+</p>
+<p><code>qG(x, sort = FALSE, na.exclude = FALSE, method = "hash")</code> internally calls <code>group(x)</code> which can also be used directly and also supports multivariate groupings where <code>x</code> can be a list of vectors.
+</p>
+<p>Neither <code>qF</code> nor <code>qG</code> reorder groups / factor levels. An exception was added in v1.7, when calling <code>qF(f, sort = FALSE)</code> on a factor <code>f</code>, the levels are recast in first appearance order. These objects can however be converted into one another using <code>qF/qG</code> or the direct method <code>as_factor_qG</code> (called inside <code>qF</code>). It is also possible to add a class 'ordered' (<code>ordered = TRUE</code>) and to create am extra level / integer for missing values (<code>na.exclude = FALSE</code>) if factors or 'qG' objects are passed to <code>qF</code> or <code>qG</code>. 
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>group</code>, <code>groupid</code>, <code>GRP</code>, Fast Grouping and Ordering, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">cylF &lt;- qF(mtcars$cyl)     # Factor from atomic vector
+cylG &lt;- qG(mtcars$cyl)     # Quick-group from atomic vector
+cylG                       # See the simple structure of this object
+
+cf  &lt;- qF(wlddev$country)  # Bigger data
+cf2 &lt;- qF(wlddev$country, na.exclude = FALSE)  # With na.included class
+dat &lt;- num_vars(wlddev)
+ 
+# cf2 is faster in grouped operations because no missing value check is performed
+library(microbenchmark)
+microbenchmark(fmax(dat, cf), fmax(dat, cf2))
+
+finteraction(mtcars$cyl, mtcars$vs)  # Interacting two variables (can be factors)
+head(finteraction(mtcars))           # A more crude example..
+
+finteraction(mtcars$cyl, mtcars$vs, factor = FALSE) # Returns 'qG', by default unsorted
+group(mtcars[c("cyl", "vs")]) # Same thing. Use whatever syntax is more convenient
+
+</code></pre>
+
+
+</div>

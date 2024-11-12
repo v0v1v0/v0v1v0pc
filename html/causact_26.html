@@ -1,0 +1,134 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>dag_plate</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create a plate representation for repeated nodes.</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt="[Experimental]"></a>
+</p>
+<p>Given a graph object of class <code>causact_graph</code>, create collections of nodes that should be repeated i.e. represent multiple instances of a random variable, random vector, or random matrix.  When nodes are on more than one plate, graph rendering will treat each unique combination of plates as separate plates.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">dag_plate(
+  graph,
+  descr,
+  label,
+  nodeLabels,
+  data = as.character(NA),
+  addDataNode = FALSE,
+  rhs = NA
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>graph</code></td>
+<td>
+<p>a graph object of class <code>dgr_graph</code> created using <code>dag_create()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>descr</code></td>
+<td>
+<p>a longer more descriptive label for the cluster/plate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>label</code></td>
+<td>
+<p>a short character string to use as an index.  Any <code>.</code> in the names is automatically replaced by <code style="white-space: pre;">⁠_⁠</code> for interoperability with Python.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nodeLabels</code></td>
+<td>
+<p>a character vector of node labels or descriptions to include in the list of nodes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a vector representing the categorical data whose unique values become the plate index.  To use with <code>addDataNode = TRUE</code>, this vector should represent observations of a variable that can be coerced to a factor.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>addDataNode</code></td>
+<td>
+<p>a logical value.  When <code>addDataNode = TRUE</code>, the code attempts to add a node of observed data that is used as an index for extracting the correct parameter from parent nodes that are on the newly created plate.  Verify the graphical model using <code>dag_render()</code> to ensure correct behavior.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rhs</code></td>
+<td>
+<p>Optional <code>rhs</code> expression for when <code>addDataNode = TRUE</code>.  This can be either a  distribution such as <code style="white-space: pre;">⁠uniform, normal, lognormal, bernoulli,⁠</code> etc. or an R expression. Distribution arguments are optional.  Valid values include <code>normal(mu,sigma)</code>, <code>normal</code>, and <code>normal(6,2)</code>.  R computation/expression examples include <code>alpha+beta*x</code>.  If a distribution is given, this is a random/stochastic node, if a formula is given it is a deterministic node once given the values of its parents.  Quotes should not be used as all function/computations should consist of R objects, functions, and constants.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>an expansion of the input <code>causact_graph</code> object with an added plate representing the repetition of <code>nodeLabels</code> for each unique value of <code>data</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># single plate example
+graph = dag_create() %&gt;%
+dag_node("Get Card","y",
+         rhs = bernoulli(theta),
+         data = carModelDF$getCard) %&gt;%
+  dag_node(descr = "Card Probability by Car",label = "theta",
+           rhs = beta(2,2),
+           child = "y") %&gt;%
+  dag_node("Car Model","x",
+           data = carModelDF$carModel,
+           child = "y") %&gt;%
+  dag_plate("Car Model","x",
+            data = carModelDF$carModel,
+            nodeLabels = "theta")
+graph %&gt;% dag_render()
+
+# multiple plate example
+library(dplyr)
+poolTimeGymDF = gymDF %&gt;%
+mutate(stretchType = ifelse(yogaStretch == 1,
+                            "Yoga Stretch",
+                            "Traditional")) %&gt;%
+group_by(gymID,stretchType,yogaStretch) %&gt;%
+  summarize(nTrialCustomers = sum(nTrialCustomers),
+            nSigned = sum(nSigned))
+graph = dag_create() %&gt;%
+  dag_node("Cust Signed","k",
+           rhs = binomial(n,p),
+           data = poolTimeGymDF$nSigned) %&gt;%
+  dag_node("Probability of Signing","p",
+           rhs = beta(2,2),
+           child = "k") %&gt;%
+  dag_node("Trial Size","n",
+           data = poolTimeGymDF$nTrialCustomers,
+           child = "k") %&gt;%
+  dag_plate("Yoga Stretch","x",
+            nodeLabels = c("p"),
+            data = poolTimeGymDF$stretchType,
+            addDataNode = TRUE) %&gt;%
+  dag_plate("Observation","i",
+            nodeLabels = c("x","k","n")) %&gt;%
+  dag_plate("Gym","j",
+            nodeLabels = "p",
+            data = poolTimeGymDF$gymID,
+            addDataNode = TRUE)
+graph %&gt;% dag_render()
+</code></pre>
+
+
+</div>

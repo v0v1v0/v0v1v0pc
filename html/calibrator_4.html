@@ -1,0 +1,164 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>betahat.fun.koh</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Expectation of beta, given theta, phi and d</h2>
+
+<h3>Description</h3>
+
+<p>Determines the mean of <code class="reqn">\beta</code>, given parameters <code class="reqn">\theta</code>,
+hyperparameters <code class="reqn">\phi</code>, and the vector of code outputs and observations
+<code class="reqn">d</code>.  It is named so as to avoid conflict with 
+function <code>betahat.fun</code> of package <span class="pkg">emulator</span>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">betahat.fun.koh(D1, D2, H1, H2, theta, d, phi)
+betahat.fun.koh.vector(D1, D2, H1, H2, theta, d, phi)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>D1</code></td>
+<td>
+<p>Matrix whose rows are observation points and parameter
+values at which the code has been run</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>D2</code></td>
+<td>
+<p>Matrix whose rows are the observation points</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>H1</code></td>
+<td>
+<p>Regression function for D1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>H2</code></td>
+<td>
+<p>Regression function for D2</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+<p>Parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+<p>Vector of code outputs and observations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>phi</code></td>
+<td>
+<p>Hyperparameters</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function is defined between equations 2 and 3 of the
+supplement.  It is used in functions <code>Ez.eqn9.supp()</code> and
+<code>p.eqn8.supp()</code>.
+</p>
+<p>The user should always use <code>betahat.fun.koh()</code>, which is a
+wrapper for <code>betahat.fun.koh.vector()</code>.  The forms differ in
+their treatment of <code class="reqn">\theta</code>.  In the former,
+<code class="reqn">\theta</code> must be a vector; in the latter,
+<code class="reqn">\theta</code> may be a matrix, in which case
+<code>betahat.fun.koh.vector()</code> is applied to the rows.
+</p>
+<p>In <code>betahat.fun.koh()</code>, the rownames are assigned by a kludgy
+call to <code>H.fun()</code>,  which itself uses a kludge to determine
+colnames. 
+</p>
+<p>The function returns
+</p>
+<p style="text-align: center;"><code class="reqn">
+    \hat{\mathbf\beta} (\theta)=
+    {\mathbf W}(\theta)^T {\mathbf H}(\theta)^T {\mathbf
+      V}_d(\theta)^{-1}{\mathbf d}.
+  </code>
+</p>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Robin K. S. Hankin</p>
+
+
+<h3>References</h3>
+
+<p>M. C. Kennedy and A. O'Hagan 2001. <em>Bayesian
+calibration of computer models</em>.  Journal of the Royal Statistical
+Society B, 63(3) pp425-464
+</p>
+<p>M. C. Kennedy and A. O'Hagan 2001.  <em>Supplementary details on
+Bayesian calibration of computer models</em>, Internal report, University
+of Sheffield.  Available at
+<a href="http://www.tonyohagan.co.uk/academic/ps/calsup.ps">http://www.tonyohagan.co.uk/academic/ps/calsup.ps</a>
+</p>
+<p>R. K. S. Hankin 2005. <em>Introducing BACCO, an R bundle for
+Bayesian analysis of computer code output</em>, Journal of Statistical
+Software, 14(16)
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(toys)
+betahat.fun.koh(theta=theta.toy, d=d.toy, D1=D1.toy, D2=D2.toy,
+      H1=H1.toy, H2=H2.toy, phi=phi.toy)
+
+betahat.fun.koh.vector(theta=theta.toy, d=d.toy, D1=D1.toy,
+      D2=D2.toy, H1=H1.toy, H2=H2.toy, phi=phi.toy)
+## should be identical
+
+jj.theta &lt;- rbind(theta.toy,theta.toy+1,theta.toy+2,theta.toy*0)
+betahat.fun.koh(theta=jj.theta, d=d.toy, D1=D1.toy, D2=D2.toy,
+     H1=H1.toy, H2=H2.toy, phi=phi.toy)
+
+## Now try with true hyperparameters:
+phi.true &lt;- phi.true.toy(phi=phi.toy)
+
+## And magically create the REAL parameters:
+theta.REAL &lt;- create.new.toy.datasets(export=TRUE)$REAL.PARAMS
+jj.theta &lt;- rbind(jj.theta, theta.REAL)
+
+## Generate some data:
+jj &lt;- create.new.toy.datasets(D1.toy , D2.toy)
+d.toy &lt;- jj$d.toy
+
+
+## And finally, observe that the estimated values for beta are pretty
+## close to the real values (which omniscient beings can extract using
+## reality() and computer.model()):
+
+betahat.fun.koh(theta=jj.theta, d=d.toy, D1=D1.toy, D2=D2.toy,
+       H1=H1.toy, H2=H2.toy, phi=phi.true)
+
+## [
+##  that is, compare the last column of the above with
+##  c(computer.model(ex=T)$REAL.COEFFS, reality(ex=T)$REAL.BETA2)
+## ]
+
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,188 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>optim.rel.conn.dists</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Maximum-likelihood estimate for relative connectivity given two distributions
+for scores for marked and unmarked individuals</h2>
+
+<h3>Description</h3>
+
+<p>This function calculates the value for relative connectivity that best fits a
+set of observed score values, a pair of distributions for marked and unmarked
+individuals and an estimate of the fraction of eggs marked in the source 
+population, <code>p</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">optim.rel.conn.dists(
+  obs,
+  d.unmarked,
+  d.marked,
+  p = 1,
+  phi0 = 0.5,
+  method = "Brent",
+  lower = 0,
+  upper = 1,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>obs</code></td>
+<td>
+<p>Vector of observed score values for potentially marked individuals</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d.unmarked</code></td>
+<td>
+<p>A function representing the PDF of unmarked individuals. 
+Must be normalized so that it integrates to 1 for the function to work 
+properly.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d.marked</code></td>
+<td>
+<p>A function representing the PDF of marked individuals.  Must 
+be normalized so that it integrates to 1 for the function to work properly.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p>Fraction of individuals (i.e., eggs) marked in the source population</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>phi0</code></td>
+<td>
+<p>Initial value for <code class="reqn">\phi</code>, the fraction of settlers at the 
+destination population that originated at the source population, for 
+<code>optim</code> function. Defaults to 0.5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Method variable for <code>optim</code> function. Defaults to 
+<code>"Brent"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lower</code></td>
+<td>
+<p>Lower limit for search for fraction of marked individuals. 
+Defaults to 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>upper</code></td>
+<td>
+<p>Upper limit for search for fraction of marked individuals. 
+Defaults to 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments for the <code>optim</code> function.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list with results of optimization. Optimal fraction of marked 
+individuals is in <code>phi</code> field. Negative log-likelihood is in the 
+<code>neg.log.prob</code> field. See <code>optim</code> for other elements of
+list.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>David M. Kaplan <a href="mailto:dmkaplan2000@gmail.com">dmkaplan2000@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Kaplan DM, Cuif M, Fauvelot C, Vigliola L, Nguyen-Huu T, Tiavouane J and Lett C 
+(in press) Uncertainty in empirical estimates of marine larval connectivity. 
+ICES Journal of Marine Science. doi:10.1093/icesjms/fsw182.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other connectivity estimation: 
+<code>d.rel.conn.beta.prior()</code>,
+<code>d.rel.conn.dists.func()</code>,
+<code>d.rel.conn.finite.settlement()</code>,
+<code>d.rel.conn.multinomial.unnorm()</code>,
+<code>d.rel.conn.multiple()</code>,
+<code>d.rel.conn.unif.prior()</code>,
+<code>dual.mark.transmission()</code>,
+<code>r.marked.egg.fraction()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(ConnMatTools)
+data(damselfish.lods)
+
+# Histograms of simulated LODs
+l &lt;- seq(-1,30,0.5)
+h.in &lt;- hist(damselfish.lods$in.group,breaks=l)
+h.out &lt;- hist(damselfish.lods$out.group,breaks=l)
+
+# PDFs for marked and unmarked individuals based on simulations
+d.marked &lt;- stepfun.hist(h.in)
+d.unmarked &lt;- stepfun.hist(h.out)
+
+# Fraction of adults genotyped at source site
+p.adults &lt;- 0.25
+
+# prior.shape1=1 # Uniform prior
+prior.shape1=0.5 # Jeffreys prior
+
+# Fraction of eggs from one or more genotyped parents
+p &lt;- dual.mark.transmission(p.adults)$p
+
+# PDF for relative connectivity
+D &lt;- d.rel.conn.dists.func(damselfish.lods$real.children,
+                           d.unmarked,d.marked,p,
+                           prior.shape1=prior.shape1)
+
+# Estimate most probable value for relative connectivity
+phi.mx &lt;- optim.rel.conn.dists(damselfish.lods$real.children,
+                                    d.unmarked,d.marked,p)$phi
+
+# Estimate 95% confidence interval for relative connectivity
+Q &lt;- q.rel.conn.dists.func(damselfish.lods$real.children,
+                           d.unmarked,d.marked,p,
+                           prior.shape1=prior.shape1)
+
+# Plot it up
+phi &lt;- seq(0,1,0.001)
+plot(phi,D(phi),type="l",
+     xlim=c(0,0.1),
+     main="PDF for relative connectivity",
+     xlab=expression(phi),
+     ylab="Probability density")
+
+abline(v=phi.mx,col="green",lty="dashed")
+abline(v=Q(c(0.025,0.975)),col="red",lty="dashed")
+</code></pre>
+
+
+</div>

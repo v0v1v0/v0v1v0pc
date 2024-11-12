@@ -1,0 +1,141 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>convex2COP</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Convex Combination of Two Copulas</h2>
+
+<h3>Description</h3>
+
+<p>The <em>convex composition of two copulas</em> (Joe, 2014, p. 155) provides for some simple complexity extension between copula families. Let <code class="reqn">\mathbf{A}</code> and <code class="reqn">\mathbf{B}</code> be copulas with respective vectors of parameters <code class="reqn">\Theta_\mathbf{A}</code> and <code class="reqn">\Theta_\mathbf{B}</code>, then the convex combination of these copulas is
+</p>
+<p style="text-align: center;"><code class="reqn">\mathbf{C}^{\times}_{\alpha}(u,v) = \alpha\cdot\mathbf{A}(u, v; \Theta_\mathbf{A}) - (1-\alpha)\cdot\mathbf{B}(u,v; \Theta_\mathbf{B})\mbox{,}</code>
+</p>
+
+<p>where <code class="reqn">0 \le \alpha \le 1</code>. The generalization of this function for <code class="reqn">N</code> number of copulas is provided by <code>convexCOP</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">convex2COP(u,v, para, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">u</code> in the <code class="reqn">X</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>v</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">v</code> in the <code class="reqn">Y</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>A special parameter <code>list</code> (see <b>Note</b>); and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass to the copula.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Value(s) for the convex combination copula is returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The following descriptions list in detail the structure and content of the <code>para</code> argument:
+</p>
+
+<dl>
+<dt><code>alpha</code></dt>
+<dd>
+<p>— The <code class="reqn">\alpha</code> compositing parameter;</p>
+</dd>
+<dt><code>cop1</code></dt>
+<dd>
+<p>— Function of the first copula <code class="reqn">\mathbf{A}</code>;</p>
+</dd>
+<dt><code>cop2</code></dt>
+<dd>
+<p>— Function of the second copula  <code class="reqn">\mathbf{B}</code>;</p>
+</dd>
+<dt><code>para1</code></dt>
+<dd>
+<p>— Vector of parameters <code class="reqn">\Theta_\mathbf{A}</code> for  <code class="reqn">\mathbf{A}</code>; and</p>
+</dd>
+<dt><code>para2</code></dt>
+<dd>
+<p>— Vector of parameters <code class="reqn">\Theta_\mathbf{B}</code> for  <code class="reqn">\mathbf{B}</code>.</p>
+</dd>
+</dl>
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Joe, H., 2014, Dependence modeling with copulas: Boca Raton, CRC Press, 462 p.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>COP</code>, <code>breveCOP</code>, <code>convexCOP</code>, <code>composite1COP</code>, <code>composite2COP</code>, <code>composite3COP</code>, <code>FRECHETcop</code>, <br><code>glueCOP</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">para &lt;- list(alpha=0.24, cop1=FRECHETcop, para1=c(0.4, 0.56),
+                         cop2=PSP,        para2=NA)
+convex2COP(0.87,0.35, para=para) # 0.3188711
+## Not run: 
+# Suppose we have a target Kendall Tau of 1/3 and a Gumbel-Hougaard copula seems
+# attractive but the GH has just too much upper tail dependency for comfort. We
+# think from data analysis that an upper tail dependency that is weaker and near
+# 2/10 is the better. Let us convex mix in a Plackett copula and optimize.
+TargetTau &lt;- tauCOP(cop=GHcop, para=1.5) # 1/3 (Kendall Tau)
+taildepCOP(   cop=GHcop, para=1.5, plot = TRUE)$lambdaU  # 0.4126
+TargetUpperTailDep &lt;- 2/10
+
+# **Serious CPU time pending for this example**
+par &lt;- c(-.10, 4.65) # Initial guess but the first parameter is in standard
+# normal for optim() to keep us in the [0,1] domain when converted to probability.
+# The guesses of -0.10 (standard deviation) for the convex parameter and 4.65 for
+# the Plackett are based on a much longer search times as setup for this problem.
+# The simplex for optim() is going to be close to the solution on startup.
+"afunc" &lt;- function(par) {
+   para &lt;- list(alpha=pnorm(par[1]), cop1=GHcop,       para1=1.5,
+                                     cop2=PLACKETTcop, para2=par[2])
+   tau  &lt;- tauCOP(cop=convex2COP, para=para)
+   taildep &lt;- taildepCOP(cop=convex2COP, para=para, plot = FALSE)$lambdaU
+   err &lt;- sqrt((TargetTau - tau)^2 + (TargetUpperTailDep - taildep)^2)
+   print(c(pnorm(par[1]), par[2], tau, taildep, err))
+   return(err)
+}
+mysolution &lt;- optim(par, afunc, control=list(abstol=1E-4))
+
+para &lt;- list(alpha=.4846902, cop1=GHcop,       para1=1.5,
+                             cop2=PLACKETTcop, para2=4.711464)
+UV &lt;- simCOP(n=2500, cop=convex2COP, para=para, snv=TRUE) #
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,101 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>compute_diff_phase</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute a Statistic for the Foreground Phase and the Background Phases</h2>
+
+<h3>Description</h3>
+
+<p>Compute a statistic (for example, a mean) based on all matching comparisons (foreground phase) and the same statistic
+based on all non-matching comparisons (background phases)
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">compute_diff_phase(scores_list, FUNC = mean, na.rm = TRUE, both = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>scores_list</code></td>
+<td>
+<p>a list of all phases</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FUNC</code></td>
+<td>
+<p>a function to be applied to both the foreground phase and the background phases</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.rm</code></td>
+<td>
+<p>a logical value indicating whether NA values should be stripped before the computation proceeds</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>both</code></td>
+<td>
+<p>logical value. If <code>TRUE</code>, return the values of the <code>FUNC</code> for both the foreground phase and the background phases;
+if <code>FALSE</code>, return their difference</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>If <code>both = TRUE</code>, return the values of the statistic (calculated by <code>FUNC</code>) for both the foreground phase and the
+background phases; if <code>both = FALSE</code>, return the difference
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(tidyverse)
+
+data("bullets")
+
+lands &lt;- unique(bullets$bulletland)
+
+comparisons &lt;- data.frame(expand.grid(land1 = lands[1:6], land2 = lands[7:12]),
+                          stringsAsFactors = FALSE)
+
+comparisons &lt;- comparisons %&gt;%
+  left_join(bullets %&gt;% select(bulletland, sig1=sigs),
+            by = c("land1" = "bulletland")) %&gt;%
+  left_join(bullets %&gt;% select(bulletland, sig2=sigs),
+            by = c("land2" = "bulletland"))
+
+comparisons &lt;- comparisons %&gt;% mutate(
+  cmps = purrr::map2(sig1, sig2, .f = function(x, y) {
+    extract_feature_cmps(x$sig, y$sig, include = "full_result")
+  })
+)
+
+comparisons &lt;- comparisons %&gt;%
+  mutate(
+    cmps_score = sapply(comparisons$cmps, function(x) x$CMPS_score),
+    cmps_nseg = sapply(comparisons$cmps, function(x) x$nseg)
+  )
+  
+cp1 &lt;- comparisons %&gt;% select(land1, land2, cmps_score, cmps_nseg)
+cp1 &lt;- cp1 %&gt;% mutate(
+  land1idx = land1 %&gt;% str_sub(-1, -1) %&gt;% as.numeric(),
+  land2idx = land2 %&gt;% str_sub(-1, -1) %&gt;% as.numeric()
+)
+
+phases &lt;- with(cp1, {
+  get_all_phases(land1idx, land2idx, cmps_score, addNA = TRUE)
+})
+
+compute_diff_phase(phases)
+</code></pre>
+
+
+</div>

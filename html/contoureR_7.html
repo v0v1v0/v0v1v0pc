@@ -1,0 +1,153 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>getContourLines</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Get Contour Lines (data.frame)</h2>
+
+<h3>Description</h3>
+
+<p>The following routine produces contour lines for a set of non-regular <code>x,y</code> and <code>z</code> values.
+via utilizing a Deleaunay Mesh strung between the supplied <code>x,y</code> coordinates in order to produce
+iso-contour data representing the third variable, <code>z</code>. To this end, by using a Deleaunay mesh,
+this routine does not require regular <code>x</code> and <code>y</code> data, although it can be expected to yield
+'better' result, with regular / fine-grained data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">getContourLines(x, y, z, nlevels = 10, binwidth, levels, criticalRatio = 5)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x,y</code></td>
+<td>
+<p>Numeric data for x and y coordinate, a single matrix or data-frame object can be provided for
+<code>x</code>, which will be used in preference to the y and z arguments. These do <strong>NOT</strong> need to be in any particular order
+nor do they need to be regular.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>numeric Data for z coordinate (the coordinate to model)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nlevels</code></td>
+<td>
+<p>An integer number of bins to split the data into <strong>iff</strong> <code>levels</code> or <code>binwidth</code>
+have not been specified.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>binwidth</code></td>
+<td>
+<p>The desired width of the bins, if specified, will override <code>nlevels</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>levels</code></td>
+<td>
+<p>A numeric vector of the explicitly specified levels (z values) to contour, by specifying this argument,
+it will override <code>nlevels</code> and/or <code>binwidth</code>. If this argument is provided, the stacking order of the
+contours will be preserved in the order of first occurence within the supplied vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>criticalRatio</code></td>
+<td>
+<p>When producing the Delaunay Mesh, the quality of the mesh can be poor in the proximity
+to the convex hull, Del's that have an aspect ratio greater than this value are not considered when producing the
+contours. In this context, the aspect ratio is defined as the circumradius to twice its inradius,
+equilateral triangles have an aspect ratio of 1, everything else is larger</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>For the function <code>getContourLines(...)</code>, the return object is a <code>data.frame</code> obect
+representing the contours, assembled in such way to permit easy use within the <code>ggplot2</code> paradigm.
+Such data frame contains seven (7) columns:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>LID</code></td>
+<td>
+<p>A number representing the level</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>GID</code></td>
+<td>
+<p>Within each level, a number representing the contour group</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PID</code></td>
+<td>
+<p>Within each group, a number representing the path/segment</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>The x-coordinates of the contour</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>The y-coordinates of the contour</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>The z-coordinates of the contour (ie value of the level)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Group</code></td>
+<td>
+<p>The unique identifyer for each independent contour path, calculated as being the
+interaction between <code>LID</code> and <code>GID</code></p>
+</td>
+</tr>
+</table>
+<h3>See Also</h3>
+
+<p><code>contourLinesR</code>, <code>getDelaunayMesh</code> and <code>getConvexHull</code>
+This is a wrapper to the <code>C++</code> interface function, <code>contourWalker</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Contour Lines for Volcano Data
+library(ggplot2)
+data(volcano)
+x = 1:nrow(volcano)
+y = 1:ncol(volcano)
+z = expand.grid(x=x,y=y); z$z = apply(z,1,function(xx){ volcano[ xx[1],xx[2] ]} )
+df = getContourLines(z)
+ggplot(df,aes(x,y,group=Group,colour=z)) + geom_path()
+
+# Contour Lines for a Function
+library(ggplot2)
+a      = -2; b = 2; n = 75
+x  = y = seq(a,b,by=diff(c(a,b))/(n+1))
+df     = expand.grid(x=x,y=y)
+df$z   = with(df,-x*y*exp(-x^2-y^2))
+df.cnt = getContourLines(df)
+ggplot(data=df.cnt,aes(x,y,group=Group,colour=z)) + geom_path()
+</code></pre>
+
+
+</div>

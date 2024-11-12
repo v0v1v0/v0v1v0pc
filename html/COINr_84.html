@@ -1,0 +1,241 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>new_coin</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create a new coin</h2>
+
+<h3>Description</h3>
+
+<p>Creates a new "coin" class object, or a "purse" class object (time-indexed collection of coins).
+A purse class object is created if panel data is supplied. Coins and purses are the main object classes
+used in COINr, although a number of functions also support other classes such as data frames and vectors.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">new_coin(
+  iData,
+  iMeta,
+  exclude = NULL,
+  split_to = NULL,
+  level_names = NULL,
+  retain_all_uCodes_on_split = FALSE,
+  quietly = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>iData</code></td>
+<td>
+<p>The indicator data and metadata of each unit</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iMeta</code></td>
+<td>
+<p>Indicator metadata</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>exclude</code></td>
+<td>
+<p>Optional character vector of any indicator codes (<code>iCode</code>s) to exclude from the coin(s).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>split_to</code></td>
+<td>
+<p>This is used to split panel data into multiple coins, a so-called "purse". Should be either
+<code>"all"</code>, or a subset of entries in <code>iData$Time</code>. See Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>level_names</code></td>
+<td>
+<p>Optional character vector of names of levels. Must have length equal to the number of
+levels in the hierarchy (<code>max(iMeta$Level, na.rm = TRUE)</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>retain_all_uCodes_on_split</code></td>
+<td>
+<p>Logical: if panel data is input and split to a purse using <code>split_to</code>, this controls how
+units with no data at certain time points are handled. If set <code>FALSE</code>, then unit at time t with no data in any indicators
+will be removed completely from the coin for that time point. If <code>TRUE</code>, all units will be included in every time point. The latter option
+may be useful if you impute over time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quietly</code></td>
+<td>
+<p>If <code>TRUE</code>, suppresses all messages</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>A coin object is fundamentally created by passing two data frames to <code>new_coin()</code>:
+<code>iData</code> which specifies the data points for each unit and indicator, as well as other optional
+variables; and <code>iMeta</code> which specifies details about each indicator/variable found in <code>iData</code>,
+including its type, name, position in the index, units, and other properties.
+</p>
+<p>These data frames need to follow fairly strict requirements regarding their format and consistency.
+Run <code>check_iData()</code> and <code>check_iMeta()</code> to validate your data frames, and these should generate helpful
+error messages when things go wrong.
+</p>
+<p>It is worth reading a little about coins and purses to use COINr. See <code>vignette("coins")</code> for more details.
+</p>
+
+
+<h4><code>iData</code></h4>
+
+<p><code>iData</code> should be a data frame with required column
+<code>uCode</code> which gives the code assigned to each unit (alphanumeric, not starting with a number). All other
+columns are defined by corresponding entries in <code>iMeta</code>, with the following special exceptions:
+</p>
+
+<ul>
+<li> <p><code>Time</code> is an optional column which allows panel data to be input, consisting of e.g. multiple rows for
+each <code>uCode</code>: one for each <code>Time</code> value. This can be used to split a set of panel data into multiple coins
+(a so-called "purse") which can be input to COINr functions.
+</p>
+</li>
+<li> <p><code>uName</code> is an optional column which specifies a longer name for each unit. If this column is not included,
+unit codes (<code>uCode</code>) will be used as unit names where required.
+</p>
+</li>
+</ul>
+<h4><code>iMeta</code></h4>
+
+<p>Required columns for <code>iMeta</code> are:
+</p>
+
+<ul>
+<li> <p><code>Level</code>: Level in aggregation, where 1 is indicator level, 2 is the level resulting from aggregating
+indicators, 3 is the result of aggregating level 2, and so on. Set to <code>NA</code> for entries that are not included
+in the index (groups, denominators, etc).
+</p>
+</li>
+<li> <p><code>iCode</code>: Indicator code, alphanumeric. Must not start with a number.
+</p>
+</li>
+<li> <p><code>Parent</code>: Group (<code>iCode</code>) to which indicator/aggregate belongs in level immediately above.
+Each entry here should also be found in <code>iCode</code>. Set to <code>NA</code> only
+for the highest (Index) level (no parent), or for entries that are not included
+in the index (groups, denominators, etc).
+</p>
+</li>
+<li> <p><code>Direction</code>: Numeric, either -1 or 1
+</p>
+</li>
+<li> <p><code>Weight</code>: Numeric weight, will be rescaled to sum to 1 within aggregation group. Set to <code>NA</code> for entries that are not included
+in the index (groups, denominators, etc).
+</p>
+</li>
+<li> <p><code>Type</code>: The type, corresponding to <code>iCode</code>. Can be either <code>Indicator</code>, <code>Aggregate</code>, <code>Group</code>, <code>Denominator</code>,
+or <code>Other</code>.
+</p>
+</li>
+</ul>
+<p>Optional columns that are recognised in certain functions are:
+</p>
+
+<ul>
+<li> <p><code>iName</code>: Name of the indicator: a longer name which is used in some plotting functions.
+</p>
+</li>
+<li> <p><code>Unit</code>: the unit of the indicator, e.g. USD, thousands, score, etc. Used in some plots if available.
+</p>
+</li>
+<li> <p><code>Target</code>: a target for the indicator. Used if normalisation type is distance-to-target.
+</p>
+</li>
+</ul>
+<p>The <code>iMeta</code> data frame essentially gives details about each of the columns found in <code>iData</code>, as well as
+details about additional data columns eventually created by aggregating indicators. This means that the
+entries in <code>iMeta</code> must include <em>all</em> columns in <code>iData</code>, <em>except</em> the three special column names: <code>uCode</code>,
+<code>uName</code>, and <code>Time</code>. In other words, all column names of <code>iData</code> should appear in <code>iMeta$iCode</code>, except
+the three special cases mentioned. The <code>iName</code> column optionally can be used to give longer names to each indicator
+which can be used for display in plots.
+</p>
+<p><code>iMeta</code> also specifies the structure of the index, by specifying the parent of each indicator and aggregate.
+The <code>Parent</code> column must refer to entries that can be found in <code>iCode</code>. Try <code>View(ASEM_iMeta)</code> for an example
+of how this works.
+</p>
+<p><code>Level</code> is the "vertical" level in the hierarchy, where 1 is the bottom level (indicators), and each successive
+level is created by aggregating the level below according to its specified groups.
+</p>
+<p><code>Direction</code> is set to 1 if higher values of the indicator should result in higher values of the index, and
+-1 in the opposite case.
+</p>
+<p>The <code>Type</code> column specifies the type of the entry: <code>Indicator</code> should be used for indicators at level 1.
+<code>Aggregate</code> for aggregates created by aggregating indicators or other aggregates. Otherwise set to <code>Group</code>
+if the variable is not used for building the index but instead is for defining groups of units. Set to
+<code>Denominator</code> if the variable is to be used for scaling (denominating) other indicators. Finally, set to
+<code>Other</code> if the variable should be ignored but passed through. Any other entries here will cause an error.
+</p>
+<p>Note: this function requires the columns above as specified, but extra columns can also be added without
+causing errors.
+</p>
+
+
+
+<h4>Other arguments</h4>
+
+<p>The <code>exclude</code> argument can be used to exclude specified indicators. If this is specified, <code>.$Data$Raw</code>
+will be built excluding these indicators, as will all subsequent build operations. However the full data set
+will still be stored in <code>.$Log$new_coin</code>. The codes here should correspond to entries in the <code>iMeta$iCode</code>.
+This option is useful e.g. in generating alternative coins with different indicator sets, and can be included
+as a variable in a sensitivity analysis.
+</p>
+<p>The <code>split_to</code> argument allows panel data to be used. Panel data must have a <code>Time</code> column in <code>iData</code>, which
+consists of some numerical time variable, such as a year. Panel data has multiple observations for each <code>uCode</code>,
+one for each unique entry in <code>Time</code>. The <code>Time</code> column is required to be numerical, because it needs to be
+possible to order it. To split panel data, specify <code>split_to = "all"</code> to split to a single coin for each
+of the unique entries in <code>Time</code>. Alternatively, you can pass a vector of entries in <code>Time</code> which allows
+to split to a subset of the entries to <code>Time</code>.
+</p>
+<p>Splitting panel data results in a so-called "purse" class, which is a data frame of COINs, indexed by <code>Time</code>.
+See <code>vignette("coins")</code> for more details.
+</p>
+<p>This function replaces the now-defunct <code>assemble()</code> from COINr &lt; v1.0.
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>A "coin" object or a "purse" object.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># build a coin using example data frames
+ASEM_coin &lt;- new_coin(iData = ASEM_iData,
+                      iMeta = ASEM_iMeta,
+                      level_names = c("Indicator", "Pillar", "Sub-index", "Index"))
+# view coin contents
+ASEM_coin
+
+# build example purse class
+ASEM_purse &lt;- new_coin(iData = ASEM_iData_p,
+                       iMeta = ASEM_iMeta,
+                       split_to = "all",
+                       quietly = TRUE)
+# view purse contents
+ASEM_purse
+
+# see vignette("coins") for further info
+
+</code></pre>
+
+
+</div>

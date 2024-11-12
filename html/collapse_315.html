@@ -1,0 +1,194 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fvar-fsd</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fast (Grouped, Weighted) Variance and Standard Deviation for Matrix-Like Objects</h2>
+
+<h3>Description</h3>
+
+<p><code>fvar</code> and <code>fsd</code> are generic functions that compute the (column-wise) variance and standard deviation of <code>x</code>, (optionally) grouped by <code>g</code> and/or frequency-weighted by <code>w</code>. The <code>TRA</code> argument can further be used to transform <code>x</code> using its (grouped, weighted) variance/sd.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fvar(x, ...)
+fsd(x, ...)
+
+## Default S3 method:
+fvar(x, g = NULL, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+     use.g.names = TRUE, stable.algo = .op[["stable.algo"]], ...)
+## Default S3 method:
+fsd(x, g = NULL, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+    use.g.names = TRUE, stable.algo = .op[["stable.algo"]], ...)
+
+## S3 method for class 'matrix'
+fvar(x, g = NULL, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+     use.g.names = TRUE, drop = TRUE, stable.algo = .op[["stable.algo"]], ...)
+## S3 method for class 'matrix'
+fsd(x, g = NULL, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+    use.g.names = TRUE, drop = TRUE, stable.algo = .op[["stable.algo"]], ...)
+
+## S3 method for class 'data.frame'
+fvar(x, g = NULL, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+     use.g.names = TRUE, drop = TRUE, stable.algo = .op[["stable.algo"]], ...)
+## S3 method for class 'data.frame'
+fsd(x, g = NULL, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+    use.g.names = TRUE, drop = TRUE, stable.algo = .op[["stable.algo"]], ...)
+
+## S3 method for class 'grouped_df'
+fvar(x, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+     use.g.names = FALSE, keep.group_vars = TRUE, keep.w = TRUE,
+     stub = .op[["stub"]], stable.algo = .op[["stable.algo"]], ...)
+## S3 method for class 'grouped_df'
+fsd(x, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+    use.g.names = FALSE, keep.group_vars = TRUE, keep.w = TRUE,
+    stub = .op[["stub"]], stable.algo = .op[["stable.algo"]], ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a numeric vector, matrix, data frame or grouped data frame (class 'grouped_df').</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>g</code></td>
+<td>
+<p>a factor, <code>GRP</code> object, atomic vector (internally converted to factor) or a list of vectors / factors (internally converted to a <code>GRP</code> object) used to group <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>a numeric vector of (non-negative) weights, may contain missing values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>TRA</code></td>
+<td>
+<p>an integer or quoted operator indicating the transformation to perform:
+0 - "na"     |     1 - "fill"     |     2 - "replace"     |     3 - "-"     |     4 - "-+"     |     5 - "/"     |     6 - "%"     |     7 - "+"     |     8 - "*"     |     9 - "%%"     |     10 - "-%%". See <code>TRA</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.rm</code></td>
+<td>
+<p>logical. Skip missing values in <code>x</code>. Defaults to <code>TRUE</code> and implemented at very little computational cost. If <code>na.rm = FALSE</code> a <code>NA</code> is returned when encountered.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use.g.names</code></td>
+<td>
+<p>logical. Make group-names and add to the result as names (default method) or row-names (matrix and data frame methods). No row-names are generated for <em>data.table</em>'s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop</code></td>
+<td>
+<p><em>matrix and data.frame method:</em> Logical. <code>TRUE</code> drops dimensions and returns an atomic vector if <code>g = NULL</code> and <code>TRA = NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.group_vars</code></td>
+<td>
+<p><em>grouped_df method:</em> Logical. <code>FALSE</code> removes grouping variables after computation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.w</code></td>
+<td>
+<p><em>grouped_df method:</em> Logical. Retain summed weighting variable after computation (if contained in <code>grouped_df</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stub</code></td>
+<td>
+<p>character. If <code>keep.w = TRUE</code> and <code>stub = TRUE</code> (default), the summed weights column is prefixed by <code>"sum."</code>. Users can specify a different prefix through this argument, or set it to <code>FALSE</code> to avoid prefixing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stable.algo</code></td>
+<td>
+<p>logical. <code>TRUE</code> (default) use Welford's numerically stable online algorithm. <code>FALSE</code> implements a faster but numerically unstable one-pass method. See Details. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments to be passed to or from other methods. If <code>TRA</code> is used, passing <code>set = TRUE</code> will transform data by reference and return the result invisibly.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><em>Welford's online algorithm</em> used by default to compute the variance is well described <a href="https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance">here</a> (the section <em>Weighted incremental algorithm</em> also shows how the weighted variance is obtained by this algorithm).
+</p>
+<p>If <code>stable.algo = FALSE</code>, the variance is computed in one-pass as <code>(sum(x^2)-n*mean(x)^2)/(n-1)</code>, where <code>sum(x^2)</code> is the sum of squares from which the expected sum of squares <code>n*mean(x)^2</code> is subtracted, normalized by <code>n-1</code> (Bessel's correction). This is numerically unstable if <code>sum(x^2)</code> and <code>n*mean(x)^2</code> are large numbers very close together, which will be the case for large <code>n</code>, large <code>x</code>-values and small variances (catastrophic cancellation occurs, leading to a loss of numeric precision). Numeric precision is however still maximized through the internal use of long doubles in C++, and the fast algorithm can be up to 4-times faster compared to Welford's method.
+</p>
+<p>The weighted variance is computed with frequency weights as <code>(sum(x^2*w)-sum(w)*weighted.mean(x,w)^2)/(sum(w)-1)</code>. If <code>na.rm = TRUE</code>, missing values will be removed from both <code>x</code> and <code>w</code> i.e. utilizing only <code>x[complete.cases(x,w)]</code> and <code>w[complete.cases(x,w)]</code>.
+</p>
+
+
+
+<p>For further computational detail see <code>fsum</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>fvar</code> returns the (<code>w</code> weighted) variance of <code>x</code>, grouped by <code>g</code>, or (if <code>TRA</code> is used) <code>x</code> transformed by its (grouped, weighted) variance. <code>fsd</code> computes the standard deviation of <code>x</code> in like manor.
+</p>
+
+
+<h3>References</h3>
+
+<p>Welford, B. P. (1962). Note on a method for calculating corrected sums of squares and products. <em>Technometrics</em>. 4 (3): 419-420. doi:10.2307/1266577.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Fast Statistical Functions, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## default vector method
+fvar(mtcars$mpg)                            # Simple variance (all examples also hold for fvar!)
+fsd(mtcars$mpg)                             # Simple standard deviation
+fsd(mtcars$mpg, w = mtcars$hp)              # Weighted sd: Weighted by hp
+fsd(mtcars$mpg, TRA = "/")                  # Simple transformation: scaling (See also ?fscale)
+fsd(mtcars$mpg, mtcars$cyl)                 # Grouped sd
+fsd(mtcars$mpg, mtcars$cyl, mtcars$hp)      # Grouped weighted sd
+fsd(mtcars$mpg, mtcars$cyl, TRA = "/")      # Scaling by group
+fsd(mtcars$mpg, mtcars$cyl, mtcars$hp, "/") # Group-scaling using weighted group sds
+
+## data.frame method
+fsd(iris)                           # This works, although 'Species' is a factor variable
+fsd(mtcars, drop = FALSE)           # This works, all columns are numeric variables
+fsd(iris[-5], iris[5])              # By Species: iris[5] is still a list, and thus passed to GRP()
+fsd(iris[-5], iris[[5]])            # Same thing much faster: fsd recognizes 'Species' is a factor
+head(fsd(iris[-5], iris[[5]], TRA = "/")) # Data scaled by species (see also fscale)
+
+## matrix method
+m &lt;- qM(mtcars)
+fsd(m)
+fsd(m, mtcars$cyl) # etc..
+
+## method for grouped data frames - created with dplyr::group_by or fgroup_by
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fsd()
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fsd(keep.group_vars = FALSE) # Remove grouping columns
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fsd(hp)      # Weighted by hp
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fsd(hp, "/") # Weighted scaling transformation
+</code></pre>
+
+
+</div>

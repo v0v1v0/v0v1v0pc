@@ -1,0 +1,168 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cleanTS</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Clean univariate time-series data</h2>
+
+<h3>Description</h3>
+
+<p><code>cleanTS()</code>is the main function of the package which creates a cleanTS
+object. It performs all the different data cleaning tasks, such as
+converting the timestamps to proper format, imputation of missing values,
+handling outliers, etc. It is a wrapper function that calls all the other
+internal functions to performs different data cleaning tasks.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cleanTS(
+  data,
+  date_format,
+  imp_methods = c("na_interpolation", "na_locf", "na_ma", "na_kalman"),
+  time = NULL,
+  value = NULL,
+  replace_outliers = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data frame containing the input data. By default, it considers
+that the first column to contain the timestamps and the second column
+contains the observations.If that is not the case or if it contains more than
+two columns then specify the names of time and value columns using the
+<code>time</code> and <code>value</code> arguments.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>date_format</code></td>
+<td>
+<p>Format of timestamps used in the data. It uses lubridate
+formats as mentioned
+<a href="https://lubridate.tidyverse.org/reference/parse_date_time.html#details">here</a>.
+More than one formats can be using a vectors of strings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>imp_methods</code></td>
+<td>
+<p>The imputation methods to be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>Optional, the name of column in provided data to be used as
+time column.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>value</code></td>
+<td>
+<p>Optional, the name of column in provided data, to be used as
+value column.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>replace_outliers</code></td>
+<td>
+<p>Boolean, if <code>TRUE</code> then the outliers found will be
+removed and imputed using the given imputation methods.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The first task is to check the input time series data for structural and
+data type-related errors. Since the functions need univariate time series
+data, the input data is checked for the number of columns. By default, the
+first column is considered to be the time column, and the second column to
+be the observations. Alternatively, if the time and value arguments are
+given, then those columns are used. The time column is converted to a POSIX
+object. The value column is converted to a numeric type. The column names
+are also changed to time and value. All the data is converted to a
+<em>data.table</em> object. This data is then passed to other functions to
+check for missing and duplicate timestamps. If duplicate timestamps are
+found, then the observation values are checked. If the observations are the
+same, then only one copy of that observation is kept. But if the observations
+are different, then it is not possible to find the correct one, so the
+observation is set to NA. This data is the passed to a function for finding
+and handling missing observations. The methods given in the imp_methods
+argument are compared and selected. The MCAR and MAR values are handled
+seperately. After the best methods are found, imputation is performed using
+those methods. The user can also pass user-defined functions for comparison.
+The user-defined function should follow the structure as the default
+functions. It should take a numeric vector containing missing values as
+input, and return a numeric vector of the same length without missing values
+as output. Once the missing values are handled the data is checked for
+outliers. If the replace_outliers parameter is set to TRUE in the cleanTS()
+function, then the outliers are replaced by NA and imputed using the
+procedure mentioned for imputing missing values. Then it creates a cleanTS
+object which contains the cleaned data, missing timestamps, duplicate
+timestamps, imputation methods, MCAR imputation error, MAR imputation error,
+outliers, and if the outliers are replaced then imputation errors for those
+imputations are also included. The <em>cleanTS</em> object is returned by the
+function.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>cleanTS</code> object which contains:
+</p>
+
+<ul>
+<li>
+<p> Cleaned data
+</p>
+</li>
+<li>
+<p> Missing timestamps
+</p>
+</li>
+<li>
+<p> Duplicate timestamps
+</p>
+</li>
+<li>
+<p> Imputation errors
+</p>
+</li>
+<li>
+<p> Outliers
+</p>
+</li>
+<li>
+<p> Outlier imputation errors
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+  # Convert sunspots.month to dataframe
+  data &lt;- timetk::tk_tbl(sunspot.month)
+  print(data)
+
+  # Randomly insert missing values to simulate missing value imputation
+  set.seed(10)
+  ind &lt;- sample(nrow(data), 100)
+  data$value[ind] &lt;- NA
+
+  # Perform cleaning
+  cts &lt;- cleanTS(data, date_format = "my", time = "index", value = "value")
+  print(cts)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

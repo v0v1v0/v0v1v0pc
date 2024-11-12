@@ -1,0 +1,133 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>meta.transport</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Derive a transport formula for a causal effect between a target domain and multiple source domains</h2>
+
+<h3>Description</h3>
+
+<p>This function returns an expression for the transport formula of a causal effect between a target domain and multiple source domains. The formula is returned for the interventional distribution of the set of variables (<code>y</code>) given the intervention on the set of variables (<code>x</code>). The multiple source domains are given as a list of selection diagrams (<code>D</code>). If the effect is non-transportable, an error is thrown describing the graphical structure that witnesses non-transportability. The vertices of any diagram in (<code>D</code>) that correspond to selection variables must have a description parameter of a single character "S" (shorthand for "selection"). </p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">meta.transport(y, x, D, expr = TRUE, simp = TRUE, 
+  steps = FALSE, primes = FALSE, stop_on_nonid = TRUE)</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>A character vector of variables of interest given the intervention. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A character vector of the variables that are acted upon. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>D</code></td>
+<td>
+<p>A list of <code>igraph</code> objects describing the selection diagrams in the internal syntax. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>expr</code></td>
+<td>
+<p>A logical value. If <code>TRUE</code>, a string is returned describing the expression in LaTeX syntax. Else, a list structure is returned which can be manually parsed by the function <code>get.expression</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>simp</code></td>
+<td>
+<p>A logical value. If <code>TRUE</code>, a simplification procedure is applied to the resulting probability object. d-separation and the rules of do-calculus are applied repeatedly to simplify the expression. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>steps</code></td>
+<td>
+<p>A logical value. If <code>TRUE</code>, returns a list where the first element corresponds to the expression of the transport formula and the second to the a list describing intermediary steps taken by the algorithm. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>primes</code></td>
+<td>
+<p>A logical value. If <code>TRUE</code>, prime symbols are appended to summation variables to make them distinct from their other instantiations. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stop_on_nonid</code></td>
+<td>
+<p>A logical value. If <code>TRUE</code>, an error is produced when a non-identifiable effect is discovered. Otherwise recursion continues normally. </p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>If <code>steps = FALSE</code>, A character string or an object of class <code>probability</code> that describes the transport formula. Otherwise, a list as described in the arguments.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Santtu Tikka</p>
+
+
+<h3>References</h3>
+
+<p>Bareinboim E., Pearl J. 2013b Meta-Transportability of Causal Effects: A Formal Approach. <em>Proceedings of the 16th International Conference on Artificial Intelligence and
+Statistics</em>, 135–143.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code>parse.graphml</code>, <code>get.expression</code>, <code>transport</code>, <code>generalize</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(igraph)
+
+# Selection diagram corresponding to the first source domain.
+# We set simplify = FALSE to allow multiple edges.
+d1 &lt;- graph.formula(X -+ Z, W_1 -+ W_2, W_2 -+ Z, 
+  W_3 -+ Z, X -+ W_3, W_2 -+ X, Z -+ Y, # Observed edges
+  S_1 -+ X, S_2 -+ W_2, S_3 -+ W_3, S_4 -+ Y, # Edges related to selection variables
+  X -+ W_3, W_3 -+ X, X -+ W_2, W_2 -+ X, X -+ W_1, 
+  W_1 -+ X, W_1 -+ Z, Z -+ W_1, simplify = FALSE)
+
+# Here the bidirected edges are set to be unobserved in the selection diagram d1.
+# This is denoted by giving them a description attribute with the value "U".
+# The first 7 edges are observed and the next 4 are related to the selection variables.
+# The rest of the edges are unobserved.
+d1 &lt;- set.edge.attribute(d1, "description", 12:19, "U")
+
+# The variables "S_1", "S_2", "S_3" and "S_4" are selection variables.
+# This is denoted by giving them a description attribute with the value "S".
+d1 &lt;- set.vertex.attribute(d1, "description", 7:10, "S")
+
+# Selection diagram corresponding to the second 
+# source domain is constructed in a similar fashion.
+d2 &lt;- graph.formula(X -+ Z, W_1 -+ W_2, W_2 -+ Z, W_3 -+ Z, 
+ X -+ W_3, W_2 -+ X, Z -+ Y, # Observed edges
+ S_1 -+ X, S_2 -+ W_2, S_3 -+ W_1, 
+ S_4 -+ Y, S_5 -+ Z, # Edges related to selection variables
+ X -+ W_3, W_3 -+ X, X -+ W_2, W_2 -+ X, X -+ W_1, 
+ W_1 -+ X, W_1 -+ Z, Z -+ W_1, simplify = FALSE)
+d2 &lt;- set.edge.attribute(d2, "description", 13:20, "U")
+d2 &lt;- set.vertex.attribute(d2, "description", 7:11, "S")
+
+# We combine the diagrams as a list.
+d.comb &lt;- list(d1, d2)
+meta.transport(y = "Y", x = "X", D = d.comb)
+</code></pre>
+
+
+</div>

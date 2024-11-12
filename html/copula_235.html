@@ -1,0 +1,158 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>htrafo</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>GOF Testing Transformation of Hering and Hofert</h2>
+
+<h3>Description</h3>
+
+<p>The transformation described in Hering and Hofert
+(2014), for Archimedean copulas.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">htrafo(u, copula, include.K = TRUE, n.MC = 0, inverse = FALSE,
+       method = eval(formals(qK)$method), u.grid, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p><code class="reqn">n\times d</code>-matrix with values in <code class="reqn">[0,1]</code>.  If
+<code>inverse=FALSE</code> (the default), <code>u</code> contains
+(pseudo-/copula-)observations from the copula <code>copula</code> based on
+which the transformation is carried out; consider applying the
+function <code>pobs()</code> first in order to obtain <code>u</code>.  If
+<code>inverse=TRUE</code>, <code>u</code> contains <code class="reqn">U[0,1]^d</code> distributed
+values which are transformed to copula-based (<code>copula</code>) ones.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>copula</code></td>
+<td>
+<p>an Archimedean copula specified as
+<code>"outer_nacopula"</code> or <code>"archmCopula"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include.K</code></td>
+<td>
+<p>logical indicating whether the last component, involving the
+Kendall distribution function <code>K</code>, is used in <code>htrafo()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.MC</code></td>
+<td>
+<p>parameter <code>n.MC</code> for <code>K</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inverse</code></td>
+<td>
+<p>logical indicating whether the inverse of the
+transformation is returned.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>method to compute <code>qK()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>u.grid</code></td>
+<td>
+<p>argument of <code>qK()</code> (for <code>method="discrete"</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments passed to <code>qK()</code> if
+<code>inverse = TRUE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Given a <code class="reqn">d</code>-dimensional random vector
+<code class="reqn">\bm{U}</code> following an Archimedean copula <code class="reqn">C</code> with
+generator <code class="reqn">\psi</code>, Hering and Hofert (2014) showed that
+<code class="reqn">\bm{U}^\prime\sim\mathrm{U}[0,1]^d</code>, where
+</p>
+<p style="text-align: center;"><code class="reqn">U_{j}^\prime=\left(\frac{\sum_{k=1}^{j}\psi^{-1}(U_{k})}{
+  	  \sum_{k=1}^{j+1}\psi^{-1}(U_{k})}\right)^{j},\ j\in\{1,\dots,d-1\},\
+  	U_{d}^\prime=K(C(\bm{U})).</code>
+</p>
+
+<p><code>htrafo</code> applies this transformation row-wise to
+<code>u</code> and thus returns either an <code class="reqn">n\times d</code>- or an
+<code class="reqn">n\times (d-1)</code>-matrix, depending on whether the last
+component <code class="reqn">U^\prime_d</code> which involves the (possibly
+numerically challenging) Kendall distribution function <code class="reqn">K</code> is used
+(<code>include.K=TRUE</code>) or not (<code>include.K=FALSE</code>).
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>htrafo()</code> returns an
+<code class="reqn">n\times d</code>- or <code class="reqn">n\times (d-1)</code>-matrix
+(depending on whether <code>include.K</code> is <code>TRUE</code> or
+<code>FALSE</code>) containing the transformed input <code>u</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Hering, C. and Hofert, M. (2014).
+Goodness-of-fit tests for Archimedean copulas in high dimensions.
+<em>Innovations in Quantitative Risk Management</em>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Sample and build pseudo-observations (what we normally have available)
+## of a Clayton copula
+tau &lt;- 0.5
+theta &lt;- iTau(claytonCopula(), tau = tau)
+d &lt;- 5
+cc &lt;- claytonCopula(theta, dim = d)
+set.seed(271)
+n &lt;- 1000
+U &lt;- rCopula(n, copula = cc)
+X &lt;- qnorm(U) # X now follows a meta-Gumbel model with N(0,1) marginals
+U &lt;- pobs(X) # build pseudo-observations
+
+## Graphically check if the data comes from a meta-Clayton model
+## with the transformation of Hering and Hofert (2014):
+U.H &lt;- htrafo(U, copula = cc) # transform the data
+splom2(U.H, cex = 0.2) # looks good
+
+## The same for an 'outer_nacopula' object
+cc. &lt;- onacopulaL("Clayton", list(theta, 1:d))
+U.H. &lt;- htrafo(U, copula = cc.)
+splom2(U.H., cex = 0.2) # looks good
+
+## What about a meta-Gumbel model?
+## The parameter is chosen such that Kendall's tau equals (the same) tau
+gc &lt;- gumbelCopula(iTau(gumbelCopula(), tau = tau), dim = d)
+
+## Plot of the transformed data (Hering and Hofert (2014)) to see the
+## deviations from uniformity
+U.H.. &lt;- htrafo(U, copula = gc)
+splom2(U.H.., cex = 0.2) # deviations visible
+</code></pre>
+
+
+</div>

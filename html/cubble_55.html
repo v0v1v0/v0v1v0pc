@@ -1,0 +1,87 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>covid</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Daily COVID count data (in <code>tsibble</code>) and Victoria LGA (in <code>sf</code>)</h2>
+
+<h3>Description</h3>
+
+<p>Daily COVID count data (<code>covid</code>) from 2022-01-01 to 2020-03-23 in a
+tsibble object (<code>date</code>, <code>lga</code>, <code>n</code>, and <code>avg_7day</code>).
+Victoria Local Government Area (LGA) spatial geometry in an sf object
+(<code>lga_name_2018</code> and <code>geometry</code>)
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">covid
+
+lga
+</code></pre>
+
+
+<h3>Format</h3>
+
+<p>An object of class <code>tbl_ts</code> (inherits from <code>tbl_df</code>, <code>tbl</code>, <code>data.frame</code>) with 6806 rows and 4 columns.
+</p>
+<p>An object of class <code>sf</code> (inherits from <code>data.frame</code>) with 80 rows and 2 columns.
+</p>
+
+
+<h3>Details</h3>
+
+
+<dl>
+<dt>date</dt>
+<dd>
+<p>date object, from 2022-01-01 to 2020-03-23</p>
+</dd>
+<dt>lga</dt>
+<dd>
+<p>Victoria Local Government Area (LGA) in Australia</p>
+</dd>
+<dt>n</dt>
+<dd>
+<p>COVID-19 case count</p>
+</dd>
+<dt>avg_7day</dt>
+<dd>
+<p>rolling mean of <code>n</code> in a 7 day window.
+Calculate with <code>mutate(avg_7day = slider::slide_dbl(n,
+  mean, .before = 6))</code></p>
+</dd>
+<dt>lga_name_2018</dt>
+<dd>
+<p>LGA encoding by Australia Bureau of Statistics,
+slightly differ from the encoding used by the Department of Health
+in the <code>covid</code> data</p>
+</dd>
+<dt>geometry</dt>
+<dd>
+<p>multipolygon geometry of each LGA</p>
+</dd>
+</dl>
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(sf)
+library(dplyr)
+# prompt msg on the key mismatch between the two datasets
+make_cubble(lga, covid, by = c("lga_name_2018" = "lga"))
+check_res &lt;- check_key(lga, covid, by = c("lga_name_2018" = "lga"))
+
+# fix mismatch
+lga2 &lt;- lga |&gt;
+  rename(lga = lga_name_2018) |&gt;
+  mutate(lga = ifelse(lga == "Kingston (C) (Vic.)", "Kingston (C)", lga),
+         lga = ifelse(lga == "Latrobe (C) (Vic.)", "Latrobe (C)", lga)) |&gt;
+  filter(!lga %in% check_res$others$spatial)
+covid2 &lt;- covid |&gt; filter(!lga %in% check_res$others$temporal)
+
+make_cubble(spatial = lga2, temporal = covid2)
+</code></pre>
+
+
+</div>

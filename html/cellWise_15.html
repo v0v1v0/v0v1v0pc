@@ -1,0 +1,345 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>DDC</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Detect Deviating Cells
+</h2>
+
+<h3>Description</h3>
+
+<p>This function aims to detect cellwise outliers in the data. These are entries in the data matrix which are substantially higher or lower than what could be expected based on the other cells in its column as well as the other cells in its row, taking the relations between the columns into account. Note that this function first calls <code>checkDataSet</code> and analyzes the remaining cleaned data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">DDC(X, DDCpars = list())
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p><code>X</code> is the input data, and must be an <code class="reqn">n</code> by <code class="reqn">d</code> matrix or a data frame.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>DDCpars</code></td>
+<td>
+<p> A list of available options:
+</p>
+
+<ul>
+<li> <p><code>fracNA</code> <br>
+Only consider columns and rows with fewer NAs (missing
+values) than this fraction (percentage). Defaults to <code class="reqn">0.5</code>.
+</p>
+</li>
+<li> <p><code>numDiscrete</code> <br>
+A column that takes on <code>numDiscrete</code> or fewer values will
+be considered discrete and not used in the analysis. Defaults to <code class="reqn">3</code>.
+</p>
+</li>
+<li> <p><code>precScale</code> <br>
+Only consider columns whose scale is larger than <code>precScale</code>.
+Here scale is measured by the median absolute deviation. Defaults to <code class="reqn">1e-12</code>.
+</p>
+</li>
+<li> <p><code>cleanNAfirst</code> <br>
+If <code>"columns"</code>, first columns then rows are checked for NAs.
+If <code>"rows"</code>, first rows then columns are checked for NAs.
+<code>"automatic"</code> checks columns first if <code class="reqn">d \geq 5n</code> and rows first otherwise.
+Defaults to <code>"automatic"</code>.
+
+</p>
+</li>
+<li> <p><code>tolProb</code> <br>
+Tolerance probability, with default <code class="reqn">0.99</code>, which
+determines the cutoff values for flagging outliers in
+several steps of the algorithm.
+</p>
+</li>
+<li> <p><code>corrlim</code> <br>
+When trying to estimate <code class="reqn">z_{ij}</code> from other variables <code class="reqn">h</code>, we 
+will only use variables <code class="reqn">h</code> with <code class="reqn">|\rho_{j,h}| \ge corrlim</code>.
+Variables <code class="reqn">j</code> without any correlated variables <code class="reqn">h</code> satisfying 
+this are considered standalone, and treated on their own. Defaults to <code class="reqn">0.5</code>.
+</p>
+</li>
+<li>
+<p><code>combinRule</code> <br>
+The operation to combine estimates of <code class="reqn">z_{ij}</code> coming from
+other variables <code class="reqn">h</code>: can be <code>"mean"</code>, <code>"median"</code>,
+<code>"wmean"</code> (weighted mean) or <code>"wmedian"</code> (weighted median).
+Defaults to <code>wmean</code>.
+</p>
+</li>
+<li> <p><code>returnBigXimp</code> <br>
+If TRUE, the imputed data matrix <code>Ximp</code> in the output
+will include the rows and columns that were not
+part of the analysis (and can still contain NAs). Defaults to <code>FALSE</code>.
+</p>
+</li>
+<li> <p><code>silent</code> <br>
+If <code>TRUE</code>, statements tracking the algorithm's progress will not be printed. Defaults to <code>FALSE</code>.
+</p>
+</li>
+<li> <p><code>nLocScale</code> <br>
+When estimating location or scale from more than <code>nLocScale</code> data values, the computation is based on a random sample of size <code>nLocScale</code> to save time. When  <code>nLocScale = 0</code> all values are used. Defaults to 25000.
+</p>
+</li>
+<li> <p><code>fastDDC</code> <br>
+Whether to use the fastDDC option or not. The fastDDC algorithm uses approximations
+to allow to deal with high dimensions. Defaults to <code>TRUE</code> for <code class="reqn">d &gt; 750</code> and <code>FALSE</code> otherwise.
+</p>
+</li>
+<li> <p><code>standType</code> <br>
+The location and scale estimators used for robust standardization. Should be one of <code>"1stepM"</code>, <code>"mcd"</code> or <code>"wrap"</code>. See <code>estLocScale</code> for more info. Only used when <code>fastDDC = FALSE</code>. Defaults to <code>"1stepM"</code>.
+</p>
+</li>
+<li> <p><code>corrType</code> <br>
+The correlation estimator used to find the neighboring variables. Must be one of <code>"wrap"</code> (wrapping correlation), <code>"rank"</code> (Spearman correlation) or <code>"gkwls"</code> (Gnanadesikan-Kettenring correlation followed by weighting). Only used when <code>fastDDC</code> <code> = FALSE</code>. Defaults to <code>"gkwls"</code>.
+</p>
+</li>
+<li> <p><code>transFun</code> <br>
+The transformation function used to compute the robust correlations when <code>fastDDC = TRUE</code>. Can be <code>"wrap"</code> or <code>"rank"</code>. Defaults to <code>"wrap"</code>.
+</p>
+</li>
+<li> <p><code>nbngbrs</code> <br>
+When <code>fastDDC = TRUE</code>, each column is predicted from at most <code>nbngbrs</code> columns correlated to it.
+Defaults to 100.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p> A list with components: <br></p>
+
+<ul>
+<li>
+<p><code>DDCpars</code> <br>
+The list of options used.
+
+</p>
+</li>
+<li>
+<p><code>colInAnalysis</code> <br>
+The column indices of the columns used in the analysis.
+
+</p>
+</li>
+<li>
+<p><code>rowInAnalysis</code> <br>
+The row indices of the rows used in the analysis.
+
+</p>
+</li>
+<li>
+<p><code>namesNotNumeric</code> <br>
+The names of the variables which are not numeric.      
+
+</p>
+</li>
+<li>
+<p><code>namesCaseNumber</code> <br>
+The name of the variable(s) which contained the case numbers and was therefore removed.     
+
+</p>
+</li>
+<li>
+<p><code>namesNAcol</code> <br>
+Names of the columns left out due to too many <code>NA</code>'s.        
+
+</p>
+</li>
+<li>
+<p><code>namesNArow</code> <br>
+Names of the rows left out due to too many <code>NA</code>'s.           
+
+</p>
+</li>
+<li>
+<p><code>namesDiscrete</code> <br>
+Names of the discrete variables.           
+
+</p>
+</li>
+<li>
+<p><code>namesZeroScale</code> <br>
+Names of the variables with zero scale.           
+
+</p>
+</li>
+<li>
+<p><code>remX</code> <br>
+Cleaned data after <code>checkDataSet</code>.           
+
+</p>
+</li>
+<li>
+<p><code>locX</code> <br>
+Estimated location of <code>X</code>.           
+
+</p>
+</li>
+<li>
+<p><code>scaleX</code> <br>
+Estimated scales of <code>X</code>.           
+
+</p>
+</li>
+<li>
+<p><code>Z</code> <br>
+Standardized <code>remX</code>.           
+
+</p>
+</li>
+<li>
+<p><code>nbngbrs</code> <br>
+Number of neighbors used in estimation.          
+
+</p>
+</li>
+<li>
+<p><code>ngbrs</code> <br>
+Indicates neighbors of each column, i.e. the columns most correlated with it.   
+
+</p>
+</li>
+<li>
+<p><code>robcors</code> <br>
+Robust correlations.           
+
+</p>
+</li>
+<li>
+<p><code>robslopes</code> <br>
+Robust slopes.          
+
+</p>
+</li>
+<li>
+<p><code>deshrinkage</code> <br>
+The deshrinkage factor used for every connected (i.e. non-standalone) column of <code>X</code>.           
+              
+</p>
+</li>
+<li>
+<p><code>Xest</code> <br>
+Predicted <code>X</code>.           
+       
+</p>
+</li>
+<li>
+<p><code>scalestres</code> <br>
+Scale estimate of the residuals <code>X - Xest</code>.
+       
+</p>
+</li>
+<li>
+<p><code>stdResid</code> <br>
+Residuals of orginal <code>X</code> minus the estimated <code>Xest</code>, standardized by column.
+
+</p>
+</li>
+<li>
+<p><code>indcells</code> <br>
+Indices of the cells which were flagged in the analysis.
+
+</p>
+</li>
+<li>
+<p><code>Ti</code> <br>
+Outlyingness value of each row.         
+
+</p>
+</li>
+<li>
+<p><code>medTi</code> <br>
+Median of the Ti values.      
+
+</p>
+</li>
+<li>
+<p><code>madTi</code> <br>
+Mad of the Ti values.       
+
+</p>
+</li>
+<li>
+<p><code>indrows</code> <br>
+Indices of the rows which were flagged in the analysis.
+
+</p>
+</li>
+<li>
+<p><code>indNAs</code> <br>
+Indices of all NA cells.
+ 
+</p>
+</li>
+<li>
+<p><code>indall</code> <br>
+Indices of all cells which were flagged in the analysis plus all cells in flagged rows plus the indices of the NA cells.
+         
+</p>
+</li>
+<li>
+<p><code>Ximp</code> <br>
+Imputed <code>X</code>.           
+
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Raymaekers J., Rousseeuw P.J., Van den Bossche W. 
+</p>
+
+
+<h3>References</h3>
+
+<p>Rousseeuw, P.J., Van den Bossche W. (2018). Detecting Deviating Data Cells. <em>Technometrics</em>, <b>60</b>(2), 135-145. <a href="https://www.tandfonline.com/doi/full/10.1080/00401706.2017.1340909">(link to open access pdf)</a>
+</p>
+<p>Raymaekers, J., Rousseeuw P.J. (2019). Fast robust correlation for high dimensional data. <em>Technometrics</em>, <b>63</b>(2), 184-198. <a href="https://www.tandfonline.com/doi/full/10.1080/00401706.2019.1677270">(link to open access pdf)</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>checkDataSet</code>,<code>cellMap</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(MASS); set.seed(12345)
+n &lt;- 50; d &lt;- 20
+A &lt;- matrix(0.9, d, d); diag(A) = 1
+x &lt;- mvrnorm(n, rep(0,d), A)
+x[sample(1:(n * d), 50, FALSE)] &lt;- NA
+x[sample(1:(n * d), 50, FALSE)] &lt;- 10
+x[sample(1:(n * d), 50, FALSE)] &lt;- -10
+x &lt;- cbind(1:n, x)
+DDCx &lt;- DDC(x)
+cellMap(DDCx$stdResid)
+
+# For more examples, we refer to the vignette:
+## Not run: 
+vignette("DDC_examples")
+
+## End(Not run)
+</code></pre>
+
+
+</div>

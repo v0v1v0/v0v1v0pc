@@ -1,0 +1,231 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>identificationDML</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Testing identification with double machine learning</h2>
+
+<h3>Description</h3>
+
+<p>Testing identification with double machine learning
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">identificationDML(
+  y,
+  d,
+  x,
+  z,
+  score = "DR",
+  bootstrap = FALSE,
+  ztreat = 1,
+  zcontrol = 0,
+  seed = 123,
+  MLmethod = "lasso",
+  k = 3,
+  DR_parameters = list(s = NULL, normalized = TRUE, trim = 0.01),
+  squared_parameters = list(zeta_sigma = min(0.5, 500/dim(y)[1])),
+  bootstrap_parameters = list(B = 2000, importance = 0.95, alpha = 0.1, share = 0.5)
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Dependent variable, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+<p>Treatment variable, must be discrete, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Covariates, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>Instrument, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>score</code></td>
+<td>
+<p>Orthogonal score used for testing identification, either <code>"DR"</code> for using the average of the doubly robust (DR) score function (see Section 6 of Huber and Kueck, 2022) for testing, or <code>"squared"</code> for using squared differences in the conditional means outcomes (see Section 7 of Huber and Kueck, 2022). Default is <code>"DR"</code>. Note that this argument is ignored if <code>bootstrap=TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bootstrap</code></td>
+<td>
+<p>If set to <code>TRUE</code>, testing identification is based on the DR score function within data-driven partitioning of the data (using a random forest with 200 trees) as described at the end of Sections 6 and 8 in Huber and Kueck (2022). Default is <code>FALSE</code>. Note that the argument <code>score</code> is ignored if <code>bootstrap=TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ztreat</code></td>
+<td>
+<p>Value of the instrument in the "treatment" group. Default is 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>zcontrol</code></td>
+<td>
+<p>Value of the instrument in the "control" group. Default is 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>Default is 123.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MLmethod</code></td>
+<td>
+<p>Machine learning method for estimating the nuisance parameters based on the <code>SuperLearner</code> package. Must be either  <code>"lasso"</code> (default) for lasso estimation,  <code>"randomforest"</code> for random forests, <code>"xgboost"</code> for xg boosting,  <code>"svm"</code> for support vector machines, <code>"ensemble"</code> for using an ensemble algorithm based on all previously mentioned machine learners, or <code>"parametric"</code> for linear or logit regression.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p>Number of folds in k-fold cross-fitting. Default is 3.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>DR_parameters</code></td>
+<td>
+<p>List of input parameters to test identification using the doubly robust score:
+s: Indicator function for defining a subpopulation for which the treatment effect is estimated as a function of the subpopulation's distribution of <code>x</code>. Default is <code>NULL</code> (estimation of the average treatment effect in the total population).
+normalized: If set to <code>TRUE</code>, then the inverse probability-based weights are normalized such that they add up to 1 within treatment groups. Default is <code>TRUE</code>
+trim: Trimming rule for discarding observations with treatment propensity scores that are smaller than <code>trim</code> or larger than <code>1-trim</code> (to avoid too small denominators in weighting by the inverse of the propensity scores). Default is 0.01.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>squared_parameters</code></td>
+<td>
+<p>List of input parameters to test identification using the squared deviation:
+zeta_sigma: standard deviation of the normal distributed errors to avoid degenerated limit distribution. Default is min(0.05,500/n).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bootstrap_parameters</code></td>
+<td>
+<p>List of input parameters to test identification using the DR score and sample splitting to detect heterogeneity (if <code>bootstrap=TRUE</code>):
+B: number of bootstrap samples to be used in the multiplier bootstrap. Default is 2000.
+importance: upper quantile of covariates in terms of their predictive importance for heterogeneity in the DR score function according to a random forest (with 200 trees). The data are split into subsets based on the median values of these predictive covariates (entering the upper quantile). Default is 0.95.
+alpha: level of the statistical test. Default is 0.1.
+share: share of observations used to detect heterogeneity in the DR score function by the random forest (while the remaining observations are used for hypothesis testing). Default is 0.5.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Testing the identification of causal effects of a treatment <code>d</code> on an outcome <code>y</code> in observational data using a supposed instrument <code>z</code> and controlling for observed covariates <code>x</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An <code>identificationDML</code> object contains different parameters, at least the two following:
+</p>
+<p><code>effect</code>: estimate of the target parameter(s).
+</p>
+<p><code>pval</code>: p-value(s) of the identification test.
+</p>
+
+
+<h3>References</h3>
+
+<p>Huber, M., &amp; Kueck, J. (2022): Testing the identification of causal effects in observational data. arXiv:2203.15890.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Two examples with simulated data
+## Not run: 
+set.seed(777)
+n &lt;- 20000  # sample size
+p &lt;- 50    # number of covariates
+s &lt;- 5  # sparsity (relevant covariates)
+alpha &lt;- 0.1    # level
+
+control violation of identification
+delta &lt;- 2    # effect of unobservable in outcome on index of treatment - either 0 or 2
+gamma &lt;- 0   # direct effect of the instrument on outcome  - either 0 or 0.1
+
+DGP - general
+xcorr &lt;- 1   # if 1, then non-zero covariance between regressors
+if (xcorr == 0) {
+ sigmax &lt;- diag(1,p)}       # covariate matrix at baseline
+if (xcorr != 0){
+ sigmax = matrix(NA,p,p)
+for (i in 1:p){
+   for (j in 1:p){
+     sigmax[i,j] = 0.5^(abs(i-j))
+   }
+ }}
+sparse = FALSE # if FALSE, an approximate sparse setting is considered
+beta = rep(0,p)
+if (sparse == TRUE){
+ for (j in 1:s){ beta[j] &lt;- 1} }
+if (sparse != TRUE){
+ for (j in 1:p) beta[j] &lt;- (1/j)}
+noise_U &lt;- 0.1 # control signal-to-noise
+noise_V &lt;- 0.1
+noise_W &lt;- 0.25
+x &lt;- (rmvnorm(n,rep(0,p),sigmax))
+w &lt;- rnorm(n,0,sd=noise_W)
+z &lt;- 1*(rnorm(n)&gt;0)
+d &lt;- (x%*%beta+z+w+rnorm(n,0,sd=noise_V)&gt;0)*1         # treatment equation
+
+DGP 1 - effect homogeneity
+
+y &lt;- x%*%beta+d+gamma*z+delta*w+rnorm(n,0,sd=noise_U)
+
+output1 &lt;- identificationDML(y = y, d=d, x=x, z=z, score = "DR", bootstrap = FALSE,
+ztreat = 1, zcontrol = 0 , seed = 123, MLmethod ="lasso", k = 3,
+DR_parameters = list(s = NULL , normalized = TRUE, trim = 0.01))
+output1$pval
+output2 &lt;- identificationDML(y=y, d=d, x=x, z=z, score = "squared", bootstrap = FALSE,
+ztreat = 1, zcontrol =0 , seed = 123, MLmethod ="lasso", k = 3)
+output2$pval
+output3 &lt;- identificationDML(y=y, d=d, x=x, z=z, score = "squared", bootstrap = TRUE,
+ztreat = 1, zcontrol =0 , seed = 123, MLmethod ="lasso", k = 3,
+DR_parameters = list(s = NULL , normalized = TRUE, trim = 0.005),
+bootstrap_parameters = list(B = 2000, importance = 0.95, alpha = 0.1, share = 0.5))
+output3$pval
+
+DGP 2 - effect heterogeneity
+
+y = x%*%beta+d+gamma*z*x[,1]+gamma*z*x[,2]+delta*w*x[,1]+delta*w*x[,2]+rnorm(n/2,0,sd=noise_U)
+
+output1 &lt;- identificationDML(y = y, d=d, x=x, z=z, score = "DR", bootstrap = FALSE,
+ztreat = 1, zcontrol = 0 , seed = 123, MLmethod ="lasso", k = 3,
+DR_parameters = list(s = NULL , normalized = TRUE, trim = 0.01))
+output1$pval
+output2 &lt;- identificationDML(y=y, d=d, x=x, z=z, score = "squared", bootstrap = FALSE,
+ztreat = 1, zcontrol =0 , seed = 123, MLmethod ="lasso", k = 3)
+output2$pval
+output3 &lt;- identificationDML(y=y, d=d, x=x, z=z, score = "DR", bootstrap = TRUE,
+ztreat = 1, zcontrol =0 , seed = 123, MLmethod ="lasso", k = 3,
+DR_parameters = list(s = NULL , normalized = TRUE, trim = 0.005),
+bootstrap_parameters = list(B = 2000, importance = 0.95, alpha = 0.1, share = 0.5))
+output3$pval
+
+## End(Not run)
+</code></pre>
+
+
+</div>

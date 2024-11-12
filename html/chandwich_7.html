@@ -1,0 +1,160 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>confint.chandwich</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Confidence intervals for model parameters</h2>
+
+<h3>Description</h3>
+
+<p><code>confint</code> method for objects of class <code>"chandwich"</code>.
+Computes confidence intervals for one or more model parameters based
+on an object returned from <code>adjust_loglik</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'chandwich'
+confint(
+  object,
+  parm,
+  level = 0.95,
+  type = c("vertical", "cholesky", "spectral", "none"),
+  profile = TRUE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>An object of class <code>"chandwich"</code>, returned by
+<code>adjust_loglik</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parm</code></td>
+<td>
+<p>A vector specifying the (unfixed) parameters for which
+confidence intervals are required.
+If missing, all parameters are included.
+</p>
+<p>Can be either a numeric vector,
+specifying indices of the components of the <strong>full</strong> parameter
+vector, or a character vector of parameter names, which must be a subset
+of those supplied in <code>par_names</code> in the call to
+<code>adjust_loglik</code> that produced <code>object</code>.
+</p>
+<p><code>parm</code> must not have any parameters in common with
+<code>attr(object, "fixed_pars")</code>.  <code>parm</code> must not contain
+all of the unfixed parameters, i.e. there is no point in profiling over
+all the unfixed parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>level</code></td>
+<td>
+<p>The confidence level required.  A numeric scalar in (0, 1).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>A character scalar.  The argument <code>type</code> to the function
+returned by <code>adjust_loglik</code>, that is, the type of adjustment
+made to the independence loglikelihood function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>profile</code></td>
+<td>
+<p>A logical scalar. If <code>TRUE</code> then confidence intervals
+based on an (adjusted) profile loglikelihood are returned.  If
+<code>FALSE</code> then intervals based on approximate large sample normal
+theory, which are symmetric about the MLE, are returned.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments to be passed to <code>conf_intervals</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For details see the documentation for the function
+<code>conf_intervals</code>, on which <code>confint.chandwich</code> is based.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A matrix with columns giving lower and upper confidence limits for
+each parameter. These will be labelled as (1 - level)/2 and
+1 - (1 - level)/2 in % (by default 2.5% and 97.5%).
+The row names are the names of the model parameters,
+if these are available.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>The underlying function <code>conf_intervals</code>.  If you would
+like to plot the profile loglikelihood function for a parameter then call
+<code>conf_intervals</code> directly and then use the associated plot
+method.  Note that in <code>conf_intervals()</code> a parameter choice is
+specified using an argument called <code>which_pars</code>, not <code>parm</code>.
+</p>
+<p><code>conf_region</code> for a confidence region for
+pairs of parameters.
+</p>
+<p><code>compare_models</code> for an adjusted likelihood ratio test
+of two models.
+</p>
+<p><code>adjust_loglik</code> to adjust a user-supplied
+loglikelihood function.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># -------------------------- GEV model, owtemps data -----------------------
+# ------------ following Section 5.2 of Chandler and Bate (2007) -----------
+
+gev_loglik &lt;- function(pars, data) {
+  o_pars &lt;- pars[c(1, 3, 5)] + pars[c(2, 4, 6)]
+  w_pars &lt;- pars[c(1, 3, 5)] - pars[c(2, 4, 6)]
+  if (isTRUE(o_pars[2] &lt;= 0 | w_pars[2] &lt;= 0)) return(-Inf)
+  o_data &lt;- data[, "Oxford"]
+  w_data &lt;- data[, "Worthing"]
+  check &lt;- 1 + o_pars[3] * (o_data - o_pars[1]) / o_pars[2]
+  if (isTRUE(any(check &lt;= 0))) return(-Inf)
+  check &lt;- 1 + w_pars[3] * (w_data - w_pars[1]) / w_pars[2]
+  if (isTRUE(any(check &lt;= 0))) return(-Inf)
+  o_loglik &lt;- log_gev(o_data, o_pars[1], o_pars[2], o_pars[3])
+  w_loglik &lt;- log_gev(w_data, w_pars[1], w_pars[2], w_pars[3])
+  return(o_loglik + w_loglik)
+}
+
+# Initial estimates (method of moments for the Gumbel case)
+sigma &lt;- as.numeric(sqrt(6 * diag(var(owtemps))) / pi)
+mu &lt;- as.numeric(colMeans(owtemps) - 0.57722 * sigma)
+init &lt;- c(mean(mu), -diff(mu) / 2, mean(sigma), -diff(sigma) / 2, 0, 0)
+
+# Log-likelihood adjustment of the full model
+par_names &lt;- c("mu[0]", "mu[1]", "sigma[0]", "sigma[1]", "xi[0]", "xi[1]")
+large &lt;- adjust_loglik(gev_loglik, data = owtemps, init = init,
+                       par_names = par_names)
+confint(large)
+confint(large, profile = FALSE)
+</code></pre>
+
+
+</div>

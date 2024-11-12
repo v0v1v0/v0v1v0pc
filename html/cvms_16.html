@@ -1,0 +1,743 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>evaluate</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Evaluate your model's performance</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#maturing"><img src="../help/figures/lifecycle-maturing.svg" alt="[Maturing]"></a>
+</p>
+<p>Evaluate your model's predictions
+on a set of evaluation metrics.
+</p>
+<p>Create ID-aggregated evaluations by multiple methods.
+</p>
+<p>Currently supports regression and classification
+(binary and multiclass). See <code>`type`</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">evaluate(
+  data,
+  target_col,
+  prediction_cols,
+  type,
+  id_col = NULL,
+  id_method = "mean",
+  apply_softmax = FALSE,
+  cutoff = 0.5,
+  positive = 2,
+  metrics = list(),
+  include_predictions = TRUE,
+  parallel = FALSE,
+  models = deprecated()
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p><code>data.frame</code> with predictions, targets and (optionally) an ID column.
+Can be grouped with <code>group_by</code>.
+</p>
+
+
+<h4>Multinomial</h4>
+
+<p>When <code>`type`</code> is <code>"multinomial"</code>, the predictions can be passed in one of two formats.
+</p>
+
+
+<h5>Probabilities (Preferable)</h5>
+
+<p>One column per class with the probability of that class.
+The columns should have the name of their class,
+as they are named in the target column. E.g.:
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>class_1</strong> </td>
+<td style="text-align: right;"> <strong>class_2</strong> </td>
+<td style="text-align: right;">
+  <strong>class_3</strong> </td>
+<td style="text-align: right;"> <strong>target</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.269 </td>
+<td style="text-align: right;"> 0.528 </td>
+<td style="text-align: right;"> 0.203 </td>
+<td style="text-align: right;"> class_2</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.368 </td>
+<td style="text-align: right;"> 0.322 </td>
+<td style="text-align: right;"> 0.310 </td>
+<td style="text-align: right;"> class_3</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.375 </td>
+<td style="text-align: right;"> 0.371 </td>
+<td style="text-align: right;"> 0.254 </td>
+<td style="text-align: right;"> class_2</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  ... </td>
+<td style="text-align: right;"> ... </td>
+<td style="text-align: right;"> ... </td>
+<td style="text-align: right;"> ...</td>
+</tr>
+</table>
+<h5>Classes</h5>
+
+<p>A single column of type <code>character</code> with the predicted classes. E.g.:
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>prediction</strong> </td>
+<td style="text-align: right;"> <strong>target</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  class_2 </td>
+<td style="text-align: right;"> class_2</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  class_1 </td>
+<td style="text-align: right;"> class_3</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  class_1 </td>
+<td style="text-align: right;"> class_2</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  ... </td>
+<td style="text-align: right;"> ...</td>
+</tr>
+</table>
+<h4>Binomial</h4>
+
+<p>When <code>`type`</code> is <code>"binomial"</code>, the predictions can be passed in one of two formats.
+</p>
+
+
+<h5>Probabilities (Preferable)</h5>
+
+<p>One column with the <strong>probability of class being
+the second class alphabetically</strong>
+(1 if classes are 0 and 1). E.g.:
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>prediction</strong> </td>
+<td style="text-align: right;"> <strong>target</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.769 </td>
+<td style="text-align: right;"> 1</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.368 </td>
+<td style="text-align: right;"> 1</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  0.375 </td>
+<td style="text-align: right;"> 0</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  ... </td>
+<td style="text-align: right;"> ...</td>
+</tr>
+</table>
+<p>Note: At the alphabetical ordering of the class labels, they are of type <code>character</code>,
+why e.g. <code>100</code> would come before <code>7</code>.
+</p>
+
+
+<h5>Classes</h5>
+
+<p>A single column of type <code>character</code> with the predicted classes. E.g.:
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>prediction</strong> </td>
+<td style="text-align: right;"> <strong>target</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  class_0 </td>
+<td style="text-align: right;"> class_1</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  class_1 </td>
+<td style="text-align: right;"> class_1</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  class_1 </td>
+<td style="text-align: right;"> class_0</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  ... </td>
+<td style="text-align: right;"> ...</td>
+</tr>
+</table>
+<p>Note: The prediction column will be converted to the probability <code>0.0</code>
+for the first class alphabetically and <code>1.0</code> for
+the second class alphabetically.
+</p>
+
+
+
+<h4>Gaussian</h4>
+
+<p>When <code>`type`</code> is <code>"gaussian"</code>, the predictions should be passed as
+one column with the predicted values. E.g.:
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>prediction</strong> </td>
+<td style="text-align: right;"> <strong>target</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  28.9 </td>
+<td style="text-align: right;"> 30.2</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  33.2 </td>
+<td style="text-align: right;"> 27.1</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  23.4 </td>
+<td style="text-align: right;"> 21.3</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  ... </td>
+<td style="text-align: right;"> ...</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>target_col</code></td>
+<td>
+<p>Name of the column with the true classes/values in <code>`data`</code>.
+</p>
+<p>When <code>`type`</code> is <code>"multinomial"</code>, this column should contain the class names,
+not their indices.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prediction_cols</code></td>
+<td>
+<p>Name(s) of column(s) with the predictions.
+</p>
+<p>Columns can be either numeric or character depending on which format is chosen.
+See <code>`data`</code> for the possible formats.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>Type of evaluation to perform:
+</p>
+<p><code>"gaussian"</code> for regression (like linear regression).
+</p>
+<p><code>"binomial"</code> for binary classification.
+</p>
+<p><code>"multinomial"</code> for multiclass classification.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id_col</code></td>
+<td>
+<p>Name of ID column to aggregate predictions by.
+</p>
+<p>N.B. Current methods assume that the target class/value is constant within the IDs.
+</p>
+<p>N.B. When aggregating by ID, some metrics may be disabled.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id_method</code></td>
+<td>
+<p>Method to use when aggregating predictions by ID.
+Either <code>"mean"</code> or <code>"majority"</code>.
+</p>
+<p>When <code>`type`</code> is <code>gaussian</code>, only the <code>"mean"</code> method is available.
+</p>
+
+
+<h4>mean</h4>
+
+<p>The average prediction (value or probability) is calculated per ID and evaluated.
+This method assumes that the target class/value is constant within the IDs.
+</p>
+
+
+
+<h4>majority</h4>
+
+<p>The most predicted class per ID is found and evaluated. In case of a tie,
+the winning classes share the probability (e.g. <code>P = 0.5</code> each when two majority classes).
+This method assumes that the target class/value is constant within the IDs.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>apply_softmax</code></td>
+<td>
+<p>Whether to apply the softmax function to the
+prediction columns when <code>`type`</code> is <code>"multinomial"</code>.
+</p>
+<p>N.B. <strong>Multinomial models only</strong>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cutoff</code></td>
+<td>
+<p>Threshold for predicted classes. (Numeric)
+</p>
+<p>N.B. <strong>Binomial models only</strong>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>positive</code></td>
+<td>
+<p>Level from dependent variable to predict.
+Either as character (<em>preferable</em>) or level index (<code>1</code> or <code>2</code> - alphabetically).
+</p>
+<p>E.g. if we have the levels <code>"cat"</code> and <code>"dog"</code> and we want <code>"dog"</code> to be the positive class,
+we can either provide <code>"dog"</code> or <code>2</code>, as alphabetically, <code>"dog"</code> comes after <code>"cat"</code>.
+</p>
+<p><strong>Note:</strong> For <em>reproducibility</em>, it's preferable to <strong>specify the name directly</strong>, as
+different <code>locales</code> may sort the levels differently.
+</p>
+<p>Used when calculating confusion matrix metrics and creating <code>ROC</code> curves.
+</p>
+<p>The <code>Process</code> column in the output can be used to verify this setting.
+</p>
+<p>N.B. Only affects the evaluation metrics. <strong>Does NOT affect what the probabilities are of (always the second class alphabetically).</strong>
+</p>
+<p>N.B. <strong>Binomial models only</strong>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metrics</code></td>
+<td>
+<p><code>list</code> for enabling/disabling metrics.
+</p>
+<p>E.g. <code>list("RMSE" = FALSE)</code> would remove <code>RMSE</code> from the regression results,
+and <code>list("Accuracy" = TRUE)</code> would add the regular <code>Accuracy</code> metric
+to the classification results.
+Default values (<code>TRUE</code>/<code>FALSE</code>) will be used for the remaining available metrics.
+</p>
+<p>You can enable/disable all metrics at once by including
+<code>"all" = TRUE/FALSE</code> in the <code>list</code>. This is done prior to enabling/disabling
+individual metrics, why f.i. <code>list("all" = FALSE, "RMSE" = TRUE)</code>
+would return only the <code>RMSE</code> metric.
+</p>
+<p>The <code>list</code> can be created with
+<code>gaussian_metrics()</code>,
+<code>binomial_metrics()</code>, or
+<code>multinomial_metrics()</code>.
+</p>
+<p>Also accepts the string <code>"all"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include_predictions</code></td>
+<td>
+<p>Whether to include the predictions
+in the output as a nested <code>tibble</code>. (Logical)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+<p>Whether to run evaluations in parallel,
+when <code>`data`</code> is grouped with <code>group_by</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>models</code></td>
+<td>
+<p>Deprecated.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Packages used:
+</p>
+<p><strong>Binomial</strong> and <strong>Multinomial</strong>:
+</p>
+<p><code>ROC</code> and <code>AUC</code>:
+</p>
+<p>Binomial: <code>pROC::roc</code>
+</p>
+<p>Multinomial: <code>pROC::multiclass.roc</code>
+</p>
+
+
+<h3>Value</h3>
+
+<p>—————————————————————-
+</p>
+
+
+<h4>Gaussian Results</h4>
+
+<p>—————————————————————-
+</p>
+<p><code>tibble</code> containing the following metrics by default:
+</p>
+<p>Average <strong><code>RMSE</code></strong>, <strong><code>MAE</code></strong>, <strong><code>NRMSE(IQR)</code></strong>,
+<strong><code>RRSE</code></strong>, <strong><code>RAE</code></strong>, <strong><code>RMSLE</code></strong>.
+</p>
+<p>See the additional metrics (disabled by default) at
+<code>?gaussian_metrics</code>.
+</p>
+<p>Also includes:
+</p>
+<p>A nested <code>tibble</code> with the <strong>Predictions</strong> and targets.
+</p>
+<p>A nested <strong>Process</strong> information object with information
+about the evaluation.
+</p>
+
+<p>—————————————————————-
+</p>
+
+
+<h4>Binomial Results</h4>
+
+<p>—————————————————————-
+</p>
+<p><code>tibble</code> with the following evaluation metrics, based on a
+<code>confusion matrix</code> and a <code>ROC</code> curve fitted to the predictions:
+</p>
+<p><code>Confusion Matrix</code>:
+</p>
+<p><strong><code>Balanced Accuracy</code></strong>,
+<strong><code>Accuracy</code></strong>,
+<strong><code>F1</code></strong>,
+<strong><code>Sensitivity</code></strong>,
+<strong><code>Specificity</code></strong>,
+<strong><code>Positive Predictive Value</code></strong>,
+<strong><code>Negative Predictive Value</code></strong>,
+<strong><code>Kappa</code></strong>,
+<strong><code>Detection Rate</code></strong>,
+<strong><code>Detection Prevalence</code></strong>,
+<strong><code>Prevalence</code></strong>, and
+<strong><code>MCC</code></strong> (Matthews correlation coefficient).
+</p>
+<p><code>ROC</code>:
+</p>
+<p><strong><code>AUC</code></strong>, <strong><code>Lower CI</code></strong>, and <strong><code>Upper CI</code></strong>
+</p>
+<p>Note, that the <code>ROC</code> curve is only computed if <code>AUC</code> is enabled. See <code>metrics</code>.
+</p>
+<p>Also includes:
+</p>
+<p>A nested <code>tibble</code> with the <strong>predictions</strong> and targets.
+</p>
+<p>A <code>list</code> of <strong>ROC</strong> curve objects (if computed).
+</p>
+<p>A nested <code>tibble</code> with the <strong>confusion matrix</strong>.
+The <code>Pos_</code> columns tells you whether a row is a
+True Positive (<code>TP</code>), True Negative (<code>TN</code>),
+False Positive (<code>FP</code>), or False Negative (<code>FN</code>),
+depending on which level is the "<code>positive</code>" class.
+I.e. the level you wish to predict.
+</p>
+<p>A nested <strong>Process</strong> information object with information
+about the evaluation.
+</p>
+
+<p>—————————————————————-
+</p>
+
+
+<h4>Multinomial Results</h4>
+
+<p>—————————————————————-
+</p>
+<p>For each class, a <em>one-vs-all</em> binomial evaluation is performed. This creates
+a <strong>Class Level Results</strong> <code>tibble</code> containing the same metrics as the binomial results
+described above (excluding <code>Accuracy</code>, <code>MCC</code>, <code>AUC</code>, <code>Lower CI</code> and <code>Upper CI</code>),
+along with a count of the class in the target column (<strong><code>Support</code></strong>).
+These metrics are used to calculate the <strong>macro-averaged</strong> metrics.
+The nested class level results <code>tibble</code> is also included in the output <code>tibble</code>,
+and could be reported along with the macro and overall metrics.
+</p>
+<p>The output <code>tibble</code> contains the macro and overall metrics.
+The metrics that share their name with the metrics in the nested
+class level results <code>tibble</code> are averages of those metrics
+(note: does not remove <code>NA</code>s before averaging).
+In addition to these, it also includes the <strong><code>Overall Accuracy</code></strong> and
+the multiclass <strong><code>MCC</code></strong>.
+</p>
+<p><strong>Note:</strong> <strong><code>Balanced Accuracy</code></strong> is the macro-averaged metric,
+<em>not</em> the macro sensitivity as sometimes used!
+</p>
+<p>Other available metrics (disabled by default, see <code>metrics</code>):
+<strong><code>Accuracy</code></strong>,
+<em>multiclass</em> <strong><code>AUC</code></strong>,
+<strong><code>Weighted Balanced Accuracy</code></strong>,
+<strong><code>Weighted Accuracy</code></strong>,
+<strong><code>Weighted F1</code></strong>,
+<strong><code>Weighted Sensitivity</code></strong>,
+<strong><code>Weighted Sensitivity</code></strong>,
+<strong><code>Weighted Specificity</code></strong>,
+<strong><code>Weighted Pos Pred Value</code></strong>,
+<strong><code>Weighted Neg Pred Value</code></strong>,
+<strong><code>Weighted Kappa</code></strong>,
+<strong><code>Weighted Detection Rate</code></strong>,
+<strong><code>Weighted Detection Prevalence</code></strong>, and
+<strong><code>Weighted Prevalence</code></strong>.
+</p>
+<p>Note that the "Weighted" average metrics are weighted by the <code>Support</code>.
+</p>
+<p>When having a large set of classes, consider keeping <code>AUC</code> disabled.
+</p>
+<p>Also includes:
+</p>
+<p>A nested <code>tibble</code> with the <strong>Predictions</strong> and targets.
+</p>
+<p>A <code>list</code> of <strong>ROC</strong> curve objects when <code>AUC</code> is enabled.
+</p>
+<p>A nested <code>tibble</code> with the multiclass <strong>Confusion Matrix</strong>.
+</p>
+<p>A nested <strong>Process</strong> information object with information
+about the evaluation.
+</p>
+
+
+<h5>Class Level Results</h5>
+
+<p>Besides the binomial evaluation metrics and the <code>Support</code>,
+the nested class level results <code>tibble</code> also contains a
+nested <code>tibble</code> with the <strong>Confusion Matrix</strong> from the one-vs-all evaluation.
+The <code>Pos_</code> columns tells you whether a row is a
+True Positive (<code>TP</code>), True Negative (<code>TN</code>),
+False Positive (<code>FP</code>), or False Negative (<code>FN</code>),
+depending on which level is the "positive" class. In our case, <code>1</code> is the current class
+and <code>0</code> represents all the other classes together.
+</p>
+
+
+
+
+<h3>Author(s)</h3>
+
+<p>Ludvig Renbo Olsen, <a href="mailto:r-pkgs@ludvigolsen.dk">r-pkgs@ludvigolsen.dk</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other evaluation functions: 
+<code>binomial_metrics()</code>,
+<code>confusion_matrix()</code>,
+<code>evaluate_residuals()</code>,
+<code>gaussian_metrics()</code>,
+<code>multinomial_metrics()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Attach packages
+library(cvms)
+library(dplyr)
+
+# Load data
+data &lt;- participant.scores
+
+# Fit models
+gaussian_model &lt;- lm(age ~ diagnosis, data = data)
+binomial_model &lt;- glm(diagnosis ~ score, data = data)
+
+# Add predictions
+data[["gaussian_predictions"]] &lt;- predict(gaussian_model, data,
+  type = "response",
+  allow.new.levels = TRUE
+)
+data[["binomial_predictions"]] &lt;- predict(binomial_model, data,
+  allow.new.levels = TRUE
+)
+
+# Gaussian evaluation
+evaluate(
+  data = data, target_col = "age",
+  prediction_cols = "gaussian_predictions",
+  type = "gaussian"
+)
+
+# Binomial evaluation
+evaluate(
+  data = data, target_col = "diagnosis",
+  prediction_cols = "binomial_predictions",
+  type = "binomial"
+)
+
+#
+# Multinomial
+#
+
+# Create a tibble with predicted probabilities and targets
+data_mc &lt;- multiclass_probability_tibble(
+  num_classes = 3, num_observations = 45,
+  apply_softmax = TRUE, FUN = runif,
+  class_name = "class_",
+  add_targets = TRUE
+)
+
+class_names &lt;- paste0("class_", 1:3)
+
+# Multinomial evaluation
+evaluate(
+  data = data_mc, target_col = "Target",
+  prediction_cols = class_names,
+  type = "multinomial"
+)
+
+#
+# ID evaluation
+#
+
+# Gaussian ID evaluation
+# Note that 'age' is the same for all observations
+# of a participant
+evaluate(
+  data = data, target_col = "age",
+  prediction_cols = "gaussian_predictions",
+  id_col = "participant",
+  type = "gaussian"
+)
+
+# Binomial ID evaluation
+evaluate(
+  data = data, target_col = "diagnosis",
+  prediction_cols = "binomial_predictions",
+  id_col = "participant",
+  id_method = "mean", # alternatively: "majority"
+  type = "binomial"
+)
+
+# Multinomial ID evaluation
+
+# Add IDs and new targets (must be constant within IDs)
+data_mc[["Target"]] &lt;- NULL
+data_mc[["ID"]] &lt;- rep(1:9, each = 5)
+id_classes &lt;- tibble::tibble(
+  "ID" = 1:9,
+  "Target" = sample(x = class_names, size = 9, replace = TRUE)
+)
+data_mc &lt;- data_mc %&gt;%
+  dplyr::left_join(id_classes, by = "ID")
+
+# Perform ID evaluation
+evaluate(
+  data = data_mc, target_col = "Target",
+  prediction_cols = class_names,
+  id_col = "ID",
+  id_method = "mean", # alternatively: "majority"
+  type = "multinomial"
+)
+
+#
+# Training and evaluating a multinomial model with nnet
+#
+
+# Only run if `nnet` is installed
+if (requireNamespace("nnet", quietly = TRUE)){
+
+# Create a data frame with some predictors and a target column
+class_names &lt;- paste0("class_", 1:4)
+data_for_nnet &lt;- multiclass_probability_tibble(
+  num_classes = 3, # Here, number of predictors
+  num_observations = 30,
+  apply_softmax = FALSE,
+  FUN = rnorm,
+  class_name = "predictor_"
+) %&gt;%
+  dplyr::mutate(Target = sample(
+    class_names,
+    size = 30,
+    replace = TRUE
+  ))
+
+# Train multinomial model using the nnet package
+mn_model &lt;- nnet::multinom(
+  "Target ~ predictor_1 + predictor_2 + predictor_3",
+  data = data_for_nnet
+)
+
+# Predict the targets in the dataset
+# (we would usually use a test set instead)
+predictions &lt;- predict(
+  mn_model,
+  data_for_nnet,
+  type = "probs"
+) %&gt;%
+  dplyr::as_tibble()
+
+# Add the targets
+predictions[["Target"]] &lt;- data_for_nnet[["Target"]]
+
+# Evaluate predictions
+evaluate(
+  data = predictions,
+  target_col = "Target",
+  prediction_cols = class_names,
+  type = "multinomial"
+)
+}
+
+</code></pre>
+
+
+</div>

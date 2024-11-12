@@ -1,0 +1,144 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CV.search.DP.LR.regression</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Grid search based on Cross-Validation of all tuning parameters (gamma, lambda and zeta) for regression.</h2>
+
+<h3>Description</h3>
+
+<p>Perform grid search based on Cross-Validation of all tuning parameters (gamma, lambda and zeta)
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CV.search.DP.LR.regression(
+  y,
+  X,
+  gamma_set,
+  lambda_set,
+  zeta_set,
+  delta,
+  eps = 0.001
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>A <code>numeric</code> vector of response variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>A <code>numeric</code> matrix of covariates with vertical axis being time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gamma_set</code></td>
+<td>
+<p>A <code>numeric</code> vector of candidate tuning parameter associated with the l0 penalty.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda_set</code></td>
+<td>
+<p>A <code>numeric</code> vector of candidate tuning parameter for the lasso penalty.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>zeta_set</code></td>
+<td>
+<p>A <code>numeric</code> vector of candidate tuning parameter for the group lasso.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta</code></td>
+<td>
+<p>A strictly positive <code>integer</code> scalar of minimum spacing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eps</code></td>
+<td>
+<p>A <code>numeric</code> scalar of precision level for convergence of lasso.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A <code>list</code> with the following structure:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>cpt_hat</code></td>
+<td>
+<p>A list of vector of estimated changepoints (sorted in strictly increasing order)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K_hat</code></td>
+<td>
+<p>A list of scalar of number of estimated changepoints</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test_error</code></td>
+<td>
+<p>A list of vector of testing errors (each row corresponding to each gamma, and each column corresponding to each lambda)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>train_error</code></td>
+<td>
+<p>A list of vector of training errors</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Daren Wang &amp; Haotian Xu
+</p>
+
+
+<h3>References</h3>
+
+<p>Rinaldo, Wang, Wen, Willett and Yu (2020) &lt;arxiv:2010.10410&gt;
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(123)
+d0 = 8
+p = 15
+n = 100
+cpt_true = c(30, 70)
+data = simu.change.regression(d0, cpt_true, p, n, sigma = 1, kappa = 9)
+gamma_set = c(0.01, 0.1)
+lambda_set = c(0.01, 0.1)
+temp = CV.search.DP.regression(y = data$y, X = data$X, gamma_set, lambda_set, delta = 2)
+temp$test_error # test error result
+# find the indices of gamma_set and lambda_set which minimizes the test error
+min_idx = as.vector(arrayInd(which.min(temp$test_error), dim(temp$test_error))) 
+gamma_set[min_idx[1]]
+lambda_set[min_idx[2]]
+cpt_init = unlist(temp$cpt_hat[min_idx[1], min_idx[2]])
+zeta_set = c(0.1, 1)
+temp_zeta = CV.search.DP.LR.regression(data$y, data$X, gamma_set[min_idx[1]],
+                  lambda_set[min_idx[2]], zeta_set, delta = 2, eps = 0.001)
+min_zeta_idx = which.min(unlist(temp_zeta$test_error))
+cpt_LR = local.refine.regression(cpt_init, data$y, X = data$X, zeta = zeta_set[min_zeta_idx])
+Hausdorff.dist(cpt_init, cpt_true)
+Hausdorff.dist(cpt_LR, cpt_true)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,104 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>create_effect_vector</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Translate target effect to vector of response variables</h2>
+
+<h3>Description</h3>
+
+<p>Translate target effect to vector of response variables
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">create_effect_vector(effect, graph, obsvars, respvars, q.list, variables)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>effect</code></td>
+<td>
+<p>Effect list, as returned by parse_effect</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>graph</code></td>
+<td>
+<p>The graph</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>obsvars</code></td>
+<td>
+<p>Vector of observed variable vertices from the graph</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>respvars</code></td>
+<td>
+<p>Response function, as returned by create_response_function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>q.list</code></td>
+<td>
+<p>List with q matrices, as returned by create_q_matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>variables</code></td>
+<td>
+<p>Vector of qs names</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list with the target effect in terms of qs
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">graph &lt;- graph_from_literal(Z -+ X, X -+ Y, Ul -+ Z, Ur -+ X, Ur -+ Y)
+V(graph)$leftside &lt;- c(1, 0, 0, 1, 0)
+V(graph)$latent &lt;- c(0, 0, 0, 1, 1)
+V(graph)$nvals &lt;- c(3, 2, 2, 2, 2)
+V(graph)$exposure &lt;- c(0, 1, 0, 0, 0)
+V(graph)$outcome &lt;- c(0, 0, 1, 0, 0)
+E(graph)$rlconnect &lt;- c(0, 0, 0, 0, 0)
+E(graph)$edge.monotone &lt;- c(0, 0, 0, 0, 0)
+constraints &lt;- "X(Z = 1) &gt;= X(Z = 0)"
+effectt = "p{Y(X = 1) = 1} - p{Y(X = 0) = 1}"
+leftind &lt;- vertex_attr(graph)$leftside
+cond.vars &lt;- V(graph)[leftind == 1 &amp; names(V(graph)) != "Ul"]
+right.vars &lt;- V(graph)[leftind == 0 &amp; names(V(graph)) != "Ur"] 
+obsvars &lt;- c(right.vars, cond.vars)
+observed.variables &lt;- V(graph)[V(graph)$latent == 0]
+var.values &lt;- lapply(names(observed.variables), 
+function(varname) seq(from = 0, to = causaloptim:::numberOfValues(graph, varname) - 1))
+names(var.values) &lt;- names(observed.variables)
+p.vals &lt;- do.call(expand.grid, var.values)
+jd &lt;- do.call(paste0, p.vals[, names(right.vars[right.vars$latent == 0]), drop = FALSE])
+cond &lt;- do.call(paste0, p.vals[, names(cond.vars[cond.vars$latent == 0]), drop = FALSE])
+parameters &lt;- paste0("p", paste(jd, cond, sep = "_"))
+parameters.key &lt;- paste(paste(names(right.vars[right.vars$latent == 0]), collapse = ""), 
+paste(names(cond.vars[cond.vars$latent == 0]), collapse = ""), sep = "_")
+respvars &lt;- create_response_function(graph, right.vars, cond.vars)
+q.list &lt;- create_q_matrix(respvars, right.vars, cond.vars, constraints)
+variables &lt;- as.character(unique(q.list$q.vals.all.lookup$vars))
+linconstr.list &lt;- create_R_matrix(graph, obsvars, respvars, p.vals, parameters, q.list, variables)
+parameters &lt;- linconstr.list$newparams
+p.vals &lt;- linconstr.list$newpvals
+effect &lt;- parse_effect(effectt)
+var.eff &lt;- create_effect_vector(effect, graph, obsvars, respvars, q.list, variables)
+</code></pre>
+
+
+</div>

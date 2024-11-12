@@ -1,0 +1,143 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>predict.customizedGlmnet</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+make predictions from a <code>customizedGlmnet</code> object
+</h2>
+
+<h3>Description</h3>
+
+<p>Returns predictions for the test set provided at the time of fitting the
+<code>customizedGlmnet</code> object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'customizedGlmnet'
+predict(object, lambda,
+  type = c('response', 'class'), ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+
+<p>a fitted <code>customizedGlmnet</code> object
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+
+<p>regularization parameter
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+
+<p>Type of prediction, currently only "response" and "class" are supported. Type
+"response" returns fitted values for "gaussian" family and fitted probabilities
+for "binomial" and "multinomial" families. Type "class" applies only to
+"binomial" and "multinomial" families and returns the class with the highest
+fitted probability.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+
+<p>ignored
+</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a vector of predictions corresponding to the test data input to the model at
+the time of fitting
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Scott Powers, Trevor Hastie, Robert Tibshirani
+</p>
+
+
+<h3>References</h3>
+
+<p>Scott Powers, Trevor Hastie and Robert Tibshirani (2015) "Customized training
+with an application to mass specrometric imaging of gastric cancer data."
+Annals of Applied Statistics 9, 4:1709-1725.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>predict</code>, <code>customizedGlmnet</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">require(glmnet)
+
+# Simulate synthetic data
+
+n = m = 150
+p = 50
+q = 5
+K = 3
+sigmaC = 10
+sigmaX = sigmaY = 1
+set.seed(5914)
+
+beta = matrix(0, nrow = p, ncol = K)
+for (k in 1:K) beta[sample(1:p, q), k] = 1
+c = matrix(rnorm(K*p, 0, sigmaC), K, p)
+eta = rnorm(K)
+pi = (exp(eta)+1)/sum(exp(eta)+1)
+z = t(rmultinom(m + n, 1, pi))
+x = crossprod(t(z), c) + matrix(rnorm((m + n)*p, 0, sigmaX), m + n, p)
+y = rowSums(z*(crossprod(t(x), beta))) + rnorm(m + n, 0, sigmaY)
+
+x.train = x[1:n, ]
+y.train = y[1:n]
+x.test = x[n + 1:m, ]
+y.test = y[n + 1:m]
+
+
+# Example 1: Use clustering to fit the customized training model to training
+# and test data with no predefined test-set blocks
+
+fit1 = customizedGlmnet(x.train, y.train, x.test, G = 3,
+    family = "gaussian")
+
+# Compute test error using the predict function:
+mean((y.test - predict(fit1, lambda = 10))^2)
+
+
+# Example 2: If the test set has predefined blocks, use these blocks to define
+# the customized training sets, instead of using clustering.
+group.id = apply(z == 1, 1, which)[n + 1:m]
+
+fit2 = customizedGlmnet(x.train, y.train, x.test, group.id)
+
+# Compute test error using the predict function:
+mean((y.test - predict(fit2, lambda = 10))^2)
+</code></pre>
+
+
+</div>

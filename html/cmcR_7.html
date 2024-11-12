@@ -1,0 +1,100 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>comparison_cor</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculates correlation between a cell and a matrix of the same dimensions
+extracted from the cell's associated region.</h2>
+
+<h3>Description</h3>
+
+<p>Calculates correlation between a cell and a matrix of the same dimensions
+extracted from the cell's associated region.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">comparison_cor(
+  cellHeightValues,
+  regionHeightValues,
+  fft_ccf_df,
+  use = "pairwise.complete.obs"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cellHeightValues</code></td>
+<td>
+<p>list/tibble column of x3p objects containing a
+reference scan's cells (as returned by comparison_cellDivision)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>regionHeightValues</code></td>
+<td>
+<p>list/tibble column of x3p objects containing a
+target scan's regions (as returned by comparison_getTargetRegions)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fft_ccf_df</code></td>
+<td>
+<p>data frame/tibble column containing the data frame of (x,y)
+and CCF values returned by comparison_fft_ccf</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use</code></td>
+<td>
+<p>argument for stats::cor</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A vector of the same length as the input containing correlation values
+at the estimated alignment between each reference cell and its associated
+target region
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(fadul1.1_processed,fadul1.2_processed)
+
+cellTibble &lt;- fadul1.1_processed %&gt;%
+comparison_cellDivision(numCells = c(8,8)) %&gt;%
+dplyr::mutate(regionHeightValues =
+             comparison_getTargetRegions(cellHeightValues = cellHeightValues,
+                                         target = fadul1.2_processed)) %&gt;%
+dplyr::mutate(cellPropMissing =
+           comparison_calcPropMissing(heightValues = cellHeightValues),
+              regionPropMissing =
+           comparison_calcPropMissing(heightValues = regionHeightValues)) %&gt;%
+dplyr::filter(cellPropMissing &lt;= .85 &amp; regionPropMissing &lt;= .85) %&gt;%
+dplyr::mutate(cellHeightValues =
+        comparison_standardizeHeights(heightValues = cellHeightValues),
+              regionHeightValues =
+        comparison_standardizeHeights(heightValues = regionHeightValues)) %&gt;%
+dplyr::mutate(cellHeightValues =
+                  comparison_replaceMissing(heightValues = cellHeightValues),
+              regionHeightValues =
+            comparison_replaceMissing(heightValues = regionHeightValues)) %&gt;%
+dplyr::mutate(fft_ccf_df = comparison_fft_ccf(cellHeightValues,
+                                              regionHeightValues)) %&gt;%
+dplyr::mutate(pairwiseCompCor = comparison_cor(cellHeightValues,
+                                               regionHeightValues,
+                                               fft_ccf_df))
+
+head(cellTibble)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,350 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ellipCopula</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Construction of Elliptical Copula Class Objects</h2>
+
+<h3>Description</h3>
+
+<p>Creating elliptical copula objects with corresponding dimension and
+parameters, including the dispersion structure <code class="reqn">P</code> (pronounced “Rho”).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ellipCopula (family, param, dim = 2, dispstr = "ex", df = 4, ...)
+
+normalCopula(param, dim = 2, dispstr = "ex")
+
+     tCopula(param, dim = 2, dispstr = "ex", df = 4,
+             df.fixed = FALSE, df.min = 0.01)
+
+dispstrToep(perm = NULL, check = TRUE)
+
+## S4 method for signature 'matrix,normalCopula'
+pCopula(u, copula, algorithm=NULL, keepAttr=FALSE, ...)
+
+## S4 method for signature 'matrix,tCopula'
+pCopula(u, copula, algorithm=NULL, keepAttr=FALSE, ...)
+
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>a <code>character</code> string specifying the family of an
+elliptical copula.  Must be <code>"normal"</code> (the default) or <code>"t"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>param</code></td>
+<td>
+<p>a <code>numeric</code> vector specifying the parameter values;
+<code>P2p()</code> accesses this vector, whereas
+<code>p2P()</code> and <code>getSigma()</code> provide
+the corresponding “P” matrix, see below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dim</code></td>
+<td>
+<p> the dimension of the copula. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dispstr</code></td>
+<td>
+<p>a string specifying the “dispersion structure”,
+i.e., type of the symmetric positive definite matrix characterizing the
+elliptical copula.  Currently available structures are <code>"ex"</code> for
+<b>ex</b>changeable, <code>"ar1"</code> for <code class="reqn">AR(1)</code>, <code>"toep"</code> for
+Toeplitz (<code>toeplitz</code>), and <code>"un"</code> for
+<b>un</b>structured.
+</p>
+<p>The dispersion structure for Toeplitz can (and often should) now be
+specified by <code>dispstrToep()</code>, see there.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>integer value specifying the number of degrees of freedom
+of the multivariate t distribution used to construct the t copulas.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df.fixed</code></td>
+<td>
+<p>logical specifying if the degrees of freedom <code>df</code> will be
+considered as a parameter (to be estimated) or not.  The default,
+<code>FALSE</code>, means that <code>df</code> is to be estimated if the object is
+passed as argument to <code>fitCopula</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df.min</code></td>
+<td>
+<p>non-negative number; the strict lower bound for
+<code>df</code>, mainly during fitting when <code>df.fixed=FALSE</code>, with
+<code>fitCopula</code>.</p>
+</td>
+</tr>
+</table>
+<table>
+<tr style="vertical-align: top;">
+<td><code>copula</code></td>
+<td>
+<p>an <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> object of class <code>"Copula"</code>, in our
+case inheriting from <code>"ellipCopula"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>a vector of the copula dimension <code class="reqn">d</code> or a matrix with <code class="reqn">d</code>
+columns, giving the points where the distribution function needs to be
+evaluated.  Note that values outside of the cube <code class="reqn">[0,1]^d</code> are
+treated equivalently to those on the cube boundary.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>algorithm</code></td>
+<td>
+<p><code>NULL</code> or an <code>"algorithm"</code> object for package
+<a href="https://CRAN.R-project.org/package=mvtnorm"><span class="pkg">mvtnorm</span></a>'s <code>pmvt()</code> or <code>pmvnorm()</code> functions, see
+<code>algorithms</code>.  Note that for larger dimensions,
+the monte-carlo based <code>GenzBretz(..)</code> must be used, consequently
+with slightly random results.  By default, <code>algorithm = NULL</code>,
+<code>algorithm</code> is chosen separately for each row <code>x &lt;- u[i,]</code>, for
+</p>
+
+<dl>
+<dt>
+<code>normalCopula</code>:</dt>
+<dd>
+<p> via hidden function
+<code>pmvnormAlgo(dim, x, ...)</code>
+which currently is defined as 
+</p>
+<pre> pmvnormAlgo &lt;- function(dim, x, ...) {
+    if(dim &lt;= 3 &amp;&amp; !anyNA(x) &amp;&amp; (!any(xI &lt;- x == Inf) || all(xI)))
+        TVPACK(...)
+    else if(dim &lt;= 5)
+        Miwa(...)
+    else
+        GenzBretz(...)
+  }</pre>
+</dd>
+<dt>
+<code>tCopula</code>:</dt>
+<dd>
+<p> via (hidden) <code>pmvtAlgo(dim, x, ...)</code>
+which is the same as <code>pmvnormAlgo()</code> above, but as <code>Miwa()</code>
+is not applicable, without the <code>else if(dim &lt;= 5) Miwa(...)</code>
+clause.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keepAttr</code></td>
+<td>
+<p><code>logical</code> passed to
+<code>pmvnorm</code> or <code>pmvt</code>, respectively.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>for the <code>pCopula()</code> methods, optional arguments to the
+corresponding algorithm.</p>
+</td>
+</tr>
+</table>
+<table>
+<tr style="vertical-align: top;">
+<td><code>perm</code></td>
+<td>
+<p>an <code>integer</code> vector of length <code class="reqn">d =</code><code>dim</code>,
+which must be a permutation of <code>1:d</code> specifying the (column)
+ordering of the variables which has Toeplitz dispersion.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>check</code></td>
+<td>
+<p>a <code>logical</code> specifying if the validity of
+<code>perm</code> should be checked (not strictly, currently).</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>For
+</p>
+
+<dl>
+<dt>
+<code>ellipCopula()</code>, <code>normalCopula()</code>, or <code>tCopula()</code>:</dt>
+<dd>
+<p>an elliptical copula object of class <code>"normalCopula"</code>
+or <code>"tCopula"</code>.</p>
+</dd>
+<dt>dispstrToep():</dt>
+<dd>
+<p>the <code>character</code> string <code>"toep"</code>,
+optionally with attribute (see <code>attributes</code>,
+<code>attr</code>) <code>"perm"</code> with a permutation <code class="reqn">p</code> of
+<code>1:d</code>, such that (the column permuted) <code class="reqn">U_p</code>, or in
+the data case the column-permuted matrix <code>U[,p]</code> has as
+dispersion matrix <code>toeplitz(c(1, par))</code>, with <code>par</code> the
+respective parameter vector of bivariate “correlations”
+<code class="reqn">\rho_{i,j}</code>.
+</p>
+<p>Note that the result of <code>dispstrToep()</code> is currently stored in the
+<code>dispstr</code> slot of the copula object.</p>
+</dd>
+<dt>pCopula(u, *): </dt>
+<dd>
+<p>the numerical vector of copula probabilites of
+length <code>nrow(u)</code>.</p>
+</dd>
+</dl>
+<h3>Note</h3>
+
+<p><code>ellipCopula()</code> is a wrapper for <code>normalCopula()</code> and
+<code>tCopula()</code>.
+</p>
+<p>The  <code>pCopula()</code> methods for the normal- and t-copulas
+accept optional arguments to be passed to the underlying
+(numerical integration) algorithms from package <a href="https://CRAN.R-project.org/package=mvtnorm"><span class="pkg">mvtnorm</span></a>'s
+<code>pmvnorm</code> and <code>pmvt</code>,
+respectively, notably <code>algorithm</code>, see
+<code>GenzBretz</code>, or <code>abseps</code>
+which defaults to <code>0.001</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>p2P()</code>, and <code>getSigma()</code> for construction and
+extraction of the dispersion matrix <code class="reqn">P</code> or <code class="reqn">Sigma</code> matrix of
+(generalized)
+correlations.
+</p>
+<p><code>archmCopula</code>, <code>fitCopula</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">normalCopula(c(0.5, 0.6, 0.7), dim = 3, dispstr = "un")
+t.cop &lt;- tCopula(c(0.5, 0.3), dim = 3, dispstr = "toep",
+                 df = 2, df.fixed = TRUE)
+getSigma(t.cop) # P matrix (with diagonal = 1)
+stopifnot(all.equal(toeplitz(c(1, .5, .3)), getSigma(t.cop)))
+
+## dispersion "AR1" :
+nC.7 &lt;- normalCopula(0.8, dim = 7, dispstr = "ar1")
+getSigma(nC.7)
+stopifnot(all.equal(toeplitz(.8^(0:6)), getSigma(nC.7)))
+
+## from the wrapper
+norm.cop &lt;- ellipCopula("normal", param = c(0.5, 0.6, 0.7),
+                        dim = 3, dispstr = "un")
+if(require("scatterplot3d") &amp;&amp; dev.interactive(orNone=TRUE)) {
+  ## 3d scatter plot of 1000 random observations
+  scatterplot3d(rCopula(1000, norm.cop))
+  scatterplot3d(rCopula(1000, t.cop))
+}
+set.seed(12)
+uN &lt;- rCopula(512, norm.cop)
+set.seed(2); pN1 &lt;- pCopula(uN, norm.cop)
+set.seed(3); pN2 &lt;- pCopula(uN, norm.cop)
+stopifnot(identical(pN1, pN2)) # no longer random for dim = 3
+(Xtras &lt;- copula:::doExtras())
+if(Xtras) { ## a bit more accurately:
+  set.seed(4); pN1. &lt;- pCopula(uN, norm.cop, abseps = 1e-9)
+  set.seed(5); pN2. &lt;- pCopula(uN, norm.cop, abseps = 1e-9)
+  stopifnot(all.equal(pN1., pN2., 1e-5))# see 3.397e-6
+  ## but increasing the required precision (e.g., abseps=1e-15) does *NOT* help
+}
+
+## For smaller copula dimension 'd', alternatives are available and
+## non-random, see ?GenzBretz from package 'mvtnorm' :
+has_mvtn &lt;- "package:mvtnorm" %in% search() #% &lt;&lt; (workaround ESS Rd render bug)
+if(!has_mvtn)
+  require("mvtnorm")# -&gt; GenzBretz(), Miva(), and TVPACK() are available
+## Note that Miwa() would become very slow for dimensions 5, 6, ..
+set.seed(4); pN1.M &lt;- pCopula(uN, norm.cop, algorithm = Miwa(steps = 512))
+set.seed(5); pN2.M &lt;- pCopula(uN, norm.cop, algorithm = Miwa(steps = 512))
+stopifnot(all.equal(pN1.M, pN2.M, tol= 1e-15))# *no* randomness
+set.seed(4); pN1.T &lt;- pCopula(uN, norm.cop, algorithm = TVPACK(abseps = 1e-10))
+set.seed(5); pN2.T &lt;- pCopula(uN, norm.cop, algorithm = TVPACK(abseps = 1e-14))
+stopifnot(all.equal(pN1.T, pN2.T, tol= 1e-15))# *no* randomness (but no effect of 'abseps')
+if(!has_mvtn)
+   detach("package:mvtnorm")# (revert)
+
+
+## Versions with unspecified parameters:
+tCopula()
+allEQ &lt;- function(u,v) all.equal(u, v, tolerance=0)
+stopifnot(allEQ(ellipCopula("norm"), normalCopula()),
+          allEQ(ellipCopula("t"), tCopula()))
+tCopula(dim=3)
+tCopula(dim=4, df.fixed=TRUE)
+tCopula(dim=5, disp = "toep", df.fixed=TRUE)
+normalCopula(dim=4, disp = "un")
+
+## Toeplitz after *permutation* dispersions (new in copula 1.1-0) ---------
+tpar &lt;- c(7,5,3)/8 # *gives* pos.def.:
+(ev &lt;- eigen(toeplitz(c(1, tpar)), symmetric=TRUE, only.values=TRUE)$values)
+stopifnot(ev &gt; 0)
+N4.   &lt;- ellipCopula("normal", dim=4, param=tpar, dispstr = "toep") #"regular"
+## reversed order is "the same" for toeplitz structure:
+N4.pr &lt;- ellipCopula("normal", dim=4, param=tpar, dispstr = dispstrToep(4:1))
+N4.p1 &lt;- ellipCopula("normal", dim=4, param=tpar, dispstr = dispstrToep(c(4,1:3)))
+N4.p2 &lt;- ellipCopula("normal", dim=4, param=tpar, dispstr = dispstrToep(c(4:3,1:2)))
+N4.p3 &lt;- ellipCopula("normal", dim=4, param=tpar, dispstr = dispstrToep(c(2,4,1,3)))
+
+(pm &lt;- attr(N4.p3@dispstr, "perm")) # (2 4 1 3)
+ip &lt;- c(3,1,4,2) # the *inverse* permutation of (2 4 1 3) = Matrix::invPerm(pm)
+(Sp3 &lt;- getSigma(N4.p3)) # &lt;-- "permuted toeplitz"
+Sp3[ip, ip] # re-ordered rows &amp; columns =&gt; *is* toeplitz :
+stopifnot(exprs = {
+  ## permutations  pm  and  ip  are inverses:
+  pm[ip] == 1:4
+  ip[pm] == 1:4
+  is.matrix(T4 &lt;- toeplitz(c(1, tpar)))
+  identical(getSigma(N4.),   T4)
+  identical(getSigma(N4.pr), T4) # 4:1 and 1:4 is "the same" for Rho
+  identical(Sp3[ip, ip]  ,   T4)
+  identical(Sp3,      T4[pm,pm])
+})
+## Data generation -- NB: The U matrices are equal only "in distribution":
+set.seed(7); U.p3 &lt;- rCopula(1000, N4.p3)
+set.seed(7); U.   &lt;- rCopula(1000, N4.)
+stopifnot(exprs = {
+ all.equal(loglikCopula(tpar, u=U.p3,      copula= N4.p3),
+           loglikCopula(tpar, u=U.p3[,ip], copula= N4.) -&gt; LL3)
+ all.equal(loglikCopula(tpar, u=U.,      copula= N4.),
+           loglikCopula(tpar, u=U.[,pm], copula= N4.p3) -&gt; LL.)
+})
+c(LL. , LL3)# similar but different
+if(Xtras) {
+  fm.  &lt;- fitCopula(N4.  , U.  )
+  fm.3 &lt;- fitCopula(N4.p3, U.p3)
+  summary(fm.3)
+  stopifnot(all.equal(coef(fm.), coef(fm.3), tol = 0.01))# similar but different
+}
+</code></pre>
+
+
+</div>

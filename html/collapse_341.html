@@ -1,0 +1,184 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>funique</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fast Unique Elements / Rows
+</h2>
+
+<h3>Description</h3>
+
+<p><code>funique</code> is an efficient alternative to <code>unique</code> (or <code>unique.data.table, kit::funique, dplyr::distinct</code>).
+</p>
+<p><code>fnunique</code> is an alternative to <code>NROW(unique(x))</code> (or <code>data.table::uniqueN, kit::uniqLen, dplyr::n_distinct</code>).
+</p>
+<p><code>fduplicated</code> is an alternative to <code>duplicated</code> (or <code>duplicated.data.table</code>, <code>kit::fduplicated</code>).
+</p>
+<p>The <em>collapse</em> versions are versatile and highly competitive. 
+</p>
+<p><code>any_duplicated(x)</code> is faster than <code>any(fduplicated(x))</code>. <em>Note</em> that for atomic vectors, <code>anyDuplicated</code> is currently more efficient if there are duplicates at the beginning of the vector.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">funique(x, ...)
+
+## Default S3 method:
+funique(x, sort = FALSE, method = "auto", ...)
+
+## S3 method for class 'data.frame'
+funique(x, cols = NULL, sort = FALSE, method = "auto", ...)
+
+## S3 method for class 'sf'
+funique(x, cols = NULL, sort = FALSE, method = "auto", ...)
+
+# Methods for indexed data / compatibility with plm:
+
+## S3 method for class 'pseries'
+funique(x, sort = FALSE, method = "auto", drop.index.levels = "id", ...)
+
+## S3 method for class 'pdata.frame'
+funique(x, cols = NULL, sort = FALSE, method = "auto", drop.index.levels = "id", ...)
+
+
+fnunique(x)                  # Fast NROW(unique(x)), for vectors and lists
+fduplicated(x, all = FALSE)  # Fast duplicated(x), for vectors and lists
+any_duplicated(x)            # Simple logical TRUE|FALSE duplicates check
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a atomic vector or data frame / list of equal-length columns. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sort</code></td>
+<td>
+<p>logical. <code>TRUE</code> orders the unique elements / rows. <code>FALSE</code> returns unique values in order of first occurrence. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>an integer or character string specifying the method of computation:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<em> Int. </em>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> String </em>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> Description </em>  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 1 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "auto"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> automatic selection: hash if <code>sort = FALSE</code> else radix. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 2 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "radix" </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> use radix ordering to determine unique values. Supports <code>sort = FALSE</code> but only for character data. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 3 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "hash"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> use index hashing to determine unique values. Supports <code>sort = TRUE</code> but only for atomic vectors (default method). </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+  </td>
+</tr>
+</table>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cols</code></td>
+<td>
+<p>compute unique rows according to a subset of columns. Columns can be selected using column names, indices, a logical vector or a selector function (e.g. <code>is.character</code>). <em>Note:</em> All columns are returned. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments passed to <code>radixorderv</code>, e.g. <code>decreasing</code> or <code>na.last</code>. Only applicable if <code>method = "radix"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop.index.levels</code></td>
+<td>
+<p>character. Either <code>"id"</code>, <code>"time"</code>, <code>"all"</code> or <code>"none"</code>. See indexing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>all</code></td>
+<td>
+<p>logical. <code>TRUE</code> returns all duplicated values, including the first occurrence.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If all values/rows are already unique, then <code>x</code> is returned. Otherwise a copy of <code>x</code> with duplicate rows removed is returned.  See <code>group</code> for some additional computational details.
+</p>
+<p>The <em>sf</em> method simply ignores the geometry column when determining unique values.
+</p>
+<p>Methods for indexed data also subset the index accordingly.
+</p>
+<p><code>any_duplicated</code> is currently simply implemented as <code>fnunique(x) &lt; NROW(x)</code>, which means it does not have facilities to terminate early, and users are advised to use <code>anyDuplicated</code> with atomic vectors if chances are high that there are duplicates at the beginning of the vector. With no duplicate values or data frames, <code>any_duplicated</code> is considerably faster than <code>anyDuplicated</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>funique</code> returns <code>x</code> with duplicate elements/rows removed, <code>fnunique</code> returns an integer giving the number of unique values/rows, <code>fduplicated</code> gives a logical vector with <code>TRUE</code> indicating duplicated elements/rows. 
+</p>
+
+
+<h3>Note</h3>
+
+<p>These functions treat lists like data frames, unlike <code>unique</code> which has a list method to determine uniqueness of (non-atomic/heterogeneous) elements in a list.
+</p>
+<p>No matrix method is provided. Please use the alternatives provided in package <em>kit</em> with matrices. 
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fndistinct</code>, <code>group</code>, Fast Grouping and Ordering, Collapse Overview.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">funique(mtcars$cyl)
+funique(gv(mtcars, c(2,8,9)))
+funique(mtcars, cols = c(2,8,9))
+fnunique(gv(mtcars, c(2,8,9)))
+fduplicated(gv(mtcars, c(2,8,9)))
+fduplicated(gv(mtcars, c(2,8,9)), all = TRUE)
+any_duplicated(gv(mtcars, c(2,8,9)))
+any_duplicated(mtcars)
+</code></pre>
+
+
+</div>

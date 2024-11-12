@@ -1,0 +1,156 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>civis_to_multifile_csv</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Split a Redshift table into multiple CSV parts on S3</h2>
+
+<h3>Description</h3>
+
+<p>Split a Redshift table into multiple CSV parts on S3 and return their
+locations as file IDs and presigned S3 urls.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">civis_to_multifile_csv(
+  sql,
+  database,
+  job_name = NULL,
+  hidden = TRUE,
+  include_header = TRUE,
+  compression = "gzip",
+  delimiter = ",",
+  unquoted = FALSE,
+  prefix = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>sql</code></td>
+<td>
+<p>string, The SQL select string to be executed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>database</code></td>
+<td>
+<p>string, Name of database where query is run.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>job_name</code></td>
+<td>
+<p>string, optional. Name to identify scripted sql job.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hidden</code></td>
+<td>
+<p>logical, Whether to hide the query in platform.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include_header</code></td>
+<td>
+<p>logical, optional. Whether to include headers as an
+element in the returned list.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>compression</code></td>
+<td>
+<p>string, optional, Type of compression to use, if any.
+One of 'none', 'zip', or 'gzip'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delimiter</code></td>
+<td>
+<p>string, optional. Which delimiter to use. One of
+',', '\t' or '|'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>unquoted</code></td>
+<td>
+<p>logical, optional. Whether or not to quote fields.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prefix</code></td>
+<td>
+<p>string, optional. A user specified filename prefix for
+the output files to have.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>When tables are large, unloading by splitting them first is faster. When we
+split a table, each Redshift compute node can dump its data into
+S3 in parallel with the others. By doing so, we avoid having
+all compute nodes sending the data through the leader node, which is slow.
+</p>
+<p>This function returns a list that contains the location
+of the CSV parts as file IDs and presigned S3 urls. The user can use either
+the file IDs or the presigned S3 urls to download the CSV parts. The content
+of the list returned by this function is similar to that of the manifest file
+returned by Amazon S3 UNLOAD statements.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with the items:
+</p>
+
+<ul>
+<li>
+<p> header: column headers if 'include_header' is TRUE
+</p>
+</li>
+<li>
+<p> query: the executed query
+</p>
+</li>
+<li>
+<p> entries: a list containing presigned urls for each csv part
+</p>
+</li>
+<li>
+<p> compression: the type of compression on each csv part
+</p>
+</li>
+<li>
+<p> delimiter: the delimiter used to separate fields
+</p>
+</li>
+<li>
+<p> unquoted: whether fields are quoted
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+# Download a table into multiple csv parts
+sql &lt;- "SELECT * FROM schema.table"
+database &lt;- "important_database"
+manifest &lt;- civis_to_multifile_csv(sql=sql, database=database)
+files &lt;- lapply(manifest[["entries"]], function(x) {
+  download_civis(x$id, x$name)
+  x$name
+})
+
+## End(Not run)
+</code></pre>
+
+
+</div>

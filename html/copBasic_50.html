@@ -1,0 +1,183 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>EuvCOP</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Expected value of U given V</h2>
+
+<h3>Description</h3>
+
+<p>Compute the <em>expected value</em> of <code class="reqn">U</code> given a <code class="reqn">V</code> (the <code class="reqn">Y</code> direction) through the <em>conditional distribution function</em> <code class="reqn">G(Y)</code> using the appropriate <em>partial derivative</em> of a copula (<code class="reqn">\mathbf{C}(u,v)</code>) with respect to <code class="reqn">V</code>. The inversion of the partial derivative is the <em>conditional quantile function</em>. Basic principles provide the expectation for a <code class="reqn">y \ge 0</code> is
+</p>
+<p style="text-align: center;"><code class="reqn">E[Y] = \int_0^\infty yf(y)\mathrm{d}y = \int_0^\infty \bigl(1-G_y(Y)\bigr)\mathrm{d}y\mbox{,}</code>
+</p>
+
+<p>which for the setting here becomes
+</p>
+<p style="text-align: center;"><code class="reqn">E[U \mid V = v] = \int_0^1 \bigl(1 - \frac{\delta}{\delta v} \mathbf{C}(u,v)\bigr)\mathrm{d}u\mbox{.}</code>
+</p>
+
+<p>This function solves the integral using the <code>derCOP2</code> function. This avoids a call of the <code>derCOPinv2</code> through its <code>uniroot()</code> inversion of the derivative. The example shown for <code>EuvCOP()</code> below does a validation check using conditional simulation, which is dependence (of course) of the design of the <span class="pkg">copBasic</span> package, as part of simple isolation of a horizontal slice of the simulation and computing the mean of the <code class="reqn">V</code> within the slice.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">EuvCOP(v=seq(0.01, 0.99, by=0.01), cop=NULL, para=NULL, asuv=FALSE, nsim=1E5,
+    subdivisions=100L, rel.tol=.Machine$double.eps^0.25, abs.tol=rel.tol, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>v</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">v</code> in the <code class="reqn">Y</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cop</code></td>
+<td>
+<p>A copula function with vectorization as in <code>asCOP</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>Vector of parameters or other data structures, if needed, to pass to the copula;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>asuv</code></td>
+<td>
+<p>Return a data frame of the <code class="reqn">U</code> and <code class="reqn">V</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsim</code></td>
+<td>
+<p>Number of simulations for Monte Carlo integration when the numerical integration fails (see <b>Note</b>);</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subdivisions</code></td>
+<td>
+<p>Argument of same name passed to <code>integrate()</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rel.tol</code></td>
+<td>
+<p>Argument of same name passed to <code>integrate()</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>abs.tol</code></td>
+<td>
+<p>Argument of same name passed to <code>integrate()</code>; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass to <code>derCOP2</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Value(s) for the expectation are returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The author is well aware that the name of this function does not contain the number <code>2</code> as the family of functions also sharing this <em>with respect to <code class="reqn">v</code></em> nature. It was a design mistake in 2008 to have used the <code>2</code>. The <code>uv</code> in the function name is the moniker for this <em>with respect to <code class="reqn">v</code></em>.
+</p>
+<p>There can be the rare examples of the numerical integration failing. In such circumstances, Monte Carlo integration is performed and the returned vector becomes a named vector with the <code>sim</code> identifying values stemming from the simulation.
+</p>
+<pre>
+  para &lt;- list(cop=RFcop, para=0.9)
+  para &lt;- list(cop=COP, para=para, reflect=1, alpha=0, beta=0.3)
+  EuvCOP(c(0.0001, 0.0002, 0.001, 0.01, 0.1), cop=composite1COP, para=para)
+  #            sim
+  #[1] 0.001319395 0.002238238 0.006905300 0.034608078 0.173451788
+</pre>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>See Also</h3>
+
+<p><code>EvuCOP</code>, <code>derCOP2</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># We can show algorithmic validation using a highly asymmetric case of a
+# copula having its parameter also nearly generating a singular component.
+v &lt;- c(0.2, 0.8); n &lt;- 5E2; set.seed(1)
+para &lt;- list(cop=HRcop, para=120, alpha=0.4, beta=0.05)
+UV   &lt;- simCOP(n, cop=composite1COP, para=para, graphics=FALSE) # set TRUE to view
+
+sapply(v, function(vv) EuvCOP(vv, cop=composite1COP, para=para))
+# [1] 0.3051985 0.7059999
+
+sapply(v, function(vv) mean( UV$U[UV$V &gt; vv - 50/n &amp; UV$V &lt; vv + 50/n] ) )
+# [1] 0.2796518 0.7092755 # general validation is thus shown as n--&gt;large
+
+# If visualized, we see in the lower corner than heuristics suggest a mean further
+# to the right of the "singularity" for v=0.2 than v=0.80. For v=0.80, the
+# "singularity" appears tighter given the upper tail dependency contrast of the
+# coupla in the symmetrical case (alpha=0, beta=0) and changing the parameter to
+# a Spearman Rho (say) similar to the para settting in this example. So, 0.70 for
+# the mean given v=0.80 makes sense. Further notice that the two estimates of the
+# mean are further apparent for v=0.2 relative to v=0.80. Again, this makes sense
+# when the copula is visualized even at small n let alone large n.
+
+# See additional Examples under EvuCOP().
+
+## Not run: 
+  set.seed(1)
+  n &lt;- 5000; Vlo &lt;- rep(0.001, n); Vhi &lt;- rep(0.95, n); Theta &lt;- 3
+  Ulo &lt;- simCOPmicro(Vlo, cop=JOcopB5, para=Theta); dlo &lt;- density(Ulo)
+  Uhi &lt;- simCOPmicro(Vhi, cop=JOcopB5, para=Theta); dhi &lt;- density(Uhi)
+  dlo$x[dlo$x &lt; 0] &lt;- 0; dhi$x[dhi$x &lt; 0] &lt;- 0
+  dlo$x[dlo$x &gt; 1] &lt;- 1; dhi$x[dhi$x &gt; 1] &lt;- 1
+
+  summary(Ulo)
+  Ulomu &lt;- EuvCOP(Vlo[1], cop=JOcopB5, para=Theta); print(Ulomu)
+  #      Min.   1st Qu.    Median      Mean   3rd Qu.      Max.
+  # 0.0000669 0.0887330 0.2006123 0.2504796 0.3802847 0.9589315
+  #                  Ulomu -----&gt; 0.2502145
+  summary(Uhi)
+  Uhimu &lt;- EuvCOP(Vhi[1], cop=JOcopB5, para=Theta); print(Uhimu)
+  #      Min.   1st Qu.    Median      Mean   3rd Qu.      Max.
+  #   0.01399  0.90603    0.93919 0.9157600   0.95946   0.99411
+  #                  Uhimu -----&gt; 0.9154093
+
+  UV &lt;- simCOP(n, cop=JOcopB5, para=Theta,
+                  cex=0.6, pch=21, bg="palegreen", col="darkgreen")
+  abline(h=Vlo[1], col="salmon", lty=3) # near the bottom to form datum for density
+  abline(h=Vhi[1], col="purple", lty=3) # near the   top  to form datum for density
+  lines(dlo$x,   dlo$y/max(dlo$y)/2 +    Vlo[1],  col="salmon", lwd=2)
+  # re-scaled density along the line already drawn near the bottom (Vlo)
+  # think rug plotting to bottom the values plotting very close to the line
+  lines(dhi$x, 1-dhi$y/max(dhi$y)/2 - (1-Vhi[1]), col="purple", lwd=2)
+  # re-scaled  density along the line already drawn near the  top  (Vhi)
+  # think rug plotting to bottom the values plotting very close to the line
+  uv &lt;- seq(0.001, 0.999, by=0.001) # for trajectory of E[U | V=v]
+  lines(EuvCOP(uv, cop=JOcopB5, para=Theta), uv, col="blue", lwd=3.5, lty=2)
+  points(Ulomu, Vlo[1], pch=16, col="salmon", cex=2)
+  points(Uhimu, Vhi[1], pch=16, col="purple", cex=2) #
+## End(Not run)
+</code></pre>
+
+
+</div>

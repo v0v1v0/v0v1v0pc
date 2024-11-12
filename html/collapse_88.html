@@ -1,0 +1,186 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>BY</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Split-Apply-Combine Computing 
+</h2>
+
+<h3>Description</h3>
+
+<p><code>BY</code> is an S3 generic that efficiently applies functions over vectors or matrix- and data frame columns by groups. Similar to <code>dapply</code> it seeks to retain the structure and attributes of the data, but can also output to various standard formats. A simple parallelism is also available.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">BY(x, ...)
+
+## Default S3 method:
+BY(x, g, FUN, ..., use.g.names = TRUE, sort = .op[["sort"]], reorder = TRUE,
+   expand.wide = FALSE, parallel = FALSE, mc.cores = 1L,
+   return = c("same", "vector", "list"))
+
+## S3 method for class 'matrix'
+BY(x, g, FUN, ..., use.g.names = TRUE, sort = .op[["sort"]], reorder = TRUE,
+   expand.wide = FALSE, parallel = FALSE, mc.cores = 1L,
+   return = c("same", "matrix", "data.frame", "list"))
+
+## S3 method for class 'data.frame'
+BY(x, g, FUN, ..., use.g.names = TRUE, sort = .op[["sort"]], reorder = TRUE,
+   expand.wide = FALSE, parallel = FALSE, mc.cores = 1L,
+   return = c("same", "matrix", "data.frame", "list"))
+
+## S3 method for class 'grouped_df'
+BY(x, FUN, ..., reorder = TRUE, keep.group_vars = TRUE, use.g.names = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a vector, matrix, data frame or alike object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>g</code></td>
+<td>
+<p>a <code>GRP</code> object, or a factor / atomic vector / list of atomic vectors (internally converted to a <code>GRP</code> object) used to group <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FUN</code></td>
+<td>
+<p>a function, can be scalar- or vector-valued. For vector valued functions see also <code>reorder</code> and <code>expand.wide</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>further arguments to <code>FUN</code>, or to <code>BY.data.frame</code> for the 'grouped_df' method. Since v1.9.0 data length arguments are also split by groups.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use.g.names</code></td>
+<td>
+<p>logical. Make group-names and add to the result as names (default method) or row-names (matrix and data frame methods). For vector-valued functions (row-)names are only generated if the function itself creates names for the statistics e.g. <code>quantile()</code> adds names, <code>range()</code> or <code>log()</code> don't. No row-names are generated on <em>data.table</em>'s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sort</code></td>
+<td>
+<p>logical. Sort the groups? Internally passed to <code>GRP</code>, and only effective if <code>g</code> is not already a factor or <code>GRP</code> object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reorder</code></td>
+<td>
+<p>logical. If a vector-valued function is passed that preserves the data length, <code>TRUE</code> will reorder the result such that the elements/rows match the original data. <code>FALSE</code> just combines the data in order of the groups (i.e. all elements of the first group in first-appearance order followed by all elements in the second group etc..). <em>Note</em> that if <code>reorder = FALSE</code>, grouping variables, names or rownames are only retained if the grouping is on sorted data, see <code>GRP</code>. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>expand.wide</code></td>
+<td>
+<p>logical. If <code>FUN</code> is a vector-valued function returning a vector of fixed length &gt; 1 (such as the <code>quantile</code> function), <code>expand.wide</code> can be used to return the result in a wider format (instead of stacking the resulting vectors of fixed length above each other in each output column).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+<p>logical. <code>TRUE</code> implements simple parallel execution by internally calling <code>mclapply</code> instead of <code>lapply</code>. Parallelism is across columns, except for the default method.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mc.cores</code></td>
+<td>
+<p>integer. Argument to <code>mclapply</code> indicating the number of cores to use for parallel execution. Can use <code>detectCores()</code> to select all available cores.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return</code></td>
+<td>
+<p>an integer or string indicating the type of object to return. The default <code>1 - "same"</code> returns the same object type (i.e. class and other attributes are retained if the underlying data type is the same, just the names for the dimensions are adjusted). <code>2 - "matrix"</code> always returns the output as matrix, <code>3 - "data.frame"</code> always returns a data frame and <code>4 - "list"</code> returns the raw (uncombined) output. <em>Note</em>: <code>4 - "list"</code> works together with <code>expand.wide</code> to return a list of matrices.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.group_vars</code></td>
+<td>
+<p><em>grouped_df method:</em> Logical. <code>FALSE</code> removes grouping variables after computation. See also the Note. </p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>BY</code> is a re-implementation of the Split-Apply-Combine computing paradigm. It is faster than <code>tapply</code>, <code>by</code>, <code>aggregate</code> and <em>(d)plyr</em>, and preserves data attributes just like <code>dapply</code>.  
+</p>
+
+<p>It is principally a wrapper around <code>lapply(gsplit(x, g), FUN, ...)</code>, that uses <code>gsplit</code> for optimized splitting and also strongly optimizes on the internal code compared to <em>base</em> R functions. For more details look at the documentation for <code>dapply</code> which works very similar (apart from the splitting performed in <code>BY</code>). The function is intended for simple cases involving flexible computation of statistics across groups using a single function e.g. <code>iris |&gt; gby(Species) |&gt; BY(IQR)</code> is simpler than <code>iris |&gt; gby(Species) |&gt; smr(acr(.fns = IQR))</code> etc..
+</p>
+
+
+
+<h3>Value</h3>
+
+<p><code>X</code> where <code>FUN</code> was applied to every column split by <code>g</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>dapply</code>, <code>collap</code>, Fast Statistical Functions, Data Transformations, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">v &lt;- iris$Sepal.Length   # A numeric vector
+g &lt;- GRP(iris$Species)   # A grouping
+
+## default vector method
+BY(v, g, sum)                                # Sum by species
+head(BY(v, g, scale))                        # Scale by species (please use fscale instead)
+BY(v, g, fquantile)                          # Species quantiles: by default stacked
+BY(v, g, fquantile, expand.wide = TRUE)      # Wide format
+
+## matrix method
+m &lt;- qM(num_vars(iris))
+BY(m, g, sum)                          # Also return as matrix
+BY(m, g, sum, return = "data.frame")   # Return as data.frame.. also works for computations below
+head(BY(m, g, scale))
+BY(m, g, fquantile)
+BY(m, g, fquantile, expand.wide = TRUE)
+ml &lt;- BY(m, g, fquantile, expand.wide = TRUE, # Return as list of matrices
+         return = "list")
+ml
+# Unlisting to Data Frame
+unlist2d(ml, idcols = "Variable", row.names = "Species")
+
+## data.frame method
+BY(num_vars(iris), g, sum)             # Also returns a data.fram
+BY(num_vars(iris), g, sum, return = 2) # Return as matrix.. also works for computations below
+head(BY(num_vars(iris), g, scale))
+BY(num_vars(iris), g, fquantile)
+BY(num_vars(iris), g, fquantile, expand.wide = TRUE)
+BY(num_vars(iris), g, fquantile,       # Return as list of matrices
+   expand.wide = TRUE, return = "list")
+
+## grouped data frame method
+giris &lt;- fgroup_by(iris, Species)
+giris |&gt; BY(sum)                      # Compute sum
+giris |&gt; BY(sum, use.g.names = TRUE,  # Use row.names and
+             keep.group_vars = FALSE)  # remove 'Species' and groups attribute
+giris |&gt; BY(sum, return = "matrix")   # Return matrix
+giris |&gt; BY(sum, return = "matrix",   # Matrix with row.names
+             use.g.names = TRUE)
+giris |&gt; BY(.quantile)                # Compute quantiles (output is stacked)
+giris |&gt; BY(.quantile, names = TRUE,  # Wide output
+               expand.wide = TRUE)
+</code></pre>
+
+
+</div>

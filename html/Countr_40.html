@@ -1,0 +1,163 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>evCount_conv_bi</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Expected value and variance of renewal count process</h2>
+
+<h3>Description</h3>
+
+<p>Compute numerically expected values and variances of renewal count processes.
+</p>
+
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">evCount_conv_bi(
+  xmax,
+  distPars,
+  dist = c("weibull", "gamma", "gengamma", "burr"),
+  method = c("dePril", "direct", "naive"),
+  nsteps = 100,
+  time = 1,
+  extrap = TRUE
+)
+
+evCount_conv_user(
+  xmax,
+  distPars,
+  extrapolPars,
+  survR,
+  method = c("dePril", "direct", "naive"),
+  nsteps = 100,
+  time = 1,
+  extrap = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>xmax</code></td>
+<td>
+<p>unsigned integer maximum count to be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>distPars</code></td>
+<td>
+<p>TODO</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist</code></td>
+<td>
+<p>TODO</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>TODO</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsteps</code></td>
+<td>
+<p>unsiged integer, number of steps used to compute the integral.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>double, time at wich to compute the probabilities. Set to 1 by
+default.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extrap</code></td>
+<td>
+<p>logical, if <code>TRUE</code>, Richardson extrapolation will be
+applied to improve accuracy.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extrapolPars</code></td>
+<td>
+<p>ma::vec of length 2. The extrapolation values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>survR</code></td>
+<td>
+<p>function, user supplied survival function; should have signature
+<code>function(t, distPars)</code>, where <code>t</code> is a positive real number
+(the time where the survival function is evaluated) and <code>distPars</code>
+is a list of distribution parameters. It should return a double value.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>evCount_conv_bi</code> computes the expected value and variance of renewal
+count processes for the builtin distirbutions of inter-arrival times.
+</p>
+<p><code>evCount_conv_user</code> computes the expected value and variance for a user
+specified distirbution of the inter-arrival times.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a named list with components <code>"ExpectedValue"</code> and <code>"Variance"</code>.
+</p>
+
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">pwei_user &lt;- function(tt, distP) {
+    alpha &lt;- exp(-log(distP[["scale"]]) / distP[["shape"]])
+    pweibull(q = tt, scale = alpha, shape = distP[["shape"]],
+             lower.tail = FALSE)
+}
+
+## ev convolution Poisson count
+lambda &lt;- 2.56
+beta &lt;- 1
+distPars &lt;- list(scale = lambda, shape = beta)
+
+evbi &lt;- evCount_conv_bi(20, distPars, dist = "weibull")
+evu &lt;- evCount_conv_user(20, distPars, c(2, 2), pwei_user, "dePril")
+
+c(evbi[["ExpectedValue"]], lambda)
+c(evu[["ExpectedValue"]], lambda )
+c(evbi[["Variance"]], lambda     )
+c(evu[["Variance"]], lambda      )
+
+## ev convolution weibull count
+lambda &lt;- 2.56
+beta &lt;- 1.35
+distPars &lt;- list(scale = lambda, shape = beta)
+
+evbi &lt;- evCount_conv_bi(20, distPars, dist = "weibull")
+evu &lt;- evCount_conv_user(20, distPars, c(2.35, 2), pwei_user, "dePril")
+
+x &lt;- 1:20
+px &lt;- dCount_conv_bi(x, distPars, "weibull", "dePril",
+                     nsteps = 100)
+ev &lt;- sum(x * px)
+var &lt;- sum(x^2 * px) - ev^2
+
+c(evbi[["ExpectedValue"]], ev)
+c(evu[["ExpectedValue"]], ev )
+c(evbi[["Variance"]], var    )
+c(evu[["Variance"]], var     )
+</code></pre>
+
+
+</div>

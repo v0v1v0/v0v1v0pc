@@ -1,0 +1,101 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>exp_memsim</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Memoryless simulation for the exponential change-point hazard distribution</h2>
+
+<h3>Description</h3>
+
+<p><code>exp_memsim</code> simulates time-to-event data from the exponential change-point
+hazard distribution by implementing the memoryless method.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">exp_memsim(n, endtime, theta, tau = NA)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>Sample size</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>endtime</code></td>
+<td>
+<p>Maximum study time, point at which all participants
+are censored</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+<p>Scale parameter <code class="reqn">\theta</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau</code></td>
+<td>
+<p>Change-point(s) <code class="reqn">\tau</code></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function simulates time-to-event data between <code class="reqn">K</code> change-points from
+independent exponential distributions using the inverse CDF implemented
+in <code>exp_icdf</code>. This method applies Type I right censoring at the endtime
+specified by the user.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Dataset with n participants including a survival time
+and censoring indicator (0 = censored, 1 = event).
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">nochangepoint &lt;- exp_memsim( n = 10, endtime = 20, theta = 0.05)
+onechangepoint &lt;- exp_memsim(n = 10, endtime = 20,
+  theta = c(0.05, 0.01), tau = 10)
+twochangepoints &lt;- exp_memsim(n = 10, endtime = 20,
+  theta = c(0.05, 0.01, 0.05), tau = c(8, 12))
+
+# Pay attention to how you parameterize your model!
+# This simulates a decreasing hazard
+set.seed(1245)
+decreasingHazard &lt;- exp_memsim(n = 10, endtime = 20,
+  theta = c(0.05, 0.02, 0.01), tau = c(8, 12))
+# This tries to fit an increasing hazard, resulting in biased estimates
+cp2.nll &lt;- function(par, tau = tau, dta = dta){
+  theta1 &lt;- par[1]
+  theta2 &lt;- par[2]
+  theta3 &lt;- par[3]
+  ll &lt;- log(theta1) * sum(dta$time &lt; tau[1])+
+        log(theta2) * sum((tau[1] &lt;= dta$time) * (dta$time &lt; tau[2])) +
+        log(theta3) * sum((dta$time &gt;= tau[2]) * dta$censor) -
+        theta1 * sum(dta$time * (dta$time &lt; tau[1]) +
+          tau[1] * (dta$time &gt;= tau[1])) -
+        theta2 * sum((dta$time - tau[1]) * (dta$time &gt;= tau[1]) *
+          (dta$time &lt; tau[2]) + (tau[2] - tau[1]) * (dta$time &gt;= tau[2])) -
+        theta3 * sum((dta$time - tau[2]) * (dta$time &gt;= tau[2]))
+  return(-ll)
+}
+optim(par = c(0.001, 0.1, 0.5), fn = cp2.nll,
+      tau = c(8, 12), dta = decreasingHazard)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,163 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>read_xifti2</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Read in GIFTI files as a <code>"xifti"</code> object</h2>
+
+<h3>Description</h3>
+
+<p>Read in GIFTI metric or label files as a <code>"xifti"</code> object. May also include
+surface geometry GIFTI files and perform resampling.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">read_xifti2(
+  cortexL = NULL,
+  cortexL_mwall = NULL,
+  cortexR = NULL,
+  cortexR_mwall = NULL,
+  mwall_values = c(NA, NaN),
+  surfL = NULL,
+  surfR = NULL,
+  resamp_res = NULL,
+  col_names = NULL,
+  HCP_32k_auto_mwall = TRUE,
+  read_dir = NULL,
+  validate = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cortexL, cortexL_mwall</code></td>
+<td>
+<p>Left cortex data and ROI. Each must be a path to
+a metric or label GIFTI file.
+</p>
+<p>If <code>cortexL_mwall</code> is not provided, <code>cortexL</code> should have data for
+all vertices on the left cortical surface (<code class="reqn">V_L \times T</code> data matrix). There
+will not be a mask for the medial wall. Not providing the medial wall mask
+is appropriate for ".dlabels.nii" files where the medial wall may have its
+own label and therefore should not be treated as missing data.
+</p>
+<p>If <code>cortexL_mwall</code> is provided, <code>cortexL</code> should either have data
+for all vertices on the left cortical surface (<code class="reqn">V_L \times T</code> data matrix, with
+filler values e.g. <code>0</code> or <code>NaN</code> for medial wall vertices), or have data
+only for non-medial wall vertices (<code class="reqn">(V_L - mwall_L) \times T</code> data matrix).
+The medial wall mask will be the <code>0</code> values in <code>cortexL_mwall</code>.
+The medial wall mask should be provided whenever the medial wall should be
+treated as missing data.
+</p>
+<p>Since the unmasked cortices must have the same number of vertices,
+<code>V_L</code> should match <code>V_R</code>, or <code>resamp_res</code> must be set.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cortexR, cortexR_mwall</code></td>
+<td>
+<p>Right cortex data and ROI. Each must be a path to
+a metric or label GIFTI file.
+</p>
+<p>If <code>cortexR_mwall</code> is not provided, <code>cortexR</code> should have data for
+all vertices on the right cortical surface (<code class="reqn">V_R \times T</code> data mre
+will not be a mask for the medial wall. Not providing the medial wall mask
+is appropriate for ".dlabels.nii" files where the medial wall may have its
+own label and therefore should not be treated as missing data.
+</p>
+<p>If <code>cortexR_mwall</code> is provided, <code>cortexR</code> should either have data
+for all vertices on the right cortical surface (<code class="reqn">V_R \times T</code> data matrix, with
+filler values e.g. <code>0</code> or <code>NaN</code> for medial wall vertices), or have data
+only for non-medial wall vertices (<code class="reqn">(V_R - mwall_R) \times T</code> data matrix).
+The medial wall mask will be the <code>0</code> values in <code>cortexR_mwall</code>.
+The medial wall mask should be provided whenever the medial wall should be
+treated as missing data.
+</p>
+<p>Since the unmasked cortices must have the same number of vertices,
+<code>V_L</code> should match <code>V_R</code>, or <code>resamp_res</code> must be set.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mwall_values</code></td>
+<td>
+<p>If <code>cortex[L/R]_mwall</code> was not provided, or if it
+was invalid (i.e. bad length or all <code>TRUE</code>), the medial wall mask will
+be inferred from rows in <code>cortex[L/R]</code> that are constantly one of these
+values. Default: <code>c(NA, NaN)</code>. If <code>NULL</code>, do not attempt to infer
+the medial wall from the data values. <code>NULL</code> should be used if <code>NA</code>
+or <code>NaN</code> are legitimate values that non-medial wall vertices might
+take on.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>surfL, surfR</code></td>
+<td>
+<p>(Optional) File path(s) to surface GIFTI(s) for the left
+or right cortex.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resamp_res</code></td>
+<td>
+<p>Resolution to resample the cortical data and surface to.
+Default: <code>NULL</code> (do not resample). If provided, the original resolutions
+of the cortex data and surfaces may differ.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>col_names</code></td>
+<td>
+<p>Names of each measurement/column in the data. Overrides
+names indicated in the data components.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>HCP_32k_auto_mwall</code></td>
+<td>
+<p>If left and/or right cortex data is provided, and
+the number of vertices matches that of the HCP 32k mesh (29696 on left, and
+29716 on right), should the medial wall masks be added to the <code>"xifti"</code>
+if not provided? Default: <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>read_dir</code></td>
+<td>
+<p>(Optional) Append a directory to all file names in the
+arguments. If <code>NULL</code> (default), do not modify file names.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>validate</code></td>
+<td>
+<p>Validate that the result is a <code>"xifti"</code> object? Default:
+<code>TRUE</code>. If <code>FALSE</code>, the result may not be properly formatted
+if the inputs were invalid.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The <code>"xifti"</code> object containing all the data in the input giftis.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other reading: 
+<code>as.xifti()</code>,
+<code>info_cifti()</code>,
+<code>load_parc()</code>,
+<code>load_surf()</code>,
+<code>read_cifti()</code>,
+<code>read_surf()</code>
+</p>
+
+
+</div>

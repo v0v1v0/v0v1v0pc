@@ -1,0 +1,213 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>gcalibrate</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calibration for Gaussian Outcomes</h2>
+
+<h3>Description</h3>
+
+<p>Calibrates the naive estimates to account for unobserved confounding when outcome
+variables are Gaussian. The calibration can be done with user-specific sensitivity parameters or
+with our pre-provided calibration methods, the worst-case calibration for a single contrast
+or multivariate calibration for multiple contrasts.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">gcalibrate(
+  y,
+  tr,
+  t1,
+  t2,
+  calitype = c("worstcase", "multicali", "null"),
+  mu_y_dt = NULL,
+  sigma_y_t = NULL,
+  mu_u_dt = NULL,
+  cov_u_t = NULL,
+  nU = NULL,
+  R2 = 1,
+  gamma = NULL,
+  R2_constr = 1,
+  nc_index = NULL,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p><code>data.frame</code>, <code>matrix</code> or <code>vector</code>. Gaussian outcome variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tr</code></td>
+<td>
+<p><code>data.frame</code>. Treatment variables with rows corresponding to observations and columns
+to variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>t1</code></td>
+<td>
+<p><code>data.frame</code>. First treatment arms of interest.
+May contain a single or multiple treatments in rows.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>t2</code></td>
+<td>
+<p><code>data.frame</code>. Second treatment arms of interest,
+which has same number of row as <code>t1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>calitype</code></td>
+<td>
+<p>character. The calibration method to be applied. Can be one of: <br>
+"worstcase" - apply worst-case calibration when considering a single contrast. <br>
+"multicali" - apply mutlivariate calibration when considering multiple contrasts.<br>
+"null" - apply calibration with user-specified sensitivity parameter, <code class="reqn">\gamma</code>. <br></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mu_y_dt</code></td>
+<td>
+<p>an optional scalar or vector that contains naive estimates of treatment effects
+ignoring confounding.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sigma_y_t</code></td>
+<td>
+<p>an optional scalar of the standard deviation of outcome conditional on treatments.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mu_u_dt</code></td>
+<td>
+<p>an optional matrix of difference in conditional confounder means, <code class="reqn">E(U \mid t1) - E(U \mid t2)</code>,
+with latent variables in columns.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cov_u_t</code></td>
+<td>
+<p>an optional covariance matrix of confounders conditional on treatments.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nU</code></td>
+<td>
+<p>Number of latent confounders to consider.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>R2</code></td>
+<td>
+<p>an optional scalar or vector specifying the proportion of residual variance in outcome given the
+treatment that can be explained by confounders.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gamma</code></td>
+<td>
+<p>sensitivity parameter vector. Must be given when <code>calitype = "null"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>R2_constr</code></td>
+<td>
+<p>an optional scalar or vector specifying the upper limit constraint on <code class="reqn">R^2</code> .
+By default, <code>R2_constr = 1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nc_index</code></td>
+<td>
+<p>an optional vector containing indexes of negative control treatments. If not <code>NULL</code>,
+worstcase calibration will be executed with constraints imposed by negative control treatments.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>further arguments passed to <code>kEstimate</code>, <code>pca</code> or
+<code>get_opt_gamma</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>gcalibrate</code> returns a list containing the following components:
+</p>
+
+<dl>
+<dt><code>est_df</code></dt>
+<dd>
+<p>a <code>data.frame</code> with naive and calibrated estimates of average treatment effects.</p>
+</dd>
+<dt><code>R2</code></dt>
+<dd>
+<p>a vector of <code class="reqn">R^2</code> with elements corresponding to columns of <code>est_df</code>.</p>
+</dd>
+<dt><code>gamma</code></dt>
+<dd>
+<p>a matrix returned when <code>calitype = "multicali"</code> or <code>"worstcase"</code>.
+If <code>calitype = "multicali"</code>, optimized gamma are in columns,
+respectively resulting in estimates in columns of <code>est_df</code>.
+If <code>calitype = "worstcase"</code>, gamma are in rows,
+which respectively lead to the worstcase ignorance region with <code class="reqn">R^2=1</code> for each contrast of interest.</p>
+</dd>
+<dt><code>rv</code></dt>
+<dd>
+<p>a <code>numeric vector</code> returned when <code>calitype = "worstcase"</code>,
+with elements being the robustness value or <code>NA</code> if the ignorance region doesn't
+contains 0 for each contrast of interest.</p>
+</dd>
+</dl>
+<h3>Examples</h3>
+
+<pre><code class="language-R"># load the example data #
+y &lt;- GaussianT_GaussianY$y
+tr &lt;- subset(GaussianT_GaussianY, select = -c(y))
+
+# worst-case calibration #
+t1 &lt;- data.frame(diag(ncol(tr)))
+t2 &lt;- data.frame(matrix(0, nrow = ncol(tr), ncol = ncol(tr)))
+colnames(t1) = colnames(t2) &lt;- colnames(tr)
+est_g1 &lt;- gcalibrate(y = y, tr = tr, t1 = t1, t2 = t2, nU = 3,
+                     calitype = "worstcase", R2 = c(0.3, 1))
+plot_estimates(est_g1)
+# with negative conotrls #
+est_g1_nc &lt;- gcalibrate(y = y, tr = tr, t1 = t1, t2 = t2, nU = 3,
+                        calitype = "worstcase", R2 = c(0.3, 1), nc_index = c(3, 6))
+plot_estimates(est_g1_nc)
+
+
+# multivariate calibration #
+est_g2 &lt;- gcalibrate(y = y, tr = tr, t1 = tr[1:10,], t2 = tr[11:20,], nU = 3,
+                     calitype = "multicali", R2_constr = c(1, 0.15))
+plot_estimates(est_g2)
+
+# user-specified calibration #
+est_g3 &lt;- gcalibrate(y = y, tr = tr, t1 = tr[1:2,], t2 = tr[3:4,],
+                     nU = 3, calitype = "null",
+                     gamma = c(0.96, -0.29, 0), R2 = c(0.2, 0.6, 1))
+plot_estimates(est_g3)
+# apply gamma that maximizes the bias for the first contrast considered in est_g1 #
+est_g4 &lt;- gcalibrate(y = y, tr = tr, t1 = tr[1:2,], t2 = tr[3:4,],
+                     nU = 3, calitype = "null",
+                     gamma = est_g1$gamma[1,], R2 = c(0.2, 0.6, 1))
+plot_estimates(est_g4)
+
+</code></pre>
+
+
+</div>

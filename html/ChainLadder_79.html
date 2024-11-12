@@ -1,0 +1,306 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>glmReserve</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+GLM-based Reserving Model 
+</h2>
+
+<h3>Description</h3>
+
+<p>This function implements loss reserving models within the generalized linear model framework. It takes accident year and development lag as mean predictors in estimating the ultimate loss reserves, and provides both analytical  and bootstrapping methods to compute the associated prediction errors. The bootstrapping approach also generates the full predictive distribution for loss reserves.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">glmReserve(triangle, var.power = 1, link.power = 0, cum = TRUE, 
+      mse.method = c("formula", "bootstrap"),  nsim = 1000, nb = FALSE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>triangle</code></td>
+<td>
+
+<p>An object of  class <code>triangle</code>. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var.power</code></td>
+<td>
+
+<p>The index (p) of the power variance function <code class="reqn">V(\mu)=\mu^p</code>. Default to <code>p = 1</code>, which is the over-dispersed Poisson model. If <code>NULL</code>, it will be assumed to be in <code>(1, 2)</code> and estimated using the <code>cplm</code> package.  See <code>tweedie</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link.power</code></td>
+<td>
+
+<p>The index of power link function. The default <code>link.power = 0</code> produces a log link. See <code>tweedie</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cum</code></td>
+<td>
+
+<p>A logical value indicating whether the input triangle is on the
+cumulative or the incremental scale. If <code>TRUE</code>, then
+<code>triangle</code> is assumed to be on the cumulative scale, and it will
+be converted to incremental losses internally before a GLM is fitted. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mse.method</code></td>
+<td>
+
+<p>A character indicating whether the prediction error should be computed analytically (<code>mse.method = "formula"</code>) or via bootstrapping (<code>mse.method = "bootstrap"</code>). Partial match is supported. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsim</code></td>
+<td>
+
+<p>Number of simulations to be performed in the bootstrapping, with a default value of 1000.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nb</code></td>
+<td>
+
+<p>Whether the negative binomial distribution is used. If <code>true</code>, the arguments <code>var.power</code> and <code>link.power</code> are ignored and a negative binomial GLM is fitted using <code>glm.nb</code>. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+
+<p>Arguments to be passed onto the function <code>glm</code> or <code>cpglm</code> such as <code>contrasts</code> or <code>control</code>. It is important that <code>offset</code> and <code>weight</code> should not be specified. Otherwise, an error will be reported and the program will quit. 
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function takes an insurance loss triangle, converts it to incremental losses internally if necessary, transforms it to the long format (see <code>as.data.frame</code>) and fits the resulting loss data with a generalized linear model where the mean structure includes both the accident year and the development lag effects.
+The distributions allowed are the exponential family that admits a power variance function, that is, <code class="reqn">V(\mu)=\mu^p</code>.
+This subclass of distributions is usually called the Tweedie distribution and includes many commonly used distributions as special cases.
+</p>
+<p>This function does not allow the user to specify the GLM options through the usual <code>family</code> argument, but instead, it uses the <code>tweedie</code> family internally and takes two arguments, <code>var.power</code> and <code>link.power</code>, through which the user still has full control of the distribution forms and link functions.
+The argument <code>var.power</code> determines which specific distribution is to be used, and <code>link.power</code> determines the form of the link function.
+</p>
+<p>When the Tweedie compound Poisson distribution <code>1 &lt; p &lt; 2</code> is to be used, the user has the option to specify <code>var.power = NULL</code>, where the variance power <code>p</code> will be estimated from the data using the <code>cplm</code> package. The <code>bcplm</code> function in the <code>cplm</code> package also has an example for the Bayesian compound Poisson loss reserving model.
+See details in <code>tweedie</code>, <code>cpglm</code> and  <code>bcplm</code>. 
+</p>
+<p><code>glmReserve</code> allows certain measures of exposures to be used in an offset term in the underlying GLM.
+To do this, the user should not use the usual <code>offset</code> argument in <code>glm</code>.
+Instead, one specifies the exposure measure for each accident year through the <code>exposure</code> attribute of <code>triangle</code>. 
+Make sure that these exposures are in the original scale (no log transformations for example).
+If the vector is named, make sure the names coincide with the rownames/origin of the triangle.
+If the vector is unnamed, make sure the exposures are in the order consistent with the accident years, <b>and the character rownames of the Triangle must be convertible to numeric.</b> 
+If the <code>exposure</code> attribute is not <code>NULL</code>, the <code>glmReserve</code> function will use these exposures, link-function-transformed, in the offset term of the GLM. 
+For example, if the link function is <code>log</code>, then the log of the exposure is used as the offset, not the original exposure. 
+See the examples below. 
+Moreover, the user MUST NOT supply the typical <code>offset</code> or <code>weight</code> as arguments in the list of additional arguments <code>...</code>. <code>offset</code> should be specified as above, while <code>weight</code> is not implemented (due to prediction reasons). 
+</p>
+<p>Two methods are available to assess the prediction error of the estimated loss reserves.
+One is using the analytical formula (<code>mse.method = "formula"</code>) derived from the first-order Taylor approximation.
+The other is using bootstrapping (<code>mse.method = "bootstrap"</code>) that reconstructs the triangle <code>nsim</code> times by sampling with replacement from the GLM (Pearson) residuals.
+Each time a new triangle is formed, GLM is fitted and corresponding loss reserves are generated.
+Based on these predicted mean loss reserves, and the model assumption about the distribution forms, realizations of the predicted values are generated via the <code>rtweedie</code> function.
+Prediction errors as well as other uncertainty measures such as quantiles and predictive intervals can be calculated based on these samples. 
+</p>
+
+
+<h3>Value</h3>
+
+<p>The output is an object of class <code>"glmReserve"</code> that has the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the matched call.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>summary</code></td>
+<td>
+<p>A data frame containing the predicted loss reserve statistics. Similar to the summary statistics from <code>MackChainLadder</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Triangle</code></td>
+<td>
+<p>The input triangle.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FullTriangle</code></td>
+<td>
+<p>The completed triangle, where empty cells in the original triangle are filled with model predictions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>The fitted GLM, a class of <code>"glm"</code> or <code>"cpglm"</code>. It is most convenient to work with this component when model fit information is wanted. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sims.par</code></td>
+<td>
+<p>a matrix of the simulated parameter values in the bootstrapping. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sims.reserve.mean</code></td>
+<td>
+<p>a matrix of the simulated mean loss reserves (without the process variance) for each year in the bootstrapping. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sims.par</code></td>
+<td>
+<p>a matrix of the simulated realizations of the loss reserves (with the process variance) for each year in the bootstrapping. This can be used to summarize the predictive uncertainty of the loss reserves.</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>The use of GLM in insurance loss reserving has many compelling aspects, e.g.,
+</p>
+
+<ul>
+<li>
+<p> when over-dispersed Poisson model is used, it reproduces the estimates from Chain Ladder;
+</p>
+</li>
+<li>
+<p> it provides a more coherent modeling framework than the Mack method;
+</p>
+</li>
+<li>
+<p> all the relevant established statistical theory can be directly applied to perform hypothesis testing and diagnostic checking;
+</p>
+</li>
+</ul>
+<p>However,  the user should be cautious of some of the key assumptions that underlie the GLM model, in order to determine whether this model is appropriate for the problem considered:
+</p>
+
+<ul>
+<li>
+<p> the GLM model assumes no tail development, and it only projects losses to the latest time point of the observed data. To use a model that enables tail extrapolation, please consider the growth curve model <code>ClarkLDF</code> or <code>ClarkCapeCod</code>;
+</p>
+</li>
+<li>
+<p> the model assumes that each incremental loss is independent of all the others.
+This assumption may not be valid in that cells from the same calendar year are usually correlated due to inflation or business operating factors;
+</p>
+</li>
+<li>
+<p> the model tends to be over-parameterized, which may lead to inferior predictive performance. 
+</p>
+</li>
+</ul>
+<p>To solve these potential problems, many variants of the current basic GLM model have been proposed in the actuarial literature.
+Some of these may be included in the future release.
+</p>
+<p>Support of the negative binomial GLM was added since version 0.2.3.  
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Wayne Zhang <a href="mailto:actuary_zhang@hotmail.com">actuary_zhang@hotmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>England P. and Verrall R. (1999). Analytic and bootstrap estimates of prediction errors in claims reserving. <em>Insurance: Mathematics and Economics</em>, 25, 281-293.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>See also <code>glm</code>, <code>glm.nb</code>, <code>tweedie</code>,  <code>cpglm</code> and <code>MackChainLadder</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(GenIns)
+GenIns &lt;- GenIns / 1000
+
+# over-dispersed Poisson: reproduce ChainLadder estimates
+(fit1 &lt;- glmReserve(GenIns))
+summary(fit1, type = "model")   # extract the underlying glm
+
+# which:
+# 1 Original triangle 
+# 2 Full triangle 
+# 3 Reserve distribution
+# 4 Residual plot
+# 5 QQ-plot
+
+# plot original triangle
+plot(fit1, which = 1, xlab = "dev year", ylab = "cum loss")
+
+# plot residuals 
+plot(fit1, which = 4, xlab = "fitted values", ylab = "residuals")
+
+# Gamma GLM:
+(fit2 &lt;- glmReserve(GenIns, var.power = 2))
+
+# compound Poisson GLM (variance function estimated from the data):
+(fit3 &lt;- glmReserve(GenIns, var.power = NULL))
+
+# Now suppose we have an exposure measure
+# we can put it as an offset term in the model
+# to do this, use the "exposure" attribute of the 'triangle'
+expos &lt;- (7 + 1:10 * 0.4) * 100
+GenIns2 &lt;- GenIns
+attr(GenIns2, "exposure") &lt;- expos
+(fit4 &lt;- glmReserve(GenIns2))
+# If the triangle's rownames are not convertible to numeric,
+# supply names to the exposures
+GenIns3 &lt;- GenIns2
+rownames(GenIns3) &lt;- paste0(2007:2016, "-01-01")
+names(expos) &lt;- rownames(GenIns3)
+attr(GenIns3, "exposure") &lt;- expos
+(fit4b &lt;- glmReserve(GenIns3))
+
+# use bootstrapping to compute prediction error
+## Not run: 
+set.seed(11)
+(fit5 &lt;- glmReserve(GenIns, mse.method = "boot"))
+
+# compute the quantiles of the predicted loss reserves
+t(apply(fit5$sims.reserve.pred, 2, quantile, 
+        c(0.025, 0.25, 0.5, 0.75, 0.975)))
+        
+# plot distribution of reserve
+plot(fit5, which = 3)
+
+## End(Not run)
+
+# alternative over-dispersed Poisson: negative binomial GLM
+(fit6 &lt;- glmReserve(GenIns, nb = TRUE))
+
+</code></pre>
+
+
+</div>

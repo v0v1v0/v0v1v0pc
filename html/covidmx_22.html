@@ -1,0 +1,194 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>read_datos_abiertos</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Lee la base de datos de la direccion general de epidemiologia que ya descargaste</h2>
+
+<h3>Description</h3>
+
+<p><code>read_datos_abiertos</code> Lee los datos abiertos almacenados en tu base de <code>duckdb</code> que
+bajaste con <code>descarga_datos_abiertos</code>. Intenta de manera automática determinar
+si los lee de <code>duckdb</code>, <code>csv</code> ó <code>zip</code>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">read_datos_abiertos(
+  datos_abiertos_path = NULL,
+  dbdir = tempfile(fileext = ".duckdb"),
+  tblname = "covidmx",
+  pragma_memory_limit = Sys.getenv("pragma_memory_limit"),
+  drv = duckdb::duckdb(),
+  colClasses = get_col_class(),
+  read_format = c("duckdb", "tibble"),
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>datos_abiertos_path</code></td>
+<td>
+<p>(<strong>obligatorio</strong>) Camino a los datos abiertos si son un <code>zip</code>,
+un <code>csv</code> o un <code>.duckdb</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dbdir</code></td>
+<td>
+<p>(<strong>opcional</strong>) Direccion donde guardar la base de datos con terminacion <code>.duckdb</code>.
+Corresponde al argumento de <code>duckdb::dbConnect__duckdb_driver()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tblname</code></td>
+<td>
+<p>(<strong>opcional</strong>)  Nombre de la tabla de <code>duckdb</code> donde guardar los datos por
+default se llama <code>covidmx</code>. Solo es relevante si estas usando el mismo <code>dbdir</code> para otro
+proyecto distinto.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pragma_memory_limit</code></td>
+<td>
+<p>(<strong>opcional</strong>) Limite de memoria para el programa
+(ver <a href="https://duckdb.org/docs/sql/pragmas">PRAGMAS</a>). Cambialo a que sea mas o menos la mitad
+de tu RAM. La forma mas sencilla es como una variable ambiental con
+<code>Sys.setenv('pragma_memory_limit' = '1GB')</code> por ejemplo para un limite de 1 gigabyte.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drv</code></td>
+<td>
+<p>(<strong>opcional</strong>) Un  driver para <code>dbConnect</code> (default <code>duckdb::duckdb()</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>colClasses</code></td>
+<td>
+<p>(<strong>opcional</strong>) Clases de la columna para leer en <code>duckdb::read_csv_duckdb()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>read_format</code></td>
+<td>
+<p>(<strong>opcional</strong>) <code>"duckdb"</code> o <code>"tibble"</code> establece el formato
+de lectura de la base de datos. En la mayoria de los casos <code>"tibble"</code> va a
+resultar en un error de memoria. La opcion de <code>"duckdb"</code> siempre es mas rapida por lo cual
+es el default.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>(<strong>opcional</strong>) parametros adicionales para <code>descarga_datos_abiertos()</code></p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Lista de valores:
+</p>
+
+<ul>
+<li>
+<p> dats        - Tabla conectada mediante <code>DBI::dbConnect</code> (si <code>duckdb</code>) o
+tibble (si <code>tibble</code>)
+</p>
+</li>
+<li>
+<p> disconnect  - Funcion para cerrar la conexion a la base de datos.
+</p>
+</li>
+<li>
+<p> dict        - Lista de <code>tibble</code>s con el diccionario de datos para cada variable
+</p>
+</li>
+</ul>
+<h3>Note</h3>
+
+<p>Para guardar tu base con <code>duckdb</code> cambia el <code>dbdir</code> a un archivo <code>.duckdb</code>. Como ejemplo
+<code>dbdir = "ejemplo.duckdb"</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>descarga_datos_abiertos()</code>  <code>descarga_datos_red_irag()</code>
+<code>descarga_datos_variantes_GISAID()</code> <code>casos()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+#Archivo temporal donde guardar las cosas es cualquier .duckdb
+file_duck &lt;- tempfile(fileext = ".duckdb")
+
+#Estos links deben omitirse en una corrida normal. Se incluyen por ahora como ejemplo
+#pero las opciones site.covid.dic y sites.covid deben eliminarse de abajo.
+dlink   &lt;- "https://github.com/RodrigoZepeda/covidmx/raw/main/datos_abiertos_covid19.zip"
+diclink &lt;- "https://github.com/RodrigoZepeda/covidmx/raw/main/diccionario_datos_covid19.zip"
+
+if (RCurl::url.exists(dlink) &amp; RCurl::url.exists(diclink)){
+  # EJEMPLO 0: Descarga los datos abiertos en archivo file_duck
+  descarga_datos_abiertos(dbdir = file_duck, sites.covid = dlink, show_warnings = FALSE, 
+      site.covid.dic = diclink)$disconnect()
+
+  # EJEMPLO 1: Lee los datos de duckdb una vez descargados
+  datos_covid &lt;- read_datos_abiertos(file_duck, show_warnings = FALSE, 
+                                      site.covid.dic = diclink) # Lee duckdb
+  datos_covid$disconnect()
+
+# EJEMPLO 2: Lee los datos desde un zip descargado
+# Descarga archivos de la DGE y guarda el zip
+direccion_zip &lt;- descarga_db_datos_abiertos_tbl(sites.covid = dlink, show_warnings = FALSE)
+# Lee zip
+datos_covid &lt;- read_datos_abiertos(direccion_zip, dbdir = file_duck, show_warnings = FALSE,
+                    site.covid.dic = diclink)
+datos_covid$disconnect()
+
+# EJEMPLO 3: Lee los datos desde un zip descargado
+# Descarga archivos zip de la DGE
+direccion_zip &lt;- descarga_db_datos_abiertos_tbl(sites.covid = dlink, show_warnings = FALSE)
+direccion_csv &lt;- unzip_db_datos_abiertos_tbl(direccion_zip) # Descomprime el zip para tener csv
+# Lee los csv
+datos_covid &lt;- read_datos_abiertos(direccion_csv, dbdir = file_duck, show_warnings = FALSE,
+                                     site.covid.dic = diclink) 
+datos_covid$disconnect()
+
+# EJEMPLO 4: Si ya tenias el diccionario lo puedes agregar
+# Simula la idea de ya tener el diccionario
+diccionario &lt;- descarga_diccionario(show_warnings = FALSE, site.covid.dic = diclink) 
+datos_covid &lt;- read_datos_abiertos(file_duck, diccionario = diccionario, show_warnings = FALSE)
+datos_covid$disconnect()
+
+# EJEMPLO 5: Si ya tenias el diccionario como archivo zip
+# Descarga el diccionario para tenerlo como zip
+diccionario_zip &lt;- descarga_db_diccionario_ssa(show_warnings = FALSE, site.covid.dic = diclink) 
+datos_covid &lt;- read_datos_abiertos(file_duck, diccionario_zip_path = diccionario_zip, 
+                                    show_warnings = FALSE)
+datos_covid$disconnect()
+
+# EJEMPLO 6: Si ya tenias el diccionario como archivo xlsx
+# Descarga el diccionario para tenerlo como zip
+diccionario_zip &lt;- descarga_db_diccionario_ssa(show_warnings = FALSE, site.covid.dic = diclink)
+# Abre el csv del diccionario
+diccionario_csv &lt;- unzip_db_diccionario_ssa(diccionario_zip) 
+datos_covid &lt;- read_datos_abiertos(file_duck,
+  diccionario_unzipped_path = diccionario_csv,
+  show_warnings = FALSE
+)
+datos_covid$disconnect()
+}
+
+</code></pre>
+
+
+</div>

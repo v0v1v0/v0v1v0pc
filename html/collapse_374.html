@@ -1,0 +1,546 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>GRP</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fast Grouping / <em>collapse</em> Grouping Objects</h2>
+
+<h3>Description</h3>
+
+<p><code>GRP</code> performs fast, ordered and unordered, groupings of vectors and data frames (or lists of vectors) using <code>radixorderv</code> or <code>group</code>. The output is a list-like object of class 'GRP' which can be printed, plotted and used as an efficient input to all of <em>collapse</em>'s fast statistical and transformation functions and operators (see macros <code>.FAST_FUN</code> and <code>.OPERATOR_FUN</code>), as well as to <code>collap</code>, <code>BY</code> and <code>TRA</code>.
+</p>
+<p><code>fgroup_by</code> is similar to <code>dplyr::group_by</code> but faster and class-agnostic. It creates a grouped data frame with a 'GRP' object attached - for fast dplyr-like programming with <em>collapse</em>'s fast functions.
+</p>
+<p>There are also several conversion methods to and from 'GRP' objects. Notable among these is <code>GRP.grouped_df</code>, which returns a 'GRP' object from a grouped data frame created with <code>dplyr::group_by</code> or <code>fgroup_by</code>, and the duo <code>GRP.factor</code> and <code>as_factor_GRP</code>.
+</p>
+<p><code>gsplit</code> efficiently splits a vector based on a 'GRP' object, and <code>greorder</code> helps to recombine the results. These are the workhorses behind functions like <code>BY</code>, and <code>collap</code>, <code>fsummarise</code> and <code>fmutate</code> when evaluated with base R and user-defined functions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">GRP(X, ...)
+
+## Default S3 method:
+GRP(X, by = NULL, sort = .op[["sort"]], decreasing = FALSE, na.last = TRUE,
+    return.groups = TRUE, return.order = sort, method = "auto",
+    call = TRUE, ...)
+
+## S3 method for class 'factor'
+GRP(X, ..., group.sizes = TRUE, drop = FALSE, return.groups = TRUE,
+    call = TRUE)
+
+## S3 method for class 'qG'
+GRP(X, ..., group.sizes = TRUE, return.groups = TRUE, call = TRUE)
+
+## S3 method for class 'pseries'
+GRP(X, effect = 1L, ..., group.sizes = TRUE, return.groups = TRUE,
+    call = TRUE)
+
+## S3 method for class 'pdata.frame'
+GRP(X, effect = 1L, ..., group.sizes = TRUE, return.groups = TRUE,
+    call = TRUE)
+
+## S3 method for class 'grouped_df'
+GRP(X, ..., return.groups = TRUE, call = TRUE)
+
+# Identify 'GRP' objects
+is_GRP(x)
+
+## S3 method for class 'GRP'
+length(x)                          # Length of data being grouped
+GRPN(x, expand = TRUE, ...)        # Group sizes (default: expanded to match data length)
+GRPid(x, sort = FALSE, ...)        # Group id (data length, same as GRP(.)$group.id)
+GRPnames(x, force.char = TRUE, sep = ".")  # Group names
+
+as_factor_GRP(x, ordered = FALSE, sep = ".") # 'GRP'-object to (ordered) factor conversion
+
+# Efficiently split a vector using a 'GRP' object
+gsplit(x, g, use.g.names = FALSE, ...)
+
+# Efficiently reorder y = unlist(gsplit(x, g)) such that identical(greorder(y, g), x)
+greorder(x, g, ...)
+
+# Fast, class-agnostic pendant to dplyr::group_by for use with fast functions, see details
+fgroup_by(.X, ..., sort = .op[["sort"]], decreasing = FALSE, na.last = TRUE,
+          return.groups = TRUE, return.order = sort, method = "auto")
+# Standard-evaluation analogue (slim wrapper around GRP.default(), for programming)
+group_by_vars(X, by = NULL, ...)
+# Shorthand for fgroup_by
+gby(.X, ..., sort = .op[["sort"]], decreasing = FALSE, na.last = TRUE,
+    return.groups = TRUE, return.order = sort, method = "auto")
+
+# Get grouping columns from a grouped data frame created with dplyr::group_by or fgroup_by
+fgroup_vars(X, return = "data")
+
+# Ungroup grouped data frame created with dplyr::group_by or fgroup_by
+fungroup(X, ...)
+
+## S3 method for class 'GRP'
+print(x, n = 6, ...)
+
+## S3 method for class 'GRP'
+plot(x, breaks = "auto", type = "l", horizontal = FALSE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>a vector, list of columns or data frame (default method), or a suitable object (conversion / extractor methods).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.X</code></td>
+<td>
+<p>a data frame or list.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x, g</code></td>
+<td>
+<p>a 'GRP' object. For <code>gsplit/greorder</code>, <code>x</code> can be a vector of any type, or <code>NULL</code> to return the integer indices of the groups. <code>gsplit/greorder/GRPN/GRPid</code> also support vectors or data frames to be passed to <code>g/x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by</code></td>
+<td>
+<p>if <code>X</code> is a data frame or list, <code>by</code> can indicate columns to use for the grouping (by default all columns are used). Columns must be passed using a vector of column names, indices, a one-sided formula i.e. <code>~ col1 + col2</code>, a logical vector (converted to indices) or a selector function e.g. <code>is_categorical</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sort</code></td>
+<td>
+<p>logical. If <code>FALSE</code>, groups are not ordered but simply grouped in the order of first appearance of unique elements / rows. This often provides a performance gain if the data was not sorted beforehand. See also <code>method</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ordered</code></td>
+<td>
+<p>logical. <code>TRUE</code> adds a class 'ordered' i.e. generates an ordered factor.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>decreasing</code></td>
+<td>
+<p>logical. Should the sort order be increasing or decreasing? Can be a vector of length equal to the number of arguments in <code>X</code> / <code>by</code> (argument passed to <code>radixorderv</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.last</code></td>
+<td>
+<p>logical. If missing values are encountered in grouping vector/columns, assign them to the last group (argument passed to <code>radixorderv</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return.groups</code></td>
+<td>
+<p>logical. Include the unique groups in the created GRP object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return.order</code></td>
+<td>
+<p>logical. If <code>sort = TRUE</code>, include the output from <code>radixorderv</code> in the created GRP object. This brings performance improvements in <code>gsplit</code> (and thus also benefits grouped execution of base R functions). </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>character. The algorithm to use for grouping: either <code>"radix"</code>, <code>"hash"</code> or <code>"auto"</code>. <code>"auto"</code> will chose <code>"radix"</code> when <code>sort = TRUE</code>, yielding ordered grouping via <code>radixorderv</code>, and <code>"hash"</code>-based grouping in first-appearance order via <code>group</code> otherwise. It is possibly to put <code>method = "radix"</code> and <code>sort = FALSE</code>, which will group character data in first appearance order but sort numeric data (a good hybrid option). <code>method = "hash"</code> currently does not support any sorting, thus putting <code>sort = TRUE</code> will simply be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>group.sizes</code></td>
+<td>
+<p>logical. <code>TRUE</code> tabulates factor levels using <code>tabulate</code> to create a vector of group sizes; <code>FALSE</code> leaves that slot empty when converting from factors.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop</code></td>
+<td>
+<p>logical. <code>TRUE</code> efficiently drops unused factor levels beforehand using <code>fdroplevels</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>logical. <code>TRUE</code> calls <code>match.call</code> and saves it in the final slot of the GRP object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>expand</code></td>
+<td>
+<p>logical. <code>TRUE</code> returns a vector the same length as the data. <code>FALSE</code> returns the group sizes (computed in first-appearance-order of groups if <code>x</code> is not already a 'GRP' object). </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>force.char</code></td>
+<td>
+<p>logical. Always output group names as character vector, even if a single numeric vector was passed to <code>GRP.default</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sep</code></td>
+<td>
+<p>character. The separator passed to <code>paste</code> when creating group names from multiple grouping variables by pasting them together.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>effect</code></td>
+<td>
+<p><em>plm</em> / indexed data methods: Select which panel identifier should be used as grouping variable. 1L takes the first variable in the index, 2L the second etc., identifiers can also be passed as a character string. More than one variable can be supplied. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return</code></td>
+<td>
+<p>an integer or string specifying what <code>fgroup_vars</code> should return. The options are:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<em> Int. </em>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> String </em>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> Description </em>  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 1 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "data"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> full grouping columns (default) </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 2 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "unique"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> unique rows of grouping columns </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 3 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "names" </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> names of grouping columns </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 4 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "indices"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> integer indices of grouping columns </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 5 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "named_indices"  </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> named integer indices of grouping columns </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 6 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "logical"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> logical selection vector of grouping columns </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 7 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "named_logical"     </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> named logical selection vector of grouping columns </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+      </td>
+</tr>
+</table>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use.g.names</code></td>
+<td>
+<p>logical. <code>TRUE</code> returns a named list, like <code>split</code>. <code>FALSE</code> is slightly more efficient. </p>
+</td>
+</tr>
+</table>
+<table>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>integer. Number of groups to print out.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>breaks</code></td>
+<td>
+<p>integer. Number of breaks in the histogram of group-sizes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>linetype for plot.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>horizontal</code></td>
+<td>
+<p>logical. <code>TRUE</code> arranges plots next to each other, instead of above each other. <em>Note</em> that the size of each group is only plotted for objects with less than 10,000 groups.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>for <code>fgroup_by</code>: unquoted comma-separated column names, sequences of columns, expressions involving columns, and column names, indices, logical vectors or selector functions. See Examples. For <code>group_by_vars</code>, <code>gsplit</code>, <code>greorder</code>, <code>GRPN</code> and <code>GRPid</code>: further arguments passed to <code>GRP</code> (if <code>g/x</code> is not already a 'GRP' object). For example the <code>by</code> argument could be used if a data frame is passed.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>GRP</code> is a central function in the <em>collapse</em> package because it provides, in the form of integer vectors, some key pieces of information to efficiently perform grouped operations at the <code>C/C++</code> level.
+</p>
+<p>Most statistical function require information about (1) the number of groups (2) an integer group-id indicating which values / rows belong to which group and (3) information about the size of each group. Provided with these, <em>collapse</em>'s Fast Statistical Functions pre-allocate intermediate and result vectors of the right sizes and (in most cases) perform grouped statistical computations in a single pass through the data.
+</p>
+<p>The sorting functionality of <code>GRP.default</code> lets groups receive different integer-id's depending on whether the groups are sorted <code>sort = TRUE</code> (<code>FALSE</code> gives first-appearance order), and in which order (argument <code>decreasing</code>). This affects the order of values/rows in the output whenever an aggregation is performed. 
+</p>
+
+<p>Other elements in the object provide information about whether the data was sorted by the variables defining the grouping (6) and the ordering vector (7). These also feed into optimizations in <code>gsplit/greorder</code> that benefit the execution of base R functions across groups.
+</p>
+<p>Complimentary to <code>GRP</code>, the function <code>fgroup_by</code> is a significantly faster and class-agnostic alternative to <code>dplyr::group_by</code> for programming with <em>collapse</em>. It creates a grouped data frame with a 'GRP' object attached in a <code>"groups"</code> attribute. This data frame has classes 'GRP_df', ..., 'grouped_df' and 'data.frame', where ... stands for any other classes the input frame inherits such as 'data.table', 'sf', 'tbl_df', 'indexed_frame' etc.. <em>collapse</em> functions with a 'grouped_df' method respond to 'grouped_df' objects created with either <code>fgroup_by</code> or <code>dplyr::group_by</code>. The method <code>GRP.grouped_df</code> takes the <code>"groups"</code> attribute from a 'grouped_df' and converts it to a 'GRP' object if created with <code>dplyr::group_by</code>. 
+</p>
+<p>The 'GRP_df' class in front responds to <code>print.GRP_df</code> which first calls <code>print(fungroup(x), ...)</code> and prints one line below the object indicating the grouping variables, followed, in square brackets, by some statistics on the group sizes: <code>[N | Mean (SD) Min-Max]</code>. The mean is rounded to a full number and the standard deviation (SD) to one digit. Minimum and maximum are only displayed if the SD is non-zero. There also exist a method <code>[.GRP_df</code> which calls <code>NextMethod</code> but makes sure that the grouping information is preserved or dropped depending on the dimensions of the result (subsetting rows or aggregation with <em>data.table</em> drops the grouping object).
+</p>
+
+
+<p><code>GRP.default</code> supports vector and list input and will also return 'GRP' objects if passed. There is also a hidden method <code>GRP.GRP</code> which simply returns grouping objects (no re-grouping functionality is offered).
+</p>
+<p>Apart from <code>GRP.grouped_df</code> there are several further conversion methods:
+</p>
+<p>The conversion of factors to 'GRP' objects by <code>GRP.factor</code> involves obtaining the number of groups calling <code>ng &lt;- fnlevels(f)</code> and then computing the count of each level using <code>tabulate(f, ng)</code>. The integer group-id (2) is already given by the factor itself after removing the levels and class attributes and replacing any missing values with <code>ng + 1L</code>. The levels are put in a list and moved to position (4) in the 'GRP' object, which is reserved for the unique groups. Finally, a sortedness check <code>!is.unsorted(id)</code> is run on the group-id to check if the data represented by the factor was sorted (6). <code>GRP.qG</code> works similarly (see also <code>qG</code>), and the 'pseries' and 'pdata.frame' methods simply group one or more factors in the index (selected using the <code>effect</code> argument) .
+</p>
+<p>Creating a factor from a 'GRP' object using <code>as_factor_GRP</code> does not involve any computations, but may involve interacting multiple grouping columns using the <code>paste</code> function to produce unique factor levels. 
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>A list-like object of class ‘GRP’ containing information about the number of groups, the observations (rows) belonging to each group, the size of each group, the unique group names / definitions, whether the groups are ordered and data grouped is sorted or not, the ordering vector used to perform the ordering and the group start positions. The object is structured as follows:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<em> List-index </em>  </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> Element-name </em>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> Content type </em> </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> Content description</em> </td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+                 [[1]] </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> N.groups   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <code>integer(1)</code> </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> Number of Groups </td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+                 [[2]] </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> group.id </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <code>integer(NROW(X))</code> </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> An integer group-identifier </td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+                 [[3]] </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> group.sizes    </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <code>integer(N.groups)</code> </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> Vector of group sizes </td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+                 [[4]] </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> groups    </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <code>unique(X)</code> or <code>NULL</code> </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> Unique groups (same format as input, except for <code>fgroup_by</code> which uses a plain list, sorted if <code>sort = TRUE</code>), or <code>NULL</code> if <code>return.groups = FALSE</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+                 [[5]] </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> group.vars   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <code>character</code> </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> The names of the grouping variables </td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 [[6]] </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> ordered   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <code>logical(2)</code> </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <code>[1]</code> Whether the groups are ordered: equal to the <code>sort</code> argument in the default method, or <code>TRUE</code> if converted objects inherit a class <code>"ordered"</code> and <code>NA</code> otherwise, <code>[2]</code> Whether the data (<code>X</code>) is already sorted: the result of <code>!is.unsorted(group.id)</code>. If <code>sort = FALSE</code> (default method) the second entry is <code>NA</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+                 [[7]] </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> order     </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <code>integer(NROW(X))</code> or <code>NULL</code> </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> Ordering vector from <code>radixorderv</code> (with <code>"starts"</code> attribute), or <code>NULL</code> if <code>return.order = FALSE</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 [[8]] </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> group.starts </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <code>integer(N.groups)</code> or <code>NULL</code> </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> The first-occurrence positions/rows of the groups. Useful e.g. with <code>ffirst(x, g, na.rm = FALSE)</code>. <code>NULL</code> if <code>return.groups = FALSE</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;">
+
+                 [[9]] </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> call </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <code>match.call()</code> or <code>NULL</code> </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> The <code>GRP()</code> call, obtained from <code>match.call()</code>, or <code>NULL</code> if <code>call = FALSE</code>
+                 </td>
+</tr>
+</table>
+<h3>See Also</h3>
+
+<p><code>radixorder</code>, <code>group</code>, <code>qF</code>, Fast Grouping and Ordering, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## default method
+GRP(mtcars$cyl)
+GRP(mtcars, ~ cyl + vs + am)       # Or GRP(mtcars, c("cyl","vs","am")) or GRP(mtcars, c(2,8:9))
+g &lt;- GRP(mtcars, ~ cyl + vs + am)  # Saving the object
+print(g)                           # Printing it
+plot(g)                            # Plotting it
+GRPnames(g)                        # Retain group names
+GRPid(g)                           # Retain group id (same as g$group.id), useful inside fmutate()
+fsum(mtcars, g)                    # Compute the sum of mtcars, grouped by variables cyl, vs and am
+gsplit(mtcars$mpg, g)              # Use the object to split a vector
+gsplit(NULL, g)                    # The indices of the groups
+identical(mtcars$mpg,              # greorder and unlist undo the effect of gsplit
+          greorder(unlist(gsplit(mtcars$mpg, g)), g))
+
+## Convert factor to GRP object and vice-versa
+GRP(iris$Species)
+as_factor_GRP(g)
+ 
+## dplyr integration
+library(dplyr)
+mtcars |&gt; group_by(cyl,vs,am) |&gt; GRP()    # Get GRP object from a dplyr grouped tibble
+mtcars |&gt; group_by(cyl,vs,am) |&gt; fmean()  # Grouped mean using dplyr grouping
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fmean() # Faster alternative with collapse grouping
+
+mtcars |&gt; fgroup_by(cyl,vs,am)            # Print method for grouped data frame
+
+## Adding a column of group sizes.
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fsummarise(Sizes = GRPN())
+# Note: can also set_collapse(mask = "n") to use n() instead, see help("collapse-options")
+# Other usage modes:
+mtcars |&gt; fgroup_by(cyl,vs,am) |&gt; fmutate(Sizes = GRPN())
+mtcars |&gt; fmutate(Sizes = GRPN(list(cyl,vs,am)))  # Same thing, slightly more efficient
+
+## Various options for programming and interactive use
+fgroup_by(GGDC10S, Variable, Decade = floor(Year / 10) * 10) |&gt; head(3)
+fgroup_by(GGDC10S, 1:3, 5) |&gt; head(3)
+fgroup_by(GGDC10S, c("Variable", "Country")) |&gt; head(3)
+fgroup_by(GGDC10S, is.character) |&gt; head(3)
+fgroup_by(GGDC10S, Country:Variable, Year) |&gt; head(3)
+fgroup_by(GGDC10S, Country:Region, Var = Variable, Year) |&gt; head(3)
+
+## Note that you can create a grouped data frame without materializing the unique grouping columns
+fgroup_by(GGDC10S, Variable, Country, return.groups = FALSE) |&gt; fmutate(across(AGR:SUM, fscale))
+fgroup_by(GGDC10S, Variable, Country, return.groups = FALSE) |&gt; fselect(AGR:SUM) |&gt; fmean()
+
+## Note also that setting sort = FALSE on unsorted data can be much faster... if not required...
+library(microbenchmark)
+microbenchmark(gby(GGDC10S, Variable, Country), gby(GGDC10S, Variable, Country, sort = FALSE))
+
+</code></pre>
+
+
+</div>

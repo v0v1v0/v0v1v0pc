@@ -1,0 +1,122 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>opt_circ_bw</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Find the Optimal Bandwidth for a Circular Kernel Density Estimate</h2>
+
+<h3>Description</h3>
+
+<p>This function basically wraps <code>circular::bw.cv.ml.circular()</code>
+and <code>circular::bw.nrd.circular()</code> of the '<span class="pkg">circular</span>'
+package, simplifying their inputs. For more control,
+these '<span class="pkg">circular</span>' functions could be used directly.
+The normal reference distribution (<code>"nrd"</code>) method of finding the bandwidth
+parameter might give very bad results,
+especially for multi-modal population distributions.
+In these cases it can help to set <code>kappa.est = "trigmoments"</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">opt_circ_bw(theta, method = c("cv", "nrd"), kappa.est = "trigmoments")
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+<p>numeric vector of angles in <code class="reqn">[-\pi, \pi)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>character string describing the method,
+either <code>"cv"</code> (cross-validation), or <code>"nrd"</code>
+leading to a rule-of-thumb estimate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kappa.est</code></td>
+<td>
+<p>character string describing how the spread is estimated.
+Either maximum likelihood <code>"ML"</code>, or trigonometric moment <code>"trigmoments"</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>method="nrd"</code> is somewhat similar to the linear case (see
+<code>fit_steplength()</code>). Instead of matching a normal distribution to
+the data and then calculating its optimal bandwidth, a von Mises distribution is used.
+To match that von Mises distribution to the data we can either find its concentration
+parameter kappa using maximum likelihood (<code>kappa.est="ML"</code>) or by trigonometric moment
+matching (<code>kappa.est="trigmoments"</code>). When the data is multimodal, fitting a
+(unimodal) von Mises distribution using maximum likelihood will probably give bad
+results. Using <code>kappa.est="trigmoments"</code> potentially works better in those cases.
+</p>
+<p>As an alternative, the bandwidth can be found by maximizing the cross-validation likelihood
+(<code>method="cv"</code>). However, with this leave-one-out cross-validation scheme, at every
+likelihood optimization step, <code class="reqn">n(n-1)</code> von Mises densities need to be calculated, where
+<code class="reqn">n=</code><code>length(theta)</code>. Therefore, this method can become quite slow with
+large sample sizes.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A numeric value, the optimized bandwidth.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>circular::bw.cv.ml.circular()</code>,
+<code>circular::bw.nrd.circular()</code>,
+<code>opt_circ_bw()</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">require(circular)
+require(graphics)
+set.seed(123)
+n &lt;- 10  #n (number of samples) is set small for performance. Increase n to
+         # a value larger than 1000 to see the effects of multimodality
+
+angles &lt;- rvonmisesmix(n,
+  mu = c(0,pi),
+  kappa = c(2,1),
+  prop = c(0.5,0.5)
+)
+bw1 &lt;- opt_circ_bw(theta = angles, method="nrd", kappa.est = "ML")
+bw2 &lt;- opt_circ_bw(theta = angles, method="nrd", kappa.est = "trigmoments")
+bw3 &lt;- opt_circ_bw(theta = angles, method="cv")
+
+dens1 &lt;- fit_angle(theta = angles, parametric = FALSE, bandwidth = bw1)
+dens2 &lt;- fit_angle(theta = angles, parametric = FALSE, bandwidth = bw2)
+dens3 &lt;- fit_angle(theta = angles, parametric = FALSE, bandwidth = bw3)
+true_dens &lt;- dvonmisesmix(
+  seq(-pi,pi,0.001),
+  mu = c(0,pi),
+  kappa = c(2,1),
+  prop = c(0.5,0.5)
+)
+if(interactive()){
+ plot(seq(-pi, pi, 0.001), true_dens, type = "l")
+ lines(as.double(dens1$x), as.double(dens1$y), col = "red")
+ lines(as.double(dens2$x), as.double(dens2$y), col = "green")
+ lines(as.double(dens3$x), as.double(dens3$y), col = "blue")
+}
+
+</code></pre>
+
+
+</div>

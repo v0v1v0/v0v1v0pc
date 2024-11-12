@@ -1,0 +1,168 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>psacf</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Auto- and Cross- Covariance and Correlation Function Estimation for Panel Series
+</h2>
+
+<h3>Description</h3>
+
+<p><code>psacf</code>, <code>pspacf</code> and <code>psccf</code> compute (and by default plot) estimates of the auto-, partial auto- and cross- correlation or covariance functions for panel series. They are analogues to <code>acf</code>, <code>pacf</code> and <code>ccf</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">psacf(x, ...)
+pspacf(x, ...)
+psccf(x, y, ...)
+
+## Default S3 method:
+psacf(x, g, t = NULL, lag.max = NULL, type = c("correlation", "covariance","partial"),
+      plot = TRUE, gscale = TRUE, ...)
+## Default S3 method:
+pspacf(x, g, t = NULL, lag.max = NULL, plot = TRUE, gscale = TRUE, ...)
+## Default S3 method:
+psccf(x, y, g, t = NULL, lag.max = NULL, type = c("correlation", "covariance"),
+      plot = TRUE, gscale = TRUE, ...)
+
+## S3 method for class 'data.frame'
+psacf(x, by, t = NULL, cols = is.numeric, lag.max = NULL,
+      type = c("correlation", "covariance","partial"), plot = TRUE, gscale = TRUE, ...)
+## S3 method for class 'data.frame'
+pspacf(x, by, t = NULL, cols = is.numeric, lag.max = NULL,
+       plot = TRUE, gscale = TRUE, ...)
+
+# Methods for indexed data / compatibility with plm:
+
+## S3 method for class 'pseries'
+psacf(x, lag.max = NULL, type = c("correlation", "covariance","partial"),
+      plot = TRUE, gscale = TRUE, ...)
+## S3 method for class 'pseries'
+pspacf(x, lag.max = NULL, plot = TRUE, gscale = TRUE, ...)
+## S3 method for class 'pseries'
+psccf(x, y, lag.max = NULL, type = c("correlation", "covariance"),
+      plot = TRUE, gscale = TRUE, ...)
+
+ ## S3 method for class 'pdata.frame'
+psacf(x, cols = is.numeric, lag.max = NULL,
+      type = c("correlation", "covariance","partial"), plot = TRUE, gscale = TRUE, ...)
+## S3 method for class 'pdata.frame'
+pspacf(x, cols = is.numeric, lag.max = NULL, plot = TRUE, gscale = TRUE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x, y</code></td>
+<td>
+<p>a numeric vector, 'indexed_series' ('pseries'), data frame or 'indexed_frame' ('pdata.frame').</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>g</code></td>
+<td>
+<p>a factor, <code>GRP</code> object, or atomic vector / list of vectors (internally grouped with <code>group</code>) used to group <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by</code></td>
+<td>
+<p><em>data.frame method</em>: Same input as <code>g</code>, but also allows one- or two-sided formulas using the variables in <code>x</code>, i.e. <code>~ idvar</code> or <code>var1 + var2 ~ idvar1 + idvar2</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>t</code></td>
+<td>
+<p>a time vector or list of vectors. See <code>flag</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cols</code></td>
+<td>
+<p><em>data.frame method</em>: Select columns using a function, column names, indices or a logical vector. <em>Note</em>: <code>cols</code> is ignored if a two-sided formula is passed to <code>by</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lag.max</code></td>
+<td>
+<p>integer. Maximum lag at which to calculate the acf. Default is <code>2*sqrt(length(x)/ng)</code> where <code>ng</code> is the number of groups in the panel series / supplied to <code>g</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>character. String giving the type of acf to be computed. Allowed values are "correlation" (the default), "covariance" or "partial".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot</code></td>
+<td>
+<p>logical. If <code>TRUE</code> (default) the acf is plotted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gscale</code></td>
+<td>
+<p>logical. Do a groupwise scaling / standardization of <code>x, y</code> (using <code>fscale</code> and the groups supplied to <code>g</code>) before computing panel-autocovariances / correlations. See Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>further arguments to be passed to <code>plot.acf</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If <code>gscale = TRUE</code> data are standardized within each group (using <code>fscale</code>) such that the group-mean is 0 and the group-standard deviation is 1. This is strongly recommended for most panels to get rid of individual-specific heterogeneity which would corrupt the ACF computations.
+</p>
+<p>After scaling, <code>psacf</code>, <code>pspacf</code> and <code>psccf</code> compute the ACF/CCF by creating a matrix of panel-lags of the series using <code>flag</code> and then computing the covariance of this matrix with the series (<code>x, y</code>) using <code>cov</code> and pairwise-complete observations, and dividing by the variance (of <code>x, y</code>). Creating the lag matrix may require a lot of memory on large data, but passing a sequence of lags to <code>flag</code> and thus calling <code>flag</code> and <code>cov</code> one time is generally much faster than calling them <code>lag.max</code> times. The partial ACF is computed from the ACF using a Yule-Walker decomposition, in the same way as in <code>pacf</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class 'acf', see <code>acf</code>. The result is returned invisibly if <code>plot = TRUE</code>.</p>
+
+
+<h3>See Also</h3>
+
+<p>Time Series and Panel Series, Collapse Overview 
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## World Development Panel Data
+head(wlddev)                                                    # See also help(wlddev)
+psacf(wlddev$PCGDP, wlddev$country, wlddev$year)                # ACF of GDP per Capita
+psacf(wlddev, PCGDP ~ country, ~year)                           # Same using data.frame method
+psacf(wlddev$PCGDP, wlddev$country)                             # The Data is sorted, can omit t
+pspacf(wlddev$PCGDP, wlddev$country)                            # Partial ACF
+psccf(wlddev$PCGDP, wlddev$LIFEEX, wlddev$country)              # CCF with Life-Expectancy at Birth
+
+psacf(wlddev, PCGDP + LIFEEX + ODA ~ country, ~year)            # ACF and CCF of GDP, LIFEEX and ODA
+psacf(wlddev, ~ country, ~year, c(9:10,12))                     # Same, using cols argument
+pspacf(wlddev, ~ country, ~year, c(9:10,12))                    # Partial ACF
+
+## Using indexed data:
+wldi &lt;- findex_by(wlddev, iso3c, year)  # Creating a indexed frame
+PCGDP &lt;- wldi$PCGDP                     # Indexed Series of GDP per Capita
+LIFEEX &lt;- wldi$LIFEEX                   # Indexed Series of Life Expectancy
+psacf(PCGDP)                            # Same as above, more parsimonious
+pspacf(PCGDP)
+psccf(PCGDP, LIFEEX)
+psacf(wldi[c(9:10,12)])
+pspacf(wldi[c(9:10,12)])
+
+</code></pre>
+
+
+</div>

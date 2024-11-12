@@ -1,0 +1,103 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>as.camodel_initmat</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Convert a matrix to a CA model landscape</h2>
+
+<h3>Description</h3>
+
+<p>Convert a matrix to a CA model landscape for later use with
+run_camodel or run_meanfield.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">as.camodel_initmat(m, levels = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>m</code></td>
+<td>
+<p>The input matrix (numeric, character or factor)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>levels</code></td>
+<td>
+<p>The levels to use in the resulting landscape. If <code>NULL</code>, the unique
+values of the input matrix are used as levels. Set this manually if you want the
+resulting landscape to have extra levels that are not present in the original matrix.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>This function returns a matrix containing values as factors, with levels
+corresponding to the <code>levels</code> argument. This matrix has the
+<code>class</code> <code>camodel_initmat</code> so that it can be displayed with the
+<code>image</code> generic function and works well with CA-related functions 
+(such as <code>run_camodel</code>).
+</p>
+
+
+<h3>See Also</h3>
+
+<p>generate_initmat, run_camodel, run_meanfield
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Simple conversion of a matrix with regular patterns
+x &lt;- seq(0, 2 * pi, l = 256)
+z &lt;- outer(x, x, function(x, y) as.numeric(sin(10*x) + cos(10*y) &gt; 0.8))
+mat &lt;- as.camodel_initmat(z)
+summary(mat)
+image(mat)
+
+# This is a character matrix. We need to convert it to use it as input to
+# run_camodel()
+size &lt;- 64
+m &lt;- matrix(ifelse(runif(size^2) &lt; .5, "TREE", "EMPTY"), nrow = size, ncol = size)
+m &lt;- as.camodel_initmat(m)
+summary(m) # this is a landscape object
+image(m)
+
+# Start a simulation using this matrix
+mod &lt;- ca_library("forestgap")
+out &lt;- run_camodel(mod, m, seq(0, 256))
+plot(out)
+
+
+# Run a glider in the game of life
+mod &lt;- ca_library("gameoflife")
+init &lt;- matrix(c(0, 0, 1, 0, 0, 0, 0,
+                 0, 0, 0, 1, 0, 0, 0,
+                 0, 1, 1, 1, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0),
+                nrow = 6, ncol = 7, byrow = TRUE)
+init[] &lt;- ifelse(init == 1, "LIVE", "DEAD")
+# image() does not work on init here without conversion by as.camodel_initmat
+init &lt;- as.camodel_initmat(init)
+image(init)
+
+# Run the model and display simulation output as it is running
+ctrl &lt;- list(custom_output_fun = landscape_plotter(mod, fps_cap = 5),
+             custom_output_every = 1)
+out &lt;- run_camodel(mod, init, times = seq(0, 32), control = ctrl)
+
+
+</code></pre>
+
+
+</div>

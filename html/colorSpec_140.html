@@ -1,0 +1,235 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>readSpectra</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>read colorSpec objects from files</h2>
+
+<h3>Description</h3>
+
+<p>These functions read <b>colorSpec</b> objects from files.
+In case of <code>ERROR</code>, they return <code>NULL</code>.
+There are 5 different file formats supported; see <b>Details</b>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">readSpectra( pathvec, ... )
+
+readSpectraXYY( path )
+readSpectraSpreadsheet( path )
+readSpectrumScope( path )
+
+readSpectraCGATS( path )
+readSpectraControl( path )
+
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>pathvec</code></td>
+<td>
+<p>a character vector to (possibly) multiple files.
+The file extension and a few lines from each file are read
+and a guess is made regarding the file format.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>optional arguments passed on to <code>resample()</code>.
+The most important is <code>wavelength</code>.
+If these are missing then <code>resample()</code> is not called.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>path</code></td>
+<td>
+<p>a path to a single file with the corresponding format:
+<code>XYY</code>, <code>Spreadsheet</code>, <code>Scope</code>, 
+<code>CGATS</code>, or <code>Control</code>.  See Details.
+If the function cannot recognize the format, it returns NULL.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>readSpectra()</code> reads the first few lines of the file in order
+to determine the format,
+and then calls the corresponding format-specific function.
+If <code>readSpectra()</code> cannot determine the format, it returns NULL.
+The 5 file formats are:
+</p>
+<p><code>XYY</code> <br>         
+There is a column header line matching <code>^(wave|wv?l)</code> (not case sensitive)
+followed by the the names of the spectra. 
+All lines above this one are taken to be <code>metadata</code>.
+The separarator on this header line can be space, tab, or comma; 
+the line is examined and the separator found there is used in the lines with data below. 
+The organization of the returned object is <code>'df.col'</code>.  
+This is probably the most common file format;
+see the sample file <code>ciexyz31_1.csv</code>.<br></p>
+<p><code>Spreadsheet</code>  <br>
+There is a line matching <code>"^(ID|SAMPLE|Time)"</code>. This line and lines below must be tab-separated.  Fields matching <code>'^[A-Z]+([0-9.]+)nm$'</code> are taken to be spectral data and other fields are taken to be <code>extradata</code>.  All lines above this one are taken to be <code>metadata</code>.
+The organization of the returned object is <code>'df.row'</code>.
+This is a good format for automated acquisition, using a spectrometer, of many spectra.
+See the sample file <code>N130501.txt</code> from <b>Wolf Faust</b>.<br></p>
+<p><code>Scope</code>  <br>
+This is a file format used by <b>Ocean Optics</b> spectrometer software.  
+There is a line <br><code>&gt;&gt;&gt;&gt;&gt;Begin Processed Spectral Data&lt;&lt;&lt;&lt;&lt;</code><br>
+followed by wavelength and energy separated by a tab.  
+There is only 1 spectrum per file.  
+The <code>organization</code> of the returned object is <code>'vector'</code>.
+See the sample file <code>pos1-20x.scope</code>. <br></p>
+<p><code>CGATS</code>  <br>
+This is a complex format that is best understood by looking at some samples, such as<br><code>extdata/objects/Rosco.txt</code>;
+see also the <b>References</b>.
+The function <code>readCGATS()</code> is first called to get all the tables,
+and then for each table the column names are examined.
+There are 2 conventions for presenting the spectral data:
+</p>
+  
+<ul>
+<li>
+<p> In the standard convention the fields <code>SPECTRAL_DEC</code> or <code>SPECTRAL_PCT</code>
+have the spectral values.
+The former is the true value, and the latter is the true value x 100.
+Each value column is preceded a corresponding wavelength column,
+which has the field name <code>SPECTRAL_NM</code>.
+Note that these field names are highly duplicated.
+In principle, this convention allows each record in a CGATS table to have
+a different wavelength vector.
+However, this complication is rejected by <code>readSpectraCGATS()</code>,
+which treats it as an ERROR.
+</p>
+</li>
+<li>
+<p> In the non-standard convention the field names that match the pattern<br><code>"^(nm|SPEC_|SPECTRAL_)[_A-Z]*([0-9.]+)$"</code>
+are considered to be spectral value data, and other fields are considered <code>extradata</code>.
+The wavelength is the numerical value of the 2nd parenthesized expression <code>([0-9.]+)</code>
+in nanometers.
+Note that every record in this CGATS table has the same wavelength vector.
+Although this convention is non-standard, it appears in files from many companies,
+including X-Rite.
+</p>
+</li>
+</ul>
+<p>If a <code>data.frame</code> has spectral data, it is converted to a <b>colorSpec</b> object
+and placed in the returned list.
+The organization of the resulting <b>colorSpec</b> object is <code>'df.row'</code>.
+If the <code>data.frame</code> of <code>extradata</code> contains a column 
+<code>SAMPLE_NAME</code>, <code>SAMPLE_ID</code>, <code>SampleID</code>, or <code>Name</code>, 
+(examined in that order), then that column is taken to be the <code>specnames</code>
+of the object.
+If a table has no spectral data, then it is ignored.
+If the CGATS file has no tables with spectral data, then it is an ERROR
+and the function returns <code>NULL</code>.
+</p>
+<p><code>Control</code> <br>
+This is a personal format used for digitizing images of plots from manufacturer
+datasheets and academic papers. It is structured like a <code>.INI</code> file.  
+There is a <code>[Control]</code>
+section establishing a simple linear map from pixels to the wavelength and spectrum quantities.
+Only 3 points are really necessary.
+It is OK for there to be a little rotation of the plot axes relative to the image.
+This is followed by a section for each spectrum, in XY pixel units only.
+Conversion to wavelength and spectral quantities is done on-the-fly after they are read.
+Extrapolation can be a problem, especially when the value is near 0.
+To force constant extrapolation (see <code>resample()</code>),
+repeat the control point (knot) at the endpoint.
+See the sample file <code>Lumencor-SpectraX.txt</code>.
+The organization of the returned objects is <code>'vector'</code>.<br></p>
+
+
+<h3>Value</h3>
+
+<p><code>readSpectra()</code> returns a single <b>colorSpec</b> object or <code>NULL</code> in case of ERROR.
+If there are multiple files in <code>pathvec</code> and they cannot be combined using <code>bind()</code> because their wavelengths are different, it is an ERROR.
+To avoid this ERROR, the <code>wavelength</code> argument can be used for
+resampling to common wavelengths.
+If there are multiple files, the <code>organization</code> of the returned object is
+<code>'df.row'</code> and the first column is the <code>path</code>
+from which the spectrum was read.
+</p>
+<p>The functions <code>readSpectraXYY()</code>, <code>readSpectraSpreadsheet()</code>, 
+and <code>readSpectraScope()</code>, return a single <b>colorSpec</b> object,
+or <code>NULL</code> in case of ERROR.
+</p>
+<p>The functions <code>readSpectraCGATS()</code> and <code>readSpectraControl()</code>
+are more complicated.
+These 2 file formats can contain multiple spectra with different <code>wavelength</code> sequences,
+so both functions return a <em>list</em> of <b>colorSpec</b> objects,
+even when that list has length 1.
+If no spectral objects are found, they return <code>NULL</code>.
+</p>
+<p>If <code>readSpectra()</code> calls <code>readSpectraCGATS()</code> or <code>readSpectraControl()</code>
+and receives a list of <b>colorSpec</b> objects,
+<code>readSpectra()</code> attempts to <code>bind()</code> them into a single object.
+If they all have the same wavelength vector, then the <code>bind()</code> succeeds and the
+single <b>colorSpec</b> object is returned.
+Otherwise the <code>bind()</code> fails, and it is an ERROR.
+To avoid this error <code>readSpectra()</code> can be called with a
+<code>wavelength</code> argument. 
+The multiple spectra are resampled using <code>resample()</code> and
+<em>then</em> combined using <code>bind()</code>,
+which makes it much more convenient to read such files.
+</p>
+
+
+<h3>Note</h3>
+
+<p>During import, each read function tries to guess the <code>quantity</code> 
+from spectrum names or other cues.  
+For example the first line in <b>N130501.txt</b> is <code>IT8.7/1</code>,
+which indicates that the quantity is <code>'transmittance'</code>
+(a reflective target is denoted by <code>IT8.7/2</code>).  
+If a confident guess cannot be made, it makes a wild guess and issues a warning.  
+If the quantity is incorrect, one can assign the correct value after import.  
+Alternatively one can add a line to the header part of the file with the 
+keyword <code>'quantity'</code> followed by some white-space and the correct value.  
+It is OK to put the value in quotes.
+See example files under folder <b>extdata</b>.
+</p>
+
+
+<h3>References</h3>
+
+<p>CGATS.17 Text File Format.
+<a href="http://www.colorwiki.com/wiki/CGATS.17_Text_File_Format">http://www.colorwiki.com/wiki/CGATS.17_Text_File_Format</a>.
+</p>
+<p>ANSI/CGATS.17. 
+Graphic technology - Exchange format for colour and process control data using XML or ASCII text.
+<a href="https://webstore.ansi.org/">https://webstore.ansi.org/</a>
+2009.
+</p>
+<p>ISO/28178. Graphic technology - Exchange format for colour and process control data using XML or ASCII text.
+<a href="https://www.iso.org/standard/44527.html">https://www.iso.org/standard/44527.html</a>.
+2009.
+<br></p>
+
+
+<h3>See Also</h3>
+
+<p><code>wavelength</code>,
+<code>quantity</code>,
+<code>metadata</code>,
+<code>resample</code>,
+<code>bind</code>,  
+<code>readCGATS</code>  
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#   read file with header declaring the quantity to be "photons-&gt;neural"
+bird = readSpectra( system.file( "extdata/eyes/BirdEyes.txt", package='colorSpec' ) )
+quantity(bird)   # [1] "photons-&gt;neural"
+</code></pre>
+
+
+</div>

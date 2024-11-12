@@ -1,0 +1,286 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>mmi</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Multiple-Mediator-Imputation Estimation Method</h2>
+
+<h3>Description</h3>
+
+<p>'mmi' is used to estimate the initial disparity, disparity reduction, and
+disparity remaining for causal decomposition analysis, using the
+multiple-mediator-imputation estimation method proposed by Park et al. (2020).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">mmi(fit.r = NULL, fit.x, fit.y, treat, covariates, sims = 100, conf.level = .95,
+    conditional = TRUE, cluster = NULL, long = TRUE, mc.cores = 1L, seed = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>fit.r</code></td>
+<td>
+<p>a fitted model object for treatment. Can be of class 'CBPS' or
+'SumStat'. Default is 'NULL'. Only necessary if 'conditional' is 'FALSE'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fit.x</code></td>
+<td>
+<p>a fitted model object for intermediate confounder(s). Each intermediate
+model can be of class 'lm', 'glm', 'multinom', or 'polr'. When multiple confounders
+are considered, can be of class 'list' containing multiple models.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fit.y</code></td>
+<td>
+<p>a fitted model object for outcome. Can be of class 'lm' or 'glm'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>treat</code></td>
+<td>
+<p>a character string indicating the name of the treatment variable
+used in the models. The treatment can be categorical with two or more
+categories (two- or multi-valued factor).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covariates</code></td>
+<td>
+<p>a vector containing the name of the covariate variable(s)
+used in the models. Each covariate can be categorical with two or more
+categories (two- or multi-valued factor) or continuous (numeric).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sims</code></td>
+<td>
+<p>number of Monte Carlo draws for nonparametric bootstrap.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conf.level</code></td>
+<td>
+<p>level of the returned two-sided confidence intervals,
+which are estimated by the nonparametric percentile bootstrap method.
+Default is .95, which returns the 2.5 and 97.5 percentiles of the simulated
+quantities.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conditional</code></td>
+<td>
+<p>a logical value. If 'TRUE', the function will return the
+estimates conditional on those covariate values, and all covariates in
+mediator and outcome models need to be centered prior to fitting.
+Default is 'TRUE'. If 'FALSE', 'fit.r' needs to be specified.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cluster</code></td>
+<td>
+<p>a vector of cluster indicators for the bootstrap. If provided,
+the cluster bootstrap is used. Default is 'NULL'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>long</code></td>
+<td>
+<p>a logical value. If 'TRUE', the output will contain the entire
+sets of estimates for all bootstrap samples. Default is 'TRUE'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mc.cores</code></td>
+<td>
+<p>The number of cores to use. Must be exactly 1 on Windows.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>seed number for the reproducibility of results. Default is ‘NULL’.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function returns the point estimates of the initial disparity,
+disparity reduction, and disparity remaining for a categorical
+treatment and a variety of types of outcome and mediator(s) in causal
+decomposition analysis. It also returns nonparametric
+percentile bootstrap confidence intervals for each estimate.
+</p>
+<p>The initial disparity represents the expected difference in an outcome between
+a comparison group <code class="reqn">R=j</code> and a reference group <code class="reqn">R=i</code> where <code class="reqn">i \neq j</code>.
+That is,
+</p>
+<p style="text-align: center;"><code class="reqn">\tau(i,j) \ = \ E\{Y|R=j\} - E\{Y|R=i\},</code>
+</p>
+
+<p>where <code class="reqn">R</code> and <code class="reqn">Y</code> are the group indicator and the outcome variable, respectively.
+The disparity reduction represents the expected change in an outcome for the group <code class="reqn">R=j</code>
+after adjusting the level of mediator(s) to the level of the reference group.
+That is,
+</p>
+<p style="text-align: center;"><code class="reqn">\delta(j) \ = \ E\{Y|R=j\} - E\{Y(G_M(i))|R=j\},</code>
+</p>
+
+<p>where <code class="reqn">G_M(i)</code> is a random draw from the mediator distribution of
+the reference group.
+The disparity remaining represents the remaining disparity for the group <code class="reqn">R=j</code>
+even after adjusting the level of mediators to the reference group. Formally,
+</p>
+<p style="text-align: center;"><code class="reqn">\zeta(i) \ = \ E\{Y(G_M(i))|R=j\} - E\{Y|R=i\}.</code>
+</p>
+
+<p>The disparity reduction and remaining can be estimated using the
+multiple-mediator-imputation method suggested by Park et al. (2020).
+See the references for more details.
+</p>
+<p>If one wants to make the inference conditional on baseline covariates,
+set 'conditional = TRUE' and center the data before fitting the models.
+</p>
+<p>As of version 0.1.0, the intetmediate confounder model ('fit.x') can be of
+class 'lm', 'glm', 'multinom', or 'polr', corresponding respectively to the
+linear regression models and generalized linear models, multinomial
+log-linear models, and ordered response models.
+The outcome model ('fit.y') can be of class 'lm' or 'glm'.
+Also, the treatment model ('fit.r') can be of class 'CBPS' or 'SumStat', both of
+which use the propensity score weighting. It is only necessary when 'conditional = FALSE'.
+</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>result</code></td>
+<td>
+<p>a matrix containing the point estimates of the initial disparity,
+disparity remaining, and disparity reduction, and the percentile bootstrap
+confidence intervals for each estimate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>all.result</code></td>
+<td>
+<p>a matrix containing the point estimates of the initial disparity,
+disparity remaining, and disparity reduction for all bootstrap samples. Returned
+if 'long' is 'TRUE'.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Suyeon Kang, University of California, Riverside, <a href="mailto:skang062@ucr.edu">skang062@ucr.edu</a>;
+Soojin Park, University of California, Riverside, <a href="mailto:soojinp@ucr.edu">soojinp@ucr.edu</a>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Park, S., Lee, C., and Qin, X. (2020). "Estimation and sensitivity analysis
+for causal decomposition in heath disparity research", Sociological Methods &amp; Research, 00491241211067516.
+</p>
+<p>Park, S., Kang, S., and Lee, C. (2021+). "Choosing an optimal method for causal
+decomposition analysis: A better practice for identifying contributing factors to
+health disparities". arXiv preprint arXiv:2109.06940.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>smi</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(sdata)
+
+#------------------------------------------------------------------------------#
+# Example 1-a: Continuous Outcome
+#------------------------------------------------------------------------------#
+fit.m1 &lt;- lm(M.num ~ R + C.num + C.bin, data = sdata)
+fit.m2 &lt;- glm(M.bin ~ R + C.num + C.bin, data = sdata,
+          family = binomial(link = "logit"))
+require(MASS)
+fit.m3 &lt;- polr(M.cat ~ R + C.num + C.bin, data = sdata)
+fit.x1 &lt;- lm(X ~ R + C.num + C.bin, data = sdata)
+require(nnet)
+fit.m4 &lt;- multinom(M.cat ~ R + C.num + C.bin, data = sdata)
+fit.y1 &lt;- lm(Y.num ~ R + M.num + M.bin + M.cat + X + C.num + C.bin,
+          data = sdata)
+
+require(PSweight)
+fit.r1 &lt;- SumStat(R ~ C.num + C.bin, data = sdata, weight = "IPW")
+require(CBPS)
+fit.r2 &lt;- CBPS(R ~ C.num + C.bin, data = sdata, method = "exact",
+          standardize = "TRUE")
+
+res.1a &lt;- mmi(fit.r = fit.r1, fit.x = fit.x1,
+          fit.y = fit.y1, sims = 40, conditional = FALSE,
+          covariates = c("C.num", "C.bin"), treat = "R", seed = 111)
+res.1a
+
+#------------------------------------------------------------------------------#
+# Example 1-b: Binary Outcome
+#------------------------------------------------------------------------------#
+fit.y2 &lt;- glm(Y.bin ~ R + M.num + M.bin + M.cat + X + C.num + C.bin,
+          data = sdata, family = binomial(link = "logit"))
+
+res.1b &lt;- mmi(fit.r = fit.r1, fit.x = fit.x1,
+          fit.y = fit.y2, sims = 40, conditional = FALSE,
+          covariates = c("C.num", "C.bin"), treat = "R", seed = 111)
+res.1b
+
+#------------------------------------------------------------------------------#
+# Example 2-a: Continuous Outcome, Conditional on Covariates
+#------------------------------------------------------------------------------#
+# For conditional = TRUE, need to create data with centered covariates
+# copy data
+sdata.c &lt;- sdata
+# center quantitative covariate(s)
+sdata.c$C.num &lt;- scale(sdata.c$C.num, center = TRUE, scale = FALSE)
+# center binary (or categorical) covariates(s)
+# only neccessary if the desired baseline level is NOT the default baseline level.
+sdata.c$C.bin &lt;- relevel(sdata.c$C.bin, ref = "1")
+
+# fit mediator and outcome models
+fit.m1 &lt;- lm(M.num ~ R + C.num + C.bin, data = sdata.c)
+fit.m2 &lt;- glm(M.bin ~ R + C.num + C.bin, data = sdata.c,
+          family = binomial(link = "logit"))
+fit.m3 &lt;- polr(M.cat ~ R + C.num + C.bin, data = sdata.c)
+fit.x2 &lt;- lm(X ~ R + C.num + C.bin, data = sdata.c)
+fit.y1 &lt;- lm(Y.num ~ R + M.num + M.bin + M.cat + X + C.num + C.bin,
+          data = sdata.c)
+
+res.2a &lt;- mmi(fit.x = fit.x2,
+          fit.y = fit.y1, sims = 40, conditional = TRUE,
+          covariates = c("C.num", "C.bin"), treat = "R", seed = 111)
+res.2a
+
+#------------------------------------------------------------------------------#
+# Example 2-b: Binary Outcome, Conditional on Covariates
+#------------------------------------------------------------------------------#
+fit.y2 &lt;- glm(Y.bin ~ R + M.num + M.bin + M.cat + X + C.num + C.bin,
+          data = sdata.c, family = binomial(link = "logit"))
+
+res.2b &lt;- mmi(fit.x = fit.x2,
+          fit.y = fit.y2, sims = 40, conditional = TRUE,
+          covariates = c("C.num", "C.bin"), treat = "R", seed = 111)
+res.2b
+</code></pre>
+
+
+</div>

@@ -1,0 +1,142 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>boot_test</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Test for equivalence of a metric</h2>
+
+<h3>Description</h3>
+
+<p>This function performs a significance test based on the bootstrap results
+of cutpointr to test whether a chosen metric is equal between subgroups
+or between two cutpointr objects. The test statistic is calculated as
+the standardized difference of the metric between groups. If <code>x</code>
+contains subgroups, the test is run on all possible pairings of subgroups.
+An additional adjusted p-value is returned in that case.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">boot_test(x, y = NULL, variable = "AUC", in_bag = TRUE, correction = "holm")
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A cutpointr object with bootstrap results</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>If x does not contain subgroups another cutpointr object</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>variable</code></td>
+<td>
+<p>The variable for testing</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>in_bag</code></td>
+<td>
+<p>Whether the in-bag or out-of-bag results should be used for testing</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>correction</code></td>
+<td>
+<p>The type of correction for multiple testing. Possible
+values are as in p.adjust.methods</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The variable name is looked up in the columns of the bootstrap results
+where the suffixes _b and _oob indicate in-bag and out-of-bag estimates,
+respectively (controlled via the <code>in_bag</code> argument).
+Possible values are optimal_cutpoint, AUC,
+acc, sensitivity, specificity, and the metric that was selected
+in <code>cutpointr</code>. Note that there is no "out-of-bag optimal cutpoint", so
+when selecting <code>variable = optimal_cutpoint</code> the test will be based on
+the in-bag data.
+</p>
+<p>The test statistic is calculated as z = (t1 - t2) / sd(t1 - t2) where t1 and
+t2 are the metric values on the full sample and sd(t1 - t2) is the standard
+deviation of the differences of the metric values per bootstrap repetition.
+The test is two-sided.
+</p>
+<p>If two cutpointr objects are compared and the numbers of bootstrap repetitions
+differ, the smaller number will be used.
+</p>
+<p>Since pairwise differences are calculated for this test, the test function
+does not support multiple optimal cutpoints, because it is unclear how the
+differences should be calculated in that case.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data.frame (a tibble) with the columns test_var, p, d, sd_d, z
+and in_bag. If a grouped cutpointr object was tested, the additional
+columns subgroup1, subgroup2 and p_adj are returned.
+</p>
+
+
+<h3>Source</h3>
+
+<p>Robin, X., Turck, N., Hainard, A., Tiberti, N., Lisacek, F.,
+Sanchez, J.-C., &amp; Müller, M. (2011). pROC: An open-source package for R
+and S+ to analyze and compare ROC curves. BMC Bioinformatics, 12(1), 77.
+https://doi.org/10.1186/1471-2105-12-77
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other main cutpointr functions: 
+<code>add_metric()</code>,
+<code>boot_ci()</code>,
+<code>cutpointr()</code>,
+<code>multi_cutpointr()</code>,
+<code>predict.cutpointr()</code>,
+<code>roc()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+library(cutpointr)
+library(dplyr)
+set.seed(734)
+cp_f &lt;- cutpointr(suicide %&gt;% filter(gender == "female"), dsi, suicide,
+  boot_runs = 1000, boot_stratify = TRUE)
+set.seed(928)
+cp_m &lt;- cutpointr(suicide %&gt;% filter(gender == "male"), dsi, suicide,
+  boot_runs = 1000, boot_stratify = TRUE)
+# No significant differences:
+boot_test(cp_f, cp_m, AUC, in_bag = TRUE)
+boot_test(cp_f, cp_m, sum_sens_spec, in_bag = FALSE)
+
+set.seed(135)
+cp &lt;- cutpointr(suicide, dsi, suicide, gender, boot_runs = 1000,
+  boot_stratify = TRUE)
+# Roughly same result as above:
+boot_test(cp, variable = AUC, in_bag = TRUE)
+boot_test(cp, variable = sum_sens_spec, in_bag = FALSE)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

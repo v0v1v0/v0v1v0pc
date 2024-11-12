@@ -1,0 +1,123 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>sample.congruence.class</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Stochastic exploration of congruent models.</h2>
+
+<h3>Description</h3>
+
+<p>Stochastic exploration of congruent models.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">sample.congruence.class(
+  model,
+  num.samples,
+  rate.type = "both",
+  sample.speciation.rates = NULL,
+  sample.extinction.rates = NULL,
+  sample.joint.rates = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>the reference model, an object of class "CRABS"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>num.samples</code></td>
+<td>
+<p>The number of samples to be drawn</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rate.type</code></td>
+<td>
+<p>either "extinction", "speciation", "both" or "joint"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sample.speciation.rates</code></td>
+<td>
+<p>a function that when called returns a speciation rate function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sample.extinction.rates</code></td>
+<td>
+<p>a function that when called returns a extinction rate function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sample.joint.rates</code></td>
+<td>
+<p>a function that when called returns a list with a speciation rate function and an extinction rate function</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A named list with congruent rates.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data("primates_ebd")
+
+l &lt;- approxfun(primates_ebd[["time"]], primates_ebd[["lambda"]])
+mu &lt;- approxfun(primates_ebd[["time"]], primates_ebd[["mu"]])
+times &lt;- primates_ebd[["time"]]
+
+model &lt;- create.model(l, mu, primates_ebd[["time"]])
+
+# Sampling extinction rates
+
+extinction_rate_samples &lt;- function(){
+   res &lt;- sample.basic.models(times = times, 
+                              rate0 = 0.05, 
+                              model = "MRF", 
+                              MRF.type = "HSMRF", 
+                              fc.mean = 2.0, 
+                              min.rate = 0.0, 
+                              max.rate = 1.0)
+   return(res)
+} 
+
+samples &lt;- sample.congruence.class(model, 
+                                   num.samples = 8,
+                                   rate.type = "extinction",
+                                   sample.extinction.rates = extinction_rate_samples)
+
+samples
+
+# Jointly sampling speciation and extinction rates
+
+sample.joint.rates &lt;- function(n) {
+  sample.basic.models.joint(times = times, 
+                            p.delta = model$p.delta,  
+                            beta.param = c(0.5,0.3),  
+                            lambda0 = l(0.0),  
+                            mu0.median = mu(0.0))
+}
+
+joint.samples &lt;- sample.congruence.class(model = model, 
+                                         num.samples = 40, 
+                                         rate.type = "joint", 
+                                         sample.joint.rates = sample.joint.rates)
+
+joint.samples
+</code></pre>
+
+
+</div>

@@ -1,0 +1,297 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>newCorrespondenceTable</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Ex novo creation of candidate correspondence tables between two classifications via pivot tables</h2>
+
+<h3>Description</h3>
+
+<p>Creation of a candidate correspondence table between two classifications, A and B, when there are
+correspondence tables leading from the first classification to the second one via <code class="reqn">k</code> intermediate pivot 
+classifications <code class="reqn">C_1, \ldots, C_k</code>. The correspondence tables leading from A to B are A:<code class="reqn">C_1</code>, {<code class="reqn">C_i</code>:<code class="reqn">C_{i+1}</code>: <code class="reqn">1 \le i \le k -1</code>}, B:<code class="reqn">C_k</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">newCorrespondenceTable(
+  Tables,
+  CSVout = NULL,
+  Reference = "none",
+  MismatchTolerance = 0.2
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Tables</code></td>
+<td>
+<p>A string of type character containing the name of a csv file which contains the names of the files that
+contain the classifications and the intermediate correspondence tables (see "Details" below).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CSVout</code></td>
+<td>
+<p>The preferred name for the <em>output csv files</em> that will contain the candidate correspondence table 
+and information about the classifications involved. The valid values are <code>NULL</code> or strings of type <code>character</code>. If the selected value is <code>NULL</code>, the default, no output file is produced. If the value is a string, then the output is exported into two csv files whose names contain the provided name (see "Value" below).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Reference</code></td>
+<td>
+<p>The reference classification among A and B. If a classification is the reference to the other, and hence
+<em>hierarchically superior</em> to it, each code of the other classification is expected to be mapped to at most one code
+of the reference classification. The valid values are <code>"none"</code>, <code>"A"</code>, and <code>"B"</code>. If the selected value
+is <code>"A"</code> or <code>"B"</code>, a "Review" flag column (indicating the records violating this expectation) is included
+in the output (see "Explanation of the flags" below).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MismatchTolerance</code></td>
+<td>
+<p>The maximum acceptable proportion of rows in the candidate correspondence table which contain
+no code for classification A or no code for classification B. The default value is <code>0.2</code>. The valid values are 
+real numbers in the interval [0, 1].</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>File and file name requirements:
+</p>
+
+<ul>
+<li>
+<p> The file that corresponds to argument <code>Tables</code> and the files to which the contents of <code>Tables</code> 
+lead, must be in <em>csv format with comma as delimiter</em>. If full paths are not provided, then these files must
+be available in the working directory. No two filenames provided must be identical.
+</p>
+</li>
+<li>
+<p> The file that corresponds to argument <code>Tables</code> must contain filenames, <em>and nothing else</em>, in 
+a <code class="reqn">(k+2)</code> × <code class="reqn">(k+2)</code> table, where <code class="reqn">k</code>, a positive integer, is the number of "pivot" classifications. 
+The cells in the main diagonal of the table provide the filenames of the files which contain, with this order, 
+the classifications A, <code class="reqn">C_1</code>, <code class="reqn">\ldots</code>, <code class="reqn">C_k</code> and B. The off-diagonal directly above the main 
+diagonal contains the filenames of the files that contain, with this order, the correspondence tables 
+A:<code class="reqn">C_1</code>, {<code class="reqn">C_i</code>:<code class="reqn">C_{i+1}</code>, <code class="reqn">1 \le i \le k-1</code>} and B:<code class="reqn">C_k</code>. All other cells of the table 
+must be empty.
+</p>
+</li>
+<li>
+<p> If any of the two files where the output will be stored is read protected (for instance because it is open 
+elsewhere) an error message will be reported and execution will be halted.
+</p>
+</li>
+</ul>
+<p>Classification table requirements:
+</p>
+
+<ul>
+<li>
+<p> Each of the files that contain classifications must contain at least one column and at least two rows. 
+The first column contains the codes of the respective classification. The first row contains column headers. 
+The header of the first column is the name of the respective classification (e.g., "CN 2021").
+</p>
+</li>
+<li>
+<p> The classification codes contained in a classification file (expected in its first column as mentioned 
+above) must be unique. No two identical codes are allowed in the column.
+</p>
+</li>
+<li>
+<p> If any of the files that contain classifications has additional columns the first one of them is assumed 
+to contain the labels of the respective classification codes.
+</p>
+</li>
+</ul>
+<p>Correspondence table requirements:
+</p>
+
+<ul>
+<li>
+<p> The files that contain correspondence tables must contain at least two columns and at least two rows. 
+The first column of the file that contains A:<code class="reqn">C_1</code> contains the codes of classification A. The second column 
+contains the codes of classification <code class="reqn">C_1</code>. Similar requirements apply to the files that contain 
+<code class="reqn">C_i</code>:<code class="reqn">C_{i+1}</code>, <code class="reqn">1 \le i \le k-1</code> and B:<code class="reqn">C_k</code>. The first row of each of the files that contain 
+correspondence tables contains column headers. The names of the first two columns are the names of the respective 
+classifications.
+</p>
+</li>
+<li>
+<p> The pairs of classification codes contained in a correspondence table file (expected in its first two columns 
+as mentioned above) must be unique. No two identical pairs of codes are allowed in the first two columns.
+</p>
+</li>
+</ul>
+<p>Interdependency requirements:
+</p>
+
+<ul>
+<li>
+<p> At least one code of classification A must appear in both the file of classification A and the file of 
+correspondence table A:<code class="reqn">C_1</code>.
+</p>
+</li>
+<li>
+<p> At least one code of classification B must appear in both the file of classification B and the file of 
+correspondence table B:<code class="reqn">C_k</code>, where <code class="reqn">k</code>, <code class="reqn">k\ge 1</code>, is the number of pivot classifications.
+</p>
+</li>
+<li>
+<p> If there is only one pivot classification, <code class="reqn">C_1</code>, at least one code of it must appear in both the file of 
+correspondence table A:<code class="reqn">C_1</code> and the file of correspondence table B:<code class="reqn">C_1</code>.
+</p>
+</li>
+<li>
+<p> If the pivot classifications are <code class="reqn">k</code> with <code class="reqn">k\ge 2</code> then at least one code of <code class="reqn">C_1</code> must appear in 
+both the file of correspondence table A:<code class="reqn">C_1</code> and the file of correspondence table <code class="reqn">C_1</code>:<code class="reqn">C_2</code>, at least one code of each of the <code class="reqn">C_i</code>, <code class="reqn">i = 2, \ldots, k-1</code> (if <code class="reqn">k\ge 3</code>) must appear in both the file of correspondence table <code class="reqn">C_{i-1}</code>:<code class="reqn">C_i</code> and the file of correspondence table <code class="reqn">C_i</code>:<code class="reqn">C_{i+1}</code>, and at least one code of <code class="reqn">C_k</code> must appear in both the file of correspondence table <code class="reqn">C_{k-1}</code>:<code class="reqn">C_k</code> and the file of correspondence table B:<code class="reqn">C_k</code>.
+</p>
+</li>
+</ul>
+<p>Mismatch tolerance:
+</p>
+
+<ul><li>
+<p> The ratio that is compared with <code>MismatchTolerance</code> has as numerator the number of rows in the candidate 
+correspondence table which contain no code for classification A or no code for classification B and as denominator 
+the total number of rows of this table. If the ratio exceeds <code>MismatchTolerance</code> the execution of the function 
+is halted.
+</p>
+</li></ul>
+<p>If any of the conditions required from the arguments is violated an error message is produced and execution is stopped.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>newCorrespondenceTable()</code> returns a list with two elements, both of which are data frames.
+</p>
+
+<ul>
+<li>
+<p> The first element is the candidate correspondence table A:B, including the codes of all "pivot" classifications,
+augmented with flags "Review" (if applicable), "Redundancy", "Unmatched", "NoMatchFromA", "NoMatchFromB" and with all 
+the additional columns of the classification and intermediate correspondence table files.
+</p>
+</li>
+<li>
+<p> The second element contains the names of classification A, the "pivot" classifications and classification B as 
+read from the top left-hand side cell of the respective input files.
+</p>
+</li>
+<li>
+<p> If the value of argument <code>CSVout</code> a string of type <code>character</code>, the elements of the list are exported 
+into files of csv format. The name of the file for the first element is the value of argument <code>CSVout</code> and the 
+name of the file for the second element is classificationNames_<code>CSVout</code>. For example, if 
+<code>CSVout</code> = "newCorrespondenceTable.csv", the elements of the list are exported into "newCorrespondenceTable.csv" 
+and "classificationNames_newCorrespondenceTable.csv" respectively.
+</p>
+</li>
+</ul>
+<h3>Explanation of the flags</h3>
+
+
+<ul>
+<li>
+<p>  The "Review" flag is produced only if argument Reference has been set equal to "<code>A</code>" or "<code>B</code>". For 
+each row of the candidate correspondence table, if <code>Reference</code> = "<code>A</code>" the value of "Review" is equal to 
+<code>1</code> if the code of B maps to more than one code of A, and <code>0</code> otherwise. If <code>Reference</code> = "<code>B</code>" 
+the value of "Review" is equal to <code>1</code> if the code of A maps to more than one code of B, and <code>0</code> otherwise. 
+The value of the flag is empty if the row does not contain a code of A or a code of B.
+</p>
+</li>
+<li>
+<p> For each row of the candidate correspondence table, the value of "Redundancy" is equal to <code>1</code> if the row 
+contains a combination of codes of A and B that also appears in at least one other row of the candidate 
+correspondence table.
+</p>
+</li>
+<li>
+<p> For each row of the candidate correspondence table, the value of "Unmatched" is equal to <code>1</code> if the row 
+contains a code of A but no code of B or if it contains a code of B but no code of A. The value of the flag is 
+<code>0</code> if the row contains codes for both A and B.
+</p>
+</li>
+<li>
+<p> For each row of the candidate correspondence table, the value of "NoMatchFromA" is equal to <code>1</code> if the row 
+contains a code of A that appears in the table of classification A but not in correspondence table A:<code class="reqn">C_1</code>. The 
+value of the flag is <code>0</code> if the row contains a code of A that appears in both the table of classification A and 
+correspondencetable A:<code class="reqn">C_1</code>. Finally, the value of the flag is empty if the row contains no code of A or if it 
+contains a code of A that appears in correspondence table A:<code class="reqn">C_1</code> but not in the table of classification A.
+</p>
+</li>
+<li>
+<p> For each row of the candidate correspondence table, the value of "NoMatchFromB" is equal to <code>1</code> if the row 
+contains a code of B that appears in the table of classification B but not in correspondence table B:<code class="reqn">C_k</code>. The 
+value of the flag is <code>0</code> if the row contains a code of B that appears in both the table of classification B and 
+correspondence table B:<code class="reqn">C_k</code>. Finally, the value of the flag is empty if the row contains no code of B or if it 
+contains a code of B that appears in correspondence table B:<code class="reqn">C_k</code> but not in the table of classification B.
+</p>
+</li>
+</ul>
+<h3>Sample datasets included in the package</h3>
+
+<p>Running <code>browseVignettes("correspondenceTables")</code> in the console opens an html page in the user's default browser. Selecting HTML from the menu, users can read information about the use of the sample datasets that are included in the package.
+If they wish to access the csv files with the sample data, users have two options:
+</p>
+
+<ul>
+<li>
+<p> Option 1: Unpack into any folder of their choice the tar.gz file into which the package has arrived. All sample 
+datasets may be found in the "inst/extdata" subfolder of this folder.
+</p>
+</li>
+<li>
+<p> Option 2: Go to the "extdata" subfolder of the folder in which the package has been installed in their PC's <code>R</code> 
+library. All sample datasets may be found there.
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">{
+   ## Application of function newCorrespondenceTable() with "example.csv" being the file
+   ## that includes the names the files  and the intermediate tables in a sparse square 
+   ## matrix containing the 100 rows of the classifications (from ISIC v4 to CPA v2.1 through 
+   ## CPC v2.1). The desired name for the csv file that will contain the candidate
+   ## correspondence table is "newCorrespondenceTable.csv", the reference classification is 
+   ## ISIC v4 ("A") and the maximum acceptable proportion of unmatched codes between
+   ## ISIC v4 and CPC v2.1 is 0.56 (this is the minimum mismatch tolerance for the first 100 row 
+   ## as 55.5% of the code of ISIC v4 is unmatched).
+     
+     tmp_dir&lt;-tempdir()
+     A &lt;- read.csv(system.file("extdata", "example.csv", package = "correspondenceTables"), 
+                   header = FALSE, 
+                   sep = ",")
+     for (i in 1:nrow(A)) {
+       for (j in 1:ncol(A)) {
+         if (A[i,j]!="") {
+           A[i, j] &lt;- system.file("extdata", A[i, j], package = "correspondenceTables")
+       }}}
+     write.table(x = A, 
+                 file = file.path(tmp_dir,"example.csv"), 
+                 row.names = FALSE, 
+                 col.names = FALSE, 
+                 sep = ",")
+        
+     NCT&lt;-newCorrespondenceTable(file.path(tmp_dir,"example.csv"), 
+                                 file.path(tmp_dir,"newCorrespondenceTable.csv"), 
+                                 "A", 
+                                 0.56)
+     
+     summary(NCT)
+     head(NCT$newCorrespondenceTable)
+     NCT$classificationNames
+     csv_files&lt;-list.files(tmp_dir, pattern = ".csv")
+     unlink(csv_files)
+    }
+</code></pre>
+
+
+</div>

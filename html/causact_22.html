@@ -1,0 +1,98 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>dag_greta</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate a representative sample of the posterior distribution</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#defunct"><img src="../help/figures/lifecycle-defunct.svg" alt="[Defunct]"></a>
+</p>
+<p>This function is currently defunct.  It has been superseded by <code>dag_numpyro()</code> because of tricky and sometimes unresolvable installation issues related to the greta package's use of tensorflow.  If the greta package resolves those issues, this function may return, but please use <code>dag_numpyro()</code> as a direct replacement.
+</p>
+<p>Generate a representative sample of the posterior distribution.  The input graph object should be of class <code>causact_graph</code> and created using <code>dag_create()</code>.  The specification of a completely consistent joint distribution is left to the user.  Helpful error messages are scheduled for future versions of the <code>causact</code> package.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">dag_greta(graph, mcmc = TRUE, meaningfulLabels = TRUE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>graph</code></td>
+<td>
+<p>a graph object of class <code>causact_graph</code> representing a complete and conistent specification of a joint distribution.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mcmc</code></td>
+<td>
+<p>a logical value indicating whether to sample from the posterior distribution.  When <code>mcmc=FALSE</code>, the greta code is printed to the console, but not executed.  The user can cut and paste the code to another script for running line-by-line.  This option is most useful for debugging purposes. When <code>mcmc=TRUE</code>, the code is executed and outputs a dataframe of posterior draws.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>meaningfulLabels</code></td>
+<td>
+<p>a logical value indicating whether to replace the indexed variable names in <code>draws</code> with abbreviated names representing the factor value corresponding to the index.  This argument is treated as <code>TRUE</code> regardless of user input.  The ability to retain numerical indexing will be in a subsequent release.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments to be passed onto <code>greta::mcmc()</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>If <code>mcmc=TRUE</code>, returns a dataframe of posterior distribution samples corresponding to the input <code>causact_graph</code>.  Each column is a parameter and each row a draw from the posterior sample output.  If <code>mcmc=FALSE</code>, running <code>dag_greta</code> returns a character string of code that would help the user create three objects representing the posterior distribution:
+</p>
+
+<ol>
+<li> <p><code>draws</code>:  An mcmc.list object containing raw output from the HMCMC sampler used by <code>greta</code>.
+</p>
+</li>
+<li> <p><code>drawsDF</code>:  A wide data frame with all latent variables as columns and all draws as rows.  This data frame is useful for calculations based on the posterior
+</p>
+</li>
+<li> <p><code>tidyDrawsDF</code>:  A long data frame with each draw represented on one line.  This data frame is useful for plotting posterior distributions.
+</p>
+</li>
+</ol>
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+library(greta)
+graph = dag_create() %&gt;%
+  dag_node("Get Card","y",
+           rhs = bernoulli(theta),
+           data = carModelDF$getCard) %&gt;%
+  dag_node(descr = "Card Probability by Car",label = "theta",
+           rhs = beta(2,2),
+           child = "y") %&gt;%
+  dag_node("Car Model","x",
+           data = carModelDF$carModel,
+           child = "y") %&gt;%
+  dag_plate("Car Model","x",
+            data = carModelDF$carModel,
+            nodeLabels = "theta")
+
+graph %&gt;% dag_render()
+gretaCode = graph %&gt;% dag_greta(mcmc=FALSE)
+## default functionality returns a data frame
+# below requires Tensorflow installation
+drawsDF = graph %&gt;% dag_greta()
+drawsDF %&gt;% dagp_plot()
+
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,153 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>variogram</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate an empirical variogram from movement data</h2>
+
+<h3>Description</h3>
+
+<p>This function calculates the empirical variogram of multi-dimensional tracking data for visualizing stationary (time-averaged) autocorrelation structure.
+One of two algorithms is used. The slow <code class="reqn">O(n^2)</code> algorithm is based upon Fleming &amp; Calabrese et al (2014), but with interval-weights instead of lag-weights and an iterative algorithm to adjust for calibrated errors.
+Additional modifications have also been included to accommodate drift in the sampling rate.
+The fast <code class="reqn">O(n \log n)</code> algorithm is based upon the FFT method of Marcotte (1996), with some tweaks to better handle irregularly sampled data.
+Both methods reduce to the unbiased “method of moments” estimator in the case of evenly <em>scheduled</em> data, even with missing observations, but they produce slightly different outputs for irregularly sampled data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">variogram(data,dt=NULL,fast=TRUE,res=1,CI="Markov",error=FALSE,axes=c("x","y"),
+          precision=1/8,trace=TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+ <p><code>telemetry</code> data object of the 2D timeseries data. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dt</code></td>
+<td>
+<p> Lag bin width. An ordered array will yield a progressive coarsening of the lags. Defaults to the median sampling interval.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fast</code></td>
+<td>
+<p> Use the interval-weighted algorithm if <code>FALSE</code> or the FFT algorithm if <code>TRUE</code>. The slow algorithm outputs a progress bar.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>res</code></td>
+<td>
+<p>Increase the discretization resolution for irregularly sampled data with <code>res&gt;1</code>. Decreases bias at the cost of smoothness.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CI</code></td>
+<td>
+<p>Argument for confidence-interval estimation. Can be <code>"IID"</code> to consider all unique lags as independent, <code>"Markov"</code> to consider only non-overlapping lags as independent, or <code>"Gauss"</code> for an exact calculation (see Details below).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>error</code></td>
+<td>
+<p>Adjust for the effect of calibrated errors.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>axes</code></td>
+<td>
+<p>Array of axes to calculate an average (isotropic) variogram for.</p>
+</td>
+</tr>
+</table>
+<table>
+<tr style="vertical-align: top;">
+<td><code>precision</code></td>
+<td>
+<p>Fraction of machine precision to target when adjusting for telemetry error (<code>fast=FALSE</code> with calibrated errors). <code>precision=1/8</code> returns about 2 decimal digits of precision.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>Display a progress bar if <code>fast=FALSE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If no <code>dt</code> is specified, the median sampling interval is used. This is typically a good assumption for most data, even when there are gaps. A <code>dt</code> coarser than the sampling interval may bias the variogram (particuarly if <code>fast=TRUE</code>) and so this should be reserved for poor data quality.
+</p>
+<p>For irregularly sampled data, it may be useful to provide an array of time-lag bin widths to progressively coarsen the variogram. I.e., if you made the very bad choice of changing your sampling interval on the fly from <code>dt1</code> to <code>dt2</code>, where <code>dt1</code> <code class="reqn">&lt;</code> <code>dt2</code>, the an appropriate choice would be <code>dt=c(dt1,dt2)</code>. On the other hand, if your sampling is itself a noisy process, then you might want to introduce larger and larger <code>dt</code> components as the visual appearance of the variogram breaks down with increasing lags.
+Alternatively, you might try the <code>fast=FALSE</code> option or aggregating multiple individuals with <code>mean.variogram</code>.
+</p>
+<p>With irregularly sampled data, different size lags must be aggregated together, and with current fast methods there is a tradeoff between bias and smoothness. The default settings produce a relatively smooth estimate, while increasing <code>res</code> (or setting <code>fast=FALSE</code>) will produce a less biased estimate, which is very useful for <code>correlogram</code>.
+</p>
+<p>In conventional variogram regression treatments, all lags are considered as independent (<code>CI="IID"</code>) for the purposes of confidence-interval estimation, even if they overlap in time. However, in high resolution datasets this will produce vastly underestimated confidence intervals. Therefore, the default <code>CI="Markov"</code> behavior is to consider only the maximum number of non-overlapping lags in calculating confidence intervals, though this is a crude approximation and is overly conservative at large lags. <code>CI="Gauss"</code> implements exact confidence intervals under the assumption of a stationary Gaussian process, but this algorithm is <code class="reqn">O(n^2 \log n)</code> even when <code>fast=TRUE</code>.
+</p>
+<p>If <code>fast=FALSE</code> and the tracking data are calibrated (see <code>uere</code>), then with <code>error=TRUE</code> the variogram of the movement process (sans the telemetry-error process) is estimated using an iterative maximum-likelihood esitmator that downweights more erroneous location estimates (Fleming et al, 2020). The variogram is targeted to have <code>precision</code> fraction of machine precision. If the data are very irregular and location errors are very homoskedastic, then this algorithm can be slow to converge at time lags where there are few data pairs.
+If <code>fast=TRUE</code> and <code>error=TRUE</code>, then the estimated contribution to the variogram from location error is subtracted on a per lag basis, which is less ideal for heteroskedastic errors.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a variogram object (class variogram) which is a dataframe containing the time-lag, <code>lag</code>, the semi-variance estimate at that lag, <code>SVF</code>, and the approximate number of degrees of freedom associated with that semi-variance, <code>DOF</code>, with which its confidence intervals can be estimated.
+</p>
+
+
+<h3>Note</h3>
+
+<p> Prior to <code>ctmm</code> v0.3.6, <code>fast=FALSE</code> used the lag-weighted esitmator of Fleming et al (2014). Lag weights have been abandoned in favor of interval weights, which are less sensitive to sampling irregularity. The same weighting formulas are used, but with <code>dt</code> instead of the current lag. </p>
+
+
+<h3>Author(s)</h3>
+
+<p> C. H. Fleming and J. M. Calabrese. </p>
+
+
+<h3>References</h3>
+
+<p>D. Marcotte, “Fast variogram computation with FFT”, Computers and Geosciences 22:10, 1175-1186 (1996) <a href="https://doi.org/10.1016/S0098-3004%2896%2900026-X">doi:10.1016/S0098-3004(96)00026-X</a>.
+</p>
+<p>C. H. Fleming, J. M. Calabrese, T. Mueller, K.A. Olson, P. Leimgruber, W. F. Fagan,
+“From fine-scale foraging to home ranges: A semi-variance approach to identifying movement modes across spatiotemporal scales”,
+The American Naturalist, 183:5, E154-E167 (2014) <a href="https://doi.org/10.1086/675504">doi:10.1086/675504</a>.
+</p>
+<p>C. H. Fleming et al, “A comprehensive framework for handling location error in animal tracking data”,
+bioRxiv (2020) <a href="https://doi.org/10.1101/2020.06.12.130195">doi:10.1101/2020.06.12.130195</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code>vignette("variogram")</code>, <code>correlogram</code>, <code>mean.variogram</code>, <code>plot.variogram</code>, <code>variogram.fit</code>. </p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#Load package and data
+library(ctmm)
+data(buffalo)
+
+#Extract movement data for a single animal
+DATA &lt;- buffalo$Cilla
+
+#Calculate variogram
+SVF &lt;- variogram(DATA)
+
+#Plot the variogram with 50% and 95% CIs
+plot(SVF,level=c(0.5,0.95))
+</code></pre>
+
+
+</div>

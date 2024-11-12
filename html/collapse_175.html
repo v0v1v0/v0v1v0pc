@@ -1,0 +1,136 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fdist</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fast and Flexible Distance Computations
+</h2>
+
+<h3>Description</h3>
+
+<p>A fast and flexible replacement for <code>dist</code>, to compute euclidean distances.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fdist(x, v = NULL, ..., method = "euclidean", nthreads = .op[["nthreads"]])
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a numeric vector or matrix. Data frames/lists can be passed but will be converted to matrix using <code>qM</code>. Non-numeric (double) inputs will be coerced. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>v</code></td>
+<td>
+<p>an (optional) numeric (double) vector such that <code>length(v) == NCOL(x)</code>, to compute distances with (the rows of) <code>x</code>. Other vector types will be coerced.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>not used. A placeholder for possible future arguments.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>an integer or character string indicating the method of computing distances.
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<em> Int. </em>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> String </em>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> Description </em>  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 1 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <code>"euclidean"</code>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> euclidean distance </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 2 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <code>"euclidean_squared"</code> </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> squared euclidean distance (more efficient) </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    </td>
+</tr>
+</table>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nthreads</code></td>
+<td>
+<p>integer. The number of threads to use. If <code>v = NULL</code> (full distance matrix), multithreading is along the distance matrix columns (decreasing thread loads as matrix is lower triangular). If <code>v</code> is supplied, multithreading is at the sub-column level (across elements).</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>If <code>v = NULL</code>, a full lower-triangular distance matrix between the rows of <code>x</code> is computed and returned as a 'dist' object (all methods apply, see <code>dist</code>). Otherwise, a numeric vector of distances of each row of <code>x</code> with <code>v</code> is returned. See Examples.
+</p>
+
+
+<h3>Note</h3>
+
+<p><code>fdist</code> does not check for missing values, so <code>NA</code>'s will result in <code>NA</code> distances.
+</p>
+<p><code>kit::topn</code> is a suitable complimentary function to find nearest neighbors. It is very efficient and skips missing values by default.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>flm</code>, Fast Statistical Functions, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Distance matrix
+m = as.matrix(mtcars)
+str(fdist(m)) # Same as dist(m)
+
+# Distance with vector
+d = fdist(m, fmean(m))
+kit::topn(d, 5)  # Index of 5 nearest neighbours
+
+# Mahalanobis distance
+m_mahal = t(forwardsolve(t(chol(cov(m))), t(m)))
+fdist(m_mahal, fmean(m_mahal))
+sqrt(unattrib(mahalanobis(m, fmean(m), cov(m))))
+
+# Distance of two vectors
+x &lt;- rnorm(1e6)
+y &lt;- rnorm(1e6)
+microbenchmark::microbenchmark(
+  fdist(x, y),
+  fdist(x, y, nthreads = 2),
+  sqrt(sum((x-y)^2))
+)
+
+</code></pre>
+
+
+</div>

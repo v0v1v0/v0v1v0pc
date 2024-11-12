@@ -1,0 +1,135 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>emulate</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>modify a colorSpec responder to emulate (approximate) another responder</h2>
+
+<h3>Description</h3>
+
+<p>The two possible modifications are:
+</p>
+
+<ul>
+<li>
+<p> pre-multiplication by a transmitting filter
+</p>
+</li>
+<li>
+<p> post-multiplication by a matrix
+</p>
+</li>
+</ul>
+<p>Both of these are optional.
+If neither of these modifications is enabled, the original <code>x</code> is returned.<br></p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'colorSpec'
+emulate( x, y, filter=FALSE, matrix=TRUE )
+
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a <b>colorSpec</b> responder with M spectra, to be modified. 
+The <code>type</code> must be <code>'responsivity.light'</code> or <code>'responsivity.material'</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>a <b>colorSpec</b> responder with N spectra, to be emulated by a modified <code>x</code>.
+It must have the same <code>type</code> and <code>wavelength</code> vector as <code>x</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>filter</code></td>
+<td>
+<p>enable filter pre-multiplication.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>matrix</code></td>
+<td>
+<p>enable matrix post-multiplication.
+If <code>matrix=TRUE</code> then the computed matrix <code>A</code> is MxN. </p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If <code>filter=FALSE</code> and <code>matrix=TRUE</code> then
+the returned value is <code>multiply(x,A)</code>,
+where the matrix <code>A</code> is computed to minimize the difference with
+<code>y</code>, in the least squares sense (Frobenius matrix norm).
+The function <code>ginv()</code> is used here.
+</p>
+<p>If <code>filter=TRUE</code> and <code>matrix=FALSE</code> then
+the returned value is <code>product(filter,x)</code>,
+where the object <code>filter</code> is computed to minimize the difference with
+<code>y</code>, in the least squares sense (Frobenius matrix norm).
+This calculation is fairly straightforward,
+but requires that the responsivity of <code>x</code> does not vanish at any wavelength.
+It also requires that <code>M=N</code>.
+The computed filter may be unrealistic, i.e. the transmittance may be &gt; 1.
+If this happens a <code>WARN</code> message is issued.
+</p>
+<p>If <code>filter=TRUE</code> and <code>matrix=TRUE</code> then
+the returned value is <code>product(filter,multiply(x,A))</code>,
+where <code>(filter,A)</code> are chosen with the above minimization criterion.
+If <code>N=1</code> then we must have <code>M=1</code> as well;
+the calculation is trivial and the emulation is exact.
+If <code>N</code> <code class="reqn">\ge</code> <code>2</code>,
+the calculation is iterative - solving alternatively for 
+<code>filter</code> and <code>A</code> until convergence.
+The function <code>ginv()</code> is used on each iteration.
+This is a bilinear optimization.
+If convergence fails, it is an error and the function returns <code>NULL</code>.
+If convergence succeeds, there is 1 degree of freedom in the <code>(filter,A)</code> pair.
+If one is scaled by a positive constant, the other can be scaled by the inverse,
+and the returned object is the same.
+The filter is scaled so the maximum transmittance is 1.
+</p>
+<p>If <code>filter=FALSE</code> and <code>matrix=FALSE</code> then
+the original <code>x</code> is returned, with a <code>WARN</code> message.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a <b>colorSpec</b> object close to <code>y</code>, as in <b>Details</b>.
+The <code>quantity</code> is the same as <code>y</code>.
+The <code>specnames()</code> are the same as those of <code>y</code>,
+except that <code>".em"</code> is appended to each one.
+The function attaches attribute <code>"emulate"</code>,
+whose value is a list containing <code>filter</code> and/or <code>A</code> as appropriate.
+</p>
+
+
+<h3>Examples</h3>
+
+<p>see the vignette <a href="../doc/emulation.pdf"><b>Emulation of one Camera by another Camera</b></a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>wavelength</code>,
+<code>type</code>,
+<code>quantity</code>,
+<code>multiply</code>,
+<code>product</code>,
+<code>specnames</code>
+</p>
+
+
+</div>

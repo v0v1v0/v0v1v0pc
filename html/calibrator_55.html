@@ -1,0 +1,300 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>stage1</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Stage 1,2 and 3 optimization on toy dataset</h2>
+
+<h3>Description</h3>
+
+<p>Perform O'Hagan's three stage optimization on the toy dataset.  Function
+<code>stage1()</code> and <code>stage2()</code> find the optimal values for
+the hyperparameters and <code>stage3()</code> finds the optimal values for
+the three parameters.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">stage1(D1, y, H1,  maxit,  trace=100, method="Nelder-Mead",
+      directory = ".", do.filewrite=FALSE, do.print=TRUE,
+      phi.fun, lognormally.distributed=FALSE, include.prior=TRUE, phi)
+stage2(D1, D2, H1, H2, y, z, maxit, trace=100, method = "Nelder-Mead",
+      directory = ".", do.filewrite=FALSE, do.print=TRUE,  extractor,
+      phi.fun, E.theta, Edash.theta, isotropic=FALSE,
+      lognormally.distributed = FALSE, include.prior = TRUE,
+      use.standin = FALSE, rho.eq.1 = TRUE, phi) 
+stage3(D1, D2, H1, H2, d, maxit, trace=100, method="Nelder-Mead",
+      directory = ".", do.filewrite=FALSE, do.print=TRUE,
+      include.prior = TRUE, lognormally.distributed=FALSE,
+      theta.start=NULL, phi) 
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>maxit</code></td>
+<td>
+<p>Maximum number of iterations as passed to <code>optim()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>Amount of information displayed, as passed to <code>optim()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>D1</code></td>
+<td>
+<p>Matrix whose rows are points at which code output is known</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>D2</code></td>
+<td>
+<p>Matrix whose rows are points at which observations were made</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>H1,H2</code></td>
+<td>
+<p>Regressor basis functions for <code>D1</code> and <code>D2</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Code outputs.  Toy example is <code>y.toy</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>Observations.  Toy example is <code>z.toy</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+<p>Data vector consisting of the code runs and observations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extractor</code></td>
+<td>
+<p>extractor function for <code>D1</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>E.theta,Edash.theta</code></td>
+<td>
+<p>Expectation WRT theta, and dashed theta.
+Toy examples are <code>E.theta.toy()</code> and <code>Edash.theta.toy()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>phi.fun</code></td>
+<td>
+<p>Function to create hyperparameters; passed  (in
+<code>stage1()</code> and <code>stage2()</code>) to <code>phi.change()</code>.  Toy
+version is <code>phi.fun.toy()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Method argument passed to <code>optim()</code>; qv</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include.prior</code></td>
+<td>
+<p>Boolean variable with default <code>TRUE</code> meaning
+to include the prior distribution in the optimization process and
+<code>FALSE</code> meaning to use an uniformative prior (effectively
+uniform support).  This variable is passed to <code>p.eqn4.supp()</code>
+for <code>stage1()</code>, <code>p.page4()</code> for <code>stage2()</code>, and
+<code>p.eqn8.supp()</code>  for <code>stage3()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lognormally.distributed</code></td>
+<td>
+<p>Boolean with <code>TRUE</code> meaning to use
+a lognormal distn.  See <code>prob.theta</code> for details</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>do.filewrite</code></td>
+<td>
+<p>Boolean, with <code>TRUE</code> meaning to
+save a <code>load</code>able file <code>stage[123].&lt;date&gt;</code>, containing the interim value of <code>phi</code>
+and the corresponding optimand to <code>directory</code> at each evalution
+of the optimizer.  If <code>FALSE</code>, don't write the files</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>directory</code></td>
+<td>
+<p>The directory to write files to; only matters if
+<code>do.filewrite</code> is <code>TRUE</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>isotropic</code></td>
+<td>
+<p>In function <code>stage2()</code>, Boolean with default
+<code>FALSE</code> meaning to carry out a full optimization, and
+<code>TRUE</code> meaning to restrict the scope to isotroic roughness
+matrices.  See details section below</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>do.print</code></td>
+<td>
+<p>Boolean, with default <code>TRUE</code> meaning to print
+interim values of <code>phi</code> at each evaluation</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use.standin</code></td>
+<td>
+<p>In <code>stage2()</code>, a Boolean argument, with
+default <code>FALSE</code> meaning to use the real value for matrix
+<code>V.temp</code>, and <code>TRUE</code> meaning to use a standing that is the
+same size but contains fictitious values.  The only time to set
+<code>use.standin</code> to <code>TRUE</code> is when debugging as it runs
+several orders of magnitude faster</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rho.eq.1</code></td>
+<td>
+<p>Boolean, with default <code>TRUE</code> meaning to hold the
+value of <code>rho</code> constant at one (1)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta.start</code></td>
+<td>
+<p>In <code>stage3()</code>, the starting point of the
+optimization with default <code>NULL</code> meaning to use the maximum
+likelihood point of the apriori distribution (ie <code>phi$theta.apriori$mean</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>phi</code></td>
+<td>
+<p>Hyperparameters.  Used as initial values for the
+hyperparameters in the optimization routines</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The three functions documented here carry out the multi-stage
+optimization detailed in KOH2001 (actually, KOH2001 only defined stage
+1 and stage 2, which estimated the hyperparameters.  What is here
+called “<code>stage3()</code>” estimates the true value of
+<code class="reqn">\theta</code> given the hyperparameters).
+</p>
+<p><code>stage1()</code> carries out stage 1 of KOH2001 which is used to
+estimate <code class="reqn">\psi_1</code> using optimization.
+</p>
+<p>In function <code>stage2()</code>, setting argument <code>isotropic</code> to
+<code>TRUE</code> will force <code>phi$omegastar_x</code> to be a function of a
+length one scalar.  The value of <code>phi$omegastar_x</code> used will
+depend on <code>pdm.maker.psi2()</code> (an internal function appearing in
+<code>hpa.fun.toy()</code>).  In <code>stage2()</code>, several kludges are made.
+The initial conditions are provided by argument <code>phi</code>.  The
+relevant part of this is <code>phi$psi2</code>.  
+</p>
+<p>Function <code>stage2()</code> estimates <code class="reqn">\psi_2</code> <strong>and</strong>
+<code class="reqn">\rho</code> <strong>and</strong> <code class="reqn">\lambda</code>, using
+optimization.  Note that <code class="reqn">\psi_2</code> includes
+<code class="reqn">\sigma_2^2</code> in addition to <code>omegastar_X</code> (in
+the toy case, <code class="reqn">\psi_2</code> has three elements: the first two are
+the diagonal of <code>omegastar_x</code> and the third is
+<code class="reqn">\sigma_2^2</code> <strong>but</strong> this information is
+encoded in <code>phi.fun.toy()</code>, which changes from application to
+application).
+</p>
+<p>Function <code>stage3()</code> attempts to find the maximum likelihood
+estimate of <code class="reqn">\theta</code>, given hyperparameters and
+observations, using optimization
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Robin K. S. Hankin</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li>
+<p>M. C. Kennedy and A. O'Hagan 2001. <em>Bayesian
+calibration of computer models</em>.  Journal of the Royal Statistical
+Society B, 63(3) pp425-464
+</p>
+</li>
+<li>
+<p>M. C. Kennedy and A. O'Hagan 2001.  <em>Supplementary details on
+Bayesian calibration of computer models</em>, Internal report, University
+of Sheffield.  Available at
+<a href="http://www.tonyohagan.co.uk/academic/ps/calsup.ps">http://www.tonyohagan.co.uk/academic/ps/calsup.ps</a>
+</p>
+</li>
+<li>
+<p>R. K. S. Hankin 2005. <em>Introducing BACCO, an R bundle for
+Bayesian analysis of computer code output</em>, Journal of Statistical
+Software, 14(16)
+</p>
+</li>
+</ul>
+<h3>See Also</h3>
+
+<p><code>toys</code>,
+<code>phi.fun.toy</code>  
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(toys)
+stage1(D1=D1.toy,y=y.toy,H1=H1.toy, maxit=5, phi.fun=phi.fun.toy, phi=phi.toy)
+
+##now try with a slightly bigger dataset:
+##Examples below take a few minutes to run:
+
+set.seed(0)
+data(toys)
+jj &lt;- create.new.toy.datasets(D1.toy , D2.toy)
+y.toy &lt;- jj$y.toy
+z.toy &lt;- jj$z.toy
+d.toy &lt;- jj$d.toy
+
+phi.toy.stage1 &lt;- stage1(D1=D1.toy, y=y.toy, H1=H1.toy, maxit=10, phi.fun=phi.fun.toy, phi=phi.toy)
+
+phi.toy.stage2 &lt;- stage2(D1=D1.toy, D2=D2.toy, H1=H1.toy, H2=H2.toy,
+ y=y.toy, z=z.toy, extractor=extractor.toy,
+phi.fun=phi.fun.toy, E.theta=E.theta.toy, Edash.theta=Edash.theta.toy,
+maxit=3, phi=phi.toy.stage1)
+
+stage3(D1=D1.toy, D2=D2.toy, H1=H1.toy, H2=H2.toy, d=d.toy, maxit=3, phi=phi.toy.stage2)
+
+# Now try with the true values of the hyperparameters:
+phi.true &lt;- phi.true.toy(phi=phi.toy)
+
+stage3(D1=D1.toy, D2=D2.toy, H1=H1.toy, H2=H2.toy, d=d.toy, maxit=3, phi=phi.true)
+
+</code></pre>
+
+
+</div>

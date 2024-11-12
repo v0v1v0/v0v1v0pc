@@ -1,0 +1,174 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>corr_complex</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Complex Gaussian processes</h2>
+
+<h3>Description</h3>
+
+<p>Various utilities for investigating complex Gaussian processes
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">corr_complex(z1, z2 = NULL, distance.function = complex_CF, means =
+NULL, scales = NULL, pos.def.matrix = NULL)
+complex_CF(z1,z2, means, pos.def.matrix)
+scales.likelihood.complex(pos.def.matrix, scales, means,  zold, z,
+               give_log = TRUE, func = regressor.basis)
+interpolant.quick.complex(x, d, zold, Ainv, scales = NULL, pos.def.matrix = NULL,
+               means=NULL, func = regressor.basis, give.Z = FALSE,
+               distance.function = corr_complex, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>z, z1, z2</code></td>
+<td>
+<p>Points in <code class="reqn">C^n</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>distance.function</code></td>
+<td>
+<p>Function giving the (complex) covariance
+between two points in <code class="reqn">C^n</code> </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>means, pos.def.matrix, scales</code></td>
+<td>
+<p>In function <code>complex_CF()</code>, the mean
+and covariance matrix of the distribution whose characteristic
+function is used to give the covariance matrix; <code>scales</code> is
+used to specify the diagonal of <code>pos.def.matrix</code> if the
+off-diagonal elements are zero</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>zold, d, give_log, func, x, Ainv, give.Z,...</code></td>
+<td>
+<p>Direct analogues of the
+arguments in <code>interpolant()</code> and <code>scales.likelihood()</code> in
+the <span class="pkg">emulator</span> package</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+
+<ul>
+<li>
+<p> Function <code>complex_CF()</code> returns a (slightly reparameterized)
+characteristic function of a complex Gaussian distribution.  The
+covariance is given by
+</p>
+<p style="text-align: center;"><code class="reqn">c(\mathbf{t}) = \exp(i\mathrm{Re}(\mathbf{t}^\ast\mathbf{\mu}) -
+    \mathbf{t}^\ast B\mathbf{t})</code>
+</p>
+
+<p>where <code class="reqn">\mathbf{t}=\mathbf{x}-\mathbf{x}'</code> is interpreted as
+the distance between two observations, <code class="reqn">\mathbf{\mu}</code> is the
+mean of the distribution (which is in general a complex vector), and
+<code class="reqn">B</code> a positive-definite matrix.
+</p>
+</li>
+<li>
+<p> Function <code>corr_complex()</code> is the complex analogue of
+<code>corr.matrix()</code>.  It returns a matrix with entry <code class="reqn">(i,j)</code>
+equal to the covariance of the process at observation <code class="reqn">i</code> and
+observation <code class="reqn">j</code>, or
+<code class="reqn">\mbox{cov}(\eta(\mathbf{x}_i),\eta(\mathbf{x}_j))</code>.
+The elements are calculated by <code>complex_CF()</code>.
+</p>
+<p>This function includes only a single method, that of nested calls to
+<code>apply()</code>.  I could not figure out how to generalize method 1 of
+<code>corr.matrix()</code> to the complex case.
+</p>
+</li>
+<li>
+<p> Function <code>scales.likelihood.complex()</code> is a complex version
+of <code>scales.likelihood()</code> which takes a positive definite matrix
+and a mean.  The formula used is </p>
+<p style="text-align: center;"><code class="reqn">(\sigma^2)^{-(n-q)}|A|^{-1}
+  |H^\ast A^{-1}H|^{-1}</code>
+</p>
+<p>.  Here and elsewhere,
+<code class="reqn">A^\ast</code> means the complex conjugate of the transpose.
+</p>
+</li>
+<li>
+<p> Function <code>interpolant.quick.complex()</code> is a complex version
+of <code>interpolant.quick()</code>.
+</p>
+<p style="text-align: center;"><code class="reqn">\mathbf{h}(\mathbf{x})^\ast\hat{\mathbf{\beta}} +
+    \mathbf{t}(\mathbf{x})^\ast
+    A^{-1}(\mathbf{y}-H\hat{\mathbf{\beta}})</code>
+</p>
+
+<p>This is the complex version of Oakley's equation 2.30 or Hankin's
+equation 5.
+</p>
+</li>
+</ul>
+<p>More details are given in the package vignette.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Robin K. S. Hankin</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li>
+<p> Hankin, R. K. S. 2005.  “Introducing
+BACCO, an R bundle for Bayesian Analysis of Computer Code Output”,
+<em>Journal of Statistical Software</em>, 14(15)
+</p>
+</li>
+<li>
+<p> J. Oakley 1999. <em>Bayesian uncertainty analysis for complex
+computer codes</em>, PhD thesis, University of Sheffield.
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+complex_CF(c(1,1i),c(1,-1i),means=c(1i,1i),pos.def.matrix=diag(2))
+
+V &lt;- latin.hypercube(7,2,complex=TRUE)
+
+cm &lt;- c(1,1+1i)                     # "complex mean"
+cs &lt;- matrix(c(2,1i,-1i,1),2,2)   # "complex scales"
+tb &lt;- c(1,1i,1-1i)                     # "true beta"
+
+A &lt;- corr_complex(V,means=cm,pos.def.matrix=cs)
+Ainv &lt;- solve(A)
+z &lt;- drop(rcmvnorm(n=1,mean=regressor.multi(V) %*% tb, sigma=A))
+
+
+betahat.fun(V,Ainv,z)    # should be close to 'tb'
+
+#scales.likelihood.complex(cs,cm,V,z)   # log-likelihood evaluated true parameters
+
+
+
+interpolant.quick.complex(x=0.1i+V[1:3,],d=z,zold=V,Ainv=Ainv,pos.def.matrix=cs,means=cm)
+
+
+</code></pre>
+
+
+</div>

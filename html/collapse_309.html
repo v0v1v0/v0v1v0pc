@@ -1,0 +1,217 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fscale</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fast (Grouped, Weighted) Scaling and Centering of Matrix-like Objects
+</h2>
+
+<h3>Description</h3>
+
+<p><code>fscale</code> is a generic function to efficiently standardize (scale and center) data. <code>STD</code> is a wrapper around <code>fscale</code> representing the 'standardization operator', with more options than <code>fscale</code> when applied to matrices and data frames.  Standardization can be simple or groupwise, ordinary or weighted. Arbitrary target means and standard deviations can be set, with special options for grouped scaling and centering. It is also possible to scale data without centering i.e. perform mean-preserving scaling.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fscale(x, ...)
+   STD(x, ...)
+
+## Default S3 method:
+fscale(x, g = NULL, w = NULL, na.rm = .op[["na.rm"]], mean = 0, sd = 1, ...)
+## Default S3 method:
+STD(x, g = NULL, w = NULL, na.rm = .op[["na.rm"]], mean = 0, sd = 1, ...)
+
+## S3 method for class 'matrix'
+fscale(x, g = NULL, w = NULL, na.rm = .op[["na.rm"]], mean = 0, sd = 1, ...)
+## S3 method for class 'matrix'
+STD(x, g = NULL, w = NULL, na.rm = .op[["na.rm"]], mean = 0, sd = 1,
+    stub = .op[["stub"]], ...)
+
+## S3 method for class 'data.frame'
+fscale(x, g = NULL, w = NULL, na.rm = .op[["na.rm"]], mean = 0, sd = 1, ...)
+## S3 method for class 'data.frame'
+STD(x, by = NULL, w = NULL, cols = is.numeric, na.rm = .op[["na.rm"]],
+    mean = 0, sd = 1, stub = .op[["stub"]], keep.by = TRUE, keep.w = TRUE, ...)
+
+# Methods for indexed data / compatibility with plm:
+
+## S3 method for class 'pseries'
+fscale(x, effect = 1L, w = NULL, na.rm = .op[["na.rm"]], mean = 0, sd = 1, ...)
+## S3 method for class 'pseries'
+STD(x, effect = 1L, w = NULL, na.rm = .op[["na.rm"]], mean = 0, sd = 1, ...)
+
+## S3 method for class 'pdata.frame'
+fscale(x, effect = 1L, w = NULL, na.rm = .op[["na.rm"]], mean = 0, sd = 1, ...)
+## S3 method for class 'pdata.frame'
+STD(x, effect = 1L, w = NULL, cols = is.numeric, na.rm = .op[["na.rm"]],
+    mean = 0, sd = 1, stub = .op[["stub"]], keep.ids = TRUE, keep.w = TRUE, ...)
+
+# Methods for grouped data frame / compatibility with dplyr:
+
+## S3 method for class 'grouped_df'
+fscale(x, w = NULL, na.rm = .op[["na.rm"]], mean = 0, sd = 1,
+       keep.group_vars = TRUE, keep.w = TRUE, ...)
+## S3 method for class 'grouped_df'
+STD(x, w = NULL, na.rm = .op[["na.rm"]], mean = 0, sd = 1,
+    stub = .op[["stub"]], keep.group_vars = TRUE, keep.w = TRUE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a numeric vector, matrix, data frame, 'indexed_series' ('pseries'), 'indexed_frame' ('pdata.frame') or grouped data frame ('grouped_df').</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>g</code></td>
+<td>
+<p>a factor, <code>GRP</code> object, or atomic vector / list of vectors (internally grouped with <code>group</code>) used to group <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by</code></td>
+<td>
+<p><em>STD data.frame method</em>: Same as <code>g</code>, but also allows one- or two-sided formulas i.e. <code>~ group1</code> or <code>var1 + var2 ~ group1 + group2</code>. See Examples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cols</code></td>
+<td>
+<p><em>STD (p)data.frame method</em>: Select columns to scale using a function, column names, indices or a logical vector. Default: All numeric columns. <em>Note</em>: <code>cols</code> is ignored if a two-sided formula is passed to <code>by</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>a numeric vector of (non-negative) weights. <code>STD</code> data frame and <code>pdata.frame</code> methods also allow a one-sided formula i.e. <code>~ weightcol</code>. The <code>grouped_df</code> (<em>dplyr</em>) method supports lazy-evaluation. See Examples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.rm</code></td>
+<td>
+<p>logical. Skip missing values in <code>x</code> or <code>w</code> when computing means and sd's.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>effect</code></td>
+<td>
+<p><em>plm</em> methods: Select which panel identifier should be used as group-id. 1L takes the first variable in the index, 2L the second etc.. Index variables can also be called by name using a character string. More than one variable can be supplied. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stub</code></td>
+<td>
+<p>character. A prefix/stub to add to the names of all transformed columns. <code>TRUE</code> (default) uses <code>"STD."</code>, <code>FALSE</code> will not rename columns.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mean</code></td>
+<td>
+<p>the mean to center on (default is 0). If <code>mean = FALSE</code>, no centering will be performed. In that case the scaling is mean-preserving. A numeric value different from 0 (i.e. <code>mean = 5</code>) will be added to the data after subtracting out the mean(s), such that the data will have a mean of 5. A special option when performing grouped scaling and centering is <code>mean = "overall.mean"</code>. In that case the overall mean of the data will be added after subtracting out group means.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sd</code></td>
+<td>
+<p>the standard deviation to scale the data to (default is 1). A numeric value different from 0 (i.e. <code>sd = 3</code>) will scale the data to have a standard deviation  of 3. A special option when performing grouped scaling is <code>sd = "within.sd"</code>. In that case the within standard deviation (= the standard deviation of the group-centered series) will be calculated and applied to each group. The results is that the variance of the data within each group is harmonized without forcing a certain variance (such as 1).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.by, keep.ids, keep.group_vars</code></td>
+<td>
+<p><em>data.frame, pdata.frame and grouped_df methods</em>: Logical. Retain grouping / panel-identifier columns in the output. For <code>STD.data.frame</code> this only works if grouping variables were passed in a formula.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.w</code></td>
+<td>
+<p><em>data.frame, pdata.frame and grouped_df methods</em>: Logical. Retain column containing the weights in the output. Only works if <code>w</code> is passed as formula / lazy-expression.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments to be passed to or from other methods.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If <code>g = NULL</code>, <code>fscale</code> by default (column-wise) subtracts the mean or weighted mean (if <code>w</code> is supplied) from all data points in <code>x</code>, and then divides this difference by the standard deviation or frequency-weighted standard deviation. The result is that all columns in <code>x</code> will have a (weighted) mean 0 and (weighted) standard deviation 1. Alternatively, data can be scaled to have a mean of <code>mean</code> and a standard deviation of <code>sd</code>. If <code>mean = FALSE</code> the data is only scaled (not centered) such that the mean of the data is preserved. <br></p>
+<p>Means and standard deviations are computed using Welford's numerically stable online algorithm.
+</p>
+<p>With groups supplied to <code>g</code>, this standardizing becomes groupwise, so that in each group (in each column) the data points will have mean <code>mean</code> and standard deviation <code>sd</code>. Naturally if <code>mean = FALSE</code> then each group is just scaled and the mean is preserved. For centering without scaling see <code>fwithin</code>.
+</p>
+<p>If <code>na.rm = FALSE</code> and a <code>NA</code> or <code>NaN</code> is encountered, the mean and sd for that group will be <code>NA</code>, and all data points belonging to that group will also be <code>NA</code> in the output.
+</p>
+<p>If <code>na.rm = TRUE</code>, means and sd's are computed (column-wise) on the available data points, and also the weight vector can have missing values. In that case, the weighted mean an sd are computed on (column-wise) <code>complete.cases(x, w)</code>, and <code>x</code> is scaled using these statistics. <em>Note</em> that <code>fscale</code> will not insert a missing value in <code>x</code> if the weight for that value is missing, rather, that value will be scaled using a weighted mean and standard-deviated computed without itself! (The intention here is that a few (randomly) missing weights shouldn't break the computation when <code>na.rm = TRUE</code>, but it is not meant for weight vectors with many missing values. If you don't like this behavior, you should prepare your data using <code>x[is.na(w), ] &lt;- NA</code>, or impute your weight vector for non-missing <code>x</code>).
+</p>
+<p>Special options for grouped scaling are <code>mean = "overall.mean"</code> and <code>sd = "within.sd"</code>. The former group-centers vectors on the overall mean of the data (see <code>fwithin</code> for more details) and the latter scales the data in each group to have the within-group standard deviation (= the standard deviation of the group-centered data). Thus scaling a grouped vector with options <code>mean = "overall.mean"</code> and <code>sd = "within.sd"</code> amounts to removing all differences in the mean and standard deviations between these groups. In weighted computations, <code>mean = "overall.mean"</code> will subtract weighted group-means from the data and add the overall weighted mean of the data, whereas <code>sd = "within.sd"</code> will compute the weighted within- standard deviation and apply it to each group.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>x</code> standardized (mean = mean, standard deviation = sd), grouped by <code>g/by</code>, weighted with <code>w</code>. See Details.
+</p>
+
+
+<h3>Note</h3>
+
+<p>For centering without scaling see <code>fwithin/W</code>. For simple not mean-preserving scaling use <code>fsd(..., TRA = "/")</code>. To sweep pre-computed means and scale-factors out of data see <code>TRA</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fwithin</code>, <code>fsd</code>, <code>TRA</code>, Fast Statistical Functions, Data Transformations, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Simple Scaling &amp; Centering / Standardizing
+head(fscale(mtcars))               # Doesn't rename columns
+head(STD(mtcars))                  # By default adds a prefix
+qsu(STD(mtcars))                   # See that is works
+qsu(STD(mtcars, mean = 5, sd = 3)) # Assigning a mean of 5 and a standard deviation of 3
+qsu(STD(mtcars, mean = FALSE))     # No centering: Scaling is mean-preserving
+
+## Panel Data
+head(fscale(get_vars(wlddev,9:12), wlddev$iso3c))   # Standardizing 4 series within each country
+head(STD(wlddev, ~iso3c, cols = 9:12))              # Same thing using STD, id's added
+pwcor(fscale(get_vars(wlddev,9:12), wlddev$iso3c))  # Correlaing panel series after standardizing
+
+fmean(get_vars(wlddev, 9:12))                       # This calculates the overall means
+fsd(fwithin(get_vars(wlddev, 9:12), wlddev$iso3c))  # This calculates the within standard deviations
+head(qsu(fscale(get_vars(wlddev, 9:12),             # This group-centers on the overall mean and
+    wlddev$iso3c,                                   # group-scales to the within standard deviation
+    mean = "overall.mean", sd = "within.sd"),       # -&gt; data harmonized in the first 2 moments
+    by = wlddev$iso3c))
+
+## Indexed data
+wldi &lt;- findex_by(wlddev, iso3c, year)
+head(STD(wldi))                                  # Standardizing all numeric variables by country
+head(STD(wldi, effect = 2L))                     # Standardizing all numeric variables by year
+
+## Weighted Standardizing
+weights = abs(rnorm(nrow(wlddev)))
+head(fscale(get_vars(wlddev,9:12), wlddev$iso3c, weights))
+head(STD(wlddev, ~iso3c, weights, 9:12))
+
+# Grouped data
+wlddev |&gt; fgroup_by(iso3c) |&gt; fselect(PCGDP,LIFEEX) |&gt; STD()
+wlddev |&gt; fgroup_by(iso3c) |&gt; fselect(PCGDP,LIFEEX) |&gt; STD(weights) # weighted standardizing
+wlddev |&gt; fgroup_by(iso3c) |&gt; fselect(PCGDP,LIFEEX,POP) |&gt; STD(POP) # weighting by POP -&gt;
+# ..keeps the weight column unless keep.w = FALSE
+</code></pre>
+
+
+</div>

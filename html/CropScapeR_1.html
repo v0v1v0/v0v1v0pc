@@ -1,0 +1,133 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>GetCDLComp</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Request data on land cover changes over time</h2>
+
+<h3>Description</h3>
+
+<p>A function that requests data on land cover changes over time from the CropScape. This function implements the GetCDLComp service provided by the CropScape <a href="https://nassgeodata.gmu.edu/CropScape">https://nassgeodata.gmu.edu/CropScape</a>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">GetCDLComp(
+  aoi,
+  year1,
+  year2,
+  type,
+  mat = TRUE,
+  crs = NULL,
+  tol_time = 20,
+  manual_try = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>aoi</code></td>
+<td>
+<p>Area of interest. Can be a 5-digit FIPS code of a county, 2-digit FIPS code of a state, four corner points or an sf object that defines a rectangle (or a box) area,
+multiple coordinates that defines a polygon, or a URL of an compressed ESRI shapefile.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>year1</code></td>
+<td>
+<p>Year 1. Should be a 4-digit numeric value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>year2</code></td>
+<td>
+<p>Year 2. Should be a 4-digit numeric value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>Type of the selected AOI. 'f' for state or county, 'b' for box area, 'ps' for polygon, 's' for ESRI shapefile.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mat</code></td>
+<td>
+<p><code>TRUE</code>/<code>FALSE</code>. If <code>TRUE</code>, return a data frame. If <code>FALSE</code> (default), return a raster tif file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>crs</code></td>
+<td>
+<p>Coordinate system. <code>NULL</code> if use the default coordinate system (i.e., Albers projection); Use '+init=epsg:4326' for longitude/latitude.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol_time</code></td>
+<td>
+<p>Number of seconds to wait for a response until giving up. Default is 20 seconds.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>manual_try</code></td>
+<td>
+<p><code>True</code> (default) for trying calculating land cover changes using the <code>manualrotate</code> function. If <code>False</code>, no attempt is made.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Land cover changes are obtained by first merging two raster files in two different years (year1 and year 2) together based on the geographic coordinates, and then count
+the number of pixels (or grids) by types of land cover changes, such as corn to soybeans. The process is done in the CropScape server (the default option) or inside the <code>GetDataComp</code> function.
+</p>
+<p>To obtain land cover chaneg data, the raster objects in two different years must have the same spatial resolutions and identical coordinates to be directly merged together.
+The CropScape server does internal checks on this and would report an error if the two rasters cannot be directly merged together due to unequal spatial resolution or different
+coordinates. However, the <code>GetCDLComp</code> function allows users to obtain land cover changes from two raster files that have different resolutions. This is achieved by resample the raster
+data using the nearest neighbor resampling technique such that both rasters have the same resolutions (the finer resolution raster is downscaled to lower resolution).
+Then, the resampled data are processed automatically to get data on land cover changes (this is done by using the <code>manualrotate</code> function).
+This feature is useful when dealing with the rasters in 2006 and 2007, which are at 56-meter resolution. While the rasters in other years are at 30-meter resolution.
+Also note that the resampling process will lead to sampling errors. Whenever the manual calculation of land cover changes is used, a warning message will show up to alert users.
+If without warning, the data are directly from the CropScape GetCDLComp service.
+</p>
+<p>In rare cases, the CropScape server fails to generate land cover change data even without the issue of unequal spatial resolution. A common issue is mismatch in data sizes: the raster objects in two years
+have different pixel numbers. It is unclear that why this would happen. Nevertheless, when there is data mismatch, the <code>GetCDLComp</code> function will attempt to calculate for land cover change
+manually using the <code>manual_rotate</code> function. Data associated with the unmatched coordinates are
+discarded at the merging process. Again, a warning message will show up to alert users if <code>manual_rotate</code> function is used. If no coordinates can be matched, the
+<code>manual_rotate</code> function would also fail to get land cover change data. In this case, a warning message will show up to alert users.
+</p>
+<p>The usage of this function is similar to the <code>GetCDLData</code> function. Please see the help page of the <code>GetCDLData</code> function
+for details. Note that the <code>aoi</code> cannot be a single point here.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The function returns a data table or a raster file.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Example 1. Retrieve data for the Champaign county in Illinois (FIPS = 17109) in 2017-2018.
+data &lt;- GetCDLComp(aoi = '17019', year1 = 2017, year2 = 2018, type = 'f')
+head(data, 5)
+
+# Example 2. Retrieve data for a polygon (a triangle) defined by three coordinates in 2017-2018.
+aoi &lt;- c(175207,2219600,175207,2235525,213693,2219600)
+data &lt;- GetCDLComp(aoi = aoi, year1 = 2017, year2 = 2018, type = 'ps')
+head(data, 5)
+
+# Example 3. Retrieve data for a rectangle box defined by four corner points in 2018.
+data &lt;- GetCDLComp(aoi = c(130783,2203171,153923,2217961), year1 = 2017, year2 = 2018, type = 'b')
+head(data, 5)
+
+</code></pre>
+
+
+</div>

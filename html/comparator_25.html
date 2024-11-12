@@ -1,0 +1,144 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>FuzzyTokenSet</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fuzzy Token Set Comparator</h2>
+
+<h3>Description</h3>
+
+<p>Compares a pair of token sets <code class="reqn">x</code> and <code class="reqn">y</code> by computing the
+optimal cost of transforming <code class="reqn">x</code> into <code class="reqn">y</code> using single-token
+operations (insertions, deletions and substitutions). The cost of
+single-token operations is determined at the character-level using an
+internal string comparator.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">FuzzyTokenSet(
+  inner_comparator = Levenshtein(normalize = TRUE),
+  agg_function = base::mean,
+  deletion = 1,
+  insertion = 1,
+  substitution = 1
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>inner_comparator</code></td>
+<td>
+<p>inner string distance comparator of class
+<code>StringComparator</code>. Defaults to normalized <code>Levenshtein</code>
+distance.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>agg_function</code></td>
+<td>
+<p>function used to aggregate the costs of the optimal
+operations. Defaults to <code>base::mean</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deletion</code></td>
+<td>
+<p>non-negative weight associated with deletion of a token.
+Defaults to 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>insertion</code></td>
+<td>
+<p>non-negative weight associated insertion of a token.
+Defaults to 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>substitution</code></td>
+<td>
+<p>non-negative weight associated with substitution of a
+token. Defaults to 1.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>A token set is an unordered enumeration of tokens, which may include
+duplicates. Given two token sets <code class="reqn">x</code> and <code class="reqn">y</code>, this comparator
+computes the optimal cost of transforming <code class="reqn">x</code> into <code class="reqn">y</code> using the
+following single-token operations:
+</p>
+
+<ul>
+<li>
+<p> deleting a token <code class="reqn">a</code> from <code class="reqn">x</code> at cost <code class="reqn">w_d \times \mathrm{inner}(a, "")</code>
+</p>
+</li>
+<li>
+<p> inserting a token <code class="reqn">b</code> in <code class="reqn">y</code> at cost <code class="reqn">w_i \times \mathrm{inner}("", b)</code>
+</p>
+</li>
+<li>
+<p> substituting a token <code class="reqn">a</code> in <code class="reqn">x</code> for a token <code class="reqn">b</code>
+in <code class="reqn">y</code> at cost <code class="reqn">w_s \times \mathrm{inner}(a, b)</code>
+</p>
+</li>
+</ul>
+<p>where <code class="reqn">\mathrm{inner}</code> is an internal string comparator and
+<code class="reqn">w_d, w_i, w_s</code> are non-negative weights, referred to as <code>deletion</code>,
+<code>insertion</code> and <code>substitution</code> in the parameter list. By default, the
+<em>mean</em> cost of the optimal set of operations is returned. Other methods of
+aggregating the costs are supported by specifying a non-default
+<code>agg_function</code>.
+</p>
+<p>If the internal string comparator is a <em>distance</em> function, then the optimal
+set of operations <em>minimize</em> the cost. Otherwise, the optimal set of
+operations <em>maximize</em> the cost. The optimization problem is solved exactly
+using a linear sum assignment solver.
+</p>
+
+
+<h3>Note</h3>
+
+<p>This comparator is qualitatively similar to the <code>MongeElkan</code>
+comparator, however it is arguably more principled, since it is formulated
+as a cost optimization problem. It also offers more control over the costs
+of missing tokens (by varying the <code>deletion</code> and <code>insertion</code> weights).
+This is useful for comparing full names, when dropping a name (e.g.
+middle name) shouldn't be severely penalized.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Compare names with heterogenous representations
+x &lt;- "The University of California - San Diego"
+y &lt;- "Univ. Calif. San Diego"
+# Tokenize strings on white space
+x &lt;- strsplit(x, '\\s+')
+y &lt;- strsplit(y, '\\s+')
+FuzzyTokenSet()(x, y)
+# Reduce the cost associated with missing words
+FuzzyTokenSet(deletion = 0.5, insertion = 0.5)(x, y)
+
+## Compare full name with abbreviated name, reducing the penalty 
+## for dropping parts of the name
+fullname &lt;- "JOSE ELIAS TEJADA BASQUES"
+name &lt;- "JOSE BASQUES"
+# Tokenize strings on white space
+fullname &lt;- strsplit(fullname, '\\s+')
+name &lt;- strsplit(name, '\\s+')
+comparator &lt;- FuzzyTokenSet(deletion = 0.5)
+comparator(fullname, name) &lt; comparator(name, fullname) # TRUE
+
+</code></pre>
+
+
+</div>

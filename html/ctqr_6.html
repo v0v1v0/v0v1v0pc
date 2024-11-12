@@ -1,0 +1,278 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ctqr</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Censored and Truncated Quantile Regression
+</h2>
+
+<h3>Description</h3>
+
+<p>Fits a quantile regression model to possibly censored and truncated data, e.g., survival data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ctqr(formula, data, weights, p = 0.5, CDF, control = ctqr.control(), ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+
+<p>an object of class “<code>formula</code>”: a symbolic description of the regression model. 
+The response must be a <kbd>Surv</kbd> object as returned by <code>Surv</code> (see ‘Details’).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+
+<p>an optional data frame containing the variables in the model.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+
+<p>an optional vector of weights to be used in the fitting process. The weights will always be normalized to sum to the sample size. This implies that, for example, using double weights will not halve the standard errors.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+
+<p>numerical vector indicating the order of the quantile(s) to be fitted.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CDF</code></td>
+<td>
+
+<p>an object of class “<code>pch</code>”, i.e., the result of a call to <code>pchreg</code>. If missing, 
+it will be computed internally with default settings. See ‘Details’.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+
+<p>a list of operational parameters for the optimization algorithm, usually passed via <code>ctqr.control</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>for future arguments.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function implements the method described in Frumento and Bottai (2017) for censored, truncated quantile regression, and Frumento (2022) for interval-censored quantile regression.
+</p>
+<p>The left side of <kbd>formula</kbd> must be of the form <kbd>Surv(time, event)</kbd> if the data are right-censored, <kbd>Surv(time0, time, event)</kbd> if the data are right-censored and left-truncated (<kbd>time0 &lt; time</kbd>, <code>time0</code> can be <kbd>-Inf</kbd>), and <kbd>Surv(time1, time2, type = "interval2")</kbd> if the data are interval-censored (use <kbd>time1 = time2</kbd> for exact observations, <kbd>time1 = -Inf</kbd> or <kbd>NA</kbd> for left-censored, and <kbd>time2 = Inf</kbd> or <kbd>NA</kbd> for right-censored). Using <kbd>Surv(time)</kbd> is also allowed and indicates that the data are neither censored nor truncated.
+</p>
+<p>The conditional distribution function (<code>CDF</code>) of the response variable represents a nuisance parameter 
+and is estimated preliminarly via <code>pchreg</code>. If missing, <code>CDF = pchreg(formula)</code> is used as default. See the “Note” and the documentation of <code>pchreg</code>.
+</p>
+<p>Estimation is carried out using an algorithm for gradient-based optimization. 
+To estimate the asymptotic covariance matrix, standard two-step procedures are used
+(e.g., Ackerberg et al., 2012).
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class “<code>ctqr</code>”, which is a list with the following items:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p>the quantile(s) being estimated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coefficients</code></td>
+<td>
+<p>a named vector or matrix of quantile regression coefficients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the matched call.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.it</code></td>
+<td>
+<p>the number of iterations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>converged</code></td>
+<td>
+<p>logical. The convergence status.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitted</code></td>
+<td>
+<p>the fitted values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>terms</code></td>
+<td>
+<p>the <code>terms</code> object used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mf</code></td>
+<td>
+<p>the model frame used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covar</code></td>
+<td>
+<p>the estimated asymptotic covariance matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CDF</code></td>
+<td>
+<p>the used <code>CDF</code>.</p>
+</td>
+</tr>
+</table>
+<p>Note that the dimension of all items, except <code>call</code>, <code>terms</code>, <code>mf</code>, and <code>CDF</code>,
+is the same as the dimension of <kbd>p</kbd>. For example, if <code>p = c(0.25,0.5,0.75)</code>, <code>coefficients</code>
+and <code>fitted</code> will be 3-columns matrices; <code>n.it</code> and <code>converged</code> will be vectors of 3 elements; 
+and <code>covar</code> will be a list of three covariance matrices.
+</p>
+<p>The generic accessor functions <code>summary</code>, <code>plot</code>, <code>predict</code>, <code>coef</code>, <code>terms</code>, <code>nobs</code>, 
+can be used to extract information from the model. The functions
+<code>waldtest</code> (from the package <span class="pkg">lmtest</span>), and <code>linearHypothesis</code> (from the package <span class="pkg">car</span>) can be 
+used to perform Wald test, and to test linear restrictions. These functions, however, 
+will only work if <code>p</code> is scalar.
+</p>
+
+
+<h3>Note</h3>
+
+<p>NOTE 1. The first-step estimator (the <kbd>CDF</kbd> argument) is computed using the <code>pchreg</code> function of the
+<span class="pkg">pch</span> package. To be correctly embedded in <kbd>ctqr</kbd>, a <kbd>pch</kbd> object must be constructed using  
+the same observations, in the same order. 
+</p>
+<p>If the first-step estimator is biased, and there is censoring or truncation,
+the estimates of the quantile regression coefficients and their standard errors will also be biased. 
+</p>
+<p>If the data are neither censored nor truncated, the <code>CDF</code> does not enter the estimating equation of the model. However, since the first-step estimator is used to compute the starting points, 
+the final estimates may be sensitive to the supplied <code>CDF</code>.
+</p>
+<p>NOTE 2. Right-censoring is a special case of interval censoring, in which exact events are identified by <code>time2 = time1</code>, while censored observations have <code>time2 = Inf</code>. Note, however, that <code>ctqr(Surv(time1, time2, type = "interval2") ~ x)</code> will not be identical to <code>ctqr(Surv(time = time1, event = (time2 &lt; Inf)) ~ x)</code>. The estimating equation used for interval-censored data is that described in Frumento (2022), while that used for right-censored data is that of Frumento and Bottai (2017). The two estimating equations are only asymptotically equivalent.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Paolo Frumento &lt;paolo.frumento@unipi.it&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Ackerberg, D., Chen, X., and Hahn, J. (2012). A practical asymptotic variance estimator 
+for two-step semiparametric estimators. The Review of Economics and Statistics, 94 (2), 481-498.
+</p>
+<p>Frumento, P., and Bottai, M. (2017). An estimating equation for censored and truncated quantile regression. <em>Computational Statistics and Data Analysis</em>, Vol.113, pp.53-63. ISSN: 0167-9473.
+</p>
+<p>Frumento, P. (2022). A quantile regression estimator for interval-censored data. <em>The International Journal of Biostatistics</em>, 19 (1), pp. 81-96.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>plot.ctqr</code>, <code>predict.ctqr</code>, <code>pchreg</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Using simulated data
+
+
+# Example 1 - censored data ####################################################
+
+n &lt;- 1000
+x1 &lt;- runif(n); x2 &lt;- runif(n)   # covariates
+t &lt;- runif(n, 0, 1 + x1 + x2)    # time variable (e.g., time to death)
+c &lt;- runif(n,0,5)                # censoring variable (e.g., end of follow-up)
+y &lt;- pmin(t,c)                   # observed variable = min(t,c)
+d &lt;- (t &lt;= c)                    # 1 = event (e.g., death), 0 = censored
+
+CDF1 &lt;- pchreg(Surv(y,d) ~ x1 + x2)
+model1 &lt;- ctqr(Surv(y,d) ~ x1 + x2, p = 0.5, CDF = CDF1)
+model2 &lt;- ctqr(Surv(y,d) ~ x1, p = 0.5, CDF = CDF1)
+
+# model1 is identical to ctqr(Surv(y,d) ~ x1 + x2, p = 0.5)
+# model2 is NOT identical to ctqr(Surv(y,d) ~ x1, p = 0.5), 
+  # which would have default CDF = pchreg(Surv(y,d) ~ x1)
+
+
+# Example 2 - censored and truncated data ######################################
+
+n &lt;- 1000
+x1 &lt;- runif(n); x2 &lt;- runif(n)   # covariates
+t &lt;- runif(n, 0, 1 + x1 + x2)    # time variable
+c &lt;- runif(n,0,5)                # censoring variable
+y &lt;- pmin(t,c)                   # observed variable = min(t,c)
+d &lt;- (t &lt;= c)                    # 1 = event, 0 = censored
+
+z &lt;- rnorm(n) # truncation variable (e.g., time at enrollment)
+w &lt;- which(y &gt; z) # data are only observed when y &gt; z
+z &lt;- z[w]; y &lt;- y[w]; d &lt;- d[w]; x1 &lt;- x1[w]; x2 &lt;- x2[w]
+
+# implement various CDFs and choose the model with smallest AIC
+
+CDFs &lt;- list(
+  pchreg(Surv(z,y,d) ~ x1 + x2, breaks = 5),
+  pchreg(Surv(z,y,d) ~ x1 + x2, breaks = 10),
+  pchreg(Surv(z,y,d) ~ x1 + x2 + x1:x2, breaks = 5),
+  pchreg(Surv(z,y,d) ~ x1 + x2 + x1^2 + x2^2, breaks = 10)
+)
+
+CDF &lt;- CDFs[[which.min(sapply(CDFs, function(obj) AIC(obj)))]]
+summary(ctqr(Surv(z,y,d) ~ x1 + x2, p = 0.5, CDF = CDF))
+
+
+# Example 3 - interval-censored data ###########################################
+# t is only known to be in the interval (t1,t2) ################################
+
+n &lt;- 1000
+x1 &lt;- runif(n); x2 &lt;- runif(n)     # covariates
+t &lt;- runif(n, 0, 10*(1 + x1 + x2)) # time variable
+t1 &lt;- floor(t)                     # lower extreme of the interval
+t2 &lt;- ceiling(t)                   # upper extreme of the interval
+
+model &lt;- ctqr(Surv(t1,t2, type = "interval2") ~ x1 + x2, p = 0.5)
+</code></pre>
+
+
+</div>

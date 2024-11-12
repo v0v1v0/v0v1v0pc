@@ -1,0 +1,183 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>dCount_conv_bi</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute count probabilities using convolution</h2>
+
+<h3>Description</h3>
+
+<p>Compute count probabilities using one of several convolution methods.
+<code>dCount_conv_bi</code> does the computations for the distributions with
+builtin support in this package.
+</p>
+<p><code>dCount_conv_user</code> does the same using a user defined survival function.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">dCount_conv_bi(
+  x,
+  distPars,
+  dist = c("weibull", "gamma", "gengamma", "burr"),
+  method = c("dePril", "direct", "naive"),
+  nsteps = 100,
+  time = 1,
+  extrap = TRUE,
+  log = FALSE
+)
+
+dCount_conv_user(
+  x,
+  distPars,
+  extrapolPars,
+  survR,
+  method = c("dePril", "direct", "naive"),
+  nsteps = 100,
+  time = 1,
+  extrap = TRUE,
+  log = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>integer (vector), the desired count values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>distPars</code></td>
+<td>
+<p><code>Rcpp::List</code> with distribution specific slots,
+see details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist</code></td>
+<td>
+<p>character name of the built-in distribution, see details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>character string, the method to use, see Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsteps</code></td>
+<td>
+<p>unsiged integer, number of steps used to compute the integral.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>double, time at wich to compute the probabilities. Set to 1 by
+default.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extrap</code></td>
+<td>
+<p>logical, if <code>TRUE</code>, Richardson extrapolation will be
+applied to improve accuracy.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>log</code></td>
+<td>
+<p>logical, if <code>TRUE</code> the log-probability will be returned.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extrapolPars</code></td>
+<td>
+<p>vector of length 2, the extrapolation values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>survR</code></td>
+<td>
+<p>function, user supplied survival function; should have signature
+<code>function(t, distPars)</code>, where <code>t</code> is a positive real number
+(the time where the survival function is evaluated) and <code>distPars</code>
+is a list of distribution parameters. It should return a double value.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>dCount_conv_bi</code> computes count probabilities using one of several
+convolution methods for the distributions with builtin support in this
+package.
+</p>
+<p>The following convolution methods are implemented: "dePril", "direct", and
+"naive".
+</p>
+<p>The builtin distributions currently are Weibull, gamma, generalised gamma and
+Burr.
+</p>
+
+
+
+
+<h3>Value</h3>
+
+<p>vector of probabilities <code class="reqn">P(x(i),\ i = 1, ..., n)</code> where <code class="reqn">n</code>
+is the length of <code>x</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">x &lt;- 0:10
+lambda &lt;- 2.56
+p0 &lt;- dpois(x, lambda)
+ll &lt;- sum(dpois(x, lambda, TRUE))
+
+err &lt;- 1e-6
+## all-probs convolution approach
+distPars &lt;- list(scale = lambda, shape = 1)
+pmat_bi &lt;- dCount_conv_bi(x, distPars, "weibull", "direct",
+                          nsteps = 200)
+
+## user pwei
+pwei_user &lt;- function(tt, distP) {
+    alpha &lt;- exp(-log(distP[["scale"]]) / distP[["shape"]])
+    pweibull(q = tt, scale = alpha, shape = distP[["shape"]],
+             lower.tail = FALSE)
+}
+
+pmat_user &lt;- dCount_conv_user(x, distPars, c(1, 2), pwei_user, "direct",
+                              nsteps = 200)
+max((pmat_bi - p0)^2 / p0)
+max((pmat_user - p0)^2 / p0)
+
+## naive convolution approach
+pmat_bi &lt;- dCount_conv_bi(x, distPars, "weibull", "naive",
+                          nsteps = 200)
+pmat_user &lt;- dCount_conv_user(x, distPars, c(1, 2), pwei_user, "naive",
+                              nsteps = 200)
+max((pmat_bi- p0)^2 / p0)
+max((pmat_user- p0)^2 / p0)
+
+## dePril conv approach
+pmat_bi &lt;- dCount_conv_bi(x, distPars, "weibull", "dePril",
+                          nsteps = 200)
+pmat_user &lt;- dCount_conv_user(x, distPars, c(1, 2), pwei_user, "dePril",
+                              nsteps = 200)
+max((pmat_bi- p0)^2 / p0)
+max((pmat_user- p0)^2 / p0)
+
+</code></pre>
+
+
+</div>

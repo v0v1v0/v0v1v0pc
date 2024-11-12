@@ -1,0 +1,217 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>varselbest</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Variable selection for specifying conditional imputation models</h2>
+
+<h3>Description</h3>
+
+<p><code>varselbest</code> performs variable selection from an incomplete dataset (see Bar-Hen and Audigier (2022) &lt;doi:10.1080/00949655.2022.2070621&gt;) in order to specify the imputation models to use for FCS imputation methods
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">varselbest(
+  data.na = NULL,
+  res.imputedata = NULL,
+  listvar = NULL,
+  nb.clust = NULL,
+  nnodes = 1,
+  sizeblock = 5,
+  method.select = "knockoff",
+  B = 200,
+  r = 0.3,
+  graph = TRUE,
+  printflag = TRUE,
+  path.outfile = NULL,
+  mar = c(2, 4, 2, 0.5) + 0.1,
+  cex.names = 0.7,
+  modelNames = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data.na</code></td>
+<td>
+<p>a dataframe with only numeric variables</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>res.imputedata</code></td>
+<td>
+<p>an output from <code>imputedata</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>listvar</code></td>
+<td>
+<p>a character vector indicating for which subset of incomplete variables variable selection must be performed. By default all column names.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nb.clust</code></td>
+<td>
+<p>the number of clusters used for imputation</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nnodes</code></td>
+<td>
+<p>number of CPU cores for parallel computing. By default, nnodes = 1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sizeblock</code></td>
+<td>
+<p>an integer indicating the number of variables sampled at each iteration</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method.select</code></td>
+<td>
+<p>a single string indicating the variable selection method applied on each subset of variables</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p>number of iterations, by default B = 200</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>r</code></td>
+<td>
+<p>a numerical vector (or a single real number) indicating the threshold used for each variable in listvar. Each value of r should be between 0 and 1. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>graph</code></td>
+<td>
+<p>a boolean. If TRUE two graphics are plotted per variable in <code>listvar</code>: a graphic reporting the variable importance measure of each explanatory variable and a graphic reporting the influence of the number iterations (B) on the importance measures</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>printflag</code></td>
+<td>
+<p>a boolean. If TRUE, a message is printed at each iteration. Use printflag = FALSE for silent selection.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>path.outfile</code></td>
+<td>
+<p>a vector of strings indicating the path for redirection of print messages. Default value is NULL, meaning that silent imputation is performed. Otherwise, print messages are saved in the files path.outfile/output.txt. One file per node is generated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mar</code></td>
+<td>
+<p>a numerical vector of the form c(bottom, left, top, right). Only used if graph = TRUE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cex.names</code></td>
+<td>
+<p>expansion factor for axis names (bar labels) (only used if graph = TRUE)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelNames</code></td>
+<td>
+<p>a vector of character strings indicating the models to be fitted in the EM phase of clustering</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>varselbest</code> performs variable selection on random subsets of variables and, then, combines them to recover which explanatory variables are related to the response.
+More precisely, the outline of the algorithm are as follows: let consider a random subset of <code>sizeblock</code> among p variables.
+By choosing <code>sizeblock</code> small, this subset is low dimensional, allowing treatment of missing values by standard imputation method for clustered individuals.
+Then, any selection variable scheme can be applied (lasso, stepwise and knockoff are proposed by tuning the <code>method.select</code> argument).
+By resampling <code>B</code> times, a sample of size <code>sizeblock</code> among the p variables, we may count how many times, a variable is considered as significantly related to the response and how many times it is not.
+We need to define a threshold (<code>r</code>) to conclude if a given variable is significantly related to the response.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a list of four objects
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>predictormatrix</code></td>
+<td>
+<p>a numeric matrix containing 0 and 1 specifying on each line the set of predictors to be used for each target column of the incomplete dataset.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>res.varsel</code></td>
+<td>
+<p>a list given details on the variable selection procedure (only required for checking convergence by the <code>chooseB</code> function)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>proportion</code></td>
+<td>
+<p>a numeric matrix of proportion indicating on each line the variable importance of each predictor</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the matching call</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Bar-Hen, A. and Audigier, V., An ensemble learning method for variable selection: application to high dimensional data and missing values, Journal of Statistical Computation and Simulation, &lt;doi:10.1080/00949655.2022.2070621&gt;, 2022.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>mice</code>,<code>clusterMI</code>, <code>imputedata</code>,<code>knockoff</code>,<code>glmnet</code>,<code>imp.mix</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(wine)
+
+require(parallel)
+set.seed(123456)
+ref &lt;- wine$cult
+nb.clust &lt;- 3
+wine.na &lt;- wine
+wine.na$cult &lt;- NULL
+wine.na &lt;- prodna(wine.na)
+
+
+nnodes &lt;- 2 # parallel::detectCores()
+B &lt;- 150 #  Number of iterations
+m &lt;- 5 # Number of imputed data sets
+
+# variable selection
+res.varsel &lt;- varselbest(data.na = wine.na,
+                         nb.clust = nb.clust,
+                         listvar = c("alco","malic"),
+                         B = B,
+                         nnodes = nnodes)
+predictmat &lt;- res.varsel$predictormatrix
+
+# imputation
+res.imp.select &lt;- imputedata(data.na = wine.na, method = "FCS-homo",
+                     nb.clust = nb.clust, predictmat = predictmat, m = m)
+
+
+</code></pre>
+
+
+</div>

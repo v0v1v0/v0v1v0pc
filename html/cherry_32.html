@@ -1,0 +1,95 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Pick</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Confidence limits for the number of true hypotheses.</h2>
+
+<h3>Description</h3>
+
+<p>Calculates confidence limits for the number of true hypotheses on the basis of the closed testing procedure.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R"> pick (closure, reject, alpha, silent=FALSE, plot=FALSE) </code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>closure</code></td>
+<td>
+<p>An object of class <code>closure</code>, typically created through a call to <code>closed</code> .</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reject</code></td>
+<td>
+<p>A character vector identifying the hypotheses to be rejected. Must be a subvector of <code>hypotheses(closure)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>For closure objects with adjusted p-values, specifies the value of alpha for which confidence limits are to be calculated (optional).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>silent</code></td>
+<td>
+<p>If <code>FALSE</code>, prints the result to the screen.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot</code></td>
+<td>
+<p>Whether a a confidence distribution should be plotted. Only available for closure objects with adjusted p-values.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function <code>pick</code> calculates a confidence interval for the number of true hypotheses among a selected set of hypotheses.</p>
+
+
+<h3>Value</h3>
+
+<p>The function returns the upper confidence limit for the number of true hypotheses among the set <code>reject</code>. The lower confidence limit is always equal to 0. If <code>closed</code> was called with <code>alpha=NA</code>, a confidence distribution is plotted and returned.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jelle Goeman: <a href="mailto:j.j.goeman@lumc.nl">j.j.goeman@lumc.nl</a></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">  # Example: the birthwt data set from the MASS library
+  # We want to find variables associated with low birth weight
+  library(MASS)
+  fullfit &lt;- glm(low~age+lwt+race+smoke+ptl+ht+ui+ftv, family=binomial, data=birthwt)
+  hypotheses &lt;- c("age", "lwt", "race", "smoke", "ptl", "ht", "ui", "ftv")
+
+  # Define the local test to be used in the closed testing procedure
+  mytest &lt;- function(hyps) {
+    others &lt;- setdiff(hypotheses, hyps)
+    form &lt;- formula(paste(c("low~",  paste(c("1", others), collapse="+"))))
+    anov &lt;- anova(glm(form, data=birthwt, family=binomial), fullfit, test="Chisq")
+    res &lt;- anov$"Pr("[2]                    # for R &gt;= 2.14.0
+    if (is.null(res)) res &lt;- anov$"P("[2]   # earlier versions
+    res
+  }
+
+  # perform the closed testing
+  cl &lt;- closed(mytest, hypotheses)
+  summary(cl)
+
+  # how many variables among a chosen set are associated with the response?
+  pick(cl, c("ht", "lwt", "smoke", "ui"))
+</code></pre>
+
+
+</div>

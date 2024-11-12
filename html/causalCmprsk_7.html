@@ -1,0 +1,124 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>summary.cmprsk</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Summary of Event-specific Cumulative Hazards, Cumulative Incidence Functions and Various Treatment Effects</h2>
+
+<h3>Description</h3>
+
+<p>Returns an object of class <code>data.frame</code> containing the summary extracted from the <code>cmprsk</code> object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'cmprsk'
+summary(object, event, estimand = "CIF", ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>an object of class <code>cmprsk</code> (output from <code>fit.nonpar</code> or <code>fit.cox</code> functions)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>event</code></td>
+<td>
+<p>an integer number (a code) of an event of interest</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estimand</code></td>
+<td>
+<p>a character string naming the type of estimand to extract from <code>object</code>. <code>estimand</code> can be one of the following: "CumHaz" (Cumulative Hazard function),
+"CIF" (Cumulative Incidence Function), "RMT" (Restricted Mean Time),
+"logHR" (logarithm of the ratio of Cumulative Hazards in two treatment arms),
+"RD" (Risk Difference, or the difference between the CIFs in two treatment arms),
+"RR" (Risk Ratio, or the ratio of CIFs in two treatment arms),
+"ATE.RMT" (Restricted mean time gained/lost due to treatment, or the difference between RMTs in two treatment arms).
+The default value is "CIF".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>This is not currently used, included for future methods.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>summary.cmprsk</code> returns a <code>data.frame</code> object with 7 or 6 columns:
+the time vector, an indicator of the treatment arm
+(if the requested <code>estimand</code> is one of c("logHR", "RD", "RR", "ATE.RMT"), this column is omitted),
+an indicator of the type of event,
+the point estimate for the requested <code>estimand</code>, the lower and upper bounds of the
+confidence interval (for <code>conf.level</code> % of the confidence level),
+and the standard error of the point estimate. For example, if <code>estimand="CIF"</code>,
+the returned <code>data.frame</code> will include the following columns:
+<code>time</code>, <code>TRT</code>, <code>Event</code>, <code>CIF</code>, <code>CIL.CIF</code>, <code>CIU.CIF</code>, <code>SE.CIF</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>M.-L. Charpignon, B. Vakulenko-Lagun, B. Zheng, C. Magdamo, B. Su, K.E. Evans, S. Rodriguez, et al. 2022. Causal inference in medical records and complementary systems pharmacology for metformin drug repurposing towards dementia. Nature Communications 13:7652.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fit.cox</code>, <code>fit.nonpar</code>, <code>causalCmprsk</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># create a data set
+n &lt;- 1000
+set.seed(7)
+c1 &lt;-  runif(n)
+c2 &lt;- as.numeric(runif(n)&lt; 0.2)
+set.seed(77)
+cf.m.T1 &lt;- rweibull(n, shape=1, scale=exp(-(-1 + 2*c1)))
+cf.m.T2 &lt;-  rweibull(n, shape=1, scale=exp(-(1 + 1*c2)))
+cf.m.T &lt;- pmin( cf.m.T1, cf.m.T2)
+cf.m.E &lt;- rep(0, n)
+cf.m.E[cf.m.T1&lt;=cf.m.T2] &lt;- 1
+cf.m.E[cf.m.T2&lt;cf.m.T1] &lt;- 2
+set.seed(77)
+cf.s.T1 &lt;- rweibull(n, shape=1, scale=exp(-1*c1 ))
+cf.s.T2 &lt;-  rweibull(n, shape=1, scale=exp(-2*c2))
+cf.s.T &lt;- pmin( cf.s.T1, cf.s.T2)
+cf.s.E &lt;- rep(0, n)
+cf.s.E[cf.s.T1&lt;=cf.s.T2] &lt;- 1
+cf.s.E[cf.s.T2&lt;cf.s.T1] &lt;- 2
+exp.z &lt;- exp(0.5 + c1 - c2)
+pr &lt;- exp.z/(1+exp.z)
+TRT &lt;- ifelse( runif(n)&lt; pr, 1, 0)
+X &lt;- ifelse(TRT==1, cf.m.T, cf.s.T)
+E &lt;- ifelse(TRT==1, cf.m.E, cf.s.E)
+covs.names &lt;- c("c1", "c2")
+data &lt;- data.frame(X=X, E=E, TRT=TRT, c1=c1, c2=c2)
+# Nonparametric estimation:
+form.txt &lt;- paste0("TRT", " ~ ", paste0(c("c1", "c2"), collapse = "+"))
+trt.formula &lt;- as.formula(form.txt)
+res.ATE &lt;- fit.nonpar(df=data, X="X", E="E", trt.formula=trt.formula, wtype="stab.ATE")
+# summarizing results on the Risk Difference for event=2
+fit.summary &lt;- summary(object=res.ATE, event = 2, estimand="RD")
+head(fit.summary)
+# summarizing results on the CIFs for event=1
+fit.summary &lt;- summary(object=res.ATE, event = 1, estimand="CIF")
+head(fit.summary)
+
+</code></pre>
+
+
+</div>

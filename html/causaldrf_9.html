@@ -1,0 +1,185 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ismw_est</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>The inverse second moment weighting (ismw) estimator</h2>
+
+<h3>Description</h3>
+
+<p>This method estimates the ADRF by using weighting matrices instead of
+scalars.  The weight matrices require conditional expectations of the
+treatment and higher order conditional expectations. It uses outputs from
+the <code>t_mod</code> function.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ismw_est(Y,
+         treat,
+         data,
+         e_treat_1,
+         e_treat_2,
+         e_treat_3,
+         e_treat_4,
+         degree )
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Y</code></td>
+<td>
+<p>is the the name of the outcome variable contained in <code>data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>treat</code></td>
+<td>
+<p>is the name of the treatment variable contained in
+<code>data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>is a dataframe containing <code>Y</code>, <code>treat</code>, and
+<code>X</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>e_treat_1</code></td>
+<td>
+<p>a vector, representing the conditional expectation of
+<code>treat</code> from <code>t_mod</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>e_treat_2</code></td>
+<td>
+<p>a vector, representing the conditional expectation of
+<code>treat^2</code> from <code>t_mod</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>e_treat_3</code></td>
+<td>
+<p>a vector, representing the conditional expectation of
+<code>treat^3</code> from <code>t_mod</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>e_treat_4</code></td>
+<td>
+<p>a vector, representing the conditional expectation of
+<code>treat^4</code> from <code>t_mod</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>degree</code></td>
+<td>
+<p>is 1 for linear and 2 for quadratic outcome model.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function estimates the ADRF requires estimated moments and
+uses the outputs of the t_mod function as inputs.  For more details,
+see Schafer and Galagate (2015).
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>ismw_est</code> returns an object of class "causaldrf_simple",
+a list that contains the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>param</code></td>
+<td>
+<p>the estimated parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the matched call.</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Schafer, J.L., Galagate, D.L. (2015).  Causal inference with a
+continuous treatment and outcome: alternative estimators for parametric
+dose-response models. <em>Manuscript in preparation</em>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>iptw_est</code>, <code>ismw_est</code>,
+<code>reg_est</code>, <code>aipwee_est</code>, <code>wtrg_est</code>,
+etc. for other estimates.
+</p>
+<p><code>t_mod</code>, <code>overlap_fun</code> to prepare the <code>data</code>
+for use in the different estimates.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Example from Schafer (2015).
+
+example_data &lt;- sim_data
+
+t_mod_list &lt;- t_mod(treat = T,
+                treat_formula = T ~ B.1 + B.2 + B.3 + B.4 + B.5 + B.6 + B.7 + B.8,
+                data = example_data,
+                treat_mod = "Normal")
+
+cond_exp_data &lt;- t_mod_list$T_data
+
+full_data &lt;- cbind(example_data, cond_exp_data)
+
+ismw_list &lt;- ismw_est(Y = Y,
+                      treat = T,
+                      data = full_data,
+                      e_treat_1 = full_data$est_treat,
+                      e_treat_2 = full_data$est_treat_sq,
+                      e_treat_3 = full_data$est_treat_cube,
+                      e_treat_4 = full_data$est_treat_quartic,
+                      degree = 1)
+
+sample_index &lt;- sample(1:1000, 100)
+
+plot(example_data$T[sample_index],
+      example_data$Y[sample_index],
+      xlab = "T",
+      ylab = "Y",
+      main = "ismw estimate")
+
+abline(ismw_list$param[1],
+ismw_list$param[2],
+        lty=2,
+        lwd = 2,
+        col = "blue")
+
+legend('bottomright',
+        "ismw estimate",
+        lty=2,
+        lwd = 2,
+        col = "blue",
+        bty='Y',
+        cex=1)
+
+rm(example_data, t_mod_list, cond_exp_data, full_data, ismw_list, sample_index)
+</code></pre>
+
+
+</div>

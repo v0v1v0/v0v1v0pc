@@ -1,0 +1,190 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>wolfCOP</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>The Schweizer and Wolff Sigma of a Copula</h2>
+
+<h3>Description</h3>
+
+<p>Compute the measure of association known as <em>Schweizer–Wolff Sigma</em> <code class="reqn">\sigma_\mathbf{C}</code> of a copula according to Nelsen (2006, p. 209) by
+</p>
+<p style="text-align: center;"><code class="reqn">\sigma_\mathbf{C} = 12\int\!\!\int_{\mathcal{I}^2} |\mathbf{C}(u,v) - uv|\,\mathrm{d}u\mathrm{d}v\mbox{,}</code>
+</p>
+
+<p>which is <code class="reqn">0 \le \sigma_\mathbf{C} \le 1</code>. It is obvious that this measure of association, without the positive sign restriction, is similar to the following form of <em>Spearman Rho</em> (<code>rhoCOP</code>) of a copula:
+</p>
+<p style="text-align: center;"><code class="reqn">\rho_\mathbf{C} = 12\int\!\!\int_{\mathcal{I}^2} [\mathbf{C}(u,v) - uv]\,\mathrm{d}u\mathrm{d}v\mbox{.}</code>
+</p>
+
+<p>If a copula is <em>positively quadrant dependent</em> (PQD, see <code>isCOP.PQD</code>) then <code class="reqn">\sigma_\mathbf{C} = \rho_\mathbf{C}</code> and conversely if a copula is <em>negatively quadrant dependent</em> (NQD) then <code class="reqn">\sigma_\mathbf{C} = -\rho_\mathbf{C}</code>. However, a feature making <code class="reqn">\sigma_\mathbf{C}</code> especially attractive is that for random variables <code class="reqn">X</code> and <code class="reqn">Y</code>, which are not PQD or NQD—copulas that are neither larger nor smaller than <code class="reqn">\mathbf{\Pi}</code>—is that “<code class="reqn">\sigma_\mathbf{C}</code> is often a better measure of [dependency] than <code class="reqn">\rho_\mathbf{C}</code>” (Nelsen, 2006, p. 209).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">wolfCOP(cop=NULL, para=NULL, as.sample=FALSE, brute=FALSE, delta=0.002, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cop</code></td>
+<td>
+<p>A copula function;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>Vector of parameters or other data structure, if needed, to pass to the copula;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>as.sample</code></td>
+<td>
+<p>A logical controlling whether an optional <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> <code>data.frame</code> in <code>para</code> is used to compute the <code class="reqn">\hat{\sigma}_\mathbf{C}</code> (see <b>Note</b>). If set to <code>-1</code>, then the message concerning CPU effort will be surpressed;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>brute</code></td>
+<td>
+<p>Should brute force be used instead of two nested <code>integrate()</code> functions in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> to perform the double integration;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta</code></td>
+<td>
+<p>The <code class="reqn">\mathrm{d}u</code> and <code class="reqn">\mathrm{d}v</code> for the brute force (<code>brute=TRUE</code>) integration; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The value for <code class="reqn">\sigma_\mathbf{C}</code> is returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>A natural estimator for <code class="reqn">\sigma_\mathbf{C}</code> is through the <em>empirical copula</em> (Póczos <em>et al.</em>, 2015) and can be computed as
+</p>
+<p style="text-align: center;"><code class="reqn">\hat{\sigma}_\mathbf{C} = \frac{12}{n^2 - 1}
+        \sum_{i=1}^n\sum_{j=1}^n \bigg|\hat{\mathbf{C}}_n\biggl(\frac{i}{n}, \frac{j}{n}\biggr) -
+                 \frac{i}{n}\times\frac{j}{n}\bigg|\mbox{,}</code>
+</p>
+
+<p>where <code class="reqn">\hat{\mathbf{C}}_n</code> is the simplest empirical copula of
+</p>
+<p style="text-align: center;"><code class="reqn">\hat{\mathbf{C}}_n\biggl(\frac{i}{n}, \frac{j}{n}\biggr) =
+	\frac{1}{n}\{\# \mathrm{\ of\ } (U_k \le U_i, V_k \le V_j)\}</code>
+</p>
+
+<p>An extended example is informative. First declare a composite of two different Plackett copulas (<code>PLcop</code>) and simulate a few hundred values:
+</p>
+<pre>
+   para &lt;- list(cop1 =PLcop,  cop2=PLcop,
+                para1=0.145, para2=21.9,  alpha=0.81, beta=0.22)
+   D &lt;- simCOP(n=300, cop=composite2COP, para=para,
+               cex=0.5, col=rgb(0,0,0,0.2), pch=16)
+</pre>
+<p>Second, show that this copula is globally PQD (<code>isCOP.PQD</code>), but there is a significant local NQD part of <code class="reqn">\mathcal{I}^2</code> space that clearly is NQD.
+</p>
+<pre>
+  PQD &lt;- isCOP.PQD(cop=composite2COP, para=para, uv=D)
+  message(PQD$global.PQD) # TRUE
+  points(D, col=PQD$local.PQD+2, lwd=2)
+</pre>
+<p>This composited copula intersects, that is, passes through, the <code>P</code> copula. Hence by the logic of Nelsen (2006), then the <code class="reqn">\sigma_\mathbf{C}</code> should be larger than <code class="reqn">\rho_\mathbf{C}</code> as shown below
+</p>
+<pre>
+  wolfCOP(cop=composite2COP, para=para) # 0.08373378 (theoretical)
+   rhoCOP(cop=composite2COP, para=para) # 0.02845131 (theoretical)
+  hoefCOP(cop=composite2COP, para=para) # 0.08563823 (theoretical)
+</pre>
+<p>In fact, the output above also shows Schweizer–Wolff Sigma to be larger than Blomqvist Beta (<code>blomCOP</code>), Gini Gamma (<code>giniCOP</code>), and Kendall Tau (<code>tauCOP</code>). The Schweizer–Wolff Sigma has captured the fact that although the symbols plot near randomly on the figure, the symbol coloring for PQD and NQD clearly shows local dependency differences. The sample version is triggered by
+</p>
+<pre>
+  wolfCOP(para=D, as.sample=TRUE) # 0.09278467 (an example sample)
+</pre>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Póczos, Barnabás, Krishner, Sergey, Pál, Szepesvári, Csaba, and Schneider, Jeff, 2015, Robust nonparametric copula based dependence estimators, accessed on August 11, 2015, at <a href="https://www.cs.cmu.edu/~bapoczos/articles/poczos11nipscopula.pdf">https://www.cs.cmu.edu/~bapoczos/articles/poczos11nipscopula.pdf</a>.
+</p>
+<p>Nelsen, R.B., 2006, An introduction to copulas: New York, Springer, 269 p.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>blomCOP</code>, <code>footCOP</code>, <code>giniCOP</code>,
+<code>hoefCOP</code>, <code>rhoCOP</code>, <code>tauCOP</code>,
+<code>joeskewCOP</code>, <code>uvlmoms</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+wolfCOP(cop=PSP) # 0.4784176
+## End(Not run)
+
+## Not run: 
+n &lt;- 1000; UV &lt;- simCOP(n=n, cop=N4212cop, para=7.53, graphics=FALSE)
+wolfCOP(cop=N4212cop, para=7.53) # 0.9884666 (theoretical)
+wolfCOP(para=UV, as.sample=TRUE) # 0.9884174 (sample) 
+## End(Not run)
+
+## Not run: 
+# Redo D from Note section above
+para &lt;- list(cop1 =PLcop,  cop2=PLcop,
+             para1=0.145, para2=21.9,  alpha=0.81, beta=0.22)
+D &lt;- simCOP(n=300, cop=composite2COP, para=para,
+            cex=0.5, col=rgb(0, 0, 0, 0.2), pch=16)
+
+the.grid &lt;- EMPIRgrid(para=D)
+the.persp &lt;- persp(the.grid$empcop, theta=-25, phi=20, shade=TRUE,
+                   xlab="U VARIABLE", ylab="V VARIABLE", zlab="COPULA C(u,v)")
+empcop &lt;- EMPIRcopdf(para=D) # data.frame of all points
+points(trans3d(empcop$u, empcop$v, empcop$empcop, the.persp),  cex=0.7,
+       col=rgb(0, 1-sqrt(empcop$empcop), 1, sqrt(empcop$empcop)), pch=16)
+points(trans3d(empcop$u, empcop$v, empcop$empcop, the.persp),
+       col=PQD$local.PQD+1, pch=1)
+
+layout(matrix(c(1,2,3,4), 2, 2, byrow = TRUE), respect = TRUE)
+PQD.NQD.cop &lt;- gridCOP(cop=composite2COP, para=para)
+Pi &lt;- gridCOP(cop=P)
+RHO &lt;- PQD.NQD.cop - Pi; SIG &lt;- abs(RHO)
+the.persp &lt;- persp(PQD.NQD.cop, theta=-25, phi=20, shade=TRUE, cex=0.5,
+               xlab="U VARIABLE", ylab="V VARIABLE", zlab="COPULA C(u,v)")
+mtext("The Copula that has local PQD and NQD", cex=0.5)
+the.persp &lt;- persp(Pi, theta=-25, phi=20, shade=TRUE, cex=0.5,
+               xlab="U VARIABLE", ylab="V VARIABLE", zlab="COPULA C(u,v)")
+mtext("Independence (Pi)", cex=0.5)
+the.persp &lt;- persp(RHO, theta=-25, phi=20, shade=TRUE, cex=0.5,
+               xlab="U VARIABLE", ylab="V VARIABLE", zlab="COPULA C(u,v)")
+mtext("Copula delta: Integrand of Spearman Rho", cex=0.5)
+the.persp &lt;- persp(SIG, theta=-25, phi=20, shade=TRUE, cex=0.5,
+               xlab="U VARIABLE", ylab="V VARIABLE", zlab="COPULA C(u,v)")
+mtext("abs(Copula delta): Integrand of Schweizer-Wolff Sigma", cex=0.5) #
+## End(Not run)
+</code></pre>
+
+
+</div>

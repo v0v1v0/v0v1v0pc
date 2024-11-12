@@ -1,0 +1,239 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>concur</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Copy Number Profile Curve-Based Association Test</h2>
+
+<h3>Description</h3>
+
+<p>Implements a kernel-based association test for CNV aggregate analysis
+in a certain genomic region (e.g., gene set, chromosome, or genome) that is
+robust to the within-locus and across-locus etiologoical heterogeneity, and 
+bypass the need to define a "locus" unit for CNVs.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">concur(
+  cnv,
+  X,
+  pheno,
+  phenoY,
+  phenoType,
+  ...,
+  nCore = 1L,
+  outFileKernel = NULL,
+  verbose = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cnv</code></td>
+<td>
+<p>A character or data.frame object. If character, the 
+name of the data file containing the CNV data (with a header). If 
+data.frame, the CNV data. The data must contain the following columns: 
+"ID", "CHR", "BP1", "BP2", "TYPE", where "ID" is a unique patient id,
+"CHR" is the CNV chromosome, "BP1" is the start location in base pairs
+or kilo-base pairs,
+"BP2" is the end location in base pairs or kilo-base pairs, and 
+"TYPE" is the CNV copy number.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>A character or data.frame object. If character, the 
+name of the data file containing the covariate data (with a header). If 
+data.frame, the covariate data. The data must contain a column titled 
+"ID" containing a unique patient id. This column must contain the
+patient identifiers of the CNV data specified in 
+input cnv; however, it can contain patient identifiers not contained in cnv.
+Further, inputs X and pheno must contain the same patient identifiers. Categorical
+variables must be translated into design matrix format.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pheno</code></td>
+<td>
+<p>A character or data.frame object. If character, the 
+name of the data file containing the phenotype data (with a header). If 
+data.frame, the phenotype data. The data must contain a column titled 
+"ID" containing a unique patient id. This column must contain the
+patient identifiers of the CNV data specified in 
+input cnv; however, it can contain patient identifiers not contained in cnv.
+Further, inputs X and pheno must contain the same patient identifiers.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>phenoY</code></td>
+<td>
+<p>A character object. The column name in input pheno containing
+the phenotype of interest.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>phenoType</code></td>
+<td>
+<p>A character object. Must be one of of {"bin", "cont"} indicating
+if input phenoY (i.e., the phenotype of interest) is binary or continuous.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Ignored. Included to require named inputs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nCore</code></td>
+<td>
+<p>An integer object. If nCore &gt; 1, package parallel is used to 
+calculate the kernel. Though the methods of package CompQuadForm dominate
+the time profile, setting nCore &gt; 1L can improve computation times.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outFileKernel</code></td>
+<td>
+<p>A character object or NULL. If a character, the
+file in which the kernel is to be saved. If NULL, the kernel is returned
+by the function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>A logical object. If TRUE, progress information is printed
+to the screen.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The CNV data must adhere to the following conditions:
+</p>
+
+<ul>
+<li>
+<p> CNVs must be at least 1 unit long.
+</p>
+</li>
+<li>
+<p> CNVs cannot end at the exact location another begins
+</p>
+</li>
+</ul>
+<p>Violations of these conditions typically occur when data are rounded to
+a desired resolution.
+For example
+</p>
+<pre>
+ ID CHR      BP1      BP2 TYPE
+  1  13 10112087 10112414    3
+</pre>
+<p>becomes upon rounding to kilo
+</p>
+<pre>
+ ID CHR   BP1   BP2 TYPE
+  1  13 10112 10112    3     .
+</pre>
+<p>These cases should either be discarded or modified to be of length 1, e.g.,
+</p>
+<pre>
+ ID CHR   BP1   BP2 TYPE
+  1  13 10112 10113    3     .
+</pre>
+<p>As an example of condition 2 
+</p>
+<pre>
+ ID CHR    BP1   BP2 TYPE
+  1  13 100768 101100    3
+  1  13 101100 101299    1
+</pre>
+<p>should be modified to one of
+</p>
+<pre>
+ ID CHR    BP1   BP2 TYPE
+  1  13 100768 101100    3
+  1  13 101101 101299    1
+</pre>
+<p>or
+</p>
+<pre>
+ ID CHR    BP1   BP2 TYPE
+  1  13 100768 101099    3
+  1  13 101100 101299    1     .
+</pre>
+<p>Additionally,
+</p>
+<pre>
+ ID CHR    BP1   BP2 TYPE
+  1  13 100768 101100    3
+  1  13 101100 101299    3
+</pre>
+<p>should be combined as
+</p>
+<pre>
+ ID CHR    BP1   BP2 TYPE
+  1  13 100768 101299    3     .
+</pre>
+
+
+<h3>Value</h3>
+
+<p>A list containing the kernel (or its file name) and the p-value.
+</p>
+
+
+<h3>References</h3>
+
+<p>Brucker, A., Lu, W., Marceau West, R., Yu, Q-Y., Hsiao, C. K.,
+Hsiao, T-H., Lin, C-H., Magnusson, P. K. E., Holloway, S. T., 
+Sullivan, P. F., Szatkiewicz, J. P., Lu, T-P., and
+Tzeng, J-Y. Association testing using Copy Number Profile Curves (CONCUR)
+enhances power in copy number variant analysis. &lt;doi:10.1101/666875&gt;.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data(cnvData)
+
+# limit data for examples
+exCNV &lt;- cnvData$ID %in% paste0("P", 1:150)
+exCOV &lt;- covData$ID %in% paste0("P", 1:150)
+exPHE &lt;- phenoData$ID %in% paste0("P", 1:150)
+
+# binary phenoType
+results &lt;- concur(cnv = cnvData[exCNV,],
+                  X = covData[exCOV,],
+                  pheno = phenoData[exPHE,],
+                  phenoY = 'PHEB',
+                  phenoType = 'bin',
+                  nCore = 1L,
+                  outFileKernel = NULL,
+                  verbose = TRUE)
+
+# continuous phenoType
+results &lt;- concur(cnv = cnvData[exCNV,],
+                  X = covData[exCOV,],
+                  pheno = phenoData[exPHE,],
+                  phenoY = 'PHEC',
+                  phenoType = 'cont',
+                  nCore = 1L,
+                  outFileKernel = NULL,
+                  verbose = TRUE)
+
+</code></pre>
+
+
+</div>

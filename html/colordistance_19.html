@@ -1,0 +1,334 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>imageClusterPipeline</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate and plot a color distance matrix from a set of images</h2>
+
+<h3>Description</h3>
+
+<p>Takes images, computes color clusters for each image, and calculates distance
+matrix/dendrogram from those clusters.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">imageClusterPipeline(
+  images,
+  cluster.method = "hist",
+  distance.method = "emd",
+  lower = c(0, 140/255, 0),
+  upper = c(60/255, 1, 60/255),
+  hist.bins = 3,
+  kmeans.bins = 27,
+  bin.avg = TRUE,
+  norm.pix = FALSE,
+  plot.bins = FALSE,
+  pausing = TRUE,
+  color.space = "rgb",
+  ref.white,
+  from = "sRGB",
+  bounds = c(0, 1),
+  sample.size = 20000,
+  iter.max = 50,
+  nstart = 5,
+  img.type = FALSE,
+  ordering = "default",
+  size.weight = 0.5,
+  color.weight = 0.5,
+  plot.heatmap = TRUE,
+  return.distance.matrix = TRUE,
+  save.tree = FALSE,
+  save.distance.matrix = FALSE,
+  a.bounds = c(-127, 128),
+  b.bounds = c(-127, 128)
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>images</code></td>
+<td>
+<p>Character vector of directories, image paths, or both.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cluster.method</code></td>
+<td>
+<p>Which method for getting color clusters from each image
+should be used? Must be either <code>"hist"</code> (predetermined bins generated
+by dividing each channel with equidistant bounds; calls
+<code>getHistList</code>) or <code>"kmeans"</code> (determine clusters using
+kmeans fitting on pixels; calls <code>getKMeansList</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>distance.method</code></td>
+<td>
+<p>One of four possible comparison methods for calculating
+the color distances: <code>"emd"</code> (uses <code>EMDistance</code>,
+recommended), <code>"chisq"</code> (uses <code>chisqDistance</code>),
+<code>"color.dist"</code> (uses <code>colorDistance</code>; not appropriate if
+bin.avg=F), or <code>"weighted.pairs"</code>
+(<code>weightedPairsDistance</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lower</code></td>
+<td>
+<p>RGB or HSV triplet specifying the lower bounds for background
+pixels. Default upper and lower bounds are set to values that work well for
+a bright green background (RGB [0, 1, 0]).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>upper</code></td>
+<td>
+<p>RGB or HSV triplet specifying the upper bounds for background
+pixels. Default upper and lower bounds are set to values that work well for
+a bright green background (RGB [0, 1, 0]). Determining these bounds may
+take some trial and error, but the following bounds may work for certain
+common background colors: </p>
+ <ul>
+<li>
+<p> Black: lower=c(0, 0, 0);
+upper=c(0.1, 0.1, 0.1) </p>
+</li>
+<li>
+<p> White: lower=c(0.8, 0.8, 0.8); upper=c(1, 1,
+1) </p>
+</li>
+<li>
+<p> Green: lower=c(0, 0.55, 0); upper=c(0.24, 1, 0.24) </p>
+</li>
+<li>
+<p> Blue:
+lower=c(0, 0, 0.55); upper=c(0.24, 0.24, 1) </p>
+</li>
+</ul>
+<p> If no background filtering is
+needed, set bounds to some non-numeric value (<code>NULL</code>, <code>FALSE</code>,
+<code>"off"</code>, etc); any non-numeric value is interpreted as <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hist.bins</code></td>
+<td>
+<p>Only applicable if <code>cluster.method="hist"</code>. Number of
+bins for each channel OR a vector of length 3 with bins for each channel.
+Bins=3 will result in 3^3 = 27 bins; bins=c(2, 2, 3) will result in
+2*2*3=12 bins (2 red, 2 green, 3 blue), etc. Passed to
+<code>getHistList</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kmeans.bins</code></td>
+<td>
+<p>Only applicable if <code>cluster.method="kmeans"</code>. Number of
+KMeans clusters to fit. Unlike <code>getImageHist</code>, this represents
+the actual final number of bins, rather than the number of breaks in each
+channel.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bin.avg</code></td>
+<td>
+<p>Logical. Should the color clusters used for the distance matrix
+be the average of the pixels in that bin (bin.avg=<code>TRUE</code>) or the center
+of the bin (FALSE)? If a bin is empty, the center of the bin is returned
+as the cluster color regardless. Only applicable if
+<code>cluster.method="hist"</code>, since <code>kmeans</code> clusters are at the center
+of their assigned pixel clouds by definition.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>norm.pix</code></td>
+<td>
+<p>Logical. Should RGB or HSV cluster values be normalized using
+<code>normalizeRGB</code>?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot.bins</code></td>
+<td>
+<p>Logical. Should the bins for each image be plotted as they
+are calculated?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pausing</code></td>
+<td>
+<p>Logical. If <code>plot.bins=TRUE</code>, pause and wait for user
+keystroke before plotting bins for next image?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>color.space</code></td>
+<td>
+<p>The color space (<code>"rgb"</code>, <code>"hsv"</code>, or
+<code>"lab"</code>) in which to plot pixels.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ref.white</code></td>
+<td>
+<p>The reference white passed to
+<code>convertColorSpace</code>; must be specified if using
+<code>color.space = "lab"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>from</code></td>
+<td>
+<p>Display color space of image if clustering in CIE Lab space,
+probably either "sRGB" or "Apple RGB", depending on your computer.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bounds</code></td>
+<td>
+<p>Upper and lower limits for the channels; R reads in images with
+intensities on a 0-1 scale, but 0-255 is common.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sample.size</code></td>
+<td>
+<p>Only applicable if <code>cluster.method="kmeans"</code>. Number of
+pixels to be randomly sampled from filtered pixel array for performing fit.
+If set to <code>FALSE</code>, all pixels are fit, but this can be time-consuming,
+especially for large images. Passed to <code>getKMeansList</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iter.max</code></td>
+<td>
+<p>Only applicable if <code>cluster.method="kmeans"</code>. Inherited
+from <code>kmeans</code>. The maximum number of iterations allowed
+during kmeans fitting. Passed to <code>getKMeansList</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nstart</code></td>
+<td>
+<p>Only applicable if <code>cluster.method="kmeans"</code>. Inherited
+from <code>kmeans</code>. How many random sets should be chosen?
+Passed to <code>getKMeansList</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>img.type</code></td>
+<td>
+<p>Logical. Should file extensions be retained with labels?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ordering</code></td>
+<td>
+<p>Logical if not left as "default". Should the color clusters
+in the list be reordered to minimize the distances between the pairs? If
+left as default, ordering depends on distance method: "emd" and "chisq" do
+not order clusters ("emd" orders on a case-by-case in the
+<code>EMDistance</code> function itself and reordering by size similarity
+would make chi-squared meaningless); "color.dist" and "weighted.pairs" use
+ordering. To override defaults, set to either <code>T</code> (for ordering) or
+<code>F</code> (for no ordering).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>size.weight</code></td>
+<td>
+<p>Weight of size similarity in determining overall score and
+ordering (if <code>ordering=T</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>color.weight</code></td>
+<td>
+<p>Weight of color similarity in determining overall score
+and ordering (if <code>ordering=T</code>). Color and size weights do not
+necessarily have to sum to 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot.heatmap</code></td>
+<td>
+<p>Logical. Should a heatmap of the distance matrix be
+plotted?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return.distance.matrix</code></td>
+<td>
+<p>Logical. Should the distance matrix be returned
+to the R environment or just plotted?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save.tree</code></td>
+<td>
+<p>Either logical or a filepath for saving the tree; default if
+set to <code>TRUE</code> is to save in current working directory as
+"ColorTree.newick".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save.distance.matrix</code></td>
+<td>
+<p>Either logical or filepath for saving distance
+matrix; default if set to <code>TRUE</code> is to save in current working
+directory as "ColorDistanceMatrix.csv"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>a.bounds, b.bounds</code></td>
+<td>
+<p>Passed to <code>getLabHistList</code>.Numeric
+ranges for the a (green-red) and b (blue-yellow) channels of Lab color
+space. Technically, a and b have infinite range, but in practice nearly all
+values fall between -128 and 127 (the default). Many images will have an
+even narrower range than this, depending on the lighting conditions and
+conversion; setting narrower ranges will result in finer-scale binning,
+without generating empty bins at the edges of the channels.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Color distance matrix, heatmap, and saved distance matrix and tree
+files if saving is <code>TRUE</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>This is the fastest way to get a distance matrix for color similarity
+starting from a folder of images. Essentially, it just calls in a series of
+other package functions in order: input images -&gt; <code>getImagePaths</code>
+-&gt; <code>getHistList</code> or <code>getKMeansList</code> followed by
+<code>extractClusters</code> -&gt; <code>getColorDistanceMatrix</code> -&gt;
+plotting -&gt; return/save distance matrix. Sort of railroads you, but good for
+testing different combinations of clustering methods and distance metrics.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+colordistance::imageClusterPipeline(dir(system.file("extdata", "Heliconius/",
+package="colordistance"), full.names=TRUE), color.space="hsv", lower=rep(0.8,
+3), upper=rep(1, 3), cluster.method="hist", distance.method="emd",
+hist.bins=3, plot.bins=TRUE, save.tree="example_tree.newick",
+save.distance.matrix="example_DM.csv")
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,246 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>c212.1a</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Implementation of the Berry and Berry Three-Level Hierarchical Model without Point-Mass.</h2>
+
+<h3>Description</h3>
+
+<p>Implementaion of Berry and Berry model without the point-mass (Model 1a Xia et al (2011))</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">	c212.1a(trial.data, sim_type = "SLICE", burnin = 10000, iter = 40000,
+	nchains = 3,
+	global.sim.params = data.frame(type = c("MH", "SLICE"),
+	param = c("sigma_MH", "w"),
+	value = c(0.35,1), control = c(0,6), stringsAsFactors = FALSE),
+	sim.params = NULL,
+	initial_values = NULL,
+	hyper_params = list(mu.gamma.0.0 = 0, tau2.gamma.0.0 = 10,
+	mu.theta.0.0 = 0, tau2.theta.0.0 = 10, alpha.gamma.0.0 = 3,
+	beta.gamma.0.0 = 1, alpha.theta.0.0 = 3, beta.theta.0.0 = 1,
+	alpha.gamma = 3, beta.gamma = 1,
+	alpha.theta = 3, beta.theta = 1))
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>trial.data</code></td>
+<td>
+
+<p>A file or data frame containing the trial data. It must contain must contain the columns <em>B</em> (body-system), <em>AE</em> (adverse event), <em>Group</em> (1 - control, 2 treatment), <em>Count</em> (total number of events), <em>Total</em> (total number of participants in the trial
+arm).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sim_type</code></td>
+<td>
+
+<p>The type of MCMC method to use for simulating from non-standard distributions. Allowed values are <em>"MH"</em>
+and <em>"SLICE"</em> for Metropolis_Hastings and Slice sampling respectively.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>burnin</code></td>
+<td>
+
+<p>The burnin period for the monte-carlo simulation. These are discarded from the returned samples.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iter</code></td>
+<td>
+
+<p>The total number of iterations for which the monte-carlo simulation is run. This includes the burnin period.
+The total number of samples returned is <em>iter - burnin</em>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nchains</code></td>
+<td>
+
+<p>The number of independent chains to run.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>global.sim.params</code></td>
+<td>
+
+<p>A data frame containing the parameters for the simulation type <em>sim_type</em>. For <em>"MH"</em> the parameter
+is the variance of the normal distribution used to simulate the next candidate value centred on the current
+value. For <em>"SLICE"</em> the parameters are the estimated width of the slice and a value limiting the search for the next sample.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sim.params</code></td>
+<td>
+
+<p>A dataframe containing simulation parameters which override the global simulation parameters (<em>global.sim.params</em>) for particular model
+parameters. <em>sim.params</em> must contain the following columns: type: the simulation type ("MH" or "SLICE"); variable: the model parameter 
+for which the simulation parameters are being overridden; B: the body-system (if applicable); AE: the adverse event (if applicable);
+param: the simulation parameter; value: the overridden value; control: the overridden control value.
+</p>
+<p>The function <em>c212.sim.control.params</em> generates a template for <em>sim.params</em> which can be edited by the user.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>initial_values</code></td>
+<td>
+
+<p>The initial values for starting the chains. If NULL (the default) is passed the function generates the initial
+values for the chains. initial_values is a list with the following format:
+</p>
+<pre>
+list(gamma, theta, mu.gamma, mu.theta, sigma2.gamma,
+sigma2.theta, mu.gamma.0, mu.theta.0, tau2.gamma.0,
+tau2.theta.0)
+</pre>
+<p>where each element of the list is either a dataframe or array.
+The function <em>c212.gen.initial.values</em> can be used to generate a template for the list which can be updated by the user if required.
+The formats of the list elements are as follows:
+</p>
+<p><em>gamma, theta</em>: dataframe with columns <em>B</em>, <em>AE</em>, <em>chain</em>, <em>value</em>
+</p>
+<p><em>mu.gamma, mu.theta, sigma2.gamma, sigma2.theta</em>: dataframe with columns <em>B</em>, <em>chain</em>, <em>value</em>
+</p>
+<p><em>mu.gamma.0, mu.theta.0, tau2.gamma.0, tau2.theta.0</em>: array of size <em>chain</em>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hyper_params</code></td>
+<td>
+
+<p>The hyperparameters for the model. The default hyperparameters are those given in Berry and Berry 2004.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The model is fitted by a Gibbs sampler. The details of the complete conditional densities are given in Berry
+and Berry (2004). The posterior distributions for <em>gamma</em> and <em>theta</em> are sampled with either a Metropolis-Hastings step or a
+slice sampler.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The output from the simulation including all the sampled values is as follows:
+</p>
+<pre>
+list(id, sim_type, chains, nBodySys, maxAEs, nAE, AE, B, burnin,
+	iter, mu.gamma.0, mu.theta.0, tau2.gamma.0, tau2.theta.0,
+	mu.gamma, mu.theta, sigma2.gamma, sigma2.theta, gamma,
+	theta, gamma_acc, theta_acc)
+</pre>
+<p>where
+</p>
+<p><em>id</em> - a string identifying the version of the function
+</p>
+<p><em>sim_type</em> - an string identifying the sampling method used for non-standard distributions, either <em>"MH"</em> or <em>"SLICE"</em>
+</p>
+<p><em>chains</em> - the number of chains for which the simulation was run
+</p>
+<p><em>nBodySys</em> - the number of body-systems
+</p>
+<p><em>maxAEs</em> - the maximum number of AEs in a body-system
+</p>
+<p><em>nAE</em> - an array. The number of AEs in each body-system.
+</p>
+<p><em>AE</em> - an array of dimension <em>nBodySys</em>, <em>maxAEs</em>. The Adverse Events.
+</p>
+<p><em>B</em> - an array. The body-systems.
+</p>
+<p><em>burnin</em> - the burnin period for the simulation.
+</p>
+<p><em>iter</em> - the total number of iterations in the simulation.
+</p>
+<p><em>mu.gamma.0</em> - array of samples of dimension <em>chains</em>, <em>iter - burnin</em>
+</p>
+<p><em>mu.theta.0</em> - array of samples of dimension <em>chains</em>, <em>iter - burnin</em>
+</p>
+<p><em>tau2.gamma.0</em> - array of samples of dimension <em>chains</em>, <em>iter - burnin</em>
+</p>
+<p><em>tau2.theta.0</em> - array of samples of dimension <em>chains</em>, <em>iter - burnin</em>
+</p>
+<p><em>mu.gamma</em> - array of samples of dimension <em>chains</em>, <em>nBodySys</em> <em>iter - burnin</em>
+</p>
+<p><em>mu.theta</em> - array of samples of dimension <em>chains</em>, <em>nBodySys</em> <em>iter - burnin</em>
+</p>
+<p><em>sigma2.gamma</em> - array of samples of dimension <em>chains</em>, <em>nBodySys</em> <em>iter - burnin</em>
+</p>
+<p><em>sigma2.theta</em> - array of samples of dimension <em>chains</em>, <em>nBodySys</em> <em>iter - burnin</em>
+</p>
+<p><em>gamma</em> - array of samples of dimension <em>chains</em>, <em>nBodySys</em>, <em>maxAEs</em>, <em>iter - burnin</em>
+</p>
+<p><em>theta</em> - array of samples of dimension <em>chains</em>, <em>nBodySys</em>, <em>maxAEs</em>, <em>iter - burnin</em>
+</p>
+<p><em>gamma_acc</em> - the acceptance rate for the gamma samples if a Metropolis-Hastings method is used. An array of dimension <em>chains</em>, <em>nBodySys</em>, <em>maxAEs</em>
+</p>
+<p><em>theta_acc</em> - the acceptance rate for the theta samples if a Metropolis-Hastings method is used. An array of dimension <em>chains</em>, <em>nBodySys</em>, <em>maxAEs</em>
+</p>
+
+
+<h3>Note</h3>
+
+<p>The function performs the simulation and returns the raw output. No checks for convergence are performed. 
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>R. Carragher
+</p>
+
+
+<h3>References</h3>
+
+<p>S. M. Berry and D. A. Berry (2004). Accounting for multiplicities in assessing drug safety: a three-
+level hierarchical mixture model.
+Biometrics, 60(2):418-26.
+</p>
+<p>H. Amy Xia, Haijun Ma, and Bradley P. Carlin (2011). Bayesian hierarchical modelling for
+detecting safety signals in clinical trials. Journal of Biopharmaceutical Statistics, 21(5):1006–
+1029.
+</p>
+<p>Scott M. Berry, Bradley P. Carlin, J. Jack Lee, and Peter M¨ller (2010). Bayesian adaptive
+methods for clinical trials. CRC Press.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(c212.trial.data)
+raw = c212.1a(c212.trial.data, burnin = 100, iter = 200)
+## Not run: 
+data(c212.trial.data)
+raw = c212.1a(c212.trial.data)
+
+raw$B
+[1] "Bdy-sys_1" "Bdy-sys_2" "Bdy-sys_3" "Bdy-sys_4" "Bdy-sys_5" "Bdy-sys_6"
+[7] "Bdy-sys_7" "Bdy-sys_8"
+
+mean(rm$theta[2, 3,1,])
+[1] 1.306362
+
+
+## End(Not run)
+</code></pre>
+
+
+</div>

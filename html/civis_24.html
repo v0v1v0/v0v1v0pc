@@ -1,0 +1,696 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>civis_ml</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Interface for modeling in the Civis Platform</h2>
+
+<h3>Description</h3>
+
+<p>An interface for training and scoring data on Civis Platform
+using a set of Scikit-Learn estimators.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">civis_ml(
+  x,
+  dependent_variable,
+  model_type,
+  primary_key = NULL,
+  excluded_columns = NULL,
+  parameters = NULL,
+  fit_params = NULL,
+  cross_validation_parameters = NULL,
+  calibration = NULL,
+  oos_scores_table = NULL,
+  oos_scores_db = NULL,
+  oos_scores_if_exists = c("fail", "append", "drop", "truncate"),
+  model_name = NULL,
+  cpu_requested = NULL,
+  memory_requested = NULL,
+  disk_requested = NULL,
+  notifications = NULL,
+  polling_interval = NULL,
+  validation_data = c("train", "skip"),
+  n_jobs = NULL,
+  verbose = FALSE,
+  civisml_version = "prod"
+)
+
+civis_ml_fetch_existing(model_id, run_id = NULL)
+
+## S3 method for class 'civis_ml'
+predict(
+  object,
+  newdata,
+  primary_key = NA,
+  output_table = NULL,
+  output_db = NULL,
+  if_output_exists = c("fail", "append", "drop", "truncate"),
+  n_jobs = NULL,
+  cpu_requested = NULL,
+  memory_requested = NULL,
+  disk_requested = NULL,
+  polling_interval = NULL,
+  verbose = FALSE,
+  dvs_to_predict = NULL,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>See the Data Sources section below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dependent_variable</code></td>
+<td>
+<p>The dependent variable of the training dataset.
+For a multi-target problem, this should be a vector of column names of
+dependent variables. Nulls in a single dependent variable will
+automatically be dropped.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model_type</code></td>
+<td>
+<p>The name of the CivisML workflow. See the Workflows section
+below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>primary_key</code></td>
+<td>
+<p>Optional, the unique ID (primary key) of the training
+dataset. This will be used to index the out-of-sample scores. In
+<code>predict.civis_ml</code>, the primary_key of the training task is used by
+default <code>primary_key = NA</code>. Use <code>primary_key = NULL</code> to
+explicitly indicate the data have no primary_key.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>excluded_columns</code></td>
+<td>
+<p>Optional, a vector of columns which will be
+considered ineligible to be independent variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parameters</code></td>
+<td>
+<p>Optional, parameters for the final stage estimator in a
+predefined model, e.g. <code>list(C = 2)</code> for a "sparse_logistic"
+model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fit_params</code></td>
+<td>
+<p>Optional, a mapping from parameter names in the model's
+<code>fit</code> method to the column names which hold the data, e.g.
+<code>list(sample_weight = 'survey_weight_column')</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cross_validation_parameters</code></td>
+<td>
+<p>Optional, parameter grid for learner
+parameters, e.g. <code>list(n_estimators = c(100, 200, 500),
+learning_rate = c(0.01, 0.1), max_depth = c(2, 3))</code>
+or <code>"hyperband"</code> for supported models.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>calibration</code></td>
+<td>
+<p>Optional, if not <code>NULL</code>, calibrate output
+probabilities with the selected method, <code>sigmoid</code>, or <code>isotonic</code>.
+Valid only with classification models.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>oos_scores_table</code></td>
+<td>
+<p>Optional, if provided, store out-of-sample
+predictions on training set data to this Redshift "schema.tablename".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>oos_scores_db</code></td>
+<td>
+<p>Optional, the name of the database where the
+<code>oos_scores_table</code> will be created. If not provided, this will default
+to <code>database_name</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>oos_scores_if_exists</code></td>
+<td>
+<p>Optional, action to take if
+<code>oos_scores_table</code> already exists. One of <code>"fail"</code>, <code>"append"</code>, <code>"drop"</code>, or <code>"truncate"</code>.
+The default is <code>"fail"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model_name</code></td>
+<td>
+<p>Optional, the prefix of the Platform modeling jobs.
+It will have <code>" Train"</code> or <code>" Predict"</code> added to become the Script title.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cpu_requested</code></td>
+<td>
+<p>Optional, the number of CPU shares requested in the
+Civis Platform for training jobs or prediction child jobs.
+1024 shares = 1 CPU.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>memory_requested</code></td>
+<td>
+<p>Optional, the memory requested from Civis Platform
+for training jobs or prediction child jobs, in MiB.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>disk_requested</code></td>
+<td>
+<p>Optional, the disk space requested on Civis Platform
+for training jobs or prediction child jobs, in GB.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>notifications</code></td>
+<td>
+<p>Optional, model status notifications. See
+<code>scripts_post_custom</code> for further documentation about email
+and URL notification.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>polling_interval</code></td>
+<td>
+<p>Check for job completion every this number of seconds.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>validation_data</code></td>
+<td>
+<p>Optional, source for validation data. There are
+currently two options: <code>train</code> (the default), which uses training
+data for validation, and <code>skip</code>, which skips the validation step.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_jobs</code></td>
+<td>
+<p>Number of concurrent Platform jobs to use for training and
+validation, or multi-file / large table prediction. Defaults to
+<code>NULL</code>, which allows CivisML to dynamically calculate an
+appropriate number of workers to use (in general, as many as
+possible without using all resources in the cluster).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Optional, If <code>TRUE</code>, supply debug outputs in Platform
+logs and make prediction child jobs visible.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>civisml_version</code></td>
+<td>
+<p>Optional, a one-length character vector of the
+CivisML version. The default is "prod", the latest version in production</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model_id</code></td>
+<td>
+<p>The <code>id</code> of CivisML model built previously.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>run_id</code></td>
+<td>
+<p>Optional, the <code>id</code> of a CivisML model run. If <code>NULL</code>,
+defaults to fetching the latest run.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>A <code>civis_ml</code> object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdata</code></td>
+<td>
+<p>See the Data Sources section below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output_table</code></td>
+<td>
+<p>The table in which to put predictions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output_db</code></td>
+<td>
+<p>The database containing <code>output_table</code>. If not
+provided, this will default to the <code>database_name</code> specified when
+the model was built.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>if_output_exists</code></td>
+<td>
+<p>Action to take if the prediction table already exists. One of <code>"fail"</code>, <code>"append"</code>, <code>"drop"</code>, or <code>"truncate"</code>.
+The default is <code>"fail"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dvs_to_predict</code></td>
+<td>
+<p>Optional, For scoring, this should be a vector of column
+names of dependent variables to include in the output table. It must be a
+subset of the <code>dependent_variable</code> vector provided for training.
+The scores for the returned subset will be identical to the scores which
+those outputs would have had if all outputs were written, but ignoring some
+of the model's outputs will let predictions complete faster and use less disk space.
+If not provided, the entire model output will be written to the output table.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Unused</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A <code>civis_ml</code> object, a list containing the following elements:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>job</code></td>
+<td>
+<p>job metadata from <code>scripts_get_custom</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>run</code></td>
+<td>
+<p>run metadata from <code>scripts_get_custom_runs</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outputs</code></td>
+<td>
+<p>CivisML metadata from <code>scripts_list_custom_runs_outputs</code> containing the locations of
+files produced by CivisML e.g. files, projects, metrics, model_info, logs, predictions, and estimators.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metrics</code></td>
+<td>
+<p>Parsed CivisML output from <code>metrics.json</code> containing metadata from validation.
+A list containing the following elements:
+</p>
+
+<ul>
+<li>
+<p> run list, metadata about the run.
+</p>
+</li>
+<li>
+<p> data list, metadata about the training data.
+</p>
+</li>
+<li>
+<p> model list, the fitted scikit-learn model with CV results.
+</p>
+</li>
+<li>
+<p> metrics list, validation metrics (accuracy, confusion, ROC, AUC, etc).
+</p>
+</li>
+<li>
+<p> warnings list.
+</p>
+</li>
+<li>
+<p> data_platform list, training data location.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model_info</code></td>
+<td>
+<p>Parsed CivisML output from <code>model_info.json</code> containing metadata from training.
+A list containing the following elements:
+</p>
+
+<ul>
+<li>
+<p> run list, metadata about the run.
+</p>
+</li>
+<li>
+<p> data list, metadata about the training data.
+</p>
+</li>
+<li>
+<p> model list, the fitted scikit-learn model.
+</p>
+</li>
+<li>
+<p> metrics empty list.
+</p>
+</li>
+<li>
+<p> warnings list.
+</p>
+</li>
+<li>
+<p> data_platform list, training data location.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+</table>
+<h3>CivisML Workflows</h3>
+
+<p>You can use the following pre-defined models with <code>civis_ml</code>. All models
+start by imputing missing values with the mean of non-null values in a
+column. The <code>"sparse_*"</code> models include a LASSO regression step
+(using <code>glmnet</code>) to do feature selection before passing data to the
+final model. In some models, CivisML uses default parameters from those in
+<a href="https://scikit-learn.org/stable/">Scikit-Learn</a>, as indicated in the "Altered Defaults" column.
+All models also have <code>random_state=42</code>.
+</p>
+<p>Specific workflows can also be called directly using the R workflow functions.
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+ Name </td>
+<td style="text-align: right;"> R Workflow </td>
+<td style="text-align: right;"> Model Type </td>
+<td style="text-align: right;"> Algorithm </td>
+<td style="text-align: right;"> Altered Defaults </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ <code>sparse_logistic</code>	</td>
+<td style="text-align: right;"> <code>civis_ml_sparse_logistic</code> </td>
+<td style="text-align: right;"> classification	</td>
+<td style="text-align: right;"> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html">LogisticRegression</a>	</td>
+<td style="text-align: right;"> <code>C=499999950, tol=1e-08</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ <code>gradient_boosting_classifier</code> </td>
+<td style="text-align: right;">	<code>civis_ml_gradient_boosting_classifier</code> </td>
+<td style="text-align: right;"> classification </td>
+<td style="text-align: right;">	<a href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html">GradientBoostingClassifier</a> </td>
+<td style="text-align: right;">	<code>n_estimators=500, max_depth=2</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ <code>random_forest_classifier</code> </td>
+<td style="text-align: right;">	<code>civis_ml_random_forest_classifier</code> </td>
+<td style="text-align: right;"> classification </td>
+<td style="text-align: right;">	<a href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html">RandomForestClassifier</a> </td>
+<td style="text-align: right;">	<code>n_estimators=500</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ <code>extra_trees_classifier</code> </td>
+<td style="text-align: right;">	<code>civis_ml_extra_trees_classifier</code> </td>
+<td style="text-align: right;"> classification </td>
+<td style="text-align: right;">	<a href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.ExtraTreesClassifier.html">ExtraTreesClassifier</a> </td>
+<td style="text-align: right;">	<code>n_estimators=500</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ <code>multilayer_perceptron_classifier</code> </td>
+<td style="text-align: right;"> </td>
+<td style="text-align: right;"> classification </td>
+<td style="text-align: right;"> <a href="https://github.com/civisanalytics/muffnn">muffnn.MLPClassifier</a> </td>
+<td style="text-align: right;"> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ <code>stacking_classifier</code> </td>
+<td style="text-align: right;"> </td>
+<td style="text-align: right;"> classification  </td>
+<td style="text-align: right;"> <a href="https://github.com/civisanalytics/civisml-extensions">StackedClassifier</a>
+</td>
+<td style="text-align: right;"> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ <code>sparse_linear_regressor</code> </td>
+<td style="text-align: right;"> <code>civis_ml_sparse_linear_regressor</code> </td>
+<td style="text-align: right;">	regression </td>
+<td style="text-align: right;">	<a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html">LinearRegression</a> </td>
+<td style="text-align: right;"> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ <code>sparse_ridge_regressor</code> </td>
+<td style="text-align: right;">	<code>civis_ml_sparse_ridge_regressor</code> </td>
+<td style="text-align: right;"> regression </td>
+<td style="text-align: right;">	<a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html">Ridge</a> </td>
+<td style="text-align: right;"> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ <code>gradient_boosting_regressor</code>	</td>
+<td style="text-align: right;"> <code>civis_ml_gradient_boosting_regressor</code> </td>
+<td style="text-align: right;"> regression </td>
+<td style="text-align: right;"> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html">GradientBoostingRegressor</a> </td>
+<td style="text-align: right;"> <code>n_estimators=500, max_depth=2</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ <code>random_forest_regressor</code>	</td>
+<td style="text-align: right;"> <code>civis_ml_random_forest_regressor</code> </td>
+<td style="text-align: right;"> regression </td>
+<td style="text-align: right;"> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html">RandomForestRegressor</a> </td>
+<td style="text-align: right;"> <code>n_estimators=500</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ <code>extra_trees_regressor</code> </td>
+<td style="text-align: right;"> <code>civis_ml_extra_trees_regressor</code> </td>
+<td style="text-align: right;"> regression	</td>
+<td style="text-align: right;"> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.ExtraTreesRegressor.html">ExtraTreesRegressor</a> </td>
+<td style="text-align: right;"> <code>n_estimators=500</code> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ <code>multilayer_perceptron_regressor</code> </td>
+<td style="text-align: right;"> </td>
+<td style="text-align: right;"> regression </td>
+<td style="text-align: right;"> <a href="https://github.com/civisanalytics/muffnn">muffnn.MLPRegressor</a> </td>
+<td style="text-align: right;"> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ <code>stacking_regressor</code> </td>
+<td style="text-align: right;"> </td>
+<td style="text-align: right;"> regression  </td>
+<td style="text-align: right;"> <a href="https://github.com/civisanalytics/civisml-extensions">StackedRegressor</a>
+</td>
+<td style="text-align: right;"> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+</td>
+</tr>
+</table>
+<p>Model names can be easily accessed using the global variables <code>CIVIS_ML_REGRESSORS</code> and <code>CIVIS_ML_CLASSIFIERS</code>.
+</p>
+
+
+<h3>Stacking</h3>
+
+<p>The <code>"stacking_classifier"</code> model stacks together the <code>"gradient_boosting_classifier"</code> and
+<code>"random_forest_classifier"</code> predefined models together with a
+<code>glmnet.LogitNet(alpha=0, n_splits=4, max_iter=10000, tol=1e-5, scoring='log_loss')</code>.
+Defaults for the predefined models are documented in <code>?civis_ml</code>. Each column is first
+<a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html">standardized</a>,
+and then the model predictions are combined using
+<a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegressionCV.html">LogisticRegressionCV</a>
+with <code>penalty='l2'</code> and <code>tol=1e-08</code>. The <code>"stacking_regressor"</code> works similarly, stacking together
+the <code>"gradient_boosting_regressor"</code> and <code>"random_forest_regressor"</code> models and a
+<code>glmnet.ElasticNet(alpha=0, n_splits=4, max_iter=10000, tol=1e-5, scoring='r2')</code>, combining them using
+<a href="https://github.com/civisanalytics/civisml-extensions">NonNegativeLinearRegression</a>.
+The estimators that are being stacked have the same names as the
+associated pre-defined models, and the meta-estimator steps are named
+"meta-estimator". Note that although default parameters are provided
+for multilayer perceptron models, it is highly recommended that
+multilayer perceptrons be run using hyperband.
+</p>
+
+
+<h3>Hyperparameter Tuning</h3>
+
+<p>You can tune hyperparameters using one of two methods: grid search or
+hyperband. CivisML will perform grid search if you pass a list
+of hyperparameters to the <code>cross_validation_parameters</code> parameter, where list elements are
+hyperparameter names, and the values are vectors of hyperparameter
+values to grid search over. You can run hyperparameter optimization in parallel by
+setting the <code>n_jobs</code>
+parameter to however many jobs you would like to run in
+parallel. By default, <code>n_jobs</code> is dynamically calculated based on
+the resources available on your cluster, such that a modeling job will
+never take up more than 90
+</p>
+<p><a href="https://arxiv.org/abs/1603.06560">Hyperband</a>
+is an efficient approach to hyperparameter optimization, and
+recommended over grid search where possible. CivisML will perform
+hyperband optimization if you pass the string <code>"hyperband"</code> to
+<code>cross_validation_parameters</code>. Hyperband is currently only supported for the following models:
+<code>"gradient_boosting_classifier"</code>, <code>"random_forest_classifier"</code>,
+<code>"extra_trees_classifier"</code>, <code>"multilayer_perceptron_classifier"</code>,
+<code>"stacking_classifier"</code>,
+<code>"gradient_boosting_regressor"</code>, <code>"random_forest_regressor"</code>,
+<code>"extra_trees_regressor"</code>, <code>"multilayer_perceptron_regressor"</code>,
+and <code>"stacking_regressor"</code>.
+</p>
+<p>Hyperband cannot be used to tune GLMs. For this reason, preset GLMs do
+not have a hyperband option. Similarly, when
+<code>cross_validation_parameters='hyperband'</code> and the model is
+<code>stacking_classifier</code> or <code>stacking_regressor</code>, only the GBT and
+random forest steps of the stacker are tuned using hyperband. For the specific
+distributions used in the predefined hyperband models, see
+<a href="https://civis-python.readthedocs.io/en/stable/ml.html#hyperparameter-tuning">the detailed table in the Python client documentation</a>.
+</p>
+
+
+<h3>Data Sources</h3>
+
+<p>For building models with <code>civis_ml</code>, the training data can reside in
+four different places, a file in the Civis Platform, a CSV or feather-format file
+on the local disk, a <code>data.frame</code> resident in local the R environment, and finally,
+a table in the Civis Platform. Use the following helpers to specify the
+data source when calling <code>civis_ml</code>:
+</p>
+
+<dl>
+<dt><code>data.frame</code></dt>
+<dd>
+<p><code>civis_ml(x = df, ...)</code></p>
+</dd>
+<dt>local csv file</dt>
+<dd>
+<p><code>civis_ml(x = "path/to/data.csv", ...)</code></p>
+</dd>
+<dt>file in Civis Platform</dt>
+<dd>
+<p><code>civis_ml(x = civis_file(1234))</code></p>
+</dd>
+<dt>table in Civis Platform</dt>
+<dd>
+<p><code>civis_ml(x = civis_table(table_name = "schema.table", database_name = "database"))</code></p>
+</dd>
+</dl>
+<h3>Out of sample scores</h3>
+
+<p>Model outputs will always contain out-of-sample (or out of fold) scores,
+which are accessible through <code>fetch_oos_scores</code>.
+These may be stored in a Civis table on Redshift using the
+<code>oos_scores</code>, <code>oos_scores_db</code>, and <code>oos_scores_if_exists</code> parameters.
+</p>
+
+
+<h3>Predictions</h3>
+
+<p>A fitted model can be used to make predictions for data residing in any of
+the sources above and a <code>civis_file_manifest</code>. Similar to
+<code>civis_ml</code>, use the data source helpers as the <code>newdata</code> argument
+to <code>predict.civis_ml</code>.
+</p>
+<p>A manifest file is a JSON file which specifies the location of many shards of the data to be used for prediction.
+A manifest file is the output of a Civis export job with <code>force_multifile = TRUE</code> set, e.g.
+from <code>civis_to_multifile_csv</code>. Large civis tables (provided using <code>table_name</code>)
+will automatically be exported to manifest files.
+</p>
+<p>Prediction outputs will always be stored as gzipped CSVs in one or more civis files.
+Provide an <code>output_table</code> (and optionally an <code>output_db</code>,
+if it's different from <code>database_name</code>) to copy these predictions into a
+table on Redshift.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>civis_file</code>, <code>civis_table</code>, and
+<code>civis_file_manifest</code> for specifying data sources.
+</p>
+<p><code>get_metric</code> to access model validation metrics.
+</p>
+<p><code>fetch_logs</code> for retrieving logs for a (failed) model build,
+<code>fetch_oos_scores</code> for retrieving the out of sample (fold) scores for each training observation, and
+<code>fetch_predictions</code> for retrieving the predictions from a prediction job.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+# From a data frame:
+m &lt;- civis_ml(df, model_type = "sparse_logistic",
+              dependent_variable = "Species")
+
+# From a table:
+m &lt;- civis_ml(civis_table("schema.table", "database_name"),
+              model_type = "sparse_logistic", dependent_variable = "Species",
+              oos_scores_table = "schema.scores_table",
+              oos_scores_if_exists = "drop")
+
+# From a local file:
+m &lt;- civis_ml("path/to/file.csv", model_type = "sparse_logistic",
+              dependent_variable = "Species")
+
+# From a Civis file:
+file_id &lt;- write_civis_file("path/to/file.csv", name = "file.csv")
+m &lt;- civis_ml(civis_file(file_id), model_type = "sparse_logistic",
+              dependent_variable = "Species")
+
+pred_job &lt;- predict(m, newdata = df)
+pred_job &lt;- predict(m, civis_table("schema.table", "database_name"),
+                    output_table = "schema.scores_table")
+pred_job &lt;- predict(m, civis_file(file_id),
+                    output_table = "schema.scores_table")
+
+m &lt;- civis_ml_fetch_existing(model_id = m$job$id, m$run$id)
+logs &lt;- fetch_logs(m)
+yhat &lt;- fetch_oos_scores(m)
+yhat &lt;- fetch_predictions(pred_job)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

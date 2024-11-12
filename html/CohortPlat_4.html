@@ -1,0 +1,179 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>trial_ocs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculates the operating characteristics of the cohort trial</h2>
+
+<h3>Description</h3>
+
+<p>Given the trial specific design parameters, performs a number
+of simulations of the trial and saves the result in an Excel file
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">trial_ocs(
+  iter,
+  coresnum = 1,
+  save = FALSE,
+  path = NULL,
+  filename = NULL,
+  ret_list = FALSE,
+  ret_trials = FALSE,
+  plot_ocs = FALSE,
+  export = NULL,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>iter</code></td>
+<td>
+<p>Number of program simulations that should be performed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coresnum</code></td>
+<td>
+<p>How many cores should be used for parallel computing</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save</code></td>
+<td>
+<p>Indicator whether simulation results should be saved in an Excel file</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>path</code></td>
+<td>
+<p>Path to which simulation results will be saved; if NULL, then save to current path</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>filename</code></td>
+<td>
+<p>Filename of saved Excel file with results; if NULL, then name will contain design parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ret_list</code></td>
+<td>
+<p>Indicator whether function should return list of results</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ret_trials</code></td>
+<td>
+<p>Indicator whether individual trial results should be saved as well</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot_ocs</code></td>
+<td>
+<p>Should OCs stability plots be drawn?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>export</code></td>
+<td>
+<p>Should any other variables be exported to the parallel tasks?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>All other design parameters for chosen program</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>List containing: Responses and patients on experimental and control arm, total treatment successes and failures and final p-value
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+random &lt;- TRUE
+
+rr_comb &lt;- c(0.40, 0.45, 0.50)
+prob_comb_rr &lt;- c(0.4, 0.4, 0.2)
+rr_mono &lt;- c(0.20, 0.25, 0.30)
+prob_mono_rr &lt;- c(0.2, 0.4, 0.4)
+rr_back &lt;- c(0.20, 0.25, 0.30)
+prob_back_rr &lt;- c(0.2, 0.4, 0.4)
+rr_plac &lt;- c(0.10, 0.12, 0.14)
+prob_plac_rr &lt;- c(0.25, 0.5, 0.25)
+
+rr_transform &lt;- list(
+  function(x) {return(c(0.75*(1 - x), (1-0.75)*(1-x), (1-0.75)*x, 0.75*x))},
+  function(x) {return(c(0.85*(1 - x), (1-0.85)*(1-x), (1-0.85)*x, 0.85*x))}
+)
+prob_rr_transform &lt;- c(0.5, 0.5)
+
+cohorts_max &lt;- 4
+safety_prob &lt;- 0
+sharing_type &lt;- "all"
+trial_struc &lt;- "all_plac"
+sr_drugs_pos &lt;- 4
+n_int &lt;- 100
+n_fin &lt;- 200
+stage_data &lt;- TRUE
+cohort_random &lt;- 0.05
+target_rr &lt;- c(0,0,1)
+cohort_offset &lt;- 0
+random_type &lt;- "absolute"
+sr_first_pos &lt;- FALSE
+missing_prob &lt;- 0.1
+
+# Vergleich Combo vs Mono
+Bayes_Sup1 &lt;- matrix(nrow = 3, ncol = 3)
+Bayes_Sup1[1,] &lt;- c(0.05, 0.90, 1.00)
+Bayes_Sup1[2,] &lt;- c(0.05, 0.65, 1.00)
+Bayes_Sup1[3,] &lt;- c(0.10, 0.50, 1.00)
+# Vergleich Combo vs Backbone
+Bayes_Sup2 &lt;- matrix(nrow = 3, ncol = 3)
+Bayes_Sup2[1,] &lt;- c(0.05, 0.90, 1.00)
+Bayes_Sup2[2,] &lt;- c(NA, NA, NA)
+Bayes_Sup2[3,] &lt;- c(NA, NA, NA)
+# Vergleich Mono vs Placebo
+Bayes_Sup3 &lt;- matrix(nrow = 3, ncol = 3)
+Bayes_Sup3[1,] &lt;- c(0.00, 0.90, 1.00)
+Bayes_Sup3[2,] &lt;- c(NA, NA, NA)
+Bayes_Sup3[3,] &lt;- c(NA, NA, NA)
+# Vergleich Back vs Placebo
+Bayes_Sup4 &lt;- matrix(nrow = 3, ncol = 3)
+Bayes_Sup4[1,] &lt;- c(0.00, 0.90, 1.00)
+Bayes_Sup4[2,] &lt;- c(NA, NA, NA)
+Bayes_Sup4[3,] &lt;- c(NA, NA, NA)
+Bayes_Sup &lt;- list(list(Bayes_Sup1, Bayes_Sup2, Bayes_Sup3, Bayes_Sup4),
+             list(Bayes_Sup1, Bayes_Sup2, Bayes_Sup3, Bayes_Sup4))
+
+ocs &lt;- trial_ocs(
+n_int = n_int, n_fin = n_fin, random_type = random_type,
+rr_comb = rr_comb, rr_mono = rr_mono, rr_back = rr_back, rr_plac = rr_plac,
+rr_transform = rr_transform, random = random, prob_comb_rr = prob_comb_rr,
+prob_mono_rr = prob_mono_rr, prob_back_rr = prob_back_rr, prob_plac_rr = prob_plac_rr,
+stage_data = stage_data, cohort_random = cohort_random, cohorts_max = cohorts_max,
+sr_drugs_pos = sr_drugs_pos, target_rr = target_rr, sharing_type = sharing_type,
+sr_first_pos = sr_first_pos, safety_prob = safety_prob, Bayes_Sup = Bayes_Sup,
+prob_rr_transform = prob_rr_transform, cohort_offset = cohort_offset,
+trial_struc = trial_struc, missing_prob = missing_prob,
+iter = 10, coresnum = 1, save = FALSE, ret_list = TRUE, plot_ocs = TRUE
+)
+
+ocs[[3]]
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,168 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>doseFind</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Inverse (dose-finding) estimate of a target x value (e.g., a percentile)</h2>
+
+<h3>Description</h3>
+
+<p>Inverse ("dose-finding") point estimation of a dose (x) for a specified target y value (e.g., a response rate),
+using a user-specified forward-estimation algorithm (default is CIR).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">doseFind(
+  y,
+  x = NULL,
+  wt = NULL,
+  estfun = cirPAVA,
+  target = NULL,
+  full = FALSE,
+  dec = FALSE,
+  extrapolate = FALSE,
+  errOnFlat = FALSE,
+  adaptiveShrink = FALSE,
+  starget = target[1],
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>can be either of the following: y values (response rates), a 2-column matrix with positive/negative response counts by dose, a <code>DRtrace</code> object or a <code>doseResponse</code> object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>dose levels (if not included in y).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wt</code></td>
+<td>
+<p>weights (if not included in y).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estfun</code></td>
+<td>
+<p>the name of the dose-response estimation function. Default <code>cirPAVA</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>target</code></td>
+<td>
+<p>A vector of target response rate(s), for which the percentile dose estimate is needed. See Note.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>full</code></td>
+<td>
+<p>logical, is a more complete output desired (relevant only for doseFind)? if <code>FALSE</code> (default), only a point estimate of the dose (x) for the provided target rate is returned.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dec</code></td>
+<td>
+<p>(relevant only for doseFind) logical, is the true function is assumed to be monotone decreasing? Default <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extrapolate</code></td>
+<td>
+<p>logical: should extrapolation beyond the range of estimated y values be allowed? Default <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>errOnFlat</code></td>
+<td>
+<p>logical: in case the forward estimate is completely flat making dose-finding infeasible, should an error be returned? Under default (<code>FALSE</code>), <code>NA</code>s are returned for the target estimate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>adaptiveShrink</code></td>
+<td>
+<p>logical, should the y-values be pre-shrunk towards an experiment's target? Recommended if data were obtained via an adaptive dose-finding design. See <code>DRshrink</code> and the Note.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>starget</code></td>
+<td>
+<p>The shrinkage target. Defaults to <code>target[1]</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Other arguments passed on to <code>doseResponse</code> and <code>estfun</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function works by calling <code>estfun</code> for forward estimation of the x-y relationship, then using <code>approx</code> with the x and y roles reversed for inverse estimation. The <code>extrapolate</code> option sets the <code>rule</code> argumet for this second call:
+</p>
+
+<ul>
+<li> <p><code>extrapolate=TRUE</code> translates to <code>rule=2</code>, which actually means that the x value on the edge of the estimated y range will be assigned.
+</p>
+</li>
+<li>
+<p><code>extrapolate=FALSE</code> (default) translates to <code>rule=1</code>, which means an <code>NA</code> will be returned for any target y value lying outside the estimated y range.
+</p>
+</li>
+</ul>
+<p>Note also that the function is set up to work with a vector of targets.
+</p>
+<p>If the data were obtained from an adaptive dose-finding design and you seek to estimate a dose other than the experiment's target, note that away from the target the estimates are likely biased (Flournoy and Oron, 2019). Use <code>adaptiveShrink=TRUE</code> to mitigate the bias. In addition, either provide the true target as <code>starget</code>, or a vector of values to <code>target</code>, with the first value being the true target.
+</p>
+
+
+<h3>Value</h3>
+
+<p>under default, returns point estimate(s) of the dose (x) for the provided target rate(s). With <code>full=TRUE</code>, returns a list with
+</p>
+
+<ul>
+<li> <p>targest    The said point estimate of x
+</p>
+</li>
+<li> <p>input      a <code>doseResponse</code> object summarizing the input data
+</p>
+</li>
+<li> <p>output      a <code>doseResponse</code> object with the forward estimate at design points
+</p>
+</li>
+<li> <p>shrinkage      a <code>doseResponse</code> object which is the <code>alg</code> output of the forward-estimation function
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Assaf P. Oron <code>&lt;assaf.oron.at.gmail.com&gt;</code>
+</p>
+
+
+<h3>References</h3>
+
+<p>Flournoy N and Oron AP, 2020. Bias Induced by Adaptive Dose-Finding Designs. Journal of Applied Statistics 47, 2431-2442.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>oldPAVA</code>,<code>cirPAVA</code>. If you'd like point and interval estimates together, use <code>quickInverse</code>.
+</p>
+
+
+</div>

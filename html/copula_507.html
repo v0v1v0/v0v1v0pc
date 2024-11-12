@@ -1,0 +1,171 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>rotCopula</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Construction and Class of Rotated aka Reflected Copulas</h2>
+
+<h3>Description</h3>
+
+<p>Constructs a “reflected” or “rotated” copula from an
+initial copula and a vector of logicals indicating which dimension to
+“flip”.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">rotCopula(copula, flip = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>copula</code></td>
+<td>
+<p>an object of class <code>"Copula"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>flip</code></td>
+<td>
+<p><code>logical</code> vector (of length 1 or
+<code>dim(copula)</code>) indicating which dimension should be
+“flipped”; by default, all the components are flipped,
+implying that the resulting copula is the <em>“survival copula”</em>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A “rotated” or “reflected” copula object of class <code>"rotCopula"</code>.
+</p>
+
+
+<h3>Slots</h3>
+
+<p>of a <code>"rotCopula"</code> object
+</p>
+
+<dl>
+<dt>
+<code>copula</code>:</dt>
+<dd>
+<p>Object of class <code>"copula"</code>.</p>
+</dd>
+<dt>
+<code>flip</code>:</dt>
+<dd>
+<p><code>logical</code> vector of length <code class="reqn">d</code>
+(the copula dimension) specifying which margins are flipped;
+corresponds to the <code>flip</code> argument of <code>rotCopula()</code>. </p>
+</dd>
+<dt>
+<code>dimension</code>:</dt>
+<dd>
+<p>the copula dimension <code class="reqn">d</code>, an <code>integer</code>.</p>
+</dd>
+<dt>
+<code>parameters</code>:</dt>
+<dd>
+<p><code>numeric</code> vector specifying
+the parameters.</p>
+</dd>
+<dt>
+<code>param.lowbnd</code>, and <code>param.upbnd</code>:</dt>
+<dd>
+<p><code>numeric</code>
+vector of the same length as <code>parameters</code>, specifying
+(component wise) bounds for each of the parameters.</p>
+</dd>
+<dt>
+<code>param.names</code>:</dt>
+<dd>
+<p><code>character</code> vector (of same
+length as <code>parameters</code>) with parameter names.</p>
+</dd>
+<dt>
+<code>fullname</code>:</dt>
+<dd>
+<p><b>deprecated</b>; a <code>character</code> string describing the
+rotated copula.</p>
+</dd>
+</dl>
+<h3>Note</h3>
+
+<p>When there are an even number of flips, the resulting copula
+can be seen as a <em>rotated</em> version of <code>copula</code>.  In the
+other cases, e.g., <code>flip = c(FALSE,TRUE)</code> in 2d, it is rather a
+a <em>reflected</em> or “mirrored” copula.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fitCopula</code> for fitting such copulas to data,
+<code>gofCopula</code> for goodness-of-fit tests for such copulas.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Two-dimensional examples: First the Clayton(3) survival copula:
+survC &lt;- rotCopula(claytonCopula(3)) # default: flip = 'all TRUE'
+contourplot2(survC, dCopula)
+
+## Now, a reflected Clayton copula:
+r10C  &lt;- rotCopula(claytonCopula(3), flip = c(TRUE, FALSE))
+
+contourplot2(r10C, dCopula, nlevels = 20, main = "dCopula(&lt;rotCopula&gt;)")
+contourplot2(r10C, pCopula, nlevels = 20, main = "pCopula(&lt;rotCopula&gt;)")
+rho(r10C)
+tau(r10C) # -0.6
+
+n &lt;- 1000
+u &lt;- rCopula(n, r10C)
+rho.n &lt;- cor(u[,1], u[,2], method = "spearman")
+tau.n &lt;- cor(u[,1], u[,2], method = "kendall")
+
+## "Calibration"
+rc. &lt;- rotCopula(claytonCopula(), flip = c(TRUE, FALSE))
+iRho(rc., rho.n)
+iTau(rc., tau.n)
+
+## Fitting
+fitCopula(rc., data = pobs(u), method = "irho")
+fitCopula(rc., data = pobs(u), method = "itau")
+fitCopula(rc., data = pobs(u), method = "mpl")
+
+## Goodness-of-fit testing -- the first, parametric bootstrap, is *really* slow
+## Not run: gofCopula(rc., x = u)
+gofCopula(rc., x = u, simulation = "mult")
+
+## A four-dimensional example: a rotated Frank copula
+rf &lt;- rotCopula(frankCopula(10, dim = 4),
+                flip = c(TRUE, FALSE, TRUE, FALSE))
+
+n &lt;- 1000
+u &lt;- rCopula(n, rf)
+splom2(u)
+
+pCopula(c(0.6,0.7,0.6,0.8), rf)
+C.n(cbind(0.6,0.7,0.6,0.8),  u)
+
+## Fitting
+(rf. &lt;- rotCopula(frankCopula(dim=4),
+                  flip = c(TRUE, FALSE, TRUE, FALSE)))
+## fitCopula(rf., data = pobs(u), method = "irho")
+## FIXME above: not related to rotCopula but frankCopula
+fitCopula(rf., data = pobs(u), method = "itau")
+fitCopula(rf., data = pobs(u), method = "mpl")
+
+## Goodness-of-fit testing (first ("PB") is really slow, see above):
+## Not run: gofCopula(rf., x = u)
+gofCopula(rf., x = u, simulation = "mult") # takes 3.7 sec [lynne, 2015]
+</code></pre>
+
+
+</div>

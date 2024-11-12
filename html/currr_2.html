@@ -1,0 +1,154 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cp_map_chr</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Wrapper function of <code>purrr::map</code>. Apply a function to each element of a vector, but save the intermediate data after a given number of iterations.</h2>
+
+<h3>Description</h3>
+
+<p>The map functions transform their input by applying a function to
+each element of a list or atomic vector and returning an object of
+the same length as the input. <code>cp_map</code> functions work exactly the
+same way, but creates a secret folder in your current working directory
+and saves the results if they reach a given checkpoint. This way
+if you rerun the code, it reads the result from the cache folder
+and start to evalutate where you finished.
+</p>
+
+<ul>
+<li> <p><code>cp_map()</code> always returns a list.
+</p>
+</li>
+<li> <p><code>map_lgl()</code>, <code>map_dbl()</code> and <code>map_chr()</code> return an
+atomic vector of the indicated type (or die trying). For these functions,
+<code>.f</code> must return a length-1 vector of the appropriate type.
+</p>
+</li>
+</ul>
+<h3>Usage</h3>
+
+<pre><code class="language-R">cp_map_chr(.x, .f, ..., name = NULL, cp_options = list())
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>.x</code></td>
+<td>
+<p>A list or atomic vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.f</code></td>
+<td>
+<p>A function, specified in one of the following ways:
+</p>
+
+<ul>
+<li>
+<p> A named function, e.g. <code>mean</code>.
+</p>
+</li>
+<li>
+<p> An anonymous function, e.g. <code style="white-space: pre;">⁠\(x) x + 1⁠</code> or <code>function(x) x + 1</code>.
+</p>
+</li>
+<li>
+<p> A formula, e.g. <code>~ .x + 1</code>. You must use <code>.x</code> to refer to the first
+argument. Only recommended if you require backward compatibility with
+older versions of R.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments passed on to the mapped function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p>Name for the subfolder in the cache folder. If you do not specify,
+then <code>cp_map</code> uses the name of the function combined with the name of x.
+This is dangerous, since this generated name can appear multiple times in your code.
+Also changing x will result a rerun of the code, however you max want to avoid this.
+(if a subset of .x matches with the cached one and the function is the same,
+then elements of this subset won't evaluated, rather read from the cache)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cp_options</code></td>
+<td>
+<p>Options for the evaluation: <code>wait</code>, <code>n_checkpoint</code>, <code>workers</code>, <code>fill</code>.
+</p>
+
+<ul>
+<li> <p><code>wait</code>: An integer to specify that after how many iterations the console shows the intermediate results (default <code>1</code>).
+If its value is between 0 and 1, then it is taken as proportions of iterations to wait (example length of .x equals 100, then
+you get back the result after 50 if you set it to 0.5). Set to <code>Inf</code> to get back the results only after full evaluations.
+If its value is not equal to <code>Inf</code> then evaluation is goind in background job.
+</p>
+</li>
+<li> <p><code>n_chekpoint</code>: Number of checkpoints, when intermadiate results are saved (default = 100).
+</p>
+</li>
+<li> <p><code>workers</code>: Number of CPU cores to use (parallel package called in background). Set to 1 (default) to avoid parallel computing.
+</p>
+</li>
+<li> <p><code>fill()</code> When you get back a not fully evaluated result (default <code>TRUE</code>). Should the length of the result be the same as .x?
+</p>
+</li>
+</ul>
+<p>You can set these options also with <code>options(currr.n_checkpoint = 200)</code>. Additional options: <code>currr.unchanged_message</code> (TRUE/FALSE), <code>currr.progress_length</code></p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A character vector.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other map variants: 
+<code>cp_map_dbl()</code>,
+<code>cp_map_dfc()</code>,
+<code>cp_map_dfr()</code>,
+<code>cp_map_lgl()</code>,
+<code>cp_map()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Run them on console!
+# (functions need writing and reading access to your working directory and they also print)
+
+avg_n &lt;- function(.data, .col, x) {
+  Sys.sleep(.01)
+
+  .data |&gt;
+    dplyr::pull({{ .col }}) |&gt;
+    (\(m) mean(m) * x) ()
+}
+
+
+cp_map(.x = 1:10, .f = avg_n, .data = iris, .col = Sepal.Length, name = "iris_mean")
+
+ # same function, read from cache
+cp_map(.x = 1:10, .f = avg_n, .data = iris, .col = Sepal.Length, name = "iris_mean")
+
+remove_currr_cache()
+
+</code></pre>
+
+
+</div>

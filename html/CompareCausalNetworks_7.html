@@ -1,0 +1,225 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>simulateInterventions</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simulate data of a causal (possibly cyclic model) under interventions.</h2>
+
+<h3>Description</h3>
+
+<p>Simulate data of a causal (possibly cyclic model) under interventions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">simulateInterventions(
+  n,
+  p,
+  df,
+  rhoNoise,
+  snrPar,
+  sparse,
+  doInterv,
+  numberInt,
+  strengthInt,
+  cyclic,
+  strengthCycle,
+  modelMis = FALSE,
+  modelMisPar = 1,
+  seed = 1
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>Number of observations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p>Number of variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>Degrees of freedom in t-distribution of noise and interventions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rhoNoise</code></td>
+<td>
+<p>Correlation between noise terms to model hidden variabkes. 
+Set to 0 for independent noise.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>snrPar</code></td>
+<td>
+<p>Signal-to-noise parameter: steers what proportion of the variance stems from 
+the signal resp.\ from the noise: The SNR is given by $SNR = (1-<code>snrPar</code>)/<code>snrPar</code>$), 
+see details. Only holds when <code>cyclic = FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sparse</code></td>
+<td>
+<p>Probability that an entry <code class="reqn">i,j</code> in adjacency matrix is 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>doInterv</code></td>
+<td>
+<p>Set to TRUE if interventions should be do-interventions; otherwise
+noise interventions (also called shift interventions) are generated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>numberInt</code></td>
+<td>
+<p>Total number of settings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>strengthInt</code></td>
+<td>
+<p>Regulates the strength of the interventions, see details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cyclic</code></td>
+<td>
+<p>Set to TRUE is resulting graph should contain a cycle.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>strengthCycle</code></td>
+<td>
+<p>Steers strength of feedback, see details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelMis</code></td>
+<td>
+<p>Add a model misspecification that applies <code>tanh(modelMisPar*x)/modelMisPar)</code>
+morginally to each variable after having generated X from the causal DAG.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelMisPar</code></td>
+<td>
+<p>Parameter steering the strength of the model misspecification.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>Random seed.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The adjacency matrix <code class="reqn">A</code> is generated as follows. Assume the variables 
+with indices <code class="reqn">{1, \ldots, p}</code> are causally ordered. For each edge from node 
+<code class="reqn">i</code> to node <code class="reqn">j</code> where <code class="reqn">i</code> precedes <code class="reqn">j</code> in the causal ordering, 
+we draw a sample from Bin(<code>sparse</code>) to determine whether to add an edge 
+from node <code class="reqn">i</code> to node <code class="reqn">j</code>. After having sampled the non-zero entries 
+of <code class="reqn">A</code> in this fashion, we sample the coefficients from Unif(-1,1). 
+As described below, the edge weights are later rescaled to achieve a specified 
+signal-to-noise ratio. We exclude the possibility of <code class="reqn">A = 0</code>, 
+i.e. we resample until <code class="reqn">A</code> contains at least one non-zero entry.
+</p>
+<p>Second, the interventions are generated as follows. <code>numberInt</code> denotes the total 
+number of (interventional and observational) settings that are generated. 
+For each variable, we sample uniformly at random with replacement one setting 
+in which this variable is intervened on. In other words, each variable is 
+intervened on in exactly one setting. Hence it is possible that there are 
+settings where no interventions take place which then correspond to the 
+observational case. Similarly, there may be settings where interventions 
+are performed on multiple variables at once. After defining the settings, 
+we sample (uniformly at random with replacement) what setting each data point 
+belongs to. So for each setting we generate approximately the same number of 
+samples. In one generated data set, the interventions are all of the same 
+type, i.e. they are either all shift interventions (when <code>doInterv = FALSE</code>) 
+or do-interventions (when <code>doInterv = TRUE</code>). In both cases, an intervention 
+on <code class="reqn">X_j</code> is modelled by generating <code class="reqn">Z_j</code> as <code class="reqn">Z_j ~</code> <code>strengthInt</code> <code class="reqn">* t</code>(<code>dfNoise</code>). 
+If <code>strengthInt</code> = 0, all interventional settings correspond to purely 
+observational data.
+</p>
+<p>Third, the noise terms <code class="reqn">\epsilon</code> are generated by first sampling from 
+<code class="reqn">N(0,\Sigma)</code> where <code class="reqn">\Sigma_{i,i} = 1</code> and 
+<code class="reqn">\Sigma_{i,j} =</code> <code>rhoNoise</code>. To steer the signal-to-noise ratio, 
+we set the variance of the noise terms of all nodes except source nodes 
+to <code>snrPar</code> where <code class="reqn">0 &lt; </code><code>snrPar</code><code class="reqn"> \le 1</code>. Stepping through the 
+variables in causal order, for each variable <code class="reqn">X_j</code> that has parents, we 
+uniformly rescale the edge weights <code class="reqn">\beta_{j,k}</code> for <code class="reqn">k = 1, \ldots, p</code> 
+in the structural equation of variable <code class="reqn">X_j</code> such that the variance of 
+the sum <code class="reqn">\sum_{k=1}^p  \beta_{j,k} X_k + \epsilon_j</code> is approximately 
+1 in the observational setting. In other words, the parameter <code>snrPar</code>
+steers what proportion of the variance stems from the signal given by  
+<code class="reqn">\sum_{k=1}^p  \beta_{j,k} X_k</code> and what proportion stems from the 
+noise <code class="reqn">\epsilon_j</code>. The signal-to-noise ratio can then be computed 
+as SNR = (1-<code>snrPar</code>)/<code>snrPar</code>.
+</p>
+<p>Forth, a cycle is added to the causal graph if <code>cyclic = TRUE</code>. If the 
+causal graph shall contain a cycle, we sample two nodes <code class="reqn">i</code> and <code class="reqn">j</code> 
+such that adding an edge between them creates a cycle in the causal graph. 
+We then compute the largest possible coefficient for this edge such that the 
+cycle product is smaller than 1. Subsequently, we sample the sign of the 
+coefficient and set the magnitude by scaling the largest possible coefficient 
+by <code>strengthCycle</code> where <code class="reqn">0 &lt; </code><code>strengthCycle</code><code class="reqn">&lt; 1</code>.
+</p>
+<p>Fifth, we rescale the noise variables to obtain a <code class="reqn">t</code>-distribution with 
+<code>dfNoise</code> degrees of freedom. <code class="reqn">X</code> is then generated as 
+<code class="reqn">X  = (I-A)^{-1}\epsilon</code> in the observational case; under a shift 
+interventions <code class="reqn">X</code> can be generated as <code class="reqn">X  = (I-A)^{-1}(\epsilon + Z)</code> 
+where the coordinates of <code class="reqn">Z</code> are only non-zero for the variables 
+that are intervened on. Under a do-intervention on <code class="reqn">X_j</code>, <code class="reqn">\beta_{j,k}</code>
+for <code class="reqn">k = 1, \ldots, p</code> are set to 0 to yield <code class="reqn">A'</code> and <code class="reqn">\epsilon_j</code>
+is set to <code class="reqn">Z_j</code> to yield <code class="reqn">\epsilon_j'</code>. We then obtain <code class="reqn">X</code> as 
+<code class="reqn">X  = (I-A')^{-1}\epsilon'</code>.
+</p>
+<p>Lastly, if <code>modelMis = TRUE</code> a model misspecification is added to the 
+data by marginally transforming all variables as <code>tanh(modelMisPar*x)/modelMisPar)</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with the following elements: 
+</p>
+
+<ul>
+<li> <p><code>X</code> <code class="reqn">n x p</code>-dimensional data matrix
+</p>
+</li>
+<li> <p><code>environment</code> Indicator of the experiment or the intervention type an 
+observation belongs to. A numeric vector of length <code class="reqn">n</code>.  
+</p>
+</li>
+<li> <p><code>interventions</code> A list of length <code class="reqn">n</code>. Indicates location of interventions
+for each data point.
+</p>
+</li>
+<li> <p><code>whereInt</code> A list of length  <code>numberInt</code>. Indicates location of interventions
+in each setting.
+</p>
+</li>
+<li> <p><code>noise</code>
+</p>
+</li>
+<li> <p><code>configs</code> A list with the generated adjacency matrix (<code>trueA</code>)
+as well as all input arguments.
+</p>
+</li>
+</ul>
+</div>

@@ -1,0 +1,188 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>conditionalEffects</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate average conditional effects</h2>
+
+<h3>Description</h3>
+
+<p>Average conditional effects calculate the local derivatives for each observation for each feature. They are similar to marginal effects. And the average of these conditional effects is an approximation of linear effects (see Pichler and Hartig, 2023 for more details). You can use this function to either calculate main effects (on the diagonal, take a look at the example) or interaction effects (off-diagonals) between features.
+</p>
+<p>To obtain uncertainties for these effects, enable the bootstrapping option in the <code>dnn(..)</code> function (see example).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">conditionalEffects(
+  object,
+  interactions = FALSE,
+  epsilon = 0.1,
+  device = c("cpu", "cuda", "mps"),
+  indices = NULL,
+  data = NULL,
+  type = "response",
+  ...
+)
+
+## S3 method for class 'citodnn'
+conditionalEffects(
+  object,
+  interactions = FALSE,
+  epsilon = 0.1,
+  device = c("cpu", "cuda", "mps"),
+  indices = NULL,
+  data = NULL,
+  type = "response",
+  ...
+)
+
+## S3 method for class 'citodnnBootstrap'
+conditionalEffects(
+  object,
+  interactions = FALSE,
+  epsilon = 0.1,
+  device = c("cpu", "cuda", "mps"),
+  indices = NULL,
+  data = NULL,
+  type = "response",
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>object of class <code>citodnn</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interactions</code></td>
+<td>
+<p>calculate interactions or not (computationally expensive)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>epsilon</code></td>
+<td>
+<p>difference used to calculate derivatives</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>device</code></td>
+<td>
+<p>which device</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>indices</code></td>
+<td>
+<p>of variables for which the ACE are calculated</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>data which is used to calculate the ACE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>ACE on which scale (response or link)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments that are passed to the predict function</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>an S3 object of class <code>"conditionalEffects"</code> is returned.
+The list consists of the following attributes:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>result</code></td>
+<td>
+<p>3-dimensional array with the raw results</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mean</code></td>
+<td>
+<p>Matrix, average conditional effects</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>abs</code></td>
+<td>
+<p>Matrix, summed absolute conditional effects</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sd</code></td>
+<td>
+<p>Matrix, standard deviation of the conditional effects</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Maximilian Pichler
+</p>
+
+
+<h3>References</h3>
+
+<p>Scholbeck, C. A., Casalicchio, G., Molnar, C., Bischl, B., &amp; Heumann, C. (2022). Marginal effects for non-linear prediction functions. arXiv preprint arXiv:2201.08837.
+</p>
+<p>Pichler, M., &amp; Hartig, F. (2023). Can predictive models be used for causal inference?. arXiv preprint arXiv:2306.10551.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+if(torch::torch_is_installed()){
+library(cito)
+
+# Build and train  Network
+nn.fit = dnn(Sepal.Length~., data = datasets::iris)
+
+# Calculate average conditional effects
+ACE = conditionalEffects(nn.fit)
+
+## Main effects (categorical features are not supported)
+ACE
+
+## With interaction effects:
+ACE = conditionalEffects(nn.fit, interactions = TRUE)
+## The off diagonal elements are the interaction effects
+ACE[[1]]$mean
+## ACE is a list, elements correspond to the number of response classes
+## Sepal.length == 1 Response so we have only one
+## list element in the ACE object
+
+# Re-train NN with bootstrapping to obtain standard errors
+nn.fit = dnn(Sepal.Length~., data = datasets::iris, bootstrap = 30L)
+## The summary method calculates also the conditional effects, and if
+## bootstrapping was used, it will also report standard errors and p-values:
+summary(nn.fit)
+
+
+}
+
+</code></pre>
+
+
+</div>

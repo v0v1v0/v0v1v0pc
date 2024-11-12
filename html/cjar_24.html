@@ -1,0 +1,188 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>filter_build</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Build the filter in CJA</h2>
+
+<h3>Description</h3>
+
+<p>This function combines rules and/or containers and then makes the post
+call to create the filter in CJA.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">filter_build(
+  dataviewId = Sys.getenv("CJA_DATAVIEW_ID"),
+  name = NULL,
+  description = NULL,
+  containers = NULL,
+  rules = NULL,
+  sequences = NULL,
+  context = "hits",
+  conjunction = "and",
+  sequence = "in_order",
+  sequence_context = "hits",
+  exclude = FALSE,
+  create_filter = FALSE,
+  debug = FALSE,
+  locale = "en_US",
+  expansion = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>dataviewId</code></td>
+<td>
+<p>CJA data view id.  If an environment variable called <code>CJA_DATAVIEW_ID</code> exists
+in <code>.Renviron</code> or elsewhere and no <code>dataviewId</code> argument is provided, then the <code>CJA_DATAVIEW_ID</code> value will
+be used. Use <code>cja_get_dataviews()</code> to get a list of available <code>dataviewId</code>. Required</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p>This is the name of the new filter (required)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>description</code></td>
+<td>
+<p>This is the description of the filter (required)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>containers</code></td>
+<td>
+<p>List of the container(s) that make up the filter. Containers
+are list objects created using the <code>filter_con()</code> function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rules</code></td>
+<td>
+<p>List of the rules to create a filter. Rules are
+list objects created using the <code>filter_rule()</code> function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sequences</code></td>
+<td>
+<p>List of the predicate(s) and sequence container(s) that are
+combined to make a filter. Sequence containers are list objects created using
+the <code>filter_seq()</code> function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>context</code></td>
+<td>
+<p>Defines the level that the filter logic should operate on. Valid
+values are visitors, visits, and hits. See Details</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conjunction</code></td>
+<td>
+<p>This will tell how the different containers and rules
+should be compared. Use either 'and' or 'or'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sequence</code></td>
+<td>
+<p>Used to define if the filter should be 'in_order' (default),
+'after', or 'before' the sequence of events</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sequence_context</code></td>
+<td>
+<p>Used to define the sequential items context which
+should be below the container context. ex. if container context is visitors
+then the sequence_context should be visits or hits</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>exclude</code></td>
+<td>
+<p>Excludes the main container which will include all rules.
+Only used when the rule arguments are used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>create_filter</code></td>
+<td>
+<p>Used to determine if the filter should be created in the
+UI or if the definition should be returned to be used in a freeform
+table API call as a global filter. Default is FALSE, which means the segment
+json string will be returned and the segment will not be created in the UI.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>debug</code></td>
+<td>
+<p>This enables the api call information to show in the console for
+help with debugging issues. default is FALSE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>locale</code></td>
+<td>
+<p>Locale. Default "en_US"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>expansion</code></td>
+<td>
+<p>Comma-delimited list of additional filter metadata fields to
+include on response. See Detail section for available options</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><strong>Context</strong>
+The rules in a filter have a context that specify the level of operation.
+The context can be visitors, visits or hits.
+As an example, let's build a filter rule where revenue is greater than 0 (meaning
+a purchase took place) and change the context to see how things change.
+If the context is set to visitors, the filter includes all hits from visitors
+that have a purchase of some kind during a visit. This is useful in analyzing
+customer behavior in visits leading up to a purchase and possibly behavior after
+a purchase.
+the context is set to visits, the filter includes all hits from visits where
+a purchase occurred. This is useful for seeing the behavior of a visitor in
+immediate page views leading up to the purchase.
+If the context is set to hit, the filter only includes hits where a purchase
+occurred, and no other hits. This is useful in seeing which products were most popular.
+In the above example, the context for the container listed is hits. This means
+that the container only evaluates data at the hit level, (in contrast to visit
+or visitor level). The rows in the container are also at the hit level.
+</p>
+<p><strong>Expansion</strong>
+Available option include the following:
+"compatibility" "definition" "internal" "modified" "isDeleted" "definitionLastModified"
+"createdDate" "recentRecordedAccess" "performanceScore" "owner" "dataId" "ownerFullName"
+"dataName" "sharesFullName" "approved" "favorite" "shares" "tags" "usageSummary"
+"usageSummaryWithRelevancyScore"
+</p>
+
+
+<h3>Value</h3>
+
+<p>If the filter validates it will return a data frame of the newly
+created filter id along with some other basic meta data. If it returns and
+error then the error response will be returned to help understand what needs
+to be corrected. If the argument <code>create_filter</code> is set to FALSE, the json string
+will be returned in list format.
+</p>
+
+
+</div>

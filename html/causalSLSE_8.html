@@ -1,0 +1,210 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>causalSLSE</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Causal Effect Based on Semiparametric Least Squares Models
+</h2>
+
+<h3>Description</h3>
+
+<p>This is the main method to estimate the causal effects using the semiparametric
+least squares method. It returns an object of class
+<code>cslse</code> and is registered for objects of class
+<code>cslseModel</code> and <code>cslseFit</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'cslseModel'
+causalSLSE(object,
+                               selType=c("SLSE","BLSE","FLSE"),
+                               selCrit = c("AIC", "BIC", "PVT"),
+                               selVcov = c("HC0", "Classical", "HC1", "HC2", "HC3"),    
+                               causal = c("ALL","ACT","ACE","ACN"),
+                               pvalT = function(p) 1/log(p),
+                               vcov.=vcovHC, reSelect=FALSE, ...)
+## S3 method for class 'cslseFit'
+causalSLSE(object, causal = c("ALL","ACT","ACE","ACN"),
+                             vcov.=vcovHC, ...)
+## S3 method for class 'formula'
+causalSLSE(object, data, nbasis=function(n) n^0.3,
+                             knots, 
+                             selType=c("SLSE","BLSE","FLSE"),
+                             selCrit = c("AIC", "BIC", "PVT"),
+                             selVcov = c("HC0", "Classical", "HC1", "HC2", "HC3"),        
+                             causal = c("ALL","ACT","ACE","ACN"),
+                             pvalT = function(p) 1/log(p),
+                             vcov.=vcovHC, reSelect=FALSE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>An object of class <code>cslseModel</code> created by the
+<code>cslseModel</code> function, <code>cslseFit</code> created by <code>estSLSE</code>
+or <code>formula</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A <code>data.frame</code> with all variables included in <code>form</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nbasis</code></td>
+<td>
+<p>A function to determined the number of basis
+functions. It has to  be a function of one argument, the sample
+size.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>knots</code></td>
+<td>
+<p>A list of knots for the treated and nontreated
+groups. The list must be named using the group names. Each element
+of the list is also a list  of length  equal to the number of
+confounders. The choice for each confounders is NULL for no knots or
+numeric for specific values. If missing, the knots are 
+automatically generated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>selType</code></td>
+<td>
+<p>The method for selecting the knots. By default (SLSE),
+all knots from the model are used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>selCrit</code></td>
+<td>
+<p>The criterion to select the knots.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>causal</code></td>
+<td>
+<p>What causal effect should we compute.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pvalT</code></td>
+<td>
+<p>A function to determine the p-value threshold for the
+significance of the coefficients. It has to be a function of one
+parameter, which is the average number of knots in the model. This
+value may differ across treatment group.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>selVcov</code></td>
+<td>
+<p>The type of least squares covariance matrix used to
+compute the p-values needed for the selection.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vcov.</code></td>
+<td>
+<p>An alternative function to compute the covariance matrix
+of the least squares estimators. The default is
+<code>vcovHC</code>. This function is used to
+compute the standard errors of the causal effect estimators and the
+SLSE coefficients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reSelect</code></td>
+<td>
+<p>By default, the stored selections are used. If
+<code>reSelect</code> is set to <code>TRUE</code>, the selection is re-computed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass to <code>vcov.</code></p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>It returns an object of class <code>cslse</code>, which inherits from
+the class <code>cslseFit</code>. It is a list with the following elements:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>treated, nontreated</code></td>
+<td>
+<p>They are objects of class <code>slseFit</code>
+obtained by <code>estSLSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ACE, ACT, ACN</code></td>
+<td>
+<p>Estimates of the average causal effect, the
+causal effect on the treated and the causal effect on the
+nontreated. Each of them is a vector of two elements: the estimate and
+its estimated standard error. All three are included only if the
+argument <code>causal</code> is set to <code>"ALL"</code>.</p>
+</td>
+</tr>
+</table>
+<p>Also, the object contains the following additional attributes:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>treatedVar</code></td>
+<td>
+<p>The name of the variable in the dataset that represents
+the treatment indicator.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>groupInd</code></td>
+<td>
+<p>A named vector with the value of the treatment indicator
+corresponding do each treatment group.</p>
+</td>
+</tr>
+</table>
+<h3>See Also</h3>
+
+<p><code>estSLSE</code> for the  estimation of the model,
+<code>slseKnots</code> for the format of knots, and <code>selSLSE</code>
+and <code>update</code> for the knots selection
+and to understand how stored selections are used.</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(simDat3)
+
+## A causal SLSE model with the outcome Y
+## the treatment indicator Z and the confounders X1, X2 and X1:X2
+
+mod1 &lt;- cslseModel(Y ~ Z | ~ X1 * X2, data = simDat3)
+
+## The causal effects are estimated using the backward method and AIC criterion
+## The HC1 type is used for the least squares covariance matrix
+
+fit1 &lt;- causalSLSE(mod1, selType = "BLSE", type = "HC1")
+
+## This is the same for formula objects
+
+fit2 &lt;- causalSLSE(Y ~ Z | ~ X1 * X2, data = simDat3, selType = "BLSE", type = "HC1")
+</code></pre>
+
+
+</div>

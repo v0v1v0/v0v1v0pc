@@ -1,0 +1,128 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>create.CCM</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Creates a CCM correlation matrix 
+</h2>
+
+<h3>Description</h3>
+
+<p>Creates a CCM correlation matrix that calculates correlations between test and training samples or between each test sample
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">create.CCM(X.test, X.train = NULL, method = "pearson", use = "everything", verbose = 1)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X.test</code></td>
+<td>
+
+<p>matrix of test samples with rows containing variables and columns containing observations
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X.train</code></td>
+<td>
+
+<p>optional matrix of training samples with rows containing variables and columns containing observations
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+
+<p>the type of correlation to use, either 'pearson' (the default) or 'spearman'
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use</code></td>
+<td>
+
+<p>instructions for handling missing values. See details and <code>cor</code>. All values are used by default.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+
+<p>A value of '0' will suppress output
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The default correlation is the Pearson product moment correlation. If <code>method</code> is 'spearman', then the Spearman's rank correlation is used, which is the Pearson correlation calculated using the ranks of the data.
+</p>
+<p>If <code>X.train</code> is NULL then correlations are calculated between each column of <code>X.test</code>, but the correlation between a sample and itself will be assigned the value <var>NA</var>.
+</p>
+<p>When <code>X.train</code> is specified, correlations are calculated sequentially between each test observation and all training observations using <code>apply</code>. Note that if missing values are present, they may be handled differently for different test samples.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A CCM correlation matrix with element (i,j) as follows: if <code>X.train</code> is not NULL, then the correlation between the i(th) test sample and the j(th) training sample; otherwise the correlation between the i(th) and j(th) test samples, with NA along the diagonal. 
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Garrett M. Dancik and Yuanbin Ru
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cor</code>, the function used to calculate correlations;
+<code>predict.CCM</code>, for classification based on the CCM matrix;
+<code>plot.CCM</code> for plotting correlations of test samples
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data(data.expr)
+data(data.gender)
+
+## split dataset into training / testing ##
+train.expr = data.expr[,1:20]
+test.expr = data.expr[,21:40]
+train.gender = data.gender[1:20]
+test.gender = data.gender[21:40]
+
+## CCM using spearman correlation ##
+K = create.CCM(test.expr, train.expr, method = "spearman")
+## predict based on the class with the highest mean correlation (the default) ##
+p = predict(K, train.gender)
+table(pred = p, true = test.gender) # check accuracy
+
+## CCM using pearson correlation ##
+K = create.CCM(test.expr, train.expr, method = "pearson")
+## predict based on the class with the maximum correlation 
+p = predict(K, train.gender, func = max)
+table(pred = p, true = test.gender) # check accuracy
+
+### leave-one-out cross validation on entire dataset ###
+K = create.CCM(data.expr, method = "spearman")
+p = predict(K, data.gender)
+table(pred = p, true = data.gender) # check accuracy
+</code></pre>
+
+
+</div>

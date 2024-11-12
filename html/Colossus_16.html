@@ -1,0 +1,181 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>GetCensWeight</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculates and returns data for time by hazard and survival to estimate censoring rate</h2>
+
+<h3>Description</h3>
+
+<p><code>GetCensWeight</code> uses user provided data, time/event columns, vectors specifying the model, and options generate an estimate of the censoring rate, plots, and returns the data
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">GetCensWeight(
+  df,
+  time1,
+  time2,
+  event0,
+  names,
+  term_n,
+  tform,
+  keep_constant,
+  a_n,
+  modelform,
+  fir,
+  control,
+  plot_options,
+  model_control = list(),
+  strat_col = "e"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>a data.table containing the columns of interest</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time1</code></td>
+<td>
+<p>column used for time period starts</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time2</code></td>
+<td>
+<p>column used for time period end</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>event0</code></td>
+<td>
+<p>column used for event status</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>names</code></td>
+<td>
+<p>columns for elements of the model, used to identify data columns</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>term_n</code></td>
+<td>
+<p>term numbers for each element of the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tform</code></td>
+<td>
+<p>list of string function identifiers, used for linear/step</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep_constant</code></td>
+<td>
+<p>binary values to denote which parameters to change</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>a_n</code></td>
+<td>
+<p>list of initial parameter values, used to determine number of parameters. May be either a list of vectors or a single vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelform</code></td>
+<td>
+<p>string specifying the model type: M, ME, A, PA, PAE, GMIX, GMIX-R, GMIX-E</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fir</code></td>
+<td>
+<p>term number for the initial term, used for models of the form T0*f(Ti) in which the order matters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>list of parameters controlling the convergence, see Def_Control() for options or vignette("Control_Options")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot_options</code></td>
+<td>
+<p>list of parameters controlling the plot options, see RunCoxPlots() for different options</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model_control</code></td>
+<td>
+<p>controls which alternative model options are used, see Def_model_control() for options and vignette("Control_Options") for further details</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>strat_col</code></td>
+<td>
+<p>column to stratify by if needed</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>saves the plots in the current directory and returns a data.table of time and corresponding hazard, cumulative hazard, and survival
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(data.table)
+## basic example code reproduced from the starting-description vignette
+
+df &lt;- data.table::data.table("UserID"=c(112, 114, 213, 214, 115, 116, 117),
+           "Starting_Age"=c(18,  20,  18,  19,  21,  20,  18),
+             "Ending_Age"=c(30,  45,  57,  47,  36,  60,  55),
+          "Cancer_Status"=c(0,   0,   1,   0,   1,   0,   0),
+                      "a"=c(0,   1,   1,   0,   1,   0,   1),
+                      "b"=c(1,   1.1, 2.1, 2,   0.1, 1,   0.2),
+                      "c"=c(10,  11,  10,  11,  12,  9,   11),
+                      "d"=c(0,   0,   0,   1,   1,   1,   1))
+# For the interval case
+time1 &lt;- "Starting_Age"
+time2 &lt;- "Ending_Age"
+event &lt;- "Cancer_Status"
+names &lt;- c('a','b','c','d')
+term_n &lt;- c(0,1,1,2)
+tform &lt;- c("loglin","lin","lin","plin")
+modelform &lt;- "M"
+fir &lt;- 0
+a_n &lt;- c(0.1, 0.1, 0.1, 0.1)
+
+keep_constant &lt;- c(0,0,0,0)
+der_iden &lt;- 0
+df$censor &lt;- (df$Cancer_Status==0)
+event &lt;- "censor"
+control &lt;- list("ncores"=2,'lr' = 0.75,'maxiter' = 20,'halfmax' = 5,
+   'epsilon' = 1e-6,'deriv_epsilon' = 1e-6,
+   'abs_max'=1.0,'change_all'=TRUE,'dose_abs_max'=100.0,'verbose'=FALSE,
+   'ties'='breslow','double_step'=1)
+plot_options &lt;- list("name"=paste(tempfile(),"run_06",sep=""),"verbose"=FALSE,
+                     "studyID"="studyID","age_unit"="years")
+dft &lt;- GetCensWeight(df, time1, time2, event, names, term_n, tform,
+                     keep_constant, a_n, modelform, fir, control, plot_options)
+t_ref &lt;- dft$t
+surv_ref &lt;- dft$surv
+t_c &lt;- df$t1
+cens_weight &lt;- approx(t_ref, surv_ref, t_c,rule=2)$y
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,177 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>mi_cyl</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate the Mutual Information Between a Circular and a Linear Random
+Variable</h2>
+
+<h3>Description</h3>
+
+<p>The empirical copula is obtained from the data (<code>theta</code> and <code>x</code>),
+and the mutual information of the 2 components is calculated. This gives a
+non-negative number that can be normalized to lie between 0 and 1.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">mi_cyl(theta, x, normalize = TRUE, symmetrize = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+<p>numeric vector of angles (measurements of a circular
+variable).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>numeric vector of step lengths (measurements of a linear
+variable).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>normalize</code></td>
+<td>
+<p>logical value whether the mutual information should be
+normalized to lie within <code class="reqn">[0,1]</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>symmetrize</code></td>
+<td>
+<p>logical value whether it should be assumed that right and left
+turns are equivalent. If <code>theta</code> can take values in <code class="reqn">[-\pi, \pi)</code>,
+this means that positive and negative angles are equivalent.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>First, the two components of the empirical copula, <code class="reqn">u</code> and <code class="reqn">v</code>
+are obtained. Then the mutual information is calculated via discretizing <code class="reqn">u</code> and <code class="reqn">v</code>
+into <code>length(theta)^(1/3)</code> bins. The mutual information can be
+normalized to lie between 0 and 1 by dividing by the product of the entropies
+of <code>u</code> and <code>v</code>. This is done using functions from the '<span class="pkg">infotheo</span>'
+package.
+</p>
+<p>Even if <code>u</code> and <code>v</code> are perfectly correlated
+(i.e. <code>cor_cyl</code> goes to 1 with large sample sizes),
+the normalized mutual information will not be 1 if the underlying copula is periodic and
+symmetric. E.g. while <code>normalCopula(1)</code> has a correlation of 1 and a density
+that looks like a line going from <code class="reqn">(0,0)</code> to <code class="reqn">(1,1)</code>,
+<code>cyl_rect_combine(normalCopula(1))</code>
+has a density that looks like "&lt;". The mutual information will be 1 in the first case,
+but not in the second. Therefore, we can set <code>symmetrize = TRUE</code> to first
+convert (if necessary) theta to lie in <code class="reqn">[-\pi, \pi)</code> and then multiply all angles
+larger than 0 with -1. The empirical copula is then calculated and the mutual information
+is obtained from those values. It is exactly 1 in the case of
+perfect correlation as captured by e.g.
+<code>cyl_rect_combine(normalCopula(1))</code>.
+</p>
+<p>Note also that the mutual information is independent of the marginal distributions.
+However, <code>symmetrize=TRUE</code> only works with angles, not with pseudo-observations.
+When <code>x</code> and <code>theta</code> are pseudo-observations, information is lost
+due to the ranking, and symmetrization will fail.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A numeric value, the mutual information between <code>theta</code> and <code>x</code>
+in nats.
+</p>
+
+
+<h3>References</h3>
+
+<p>Ma J, Sun Z (2011).
+“Mutual Information Is Copula Entropy.”
+<em>Tsinghua Science and Technology</em>, <b>16</b>(1), 51-54.
+ISSN 1007-0214, <a href="https://doi.org/10.1016/S1007-0214%2811%2970008-6">doi:10.1016/S1007-0214(11)70008-6</a>, <a href="https://www.sciencedirect.com/science/article/pii/S1007021411700086/">https://www.sciencedirect.com/science/article/pii/S1007021411700086/</a>.
+</p>
+<p>Calsaverini RS, Vicente R, Systems C, Artes ED (2009).
+“An information-theoretic approach to statistical dependence: Copula information.”
+<em>Europhysics Letters</em>, <b>88</b>(6), 1–6.
+<a href="https://doi.org/10.1209/0295-5075/88/68003">doi:10.1209/0295-5075/88/68003</a>, <a href="https://iopscience.iop.org/article/10.1209/0295-5075/88/68003/">https://iopscience.iop.org/article/10.1209/0295-5075/88/68003/</a>.
+</p>
+<p>Hodel FH, Fieberg JR (2021).
+“Cylcop: An R Package for Circular-Linear Copulae with Angular Symmetry.”
+<em>bioRxiv</em>.
+<a href="https://doi.org/10.1101/2021.07.14.452253">doi:10.1101/2021.07.14.452253</a>, <a href="https://www.biorxiv.org/content/10.1101/2021.07.14.452253v3/">https://www.biorxiv.org/content/10.1101/2021.07.14.452253v3/</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cor_cyl()</code>, <code>fit_cylcop_cor()</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(123)
+
+cop &lt;- cyl_quadsec(0.1)
+marg1 &lt;- list(name="vonmises",coef=list(0,4))
+marg2 &lt;- list(name="lnorm",coef=list(2,3))
+
+#draw samples and calculate the mutual information.
+sample &lt;- rjoint(100,cop,marg1,marg2)
+mi_cyl(theta = sample[,1],
+  x = sample[,2],
+  normalize = TRUE,
+  symmetrize = FALSE
+)
+
+#the correlation coefficient is independent of the marginal distribution.
+ sample &lt;- traj_sim(100,
+  cop,
+  marginal_circ = list(name = "vonmises", coef  = list(0, 1)),
+  marginal_lin = list(name = "weibull", coef = list(shape = 2))
+)
+
+mi_cyl(theta = sample$angle,
+  x = sample$steplength,
+  normalize = TRUE,
+  symmetrize = FALSE)
+mi_cyl(theta = sample$cop_u,
+  x = sample$cop_v,
+  normalize = TRUE,
+  symmetrize = FALSE)
+
+# Estimate correlation of samples drawn from circular-linear copulas
+# with perfect correlation.
+cop &lt;- cyl_rect_combine(copula::normalCopula(1))
+sample &lt;- rjoint(100,cop,marg1,marg2)
+# without normalization
+mi_cyl(theta = sample[,1],
+  x = sample[,2],
+  normalize = FALSE,
+  symmetrize = FALSE
+)
+#with normalization
+mi_cyl(theta = sample[,1],
+  x = sample[,2],
+  normalize = TRUE,
+  symmetrize = FALSE
+)
+#only with normalization and symmetrization do we get a value of 1
+mi_cyl(theta = sample[,1],
+  x = sample[,2],
+  normalize = TRUE,
+  symmetrize = TRUE
+)
+
+</code></pre>
+
+
+</div>

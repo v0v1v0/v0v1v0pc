@@ -1,0 +1,178 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>mergeClubs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Merge convergence clubs</h2>
+
+<h3>Description</h3>
+
+<p>Merges a list of clubs created with the function findClubs
+by either Phillips and Sul method or von Lyncker and Thoennessen procedure.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">mergeClubs(
+  clubs,
+  time_trim,
+  mergeMethod = c("PS", "vLT"),
+  threshold = -1.65,
+  mergeDivergent = FALSE,
+  estar = -1.65
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>clubs</code></td>
+<td>
+<p>an object of class <code>convergence.clubs</code> (created by findClubs function)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_trim</code></td>
+<td>
+<p>a numeric value between 0 and 1, representing the portion of
+time periods to trim when running log t regression model; if omitted, the same
+value used for <code>clubs</code> is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mergeMethod</code></td>
+<td>
+<p>character string indicating the merging method to use. Methods
+available are <code>"PS"</code> for Phillips and Sul (2009) and <code>"vLT"</code> for
+von Lyncker and Thoennessen (2017).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold</code></td>
+<td>
+<p>a numeric value indicating the threshold to be used with the t-test.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mergeDivergent</code></td>
+<td>
+<p>logical, if TRUE, indicates that merging of divergent units
+should be tried.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estar</code></td>
+<td>
+<p>a numeric value indicating the threshold <code class="reqn">e^*</code> to test
+if divergent units may be included in one of the new convergence clubs.
+To be used only if <code>mergeDivergent=TRUE</code></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Phillips and Sul (2009) suggest a "club merging algorithm" to avoid
+over determination due to the selection of the parameter <code class="reqn">c^*</code>.
+This algorithm suggests to merge for adjacent groups. In particular, it works as follows:
+</p>
+
+<ol>
+<li>
+<p> Take the first two groups detected in the basic clustering mechanism
+and run the log-t test. If the t-statistic is larger than -1.65,
+these groups together form a new convergence club;
+</p>
+</li>
+<li>
+<p> Repeat the test adding the next group and continue until the
+basic condition (t-statistic &gt; -1.65) holds;
+</p>
+</li>
+<li>
+<p> If convergence hypothesis is rejected, conclude that all previous groups
+converge, except the last one. Hence, start again the test merging algorithm
+beginning from the group for which the hypothesis of convergence did not hold.
+</p>
+</li>
+</ol>
+<p>On the other hand, von Lyncker and Thoennessen (2017), propose a modified version
+of the club merging algorithm that works as follows:
+</p>
+
+<ol>
+<li>
+<p> Take all the groups detected in the basic clustering mechanism (P)
+and run the t-test for adjacent groups, obtaining a (M × 1) vector
+of convergence test statistics t (where <code class="reqn">M = P - 1</code> and
+<code class="reqn">m = 1, \dots, M</code>);
+</p>
+</li>
+<li>
+<p> Merge for adjacent groups starting from the first, under the
+conditions <code class="reqn">t(m) &gt; -1.65</code> and <code class="reqn">t(m) &gt; t(m+1)</code>.
+In particular, if both conditions hold, the two clubs determining
+<code class="reqn">t(m)</code> are merged and the algorithm starts again from step 1,
+otherwise it continues for all following pairs;
+</p>
+</li>
+<li>
+<p> For the last element of vector M (the value of the last two clubs)
+the only condition required for merging is <code class="reqn">t(m=M) &gt; -1.65</code>.
+</p>
+</li>
+</ol>
+<h3>Value</h3>
+
+<p>Ad object of class <code>convergence.clubs</code>, containing a list of
+Convergence Clubs, for each club a list is return with the
+following objects: <code>id</code>, a vector containing the row indices
+of the units in the club; <code>model</code>, a list containing information
+about the model used to run the t-test on the units in the club;
+<code>unit_names</code>, a vector containing the names of the units of the club (optional,
+only included if parameter <code>unit_names</code> is given)
+</p>
+
+
+<h3>References</h3>
+
+<p>Phillips, P. C.; Sul, D., 2007. Transition modeling and econometric convergence tests. Econometrica 75 (6), 1771-1855.
+</p>
+<p>Phillips, P. C.; Sul, D., 2009. Economic transition and growth. Journal of Applied Econometrics 24 (7), 1153-1185.
+</p>
+<p>von Lyncker, K.; Thoennessen, R., 2017. Regional club convergence in the EU: evidence from a panel data analysis.
+Empirical Economics 52 (2),  525-553
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>findClubs</code>, finds convergence clubs by means of Phillips and Sul clustering procedure.
+</p>
+<p><code>mergeDivergent</code>, merges divergent units according to the algorithm proposed by von Lyncker and Thoennessen (2017).
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data("filteredGDP")
+
+# Cluster Countries using GDP from year 1970 to year 2003
+clubs &lt;- findClubs(filteredGDP, dataCols=2:35, unit_names = 1, refCol=35,
+                   time_trim = 1/3, cstar = 0, HACmethod = "FQSB")
+summary(clubs)
+
+# Merge clusters
+mclubs &lt;- mergeClubs(clubs, mergeMethod='PS', mergeDivergent=FALSE)
+summary(mclubs)
+
+mclubs &lt;- mergeClubs(clubs, mergeMethod='vLT', mergeDivergent=FALSE)
+summary(mclubs)
+
+</code></pre>
+
+
+</div>

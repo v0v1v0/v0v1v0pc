@@ -1,0 +1,165 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>tEVcop</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>The t-EV (Extreme Value) Copula</h2>
+
+<h3>Description</h3>
+
+<p>The <em>t-EV copula</em> (Joe, 2014, p. 189) is a limiting form of the <em>t-copula</em> (multivariate t-distribution):
+</p>
+<p style="text-align: center;"><code class="reqn">
+\mathbf{C}_{\rho,\nu}(u,v) = \mathbf{tEV}(u,v; \rho, \nu) =
+\mathrm{exp}\bigl(-(x+y) \times B(x/(x+y); \rho, \nu)\bigr)\mbox{,}
+</code>
+</p>
+
+<p>where <code class="reqn">x = -\log(u)</code>, <code class="reqn">y = -\log(v)</code>, and letting <code class="reqn">\eta = \sqrt{(\nu+1)/(1-\rho^2)}</code> define
+</p>
+<p style="text-align: center;"><code class="reqn">
+B(w; \rho, \nu) = wT_{\nu+1}\bigl(\eta[(w/[1-w])^{1/\nu}-\rho]\bigr) + (1-w)T_{\nu+1}\bigl(\eta[([1-w]/w)^{1/\nu}-\rho]\bigr)\mbox{,}
+</code>
+</p>
+
+<p>where <code class="reqn">T_{\nu+1}</code> is the cumulative distribution function of the <em>univariate t-distribution</em> with <code class="reqn">\nu-1</code> degrees of freedom. As <code class="reqn">\nu \rightarrow \infty</code>, the copula weakly converges to the <em>Hüsler–Reiss copula</em> (<code>HRcop</code>) because the t-distribution converges to the normal (see <b>Examples</b> for a study of this copula).
+</p>
+<p>The <code class="reqn">\mathbf{tEV}(u,v; \rho, \nu)</code> copula is a two-parameter option when working with extreme-value copula. There is a caveat though. Demarta and McNeil (2004) conclude that “the parameter of the Gumbel [<code>GHcop</code>] or Galambos [<code>GLcop</code>] A-functions [the <em>Pickend dependence function</em> and B-function by association] can always be chosen so that the curve is extremely close to that of the t-EV A-function for any values of <code class="reqn">\nu</code> and <code class="reqn">\rho</code>. The implication is that in all situations where the t-EV copula might be deemed an appropriate model then the practitioner can work instead with the simpler Gumbel or Galambos copulas.”
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">tEVcop(u, v, para=NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">u</code> in the <code class="reqn">X</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>v</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">v</code> in the <code class="reqn">Y</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>A vector (two element) of parameters in <code class="reqn">\rho</code> and <code class="reqn">\nu</code> order; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Value(s) for the copula are returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Note, Joe (2014) shows <code class="reqn">x = \log(u)</code> (note absence of the minus sign). This is not correct.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Joe, H., 2014, Dependence modeling with copulas: Boca Raton, CRC Press, 462 p.
+</p>
+<p>Demarta, S., and McNeil, A.J., 2004, The t copula and related copulas: International Statistical Review, v. 33, no. 1, pp. 111–129, <a href="https://doi.org/10.1111/j.1751-5823.2005.tb00254.x">doi:10.1111/j.1751-5823.2005.tb00254.x</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>GHcop</code>, <code>GLcop</code>, <code>HRcop</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+tau &lt;- 1/3 # Example from copula::evCopula.Rd
+tev.cop &lt;- copula::tevCopula(copula::iTau(copula::tevCopula(), tau))
+copula::pCopula(c(0.1,.5), copula=tev.cop)         # 0.07811367
+tEVcop(0.1, 0.5, para=slot(tev.cop, "parameters")) # 0.07811367
+## End(Not run)
+
+## Not run: 
+nsim &lt;- 2000; pargh &lt;- c(5, 0.5, 0.5)
+UV &lt;- simCOP(nsim, cop=GHcop, para=pargh)
+U &lt;- lmomco::pp(UV[,1], sort=FALSE)
+V &lt;- lmomco::pp(UV[,2], sort=FALSE)
+RT &lt;- mleCOP(u=U, v=V, cop=tEVcop, init.para=c(0.5,log(4)),
+             parafn=function(k) return(c(k[1], exp(k[2]))))
+partev &lt;- RT$para
+
+FT &lt;- simCOP(nsim, cop=tEVcop, para=RT$para)
+
+tauCOP(cop=GHcop,  para=pargh )
+tauCOP(cop=tEVcop, para=partev)
+
+tauCOP(cop=GHcop,  para=pargh ) # [1] 0.3003678
+tauCOP(cop=tEVcop, para=partev) # [1] 0.3178904
+
+densityCOPplot(cop=GHcop,  para=pargh)
+densityCOPplot(cop=tEVcop, para=partev, ploton=FALSE, contour.col="red") #
+## End(Not run)
+
+## Not run: 
+# A demonstration Joe (2014, p. 190) for which tEvcop() has
+# upper tail dependence parameter as
+para &lt;- c(0.8, 10)
+lamU &lt;- 2*pt(-sqrt((para[2]+1)*(1-para[1])/(1+para[1])), para[2]+1)
+"tEVcop.copula" &lt;- function(u,v, para=NULL, ...) {
+      if(length(u)==1) u&lt;-rep(u,length(v)); if(length(v)==1) v&lt;-rep(v,length(u))
+      return(copula::pCopula(matrix(c(u,v), ncol=2),
+                   tevCopula(param=para[1], df=para[2])))
+}
+lamU.copBasic &lt;- taildepCOP(cop=tEVcop,        para)$lambdaU
+lamU.copula   &lt;- taildepCOP(cop=tEVcop.copula, para)$lambdaU
+print(c(lamU, lamU.copBasic, lamU.copula))
+#[1] 0.2925185 0.2925200 0.2925200 # So, we see that they all match.
+## End(Not run)
+
+## Not run: 
+# Convergence of tEVcop to HRcop as nu goes to infinity.
+nu &lt;- 10^(seq(-4, 2, by=0.1)) # nu right end point rho dependent
+rho &lt;- 0.7 # otherwise, expect to see 'zeros' errors on the plot()
+# Compute Blomqvist Beta (fast computation is reason for choice)
+btEV &lt;- sapply(nu, function(n) blomCOP(tEVcop, para=c(rho, n)))
+limit.thetas &lt;- sqrt(2 / (nu*(1-rho))) # for nu --&gt; infinity HRcop
+thetas &lt;- sapply(btEV, function(b) {
+     uniroot(function(l, blom=NA) { blom - blomCOP(HRcop, para=l) },
+     interval=c(0,10), blom=b)$root })
+plot(limit.thetas, thetas, log="xy", type="b",
+     xlab="Theta of HRcop via limit nu --&gt; infinity",
+     ylab="Theta from Blomqvist Beta equivalent HRcop to tEVcop")
+abline(0,1)
+mtext(paste0("Notice the 'weak' convergence to lower left, and \n",
+             "convergence increasing with rho"))
+# Another reference of note
+# https://mediatum.ub.tum.de/doc/1145695/1145695.pdf (p.39) #
+## End(Not run)
+</code></pre>
+
+
+</div>

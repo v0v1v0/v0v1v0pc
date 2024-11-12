@@ -1,0 +1,165 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>readCGATS</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>read tables from files in ANSI/CGATS.17 format</h2>
+
+<h3>Description</h3>
+
+<p>The CGATS text format supports a preamble followed by N tables, where N <code class="reqn">\ge</code> 1.
+Each table can have a separate header.
+A table may or may not contain spectral data, see <b>Note</b>.
+The function converts each table to a <code>data.frame</code> with attributes;
+see <b>Details</b>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">readCGATS( path, collapsesingle=FALSE )
+
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>path</code></td>
+<td>
+<p>the path name of a single file, in CGATS format</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>collapsesingle</code></td>
+<td>
+<p>If <code>path</code> has only one table (N=1) and <code>collapsesingle</code> is <code>TRUE</code>,
+then return the single <code>data.frame</code> (instead of a list with 1 <code>data.frame</code>).
+If <code>path</code> has multiple tables (N <code class="reqn">\ge</code> 2), then <code>collapsesingle</code> is ignored.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The returned list is given attributes: <code>"path"</code>,  <code>"preamble"</code>, 
+and (if present) <code>"date"</code>, <code>"created"</code>, <code>"originator"</code>, and <code>"file_descriptor"</code>.
+The attribute values are all character vectors.
+The value of attribute <code>"path"</code> is the argument <code>path</code>,
+and the other values are extracted from <code>"preamble"</code>.
+The length of <code>"preamble"</code> is (typically) greater than 1, and the others have length 1.
+Each line of the preamble is a keyword-value pair.
+The keyword <code>ORIGINATOR</code> is converted to attribute <code>"originator"</code>.
+The keyword <code>FILE_DESCRIPTOR</code> is converted to attribute <code>"file_descriptor"</code>.
+The keyword <code>CREATED</code> is converted to attributes  <code>"created"</code> and <code>"date"</code>.
+The list is also given <code>names</code>.
+If the keyword <code>TABLE_NAME</code> is present in the table header, then its value is used.
+Otherwise the names are <code>"TABLE_1"</code>, <code>"TABLE_2"</code>, ...
+</p>
+<p>Each <code>data.frame</code> in the list is assigned attributes: <code>"header"</code>, 
+and (if present) <code>"descriptor"</code>.
+The length of <code>"header"</code> is (typically) greater than 1, and <code>"descriptor"</code> has length 1.
+Each line of the table header is a keyword-value pair.
+The keywords <code>DESCRIPTOR</code> and  <code>TABLE_DESCRIPTOR</code>  
+are converted to attribute <code>"descriptor"</code>.
+</p>
+<p>For the lines between <code>BEGIN_DATA</code> and <code>END_DATA</code>,
+two conventions for separating the values are supported:
+</p>
+  
+<ul>
+<li>
+<p>  In the standard convention, fields are separated by contiguous spaces or tabs, and character strings (which may have embedded spaces or even tabs) 
+are enclosed by double-quotes.
+This is is the convention in the CGATS standard.
+The function <code>scan()</code> is used here.
+</p>
+</li>
+<li>
+<p> In the non-standard convention, fields are separated by a <em>single</em> tab,
+and character strings (which may have embedded spaces but not tabs) are <em>not</em> enclosed by double-quotes.
+This convention is often easier to work with in spreadsheet software.
+The function <code>strsplit()</code> is used here.
+</p>
+</li>
+</ul>
+<p>The function <code>readCGATS()</code> selects the separation convention 
+by examining the line after <code>BEGIN_DATA_FORMAT</code>.
+If this line is split by a single tab and the number of fields
+matches that given on the <code>NUMBER_OF_FIELDS</code> line,
+then the non-standard convention is selected;
+otherwise, the standard convention is selected.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>readCGATS()</code> returns a list of <code>data.frame</code>s - 
+one <code>data.frame</code> for each table found in <code>path</code>.
+The list and each individual <code>data.frame</code> have attributes, see <b>Details</b>.
+</p>
+<p>If <code>path</code> has only a single table (the majority of files have only 1) 
+and <code>collapsesingle</code> is <code>TRUE</code>, then the attributes of the list
+are copied to those of the <code>data.frame</code>,
+and the <code>data.frame</code> is then returned.
+The name of the table is lost.
+</p>
+<p>If there is an error in any table, then the function returns <code>NULL</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>In the <code>BEGIN_DATA_FORMAT</code> line(s),
+field names may not be quoted and may not have embedded spaces.
+<br>
+The CGATS standard allows duplicated field names,
+and <code>readCGATS()</code> returns them as they appear, with no attempt to append numbers
+in order to make them unique.
+Examples of field names which may be duplicated are:
+<code>SPECTRAL_NM</code>, <code>SPECTRAL_DEC</code>, and <code>SPECTRAL_PCT</code>;
+for more on these see <code>readSpectraCGATS()</code>.
+<br>
+No attempt is made to recognize those tables that contain spectral data.
+For conversion of spectral data to <b>colorSpec</b> objects, see <code>readSpectraCGATS()</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>ANSI/CGATS.17. 
+Graphic technology - Exchange format for colour and process control data using XML or ASCII text.
+<a href="https://webstore.ansi.org/">https://webstore.ansi.org/</a>
+2009.
+</p>
+<p>ISO/28178. Graphic technology - Exchange format for colour and process control data using XML or ASCII text.
+<a href="https://www.iso.org/standard/44527.html">https://www.iso.org/standard/44527.html</a>.
+2009.
+</p>
+<p>CGATS.17 Text File Format.
+<a href="http://www.colorwiki.com/wiki/CGATS.17_Text_File_Format">http://www.colorwiki.com/wiki/CGATS.17_Text_File_Format</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>readSpectraCGATS</code>,
+<code>scan</code>,
+<code>strsplit</code>,
+<code>names</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#   read file with 2 tables of non-spectral data
+A70 = readSpectra( system.file( "tests/A70.ti3", package='colorSpec' ) )
+length(A70)         # [1] 2   # the file has 2 tables
+ncol( A70[[1]] )    # [1] 7   # the 1st table has 7 columns
+ncol( A70[[2]] )    # [1] 4   # the 2nd table has 4 columns
+</code></pre>
+
+
+</div>

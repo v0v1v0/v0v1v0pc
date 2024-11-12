@@ -1,0 +1,165 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>bandwidth</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate the optimal bandwidth matrix of movement data</h2>
+
+<h3>Description</h3>
+
+<p>This function calculates the optimal bandwidth matrix (kernel covariance) for a two-dimensional animal tracking dataset, given an autocorrelated movement model (Fleming et al, 2015). This optimal bandwidth can fully take into account all autocorrelation in the data, assuming it is captured by the movement model.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">bandwidth(data,CTMM,VMM=NULL,weights=FALSE,fast=NULL,dt=NULL,PC="Markov",error=0.01,
+          precision=1/2,verbose=FALSE,trace=FALSE,dt.plot=TRUE,...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p> 2D timeseries telemetry data represented as a <code>telemetry</code> object. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CTMM</code></td>
+<td>
+<p>A <code>ctmm</code> movement model as from the output of <code>ctmm.fit</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>VMM</code></td>
+<td>
+<p>An optional vertical <code>ctmm</code> object for 3D bandwidth calculation.</p>
+</td>
+</tr>
+</table>
+<table>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>By default, the weights are taken to be uniform, whereas <code>weights=TRUE</code> will optimize the weights.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fast</code></td>
+<td>
+<p>Use FFT algorithms for weight optimization. <code>fast=NULL</code> will attempt to intelligently decide between the fast and exact algorithms based on computational complexity.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dt</code></td>
+<td>
+<p>Optional lag bin width for the FFT algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PC</code></td>
+<td>
+<p>Preconditioner to use: can be "Markov", "circulant", "IID", or "direct".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>error</code></td>
+<td>
+<p>Maximum grid error for FFT algorithm, if <code>dt</code> is not specified.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>precision</code></td>
+<td>
+<p>Fraction of maximum possible digits of precision to target in weight optimization. <code>precision=1/2</code> results in about 7 decimal digits of precision if the preconditioner is stable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p> Optionally return the optimal <code>weights</code>, effective sample size <code>DOF.H</code>, and other information along with the bandwidth matrix <code>H</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>Produce tracing information on the progress of weight optimization.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dt.plot</code></td>
+<td>
+<p>Execute a diagnostic <code>dt.plot</code> with a red line at <code>dt</code>, if <code>weights=TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Arguments passed to <code>mean.ctmm</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>weights=TRUE</code> argument can be used to correct temporal sampling bias caused by autocorrelation.
+<code>weights=TRUE</code> will optimize <code>n=length(data$t)</code> weights via constrained &amp; preconditioned conjugate gradient algorithms.
+These algorithms have a few options that should be considered if the data are very irregular.
+</p>
+<p><code>fast=TRUE</code> is an approximation that discretizes the data with timestep <code>dt</code> and applies FFT algorithms, for a computational cost as low as <code class="reqn">O(n \log n)</code> with only <code class="reqn">O(n)</code> function evaluations.
+If no <code>dt</code> is specified, then a choice of <code>dt</code> will be automated with a message.
+<strong>If the data contain some very tiny time intervals</strong>, say 1 second among hourly sampled data, then the default <code>dt</code> setting can create an excessively high-resolution discretization of time, which will cause slowdown. In this case <code>CTMM</code> should contain a location-error model and <code>dt</code> should be increased to a larger fraction of the most-frequent sampling intervals.
+<strong>If the data are irregular (permitting gaps), then <code>dt</code> may need to be several times smaller</strong> than the median to avoid slow down.
+In this case, try setting <code>trace=TRUE</code> and decreasing <code>dt</code> below the median until the interations speed up and the number of feasibility assessments becomes less than <code class="reqn">O(n)</code>.
+
+</p>
+<p><code>fast=FALSE</code> uses exact time spacing and has a computational cost as low as <code class="reqn">O(n^2)</code>, including <code class="reqn">O(n^2)</code> function evaluations. With <code>PC="direct"</code> this method will produce a result that is exact to within machine precision, but with a computational cost of <code class="reqn">O(n^3)</code>. <strong><code>fast=FALSE,PC='direct'</code> is often the fastest method with small datasets</strong>, where <code class="reqn">n \le O</code>(1,000), but scales terribly with larger datasets.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a bandwidth <code>matrix</code> object, which is to be the optimal covariance matrix of the individual kernels of the kernel density estimate.</p>
+
+
+<h3>Note</h3>
+
+<p> To obtain a bandwidth scalar representing the variance of each kernel, a <code>ctmm</code> object with <code>isotropic=TRUE</code> is required.  In this case, <code>bandwidth</code> will return bandwidth matrix with identical variances along its diagonal. Note that forcing <code>isotropic=TRUE</code> will provide an inaccurate estimate for very eccentric distributions.
+</p>
+<p>In v1.0.1 the default <code>fast</code>, <code>dt</code>, <code>PC</code> arguments depend on the sample size, with <code>fast=FALSE</code>, <code>PC="Direct"</code> for small sample sizes, <code>fast=FALSE</code>, <code>PC="Markov"</code> for moderate sample sizes, and <code>fast=TRUE</code>, <code>PC="Markov"</code> for large sample sizes, where <code>dt</code> is taken to be the integer fraction of the median sampling interval closest to the minimum sampling interval.
+</p>
+<p>In v0.6.2 the default <code>dt</code> was increased form the minimum time difference to a small quantile no less than <code>error</code> times the median.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> C. H. Fleming. </p>
+
+
+<h3>References</h3>
+
+<p>T. F. Chan,
+“An Optimal Circulant Preconditioner for Toeplitz Systems”,
+SIAM Journal on Scientific and Statistical Computing, 9:4, 766-771 (1988) <a href="https://doi.org/10.1137/0909051">doi:10.1137/0909051</a>.
+</p>
+<p>D. Marcotte, “Fast variogram computation with FFT”, Computers and Geosciences 22:10, 1175-1186 (1996) <a href="https://doi.org/10.1016/S0098-3004%2896%2900026-X">doi:10.1016/S0098-3004(96)00026-X</a>.
+</p>
+<p>C. H. Fleming, W. F. Fagan, T. Mueller, K. A. Olson, P. Leimgruber, J. M. Calabrese,
+“Rigorous home-range estimation with movement data: A new autocorrelated kernel-density estimator”,
+Ecology, 96:5, 1182-1188 (2015) <a href="https://doi.org/10.1890/14-2010.1">doi:10.1890/14-2010.1</a>.
+</p>
+<p>C. H. Fleming, D. Sheldon, W. F. Fagan, P. Leimgruber, T. Mueller, D. Nandintsetseg, M. J. Noonan, K. A. Olson, E. Setyawan, A. Sianipar, J. M. Calabrese,
+“Correcting for missing and irregular data in home-range estimation”,
+Ecological Applications, 28:4, 1003-1010 (2018) <a href="https://doi.org/10.1002/eap.1704">doi:10.1002/eap.1704</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code>akde</code>, <code>ctmm.fit</code> </p>
+
+
+</div>

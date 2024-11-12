@@ -1,0 +1,184 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>clogitL1</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Conditional logistic regression with elastic net penalties</h2>
+
+<h3>Description</h3>
+
+<p>Fit a sequence of conditional logistic regression models with lasso or elastic net penalties
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R"> clogitL1 (x, y, strata, numLambda=100, 
+	minLambdaRatio=0.000001, switch=0, alpha = 1)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>matrix with rows equalling the number of observations. Contains the p-vector regressor values as rows</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>vector of binary responses with 1 for cases and 0 for controls.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>strata</code></td>
+<td>
+<p>vector with stratum membership of each observation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>numLambda</code></td>
+<td>
+<p>number of different values of the regularisation parameter <code class="reqn">\lambda</code> at which to compute parameter estimates. First fit is made at value just below smallest regularisation parameter value at which all parameter estimates are 0; last fit made at this value multipled by <code>minLambdaRatio</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minLambdaRatio</code></td>
+<td>
+<p>ratio of smallest to larget value of regularisation parameter <code class="reqn">\lambda</code> at which we find parameter estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>switch</code></td>
+<td>
+<p>index (between 0 and <code>numLambda</code>) at which we transition from linear to logarithmic jumps.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>parameter controling trade off between lasso and ridge penalties. At value 1, we have a pure lasso penalty; at 0, pure ridge. Intermediate values provide a mixture of the two.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The sequence of models implied by <code>numLambda</code> and <code>minLambdaRatio</code> is fit by coordinate descent with warm starts and sequential strong rules. If <code>alpha=1</code>, we fit using a lasso penalty. Otherwise we fit with an elastic net penalty. Note that a pure ridge penalty is never obatined, because the function sets a floor for <code>alpha</code> at 0.000001. This improves the stability of the algorithm. A similar lower bound is set for <code>minLambdaRatio</code>. The sequence of models can be truncated at fewer than <code>numLambda</code> models if it is found that a very large proportion of training set deviance is explained by the model in question.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of type <code>clogitL1</code> with the following fields:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>beta</code></td>
+<td>
+<p>(<code>numLambda</code> + 1)-by-p matrix of estimated coefficients. First row has all 0s</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>vector of length <code>numLambda</code> + 1 containing the value of the regularisation parameter at which we obtained the fits.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nz_beta</code></td>
+<td>
+<p>vector of length <code>numLambda</code> + 1 containing the number of nonzero parameter estimates for the fit at the corresponding regularisation parameter.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ss_beta</code></td>
+<td>
+<p>vector of length <code>numLambda</code> + 1 containing the number of predictors considered by the sequential strong rule at that iteration.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dev_perc</code></td>
+<td>
+<p>vector of length <code>numLambda</code> + 1 containing the percentage of null deviance explained by the model represented by that row in the matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y_c</code></td>
+<td>
+<p>reordered vector of responses. Grouped by stratum with cases coming first.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X_c</code></td>
+<td>
+<p>reordered matrix of predictors. See above.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>strata_c</code></td>
+<td>
+<p>reordered stratum vector. See above.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nVec</code></td>
+<td>
+<p>vector of length the number of unique strata in <code>strata</code> containing the number of observations encountered in each stratum.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mVec</code></td>
+<td>
+<p>vector containing the number of cases in each stratum.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>penalty trade off parameter.</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p><a href="http://www.jstatsoft.org/v58/i12/">http://www.jstatsoft.org/v58/i12/</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>plot.clogitL1</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+set.seed(145)
+# data parameters
+K = 10 # number of strata
+n = 5 # number in strata
+m = 2 # cases per stratum
+p = 20 # predictors
+
+# generate data
+y = rep(c(rep(1, m), rep(0, n-m)), K)
+X = matrix (rnorm(K*n*p, 0, 1), ncol = p) # pure noise
+strata = sort(rep(1:K, n))
+
+par(mfrow = c(1,2))
+# fit the conditional logistic model
+clObj = clogitL1(y=y, x=X, strata)
+plot(clObj, logX=TRUE)
+
+# cross validation
+clcvObj = cv.clogitL1(clObj)
+plot(clcvObj)
+</code></pre>
+
+
+</div>

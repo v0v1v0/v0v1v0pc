@@ -1,0 +1,309 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cauphylm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Phylogenetic Regression using a Cauchy Process</h2>
+
+<h3>Description</h3>
+
+<p>Perform a phylogenetic regression using the Cauchy Process, by numerical optimization.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cauphylm(
+  formula,
+  data = list(),
+  phy,
+  model = c("cauchy", "lambda"),
+  lower.bound = list(disp = 0, lambda = 0),
+  upper.bound = list(disp = Inf, lambda = NULL),
+  starting.value = list(disp = NULL, lambda = NULL),
+  hessian = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>a model formula.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a data frame containing variables in the model.
+If not found in data, the variables are taken from current environment.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>phy</code></td>
+<td>
+<p>a phylogenetic tree of class <code>phylo</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>a model for the trait evolution. One of <code>"cauchy"</code> or <code>"lambda"</code> (see Details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lower.bound</code></td>
+<td>
+<p>named list with lower bound values for the parameters. See Details for the default values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>upper.bound</code></td>
+<td>
+<p>named list with upper bound values for the parameters. See Details for the default values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>starting.value</code></td>
+<td>
+<p>named list initial values for the parameters.
+See Details for the default values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hessian</code></td>
+<td>
+<p>if <code>TRUE</code>, then the numerical hessian is computed, for confidence interval computations. See <code>compute_vcov</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function fits a Cauchy Process on the phylogeny, using maximum likelihood
+and the <code>"fixed.root"</code> method (see <code>fitCauchy</code>).
+It further assumes that the root value <code>x0</code> is a linear combination of the
+covariables in <code>formula</code>.
+The corresponding regression model is:
+</p>
+<p style="text-align: center;"><code class="reqn">Y = X \beta + E,</code>
+</p>
+
+<p>with:
+</p>
+
+<dl>
+<dt><code class="reqn">Y</code></dt>
+<dd>
+<p> the vector of traits at the tips of the tree;</p>
+</dd>
+<dt><code class="reqn">X</code></dt>
+<dd>
+<p> the regression matrix of covariables in <code>formula</code>;</p>
+</dd>
+<dt><code class="reqn">\beta</code></dt>
+<dd>
+<p> the vector of coefficients;</p>
+</dd>
+<dt><code class="reqn">E</code></dt>
+<dd>
+<p> a centered error vector that is Cauchy distributed,
+and can be seen as the result of a Cauchy process starting at 0 at the root,
+and with a dispersion <code>disp</code> (see <code>fitCauchy</code>).</p>
+</dd>
+</dl>
+<p>Unless specified by the user, the initial values for the parameters 
+are taken according to the following heuristics:
+</p>
+
+<dl>
+<dt>
+<code>coefficients</code>:</dt>
+<dd> <p><code class="reqn">\beta</code> are obtained from a robust regression using <code>lmrob.S</code>;</p>
+</dd>
+<dt>
+<code>disp</code>:</dt>
+<dd>
+<p> is initialized from the trait centered and normalized 
+by tip heights, with one of the following statistics, taken from Rousseeuw &amp; Croux 1993:</p>
+</dd>
+</dl>
+<dl>
+<dt>
+<code>IQR</code>:</dt>
+<dd>
+<p> half of the inter-quartile range (see <code>IQR</code>);</p>
+</dd>
+<dt>
+<code>MAD</code>:</dt>
+<dd>
+<p> median absolute deviation with constant equal to 1 (see <code>mad</code>);</p>
+</dd>
+<dt>
+<code>Sn</code>:</dt>
+<dd>
+<p> Sn statistics with constant 0.7071 (see <code>Sn</code>);</p>
+</dd>
+<dt>
+<code>Qn</code>:</dt>
+<dd>
+<p> Qn statistics with constant 1.2071 (see <code>Qn</code>).</p>
+</dd>
+</dl>
+<p>Unless specified by the user, <code>disp</code> is taken positive unbounded.
+</p>
+<p>The function uses <code>nloptr</code> for the numerical optimization of the 
+(restricted) likelihood, computed with function <code>logDensityTipsCauchy</code>.
+It uses algorithms <a href="https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/#bobyqa"><code>BOBYQA</code></a>
+and <a href="https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/#mlsl-multi-level-single-linkage"><code>MLSL_LDS</code></a>
+for local and global optimization.
+</p>
+<p>If <code>model="lambda"</code>, the CP is fit on a tree with branch lengths re-scaled 
+using the Pagel's lambda transform (see <code>transf.branch.lengths</code>),
+and the <code>lambda</code> value is estimated using numerical optimization.
+The default initial value for the <code>lambda</code> parameter is computed using adequate robust moments.
+The default maximum value is computed using <code>phytools:::maxLambda</code>,
+and is the ratio between the maximum height of a tip node over the maximum height of an internal node.
+This can be larger than 1.
+The default minimum value is 0.
+</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>coefficients</code></td>
+<td>
+<p>the named vector of estimated coefficients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>disp</code></td>
+<td>
+<p>the maximum likelihood estimate of the dispersion parameter.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logLik</code></td>
+<td>
+<p>the maximum of the log likelihood.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p>the number of all parameters of the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aic</code></td>
+<td>
+<p>AIC value of the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitted.values</code></td>
+<td>
+<p>fitted values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>residuals</code></td>
+<td>
+<p>raw residuals</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>response</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>design matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>number of observations (tips in the tree)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+<p>number of dependent variables</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>the model formula</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the original call to the function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>the phylogenetic model for the covariance</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>phy</code></td>
+<td>
+<p>the phylogenetic tree</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>the ml estimate of the lambda parameter (for <code>model="lambda"</code>)</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Bastide, P. and Didier, G. 2023. The Cauchy Process on Phylogenies: a Tractable Model for Pulsed Evolution. Systematic Biology. doi:10.1093/sysbio/syad053.
+</p>
+<p>Rothenberg T. J., Fisher F. M., Tilanus C. B. 1964. A Note on Estimation from a Cauchy Sample. Journal of the American Statistical Association. 59:460–463.
+</p>
+<p>Rousseeuw P.J., Croux C. 1993. Alternatives to the Median Absolute Deviation. Journal of the American Statistical Association. 88:1273–1283.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fitCauchy</code>, <code>confint.cauphylm</code>, <code>ancestral</code>, <code>increment</code>, <code>logDensityTipsCauchy</code>, <code>phylolm</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Simulate tree and data
+set.seed(1289)
+phy &lt;- ape::rphylo(20, 0.1, 0)
+error &lt;- rTraitCauchy(n = 1, phy = phy, model = "cauchy",
+                      parameters = list(root.value = 0, disp = 0.1))
+x1 &lt;- ape::rTraitCont(phy, model = "BM", sigma = 0.1, root.value = 0)
+trait &lt;- 3 + 2*x1 + error
+# Fit the data
+fit &lt;- cauphylm(trait ~ x1, phy = phy)
+fit
+# Approximate confidence intervals
+confint(fit)
+
+</code></pre>
+
+
+</div>

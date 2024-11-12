@@ -1,0 +1,212 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>sim_adrf</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute an average dose-response function</h2>
+
+<h3>Description</h3>
+
+<p><code>sim_adrf()</code> is a wrapper for <code>sim_apply()</code> that computes average dose-response functions (ADRFs) and average marginal effect functions (AMEFs). An ADRF describes the relationship between values a focal variable can take and the expected value of the outcome were all units to be given each value of the variable. An AMEF describes the relationship between values a focal variable can take and the derivative of ADRF at each value.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">sim_adrf(
+  sim,
+  var,
+  subset = NULL,
+  by = NULL,
+  contrast = "adrf",
+  at = NULL,
+  n = 21,
+  outcome = NULL,
+  type = NULL,
+  eps = 1e-05,
+  verbose = TRUE,
+  cl = NULL
+)
+
+## S3 method for class 'clarify_adrf'
+print(x, digits = NULL, max.ests = 6, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>sim</code></td>
+<td>
+<p>a <code>clarify_sim</code> object; the output of a call to <code>sim()</code> or
+<code>misim()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var</code></td>
+<td>
+<p>the name of a variable for which the ADRF or AMEF is to be computed. This variable must be present in the model supplied to <code>sim()</code> and must be a numeric variable taking on more than two unique values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subset</code></td>
+<td>
+<p>optional; a vector used to subset the data used to compute the ADRF or AMEF. This will be evaluated within the original dataset used to fit the model using <code>subset()</code>, so nonstandard evaluation is allowed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by</code></td>
+<td>
+<p>a one-sided formula or character vector containing the names of variables for which to stratify the estimates. Each quantity will be computed within each level of the complete cross of the variables specified in <code>by</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>contrast</code></td>
+<td>
+<p>a string naming the type of quantity to be produced: <code>"adrf"</code> for the ADRF (the default) or <code>"amef"</code> for the AMEF.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>at</code></td>
+<td>
+<p>the levels of the variable named in <code>var</code> at which to evaluate the ADRF or AMEF. Should be a vector of numeric values corresponding to possible levels of <code>var</code>. If <code>NULL</code>, will be set to a range from slightly below the lowest observed value of <code>var</code> to slightly above the largest value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>when <code>at = NULL</code>, the number of points to evaluate the ADRF or AMEF. Default is 21. Ignored when <code>at</code> is not <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outcome</code></td>
+<td>
+<p>a string containing the name of the outcome or outcome level for multivariate (multiple outcomes) or multi-category outcomes. Ignored for univariate (single outcome) and binary outcomes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>a string containing the type of predicted values (e.g., the link or the response). Passed to <code>marginaleffects::get_predict()</code> and eventually to <code>predict()</code> in most cases. The default and allowable option depend on the type of model supplied, but almost always corresponds to the response scale (e.g., predicted probabilities for binomial models).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eps</code></td>
+<td>
+<p>when <code>contrast = "amef"</code>, the value by which to shift the value of <code>var</code> to approximate the derivative. See Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p><code>logical</code>; whether to display a text progress bar indicating
+progress and estimated time remaining for the procedure. Default is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cl</code></td>
+<td>
+<p>a cluster object created by <code>parallel::makeCluster()</code>, or an
+integer to indicate the number of child-processes (integer values are
+ignored on Windows) for parallel evaluations. See <code>pbapply::pblapply()</code> for
+details. If <code>NULL</code>, no parallelization will take place.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a <code>clarify_adrf</code> object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>digits</code></td>
+<td>
+<p>the minimum number of significant digits to be used; passed to <code>print.data.frame()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.ests</code></td>
+<td>
+<p>the maximum number of estimates to display.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>optional arguments passed to <code>FUN</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The ADRF is composed of average marginal means across levels of the focal predictor. For each level of the focal predictor, predicted values of the outcome are computed after setting the value of the predictor to that level, and those values of the outcome are averaged across all units in the sample to arrive at an average marginal mean. Thus, the ADRF represent the relationship between the "dose" (i.e., the level of the focal predictor) and the average "response" (i.e., the outcome variable). It is the continuous analog to the average marginal effect computed for a binary predictor, e.g., using <code>sim_ame()</code>. Although inference can be at each level of the predictor or between two levels of the predictor, typically a plot of the ADRF is the most useful relevant quantity. These can be requested using <code>plot.clarify_adrf()</code>.
+</p>
+<p>The AMEF is the derivative of the ADRF; if we call the derivative of the ADRF at each point a "treatment effect" (i.e., the rate at which the outcome changes corresponding to a small change in the predictor, or "treatment"), the AMEF is a function that relates the size of the treatment effect to the level of the treatment. The shape of the AMEF is usually of less importance than the value of the AMEF at each level of the predictor, which corresponds to the size of the treatment effect at the corresponding level. The AMEF is computed by computing the ADRF at each level of the focal predictor specified in <code>at</code>, shifting the predictor value by a tiny amount (control by <code>eps</code>), and computing the ratio of the change in the outcome to the shift, then averaging this value across all units. This quantity is related the the average marginal effect of a continuous predictor as computed by <code>sim_ame()</code>, but rather than average these treatment effects across all observed levels of the treatment, the AMEF is a function evaluated at each possible level of the treatment. The "tiny amount" used is <code>eps</code> times the standard deviation of <code>var</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>clarify_adrf</code> object, which inherits from <code>clarify_est</code> and is similar to
+the output of <code>sim_apply()</code>, with the additional attributes <code>"var"</code> containing
+the variable named in <code>var</code>, <code>"by"</code> containing the names of the variables specified in <code>by</code> (if any), <code>"at"</code> containing values at which the ADRF or AMEF is evaluated, and <code>"contrast"</code> containing the argument supplied to <code>contrast</code>. For an ADRF, the average marginal means will be named
+<code>E[Y({v})]</code>, where <code>{v}</code> is replaced with the values in <code>at</code>. For an AMEF, the average marginal effects will be
+named <code>dY/d({x})|{a}</code> where <code>{x}</code> is replaced with <code>var</code> and <code>{a}</code> is replaced by the values in <code>at</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>plot.clarify_adrf()</code> for plotting the ADRF or AMEF; <code>sim_ame()</code> for computing average marginal effects; <code>sim_apply()</code>, which provides a general interface to computing any
+quantities for simulation-based inference; <code>summary.clarify_est()</code> for computing
+p-values and confidence intervals for the estimated quantities.
+</p>
+<p><code>marginaleffects::avg_slopes()</code> and <code>marginaleffects::avg_predictions()</code> for delta method-based implementations of computing average marginal effects and average marginal means.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data("lalonde", package = "MatchIt")
+
+# Fit the model
+fit &lt;- glm(I(re78 &gt; 0) ~ treat + age + race +
+             married + re74,
+           data = lalonde, family = binomial)
+
+# Simulate coefficients
+set.seed(123)
+s &lt;- sim(fit, n = 100)
+
+# ADRF for `age`
+est &lt;- sim_adrf(s, var = "age",
+                at = seq(15, 55, length.out = 6),
+                verbose = FALSE)
+est
+plot(est)
+
+# AMEF for `age`
+est &lt;- sim_adrf(s, var = "age", contrast = "amef",
+               at = seq(15, 55, length.out = 6),
+               verbose = FALSE)
+est
+summary(est)
+plot(est)
+
+# ADRF for `age` within levels of `married`
+est &lt;- sim_adrf(s, var = "age",
+                at = seq(15, 55, length.out = 6),
+                by = ~married,
+                verbose = FALSE)
+est
+plot(est)
+
+## Difference between ADRFs
+est_diff &lt;- est[7:12] - est[1:6]
+plot(est_diff) + ggplot2::labs(y = "Diff")
+</code></pre>
+
+
+</div>

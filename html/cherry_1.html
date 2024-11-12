@@ -1,0 +1,86 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Adjusted</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Adjusted p-values for the number of true hypotheses.</h2>
+
+<h3>Description</h3>
+
+<p>Calculates adjusted p-values for the number of true hypotheses on the basis of the closed testing procedure.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R"> adjusted (closure, reject, n=0) </code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>closure</code></td>
+<td>
+<p>An object of class <code>closure</code>, typically created through a call to <code>closed</code> .</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reject</code></td>
+<td>
+<p>A character vector identifying the hypotheses to be rejected. Must be a subvector of <code>hypotheses(closure)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>The maximum number of false null hypotheses allowed.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function <code>pick</code> calculates adjusted p-values for intersection hypotheses of interest.</p>
+
+
+<h3>Value</h3>
+
+<p>The function returns a p-value (numeric).</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jelle Goeman: <a href="mailto:j.j.goeman@lumc.nl">j.j.goeman@lumc.nl</a></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">  # Example: the birthwt data set from the MASS library
+  # We want to find variables associated with low birth weight
+  library(MASS)
+  fullfit &lt;- glm(low~age+lwt+race+smoke+ptl+ht+ui+ftv, family=binomial, data=birthwt)
+  hypotheses &lt;- c("age", "lwt", "race", "smoke", "ptl", "ht", "ui", "ftv")
+
+  # Define the local test to be used in the closed testing procedure
+  mytest &lt;- function(hyps) {
+    others &lt;- setdiff(hypotheses, hyps)
+    form &lt;- formula(paste(c("low~",  paste(c("1", others), collapse="+"))))
+    anov &lt;- anova(glm(form, data=birthwt, family=binomial), fullfit, test="Chisq")
+    res &lt;- anov$"Pr("[2]                    # for R &gt;= 2.14.0
+    if (is.null(res)) res &lt;- anov$"P("[2]   # earlier versions
+    res
+  }
+
+  # Perform the closed testing with ajdusted p-values
+  cl &lt;- closed(mytest, hypotheses, alpha=NA)
+
+  # What is the adjusted p-value of the intersection of the following hypotheses?
+  adjusted(cl, c("ht", "lwt", "smoke", "ui"))
+
+  # From what confidence level would we conclude 
+  # that more than 2 of the following hypotheses would be false?
+  adjusted(cl, c("ht", "lwt", "smoke", "ui"), n=2)
+</code></pre>
+
+
+</div>

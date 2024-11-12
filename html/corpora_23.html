@@ -1,0 +1,266 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>keyness</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute best-practice keyness measures (corpora)</h2>
+
+<h3>Description</h3>
+
+<p>Compute best-practice keyness measures (according to Evert 2022) for the 
+frequency comparison of lexical items in two corpora.
+The function is fully vectorised and should be applied to a complete
+data set of candidate items (so statistical analysis can be adjusted to
+control the family-wise error rate).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">
+keyness(f1, n1, f2, n2, measure=c("LRC", "PositiveLRC", "G2", "LogRatio", "SimpleMaths"),
+        conf.level=.95, alpha=NULL, p.adjust=TRUE, lambda=1)
+
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>f1</code></td>
+<td>
+<p>a numeric vector specifying the frequencies of candidate items in corpus A (target corpus)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n1</code></td>
+<td>
+<p>sample size of target corpus, i.e. the total number of tokens in corpus A (usually a scalar, but can also be a vector parallel to <code>f1</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f2</code></td>
+<td>
+<p>a numeric vector parallel to <code>f1</code>, specifying the frequencies of candidate items in corpus B (reference corpus)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n2</code></td>
+<td>
+<p>sample size of reference corpus, i.e. the total number of tokens in corpus B (usually a scalar, but can also be a vector parallel to <code>f2</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>measure</code></td>
+<td>
+<p>the keyness measure to be computed (see “Details” below)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conf.level</code></td>
+<td>
+<p>the desired confidence level for the <code>LRC</code> and <code>PositiveLRC</code> measures (defaults to 95%)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>if specified, filter out candidate items whose frequency difference between <code class="reqn">f_1</code> and <code class="reqn">f_2</code> is not significant at level <code class="reqn">\alpha</code>.
+This is achieved by setting the score of such candidates to 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p.adjust</code></td>
+<td>
+<p>if <code>TRUE</code>, apply a Bonferroni correction in order to control the family-wise error rate across all tests carried out
+in a single function call (i.e. the common length of <code>f1</code> and <code>f2</code>).
+Alternatively, the desired family size can be specified instead of <code>TRUE</code> (useful if a larger data set is processed in batches).
+The adjustment applied both the the significance filter (<code>alpha</code>) and the confidence intervals (<code>conf.level</code>) underlying <code>LRC</code> and <code>PositiveLRC</code> measures.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>parameter <code class="reqn">\lambda</code> of the <code>SimpleMaths</code> measure.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function computes a range of best-practice keyness measures comparing the relative frequencies
+<code class="reqn">\pi_1</code> and <code class="reqn">\pi_2</code> of lexical items in populations (i.e. sublanguages) A and B,
+based on the observed sample frequencies <code class="reqn">f_1, f_2</code> and the corresponding sample sizes <code class="reqn">n_1, n_2</code>.
+The function is fully vectorised with respect to arguments <code>f1</code>, <code>f2</code>, <code>n1</code> and <code>n2</code>,
+but only a single keyness measure can be selected for each function call.
+All implemented measures are robust for the corner cases <code class="reqn">f_1 = 0</code> and <code class="reqn">f_2 = 0</code>, but <code class="reqn">f_1 = f_2 = 0</code> is not allowed.
+</p>
+<p>Most of the keyness measures are <b>directional</b>, 
+i.e. positive scores indicate positive keyness in A (<code class="reqn">\pi_1 &gt; \pi_2</code>)
+and negative scores indicate negative keyness in A (<code class="reqn">\pi_1 &lt; \pi_2</code>).
+By contrast, the <b>one-sided</b> measures <code>PositiveLRC</code> and <code>SimpleMaths</code> only detect positive keyness in A,
+returning small (and possibly negative) scores otherwise, i.e. in case of insufficient evidence for <code class="reqn">\pi_1 &gt; \pi_2</code>
+and in case of strong evidence for <code class="reqn">\pi_1 &lt; \pi_2</code>.
+One-sided measures can be useful for a ranking of the entire data set as positive keyword candidates.
+</p>
+<p>Hardie (2014) and other authors recommend to combine effect-size measures (in particular <code>LogRatio</code>) with
+a <b>significance filter</b> in order to weed out candidate items for which there is no significant evidence
+against the null hypothesis <code class="reqn">H_0: \pi_1 = \pi_2</code>.  Such a filter is activated by specifying the desired
+significance level <code>alpha</code>, and can be combined with all keyness measures.
+In this case, the scores of all non-significant candidate items are set to 0.
+The decision is based in the likelihood-ratio test implemented by the <code>G2</code> measure
+and its asymptotic <code class="reqn">\chi^2_1</code> distribution under <code class="reqn">H_0</code>.
+</p>
+<p>Note that the significance filter can also be applied to the <code>G2</code> measure itself, setting all scores
+below the critical value for the significance test to 0.
+For one-sided measures (<code>PositiveLRC</code> and <code>SimpleMaths</code>), candidates with significant evidence 
+for negative keyness are also filtered out (i.e. their scores are set to 0) in order to ensure a consistent ranking.
+</p>
+<p>By default, statistical inference corrects for multiple testing in order to control <b>family-wise error rates</b>.
+This applies to the significance filter as well as to the confidence intervals underlying <code>LRC</code> and <code>PositiveLRC</code>.
+Note that the <code>G2</code> scores themselves are never adjusted (only the critical value for the significance filter is modified).
+</p>
+<p>Family size <code class="reqn">m</code> is automatically determined from the number of candidate items processed in a single function call.
+Alternatively, the family size can be specified explicitly in the <code>p.adjust</code> argument, e.g. if a large data set
+is processed in multiple batches, or <code>p.adjust=FALSE</code> can be used to disable the correction.
+</p>
+<p>For the adjustment, a highly conservative Bonferroni correction <code class="reqn">\alpha' = \alpha / m</code> is applied to significance levels.
+Since the large candidate sets and sample sizes often found in corpus linguistics tend to produce large numbers of false positives,
+this conservative approach is considered to be useful.
+</p>
+<p>See Evert (2022) and its supplementary materials for a more detailed discussion of the implemented best-practice measures and some alternatives.
+</p>
+
+
+<h4>Keyness Measures</h4>
+
+
+<dl>
+<dt><code>G2</code></dt>
+<dd>
+<p>The <b>log-likelihood</b> measure (Rayson &amp; Garside 2003: 3) computes the score <code class="reqn">G^2</code>
+of a likelihood-ratio test for <code class="reqn">H_0: \pi_1 = \pi_2</code>.  This test is two-sided and
+always returns positive values, so the sign of its score is inverted for <code class="reqn">f_1 / n_1 &lt; f_2 / n_2</code> 
+in order to obtain a directional keyness measure.
+As a pure significance measure, it tends to prefer high-frequency candidates with large <code class="reqn">f_1</code>.
+</p>
+</dd>
+<dt><code>LogRatio</code></dt>
+<dd>
+<p>A point estimate of the log <b>relative risk</b> <code class="reqn">\log_2 (\pi_1 / \pi_2)</code>, which has been suggested
+as an intuitive keyness measure under the name <b>LogRatio</b> by Hardie (2014: 45).
+The implementation uses Walter's (1975) adjusted estimator </p>
+<p style="text-align: center;"><code class="reqn">%
+          \log_2 \dfrac{f_1 + \frac12}{n_1 + \frac12} - \log_2 \dfrac{f_2 + \frac12}{n_2 + \frac12} 
+          </code>
+</p>
+ 
+<p>which is less biased and robust against <code class="reqn">f_i = 0</code>.
+As a pure effect-size measure, LogRatio tends to assign spuriously high scores to low-frequency candidates
+with small <code class="reqn">f_1</code> and <code class="reqn">f_2</code> (due to sampling variation).
+Combination with a significance filter is strongly recommended.
+</p>
+</dd>
+<dt>
+<code>LRC</code> (default)</dt>
+<dd>
+<p>A <b>conservative</b> estimate for <b>LogRatio</b> recommended by Evert (2022) in order to combine
+and balance the advantages of effect-size and significance measures.
+A confidence interval (according to the specified <code>conf.level</code>) for relative risk <code class="reqn">r = \pi_1 / \pi_2</code>
+is obtained from an exact conditional Poisson test (Fay 2010: 55), adjusted for multiple testing by default.
+If a candidate is not significant (i.e. the confidence interval includes <code class="reqn">H_0: r = 1</code>) its score is set to 0.
+Otherwise the boundary of the confidence interval closer to 1 is taken as a conservative directional estimate
+of <code class="reqn">r</code> and its <code class="reqn">\log_2</code> is returned.
+</p>
+</dd>
+<dt><code>PositiveLRC</code></dt>
+<dd>
+<p>A <b>one-sided</b> variant of <b>LRC</b>, which returns the lower boundary of a one-sided confidence interval
+for <code class="reqn">\log_2 r</code>. Scores <code class="reqn">\leq 0</code> indicate that there is no significant evidence for positive keyness.
+The directional version of LRC is recommended for general use, but PositiveLRC may be preferred if the
+hermeneutic interpretation should also consider non-significant candidates (especially with small data sets).
+</p>
+</dd>
+<dt><code>SimpleMaths</code></dt>
+<dd>
+<p>The <b>simple maths</b> keyness measure (Kilgarriff 2009) used by the commercial corpus analysis
+platform <b>Sketch Engine</b>: </p>
+<p style="text-align: center;"><code class="reqn">
+          \dfrac{10^6 \cdot \frac{f_1}{n_1} + \lambda}{10^6 \cdot \frac{f_2}{n_2} + \lambda} 
+          </code>
+</p>
+
+<p>Its frequency bias can be adjusted with the user parameter <code class="reqn">\lambda &gt; 0</code>. The scaling
+factor <code class="reqn">10^6</code> was chosen so that <code class="reqn">\lambda = 1</code> is a practical default value.
+</p>
+<p>There does not appear to be a convincing mathematical justification behind this measure. It is 
+included here only because of the popularity of the Sketch Engine platform.
+</p>
+</dd>
+</dl>
+<h3>Value</h3>
+
+<p>A numeric vector of the same length as <code>f1</code> and <code>f2</code>, containing keyness scores for all candidate lexical items.
+For most measures, positive scores indicate positive keywords (i.e. higher frequency in the population underlying corpus A)
+and negative scores indicate negative keywords (i.e. higher frequency in the population underlying corpus B).
+If <code>alpha</code> is specified, non-significant candidates always have a score of 0.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Stephanie Evert (<a href="https://purl.org/stephanie.evert">https://purl.org/stephanie.evert</a>)</p>
+
+
+<h3>References</h3>
+
+<p>Evert, S. (2022). Measuring keyness. In <em>Digital Humanities 2022: Conference Abstracts</em>, pages 202-205, Tokyo, Japan / online. 
+<a href="https://osf.io/cy6mw/">https://osf.io/cy6mw/</a>
+</p>
+<p>Fay, Michael P. (2010). Two-sided exact tests and matching confidence intervals for discrete data. <em>The R Journal</em>, <b>2</b>(1), 53-58.
+</p>
+<p>Hardie, A. (2014). A single statistical technique for keywords, lockwords, and collocations. Internal CASS working paper no. 1, unpublished.
+</p>
+<p>Kilgarriff, A. (2009). Simple maths for keywords. In <em>Proceedings of the Corpus Linguistics 2009 Conference</em>, Liverpool, UK.
+</p>
+<p>Rayson, P. and Garside, R. (2000). Comparing corpora using frequency profiling. In <em>Proceedings of the ACL Workshop on Comparing Corpora</em>, pages 1-6, Hong Kong.  
+</p>
+<p>Walter, S. D. (1975). The distribution of Levin’s measure of attributable risk. <em>Biometrika</em>, <b>62</b>(2): 371-374.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>prop.cint</code>, which is used by the exact conditional Poisson test of the LRC measure</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># compute all keyness measures for a single candidate item with f1=7, f2=2 and n1=n2=1000
+keyness(7, 1000, 2, 1000, measure="G2") # log-likelihood
+keyness(7, 1000, 2, 1000, measure="LogRatio")
+keyness(7, 1000, 2, 1000, measure="LogRatio", alpha=0.05) # with significance filter
+keyness(7, 1000, 2, 1000, measure="LRC") # the default measure
+keyness(7, 1000, 2, 1000, measure="PositiveLRC")
+keyness(7, 1000, 2, 1000, measure="SimpleMaths")
+
+# a practical example: keywords of spoken British English (from BNC corpus)
+n1 &lt;- sum(BNCcomparison$spoken) # sample sizes
+n2 &lt;- sum(BNCcomparison$written)
+kw &lt;- transform(BNCcomparison,
+  G2 = keyness(spoken, n1, written, n2, measure="G2"),
+  LogRatio = keyness(spoken, n1, written, n2, measure="LogRatio"),
+  LRC = keyness(spoken, n1, written, n2))
+kw &lt;- kw[order(-kw$LogRatio), ]
+head(kw, 20)
+
+# collocations of "in charge of" with LRC as an association measure
+colloc &lt;- transform(BNCInChargeOf, 
+  PosLRC = keyness(f.in, N.in, f.out, N.out, measure="PositiveLRC"))
+colloc &lt;- colloc[order(-colloc$PosLRC), ]
+head(colloc, 30)
+</code></pre>
+
+
+</div>

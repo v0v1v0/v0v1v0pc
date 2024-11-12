@@ -1,0 +1,121 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>influence-methods</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2> ~~ Methods for Function influence  ~~</h2>
+
+<h3>Description</h3>
+
+<p>~~ Methods for function <code>influence</code>  ~~
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S4 method for signature 'cpt'
+influence(model,method=c("delete","outlier"),pos=TRUE,same=FALSE,sd=0.01)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+
+<p>Depending on the class of <code>model</code> depends on the method used (and if one exists).  For <code>cpt</code> objects this is the original output from a call to the <code>cpt.*()</code> suite of functions in the "changepoint" package.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+
+<p>Either <code>"delete"</code> or <code>"outlier"</code>.  These control what happens to the individual observations when the data is perturbed. See details for further information on the difference between the two.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pos</code></td>
+<td>
+<p>For <code>method="outlier"</code> this is whether the outlier is positive (TRUE) or negative (FALSE).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>same</code></td>
+<td>
+<p>For <code>method="outlier"</code> and multiple outliers, this is whether we want the outliers to have the same mean (TRUE) (takes the first outlier, adds 2*range(data), then jitters the others around this value) or whether we add 2*range(data) to the existing value of each datapoint (FALSE).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sd</code></td>
+<td>
+<p>For <code>method="outlier"</code>, the standard deviation of the jitter, see <code>same</code> argument.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Calculates the influence of the data on the observed segmentation.  There are currently two methods implemented for this <code>method="delete"</code> and <code>method="outlier"</code>.
+</p>
+<p>Both methods sequentially take each data point, modify it and then run the same changepoint algorithm on the modified data as the original data.  We record the new segmentations in an nxn matrix output of the segment number for each location 1,...,n for each of the 1,...,n data modifications.
+</p>
+<p>If a datapoint has no undue influence on the overall segmentation then the segmentation with that datapoint modified will be the same as the original segmentation.  We define undue influence as any unexpected variation in the segmentations when data points are modified.
+</p>
+<p>The <code>method="delete"</code> modifies a datapoint by deleting it.  This is recorded as an NA value in the returned nxn matrix to preserve indexing.  The <code>method="outlier"</code> modifies a datapoint by making it an outlier (+/- 2*range(data)).  When we make a datapoint an outlier we force it to be in its own segment and thus expect to introduce two new changepoints to the resulting segmentation.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list containing the following elements:
+</p>
+<p>$delete, if the <code>modify="delete"</code>
+$class.del, an nxn matrix of the class at each time point (NA along the diagonal) 
+$param.del, an nxn matrix of the parameter at each time point (NA along the diagonal)
+$outlier, if the <code>modify="outlier"</code>
+$class.out, an nxn matrix of the class at each time point (NA along the diagonal) 
+$param.out, an nxn matrix of the parameter at each time point (NA along the diagonal)
+</p>
+
+
+<h3>Methods</h3>
+
+
+<dl>
+<dt><code>signature(model = "cpt",method=c("delete","outlier"),pos=TRUE,same=FALSE,sd=0.01)</code></dt>
+<dd>
+<p>For <code>model="cpt"</code> objects this is the original output from a call to the <code>cpt.*()</code> suite of functions in the "changepoint" package.
+</p>
+</dd>
+</dl>
+<h3>See Also</h3>
+
+<p><code>StabilityOverview</code>, <code>LocationStability</code>,<code>ParameterStability</code>,<code>InfluenceMap</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#### Generate Simulated data example ####
+set.seed(30)
+x = c(rnorm(50), rnorm(50, mean = 5), rnorm(1, mean = 15), rnorm(49, mean = 5), rnorm(50, mean = 4))
+xcpt = cpt.mean(x,method='PELT') # Get the changepoints via PELT
+
+#### Get the influence for both delete and outlier options ####
+x.inf = influence(xcpt)
+
+#### Get the influence using delete method ####
+x.inf = influence(xcpt, method="delete")
+
+#### Get the influence using outlier method ####
+x.inf = influence(xcpt, method="outlier", pos=FALSE,same=FALSE) 
+# no sd required as no jitter used.
+
+</code></pre>
+
+
+</div>

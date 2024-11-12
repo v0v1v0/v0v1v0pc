@@ -1,0 +1,178 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>WhatIfRegr</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>WhatIf for Regression Tasks</h2>
+
+<h3>Description</h3>
+
+<p>WhatIf returns the <code>n_counterfactual</code> most similar observations to <code>x_interest</code> from observations in <code>predictor$data$X</code>
+whose prediction is in the <code>desired_outcome</code> interval.
+</p>
+
+
+<h3>Details</h3>
+
+<p>Only observations whose features values lie between the corresponding values in <code>lower</code> and <code>upper</code> are considered
+counterfactual candidates.
+</p>
+
+
+<h3>Super classes</h3>
+
+<p><code>counterfactuals::CounterfactualMethod</code> -&gt; <code>counterfactuals::CounterfactualMethodRegr</code> -&gt; <code>WhatIfRegr</code>
+</p>
+
+
+<h3>Methods</h3>
+
+
+
+<h4>Public methods</h4>
+
+
+<ul>
+<li> <p><a href="#method-WhatIfRegr-new"><code>WhatIfRegr$new()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-WhatIfRegr-clone"><code>WhatIfRegr$clone()</code></a>
+</p>
+</li>
+</ul>
+<details open><summary>Inherited methods</summary><ul>
+<li><span class="pkg-link" data-pkg="counterfactuals" data-topic="CounterfactualMethod" data-id="print"><a href="../../counterfactuals/html/CounterfactualMethod.html#method-CounterfactualMethod-print"><code>counterfactuals::CounterfactualMethod$print()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="counterfactuals" data-topic="CounterfactualMethodRegr" data-id="find_counterfactuals"><a href="../../counterfactuals/html/CounterfactualMethodRegr.html#method-CounterfactualMethodRegr-find_counterfactuals"><code>counterfactuals::CounterfactualMethodRegr$find_counterfactuals()</code></a></span></li>
+</ul></details><hr>
+<a id="method-WhatIfRegr-new"></a>
+
+
+
+<h4>Method <code>new()</code>
+</h4>
+
+<p>Create a new WhatIfRegr object.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>WhatIfRegr$new(
+  predictor,
+  n_counterfactuals = 1L,
+  lower = NULL,
+  upper = NULL,
+  distance_function = "gower"
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>predictor</code></dt>
+<dd>
+<p>(Predictor)<br>
+The object (created with <code>iml::Predictor$new()</code>) holding the machine learning model and the data.</p>
+</dd>
+<dt><code>n_counterfactuals</code></dt>
+<dd>
+<p>(<code>integerish(1)</code>)<br>
+The number of counterfactuals to return Default is <code>1L</code>.</p>
+</dd>
+<dt><code>lower</code></dt>
+<dd>
+<p>(<code>numeric()</code> | <code>NULL</code>)<br>
+Vector of minimum values for numeric features.
+If <code>NULL</code> (default), the element for each numeric feature in <code>lower</code> is taken as its minimum value in <code>predictor$data$X</code>.
+If not <code>NULL</code>, it should be named with the corresponding feature names.</p>
+</dd>
+<dt><code>upper</code></dt>
+<dd>
+<p>(<code>numeric()</code> | <code>NULL</code>)<br>
+Vector of maximum values for numeric features.
+If <code>NULL</code> (default), the element for each numeric feature in <code>upper</code> is taken as its maximum value in <code>predictor$data$X</code>.
+If not <code>NULL</code>, it should be named with the corresponding feature names.</p>
+</dd>
+<dt><code>distance_function</code></dt>
+<dd>
+<p>(<code style="white-space: pre;">⁠function()⁠</code> | <code>'gower'</code> | <code>'gower_c'</code>)<br>
+The distance function used to compute the distances between <code>x_interest</code>
+and the training data points for finding <code>x_nn</code>.
+Either the name of an already implemented distance function
+('gower' or 'gower_c') or a function.
+If set to 'gower' (default), then Gower's distance (Gower 1971) is used;
+if set to 'gower_c', a C-based more efficient version of Gower's distance is used.
+A function must have three arguments  <code>x</code>, <code>y</code>, and <code>data</code> and should
+return a <code>double</code> matrix with <code>nrow(x)</code> rows and maximum <code>nrow(y)</code> columns.</p>
+</dd>
+</dl>
+</div>
+
+
+<hr>
+<a id="method-WhatIfRegr-clone"></a>
+
+
+
+<h4>Method <code>clone()</code>
+</h4>
+
+<p>The objects of this class are cloneable with this method.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>WhatIfRegr$clone(deep = FALSE)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>deep</code></dt>
+<dd>
+<p>Whether to make a deep clone.</p>
+</dd>
+</dl>
+</div>
+
+
+
+
+<h3>References</h3>
+
+<p>Gower, J. C. (1971), "A general coefficient of similarity and some of its properties". Biometrics, 27, 623–637.
+</p>
+<p>Wexler, J., Pushkarna, M., Bolukbasi, T., Wattenberg, M., Viégas, F., &amp; Wilson, J. (2019). The what-if tool:
+Interactive probing of machine learning models. IEEE transactions on visualization and computer graphics, 26(1), 56–65.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">if (require("randomForest")) {
+  set.seed(123456)
+  # Train a model
+  rf = randomForest(mpg ~ ., data = mtcars)
+  # Create a predictor object
+  predictor = iml::Predictor$new(rf)
+  # Find counterfactuals for x_interest
+  wi_regr = WhatIfRegr$new(predictor, n_counterfactuals = 5L)
+  cfactuals = wi_regr$find_counterfactuals(
+    x_interest = mtcars[1L, ], desired_outcome = c(22, 26)
+  )
+  # Print the results
+  cfactuals
+}
+
+</code></pre>
+
+
+</div>

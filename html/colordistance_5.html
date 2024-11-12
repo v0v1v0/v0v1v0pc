@@ -1,0 +1,141 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>convertColorSpace</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Convert between color spaces</h2>
+
+<h3>Description</h3>
+
+<p>Wrapper for <code>convertColor</code> that builds in random
+sampling, error messages, and removes default illuminant (D65) to enforce
+manual specification of a reference white.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">convertColorSpace(
+  color.coordinate.matrix,
+  from = "sRGB",
+  to = "Lab",
+  sample.size = 1e+05,
+  from.ref.white,
+  to.ref.white
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>color.coordinate.matrix</code></td>
+<td>
+<p>A color coordinate matrix with rows as colors
+and channels as columns. If a color histogram (e.g. as returned by
+<code>getImageHist</code>) is passed, the 'Pct' column is ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>from, to</code></td>
+<td>
+<p>Input and output color spaces, passed to
+<code>convertColor</code>. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sample.size</code></td>
+<td>
+<p>Number of pixels to be randomly sampled from filtered pixel
+array for conversion. If not numeric or larger than number of colors
+provided (i.e. cluster matrix), all colors are converted. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>from.ref.white, to.ref.white</code></td>
+<td>
+<p>Reference whites passed to
+<code>convertColor</code>. Unlike <code>convertColor</code>, no
+default is provided. See details for explanation of different reference
+whites.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Color spaces are all passed to
+<code>convertColor</code>, and can be any of: <code>"XYZ"</code>,
+<code>"sRGB"</code>, <code>"Apple RGB"</code>, <code>"CIE RGB"</code>, <code>"Lab"</code>, or
+<code>"Luv"</code>.
+</p>
+<p><code>Lab</code> and <code>Luv</code> color spaces are approximately perceptually
+uniform, meaning they usually do the best job of reflecting intuitive color
+distances without the non-linearity problems of more familiar RGB spaces.
+However, because they describe object colors, they require a reference
+'white light' color (dimly and brightly lit photographs of the same object
+will have very different RGB palettes, but similar Lab palettes if
+appropriate white references are used). The idea here is that the apparent
+colors in an image depend not just on the "absolute" color of an object,
+but also on the available light in the scene. There are seven CIE
+standardized illuminants available in <code>colordistance</code> (A, B, C, E, and
+D50, D55, and D65), but the most common are: </p>
+ <ul>
+<li> <p><code>"A"</code>:
+Standard incandescent lightbulb </p>
+</li>
+<li> <p><code>"D65"</code>: Average daylight </p>
+</li>
+<li>
+<p><code>"D50"</code>: Direct sunlight</p>
+</li>
+</ul>
+<p>Color conversions will be highly dependent on the reference white used, which
+is why no default is provided. Users should look into
+<a href="https://en.wikipedia.org/wiki/Standard_illuminant">standard
+illuminants</a> to choose an appropriate reference for a dataset.
+</p>
+<p>The conversion from RGB to a standardized color space (XYZ, Lab, or Luv) is
+approximate, non-linear, and relatively time-consuming. Converting a large
+number of pixels can be computationally expensive, so
+<code>convertColorSpace</code> will randomly sample a specified number of rows to
+reduce the time. The default sample size, 100,000 rows, takes about 5 seconds
+convert from sRGB to Lab space on an early 2015 Macbook with 8 GB of RAM.
+Time scales about linearly with number of rows converted.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A 3- or 4-column matrix depending on whether
+<code>color.coordinate.matrix</code> included a 'Pct' column (as from
+<code>getImageHist</code>), with one column per channel.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Convert a single RGB triplet and then back convert it
+rgb_color &lt;- c(0, 1, 0)
+lab_color &lt;- colordistance::convertColorSpace(rgb_color,
+ from="sRGB", to="Lab", to.ref.white="D65")
+rgb_again &lt;- colordistance::convertColorSpace(lab_color,
+ from="Lab", to="sRGB", from.ref.white="D65")
+
+# Convert pixels from loadImage() function
+img &lt;- colordistance::loadImage(system.file("extdata",
+"Heliconius/Heliconius_B/Heliconius_07.jpeg", package="colordistance"))
+lab_pixels &lt;- colordistance::convertColorSpace(img$filtered.rgb.2d,
+from="sRGB", to="XYZ", sample.size=5000)
+
+# Convert clusters
+img &lt;- colordistance::loadImage(system.file("extdata",
+"Heliconius/Heliconius_B/Heliconius_07.jpeg", package="colordistance"))
+img_hist &lt;- colordistance::getImageHist(img, bins=2, plotting=FALSE)
+lab_clusters &lt;- colordistance::convertColorSpace(img_hist, to.ref.white="D55")
+
+</code></pre>
+
+
+</div>

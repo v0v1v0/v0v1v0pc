@@ -1,0 +1,124 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>preProcess_removeFPCircle</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Given a surface matrix, estimates and filters any pixels within the estimated
+firing pin impression circle</h2>
+
+<h3>Description</h3>
+
+<p>Given a surface matrix, estimates and filters any pixels within the estimated
+firing pin impression circle
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">preProcess_removeFPCircle(
+  x3p,
+  aggregationFunction = mean,
+  smootherSize = 2 * round((0.1 * nrow(surfaceMat)/2)) + 1,
+  gridSize = 40,
+  gridGranularity = 1,
+  houghScoreQuant = 0.9
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x3p</code></td>
+<td>
+<p>an x3p object containing a surface matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aggregationFunction</code></td>
+<td>
+<p>function to select initial radius estimate from
+those calculated using fpRadiusGridSearch</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smootherSize</code></td>
+<td>
+<p>size of average smoother (to be passed to zoo::roll_mean)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gridSize</code></td>
+<td>
+<p>size of grid, centered on the initial radius estimate, to be
+used to determine the best fitting circle to the surface matrix via the
+Hough transform method</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gridGranularity</code></td>
+<td>
+<p>granularity of radius grid used to determine the best
+fitting circle to the surface matrix via the Hough transform method</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>houghScoreQuant</code></td>
+<td>
+<p>quantile cut-off to be used when determining a final
+radius estimate using the score values returned by the imager::hough_circle</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An x3p object containing a surface matrix with the estimated firing
+pin circle pixels replaced with NAs.
+</p>
+
+
+<h3>Note</h3>
+
+<p>imager treats a matrix as its transpose (i.e., x and y axes are
+swapped). As such, relative to the original surface matrix, the x and y
+columns in the data frame fpImpressionCircle actually correspond to the row
+and column indices at which the center of the firing pin impression circle
+is estiamted to be.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+nbtrd_link &lt;- "https://tsapps.nist.gov/NRBTD/Studies/CartridgeMeasurement/"
+fadul1.1_link &lt;- "DownloadMeasurement/2d9cc51f-6f66-40a0-973a-a9292dbee36d"
+
+fadul1.1 &lt;- x3ptools::read_x3p(paste0(nbtrd_link,fadul1.1_link))
+
+fadul1.1_labelCropped &lt;- fadul1.1 %&gt;%
+                     preProcess_crop(region = "exterior",
+                                     radiusOffset = -30) %&gt;%
+                     preProcess_crop(region = "interior",
+                                     radiusOffset = 200) %&gt;%
+                     preProcess_removeTrend(statistic = "quantile",
+                                            tau = .5,
+                                            method = "fn")
+
+fadul1.1_houghCropped &lt;- fadul1.1 %&gt;%
+                          x3ptools::x3p_sample() %&gt;%
+                          preProcess_ransacLevel() %&gt;%
+                          preProcess_crop(region = "exterior",
+                                          radiusOffset = -30) %&gt;%
+                          preProcess_removeFPCircle()
+
+x3pListPlot(list("Original" = fadul1.1,
+                 "Cropped by Labeling" = fadul1.1_labelCropped,
+                 "Cropped by Hough" = fadul1.1_houghCropped),type = "list")
+
+## End(Not run)
+</code></pre>
+
+
+</div>

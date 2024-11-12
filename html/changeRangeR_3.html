@@ -1,0 +1,79 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>calc_PE</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate phylogenetic endemism</h2>
+
+<h3>Description</h3>
+
+<p>Calculates phylogenetic endemism from a tree and a sites by tips (species) matrix.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">calc_PE(phylo.tree, sites_x_tips, presence = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>phylo.tree</code></td>
+<td>
+<p>class phylo object of phylogenetic tree. The names on tree's tip labels need to match the column names on the matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sites_x_tips</code></td>
+<td>
+<p>class data.frame object. Rows should be locations and columns should be species. The sites should represent equal areas (presumably grid cells). There is no need to include unoccupied grid cells.  One easy way to get this, is to simply round the coordinates to the appropriate grid resolution, and then group occurrences at the same rounded location together using aggregate or dplyr</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>presence</code></td>
+<td>
+<p>character string of either: "presence", "abundance", or "probability".
+presence specifies what the values in the matrix cells mean, and how to calculate PE
+abundance is an amount (could be number of individuals, proportion of cell occupied etc).  With abundance, PE is equivalent to Caddotte &amp; Davies BED)
+probability is a value from 0 to 1, for example from an SDM.  Probability then propagates to internal branches at the probability that any of the descendent branches are present.  This method is described in a paper of mine in, which is being pending minor revisions.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>dataframe showing the PE at each site
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Convert raster stack to points
+r1 &lt;- raster::raster(nrows=108, ncols=108, xmn=-50, xmx=50)
+raster::values(r1)&lt;- runif(n = (108*108))
+r1[r1 &lt; 0.5] &lt;- NA
+r1[r1 &gt; 0.5] &lt;- 1
+r2 &lt;- raster::raster(nrows=108, ncols=108, xmn=-50, xmx=50)
+raster::values(r2)&lt;- runif(n = (108*108))
+r2[r2 &lt; 0.5] &lt;- NA
+r2[r2 &gt; 0.5] &lt;- 1
+r3 &lt;- raster::raster(nrows=108, ncols=108, xmn=-50, xmx=50)
+raster::values(r3)&lt;- runif(n = (108*108))
+r3[r3 &lt; 0.5] &lt;- NA
+r3[r3 &gt; 0.5] &lt;- 1
+rStack &lt;- raster::stack(r1, r2, r3)
+Allxy &lt;- raster::rasterToPoints(rStack)
+# Drop first 2 columns (lat/long)
+sites &lt;- Allxy[,2:ncol(Allxy)]
+sites[is.na(sites)] &lt;- 0
+library(ape)
+tree &lt;- rtree(n = 3)
+tree$tip.label &lt;- names(rStack)
+calc_PE(phylo.tree = tree, sites_x_tips = sites, presence = "presence")
+</code></pre>
+
+
+</div>

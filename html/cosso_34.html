@@ -1,0 +1,175 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>SSANOVAwt</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Compute adaptive weights by fitting a SS-ANOVA model
+</h2>
+
+<h3>Description</h3>
+
+<p>A preliminary estimate <code class="reqn">\tilde{\eta}</code> is first obtained by fitting a smoothing spline ANOVA model,
+and then use the inverse <code class="reqn">L_2</code>-norm, <code class="reqn">||\tilde{\eta}_j||^{-\gamma}</code>, as the initial weight for the <code class="reqn">j</code>-th functional component.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R"> SSANOVAwt(x,y,tau,family=c("Gaussian","Binomial","Cox","Quantile"),mscale=rep(1,ncol(x)),
+               gamma=1,scale=FALSE,nbasis,basis.id,cpus) </code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>input matrix; the number of rows is sample size, the number of columns is the data dimension.
+The range of input variables is scaled to [0,1] for continuous variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>response vector. Quantitative for <code>family="Gaussian"</code> or <code>family="Quantile"</code>.
+For <code>family="Binomial"</code> should be a vector with two levels.
+For <code>family="Cox"</code>, y should be a two-column matrix (data frame) with columns named 'time' and 'status'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau</code></td>
+<td>
+<p>the quantile to be estimated, a number strictly between 0 and 1. Argument required when <code>family="Quantile"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>response type. Abbreviations are allowed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mscale</code></td>
+<td>
+<p>scale parameter for the Gram matrix associated with each function component. Default is <code>rep(1,ncol(x))</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gamma</code></td>
+<td>
+<p>power of inverse <code class="reqn">L_2</code>-norm. Default is <code>1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scale</code></td>
+<td>
+<p>if <code>TRUE</code>, continuous predictors will be rescaled to [0,1] interval. Default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nbasis</code></td>
+<td>
+<p>number of "knots" to be selected. Ignored when <code>basis.id</code> is provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>basis.id</code></td>
+<td>
+<p>index designating selected "knots". Argument is not valid if <code>family="Quantile"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cpus</code></td>
+<td>
+<p>number of available processor units. Default is <code>1</code>. If <code>cpus</code>&gt;=2, parallelize task using "parallel" package. Recommended when either sample size or number of covariates is large.
+Argument is not valid if <code>family="Gaussian"</code> or <code>family="Binomial"</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The initial mean function is estimated via a smooothing spline objective function. In the SS-ANOVA model framework,
+the regression function is assumed to have an additive form
+</p>
+<p style="text-align: center;"><code class="reqn">\eta(x)=b+\sum_{j=1}^p\eta_j(x^{(j)}),</code>
+</p>
+
+<p>where <code class="reqn">b</code> denotes intercept and <code class="reqn">\eta_j</code> denotes the main effect of the <code class="reqn">j</code>-th covariate.
+</p>
+<p>For <code>"Gaussian"</code> response, the mean regression function is estimated by minimizing the objective function:
+</p>
+<p style="text-align: center;"><code class="reqn">\sum_i(y_i-\eta(x_i))^2/nobs+\lambda_0\sum_{j=1}^p\alpha_j||\eta_j||^2.</code>
+</p>
+
+<p>where RSS is residual sum of squares.
+</p>
+<p>For <code>"Binomial"</code> response, the regression function is estimated by minimizing the objective function:
+</p>
+<p style="text-align: center;"><code class="reqn">-log-likelihood/nobs+\lambda_0\sum_{j=1}^p\alpha_j||\eta_j||^2</code>
+</p>
+
+<p>For <code>"Quantile"</code> regression model, the quantile function, is estimated by minimizing the objective function:
+</p>
+<p style="text-align: center;"><code class="reqn">\sum_i\rho(y_i-\eta(x_i))/nobs+\lambda_0\sum_{j=1}^p\alpha_j||\eta_j||^2.</code>
+</p>
+
+<p>For <code>"Cox"</code> regression model, the log-hazard function, is estimated by minimizing the objective function:
+</p>
+<p style="text-align: center;"><code class="reqn">-log-Partial Likelihood/nobs+\lambda_0\sum_{j=1}^p\alpha_j||\eta_j||^2.</code>
+</p>
+
+<p>The smoothing parameter <code class="reqn">\lambda_0</code> is tuned by 5-fold Cross-Validation, if <code>family="Gaussian"</code>, <code>"Binomial"</code> or <code>"Quantile"</code>,
+and Approximate Cross-Validation, if <code>family="Cox"</code>. But the smoothing parameters <code class="reqn">\alpha_j</code> are given in the argument <code>mscale</code>.
+</p>
+<p>The adaptive weights are then fiven by <code class="reqn">||\tilde{\eta}_j||^{-\gamma}</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<table><tr style="vertical-align: top;">
+<td><code>wt</code></td>
+<td>
+<p>The adaptive weights.</p>
+</td>
+</tr></table>
+<h3>Author(s)</h3>
+
+<p>Hao Helen Zhang and Chen-Yen Lin</p>
+
+
+<h3>References</h3>
+
+<p>Storlie, C. B., Bondell, H. D., Reich, B. J. and Zhang, H. H. (2011) "Surface Estimation, Variable Selection, and the Nonparametric Oracle Property", Statistica Sinica, <b>21</b>, 679–705.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Adaptive COSSO Model
+## Binomial
+set.seed(20130310)
+x=cbind(rbinom(200,1,.7),matrix(runif(200*7,0,1),nc=7))
+trueProb=1/(1+exp(-x[,1]-sin(2*pi*x[,2])-5*(x[,4]-0.4)^2))
+y=rbinom(200,1,trueProb)
+
+Binomial.wt=SSANOVAwt(x,y,family="Bin")
+ada.B.Obj=cosso(x,y,wt=Binomial.wt,family="Bin")
+
+## Not run: 
+## Gaussian
+set.seed(20130310)
+x=cbind(rbinom(200,1,.7),matrix(runif(200*7,0,1),nc=7))
+y=x[,1]+sin(2*pi*x[,2])+5*(x[,4]-0.4)^2+rnorm(200,0,1)
+Gaussian.wt=SSANOVAwt(designx,response,family="Gau")
+ada.G.Obj=cosso(x,y,wt=Gaussian.wt,family="Gaussian")
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

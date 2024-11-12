@@ -1,0 +1,116 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>body_add_table_list</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Add a list of tables</h2>
+
+<h3>Description</h3>
+
+<p>Add a list of tables in an officer document. <code>crosstables</code> will be added using <code>body_add_crosstable()</code> and <code>flextables</code> will be added using <code>flextable::body_add_flextable()</code>. Plain dataframes will be converted to flextables.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">body_add_table_list(
+  doc,
+  l,
+  fun_before = "title2",
+  fun_after = NULL,
+  fun = fun_before,
+  ...
+)
+
+body_add_flextable_list(...)
+
+body_add_crosstable_list(...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>doc</code></td>
+<td>
+<p>a <code>rdocx</code> object, created by <code>officer::read_docx()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>l</code></td>
+<td>
+<p>a named list of tables (of class <code>crosstable</code>, <code>flextable</code>, or <code>data.frame</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fun_before</code></td>
+<td>
+<p>a function to be used before each table</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fun_after</code></td>
+<td>
+<p>a function to be used after each table.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fun</code></td>
+<td>
+<p>Deprecated</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments passed on to <code>body_add_crosstable()</code> or <code>flextable::body_add_flextable()</code></p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The docx object <code>doc</code>
+</p>
+
+
+<h3>
+<code>fun_before</code> and <code>fun_after</code>
+</h3>
+
+<p>These should be function of the form <code style="white-space: pre;">⁠function(doc, .name)⁠</code> where <code>.name</code> is the name of the current table of the list.
+You can also pass <code>"title2"</code> to add the name as a title of level 2 between each table (works for levels 3 and 4 as well), <code>"newline"</code> to simply add a new line, or even <code>NULL</code> to not separate them (beware that the tables might merge then).
+<code>fun_before</code> is designed to add a title while <code>fun_after</code> is designed to add a table legend (cf. examples).
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(officer)
+ctl = list(iris2=crosstable(iris2, 1),
+           "Just a flextable"=flextable::flextable(mtcars2[1:5,1:5]),
+           "Just a dataframe"=iris2[1:5,1:5])
+
+fun1 = function(doc, .name){
+    doc %&gt;%
+        body_add_title(" This is table '{.name}' as a flex/crosstable", level=2) %&gt;%
+        body_add_normal("Here is the table:")
+}
+fun2 = function(doc, .name){
+  doc %&gt;% body_add_table_legend("{.name}", bookmark=.name)
+}
+read_docx() %&gt;%
+  body_add_title("Separated by subtitle", 1) %&gt;%
+  body_add_table_list(ctl, fun_before="title2") %&gt;%
+  body_add_break() %&gt;%
+  body_add_title("Separated using a custom function", 1) %&gt;%
+  body_add_normal("You can therefore use bookmarks, for instance here are
+                   tables \\@ref(iris2), \\@ref(just_a_flextable)
+                   and \\@ref(just_a_dataframe).") %&gt;%
+  body_add_table_list(ctl, fun_before=fun1, fun_after=fun2, body_fontsize=8) %&gt;%
+  write_and_open()
+</code></pre>
+
+
+</div>

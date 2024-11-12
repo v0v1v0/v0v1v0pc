@@ -1,0 +1,289 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>crosstable</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Easily describe datasets</h2>
+
+<h3>Description</h3>
+
+<p>Generate a descriptive table of all chosen columns, as contingency tables for categorical variables and as calculation summaries for numeric variables. If the <code>by</code> argument points to one or several categorical variables, <code>crosstable</code> will output a description of all columns for each level. Otherwise, if it points to a numeric variable, <code>crosstable</code> will calculate correlation coefficients with all other selected numeric columns. Finally, if it points to a <code>Surv</code> object, <code>crosstable</code> will describe the survival at different times.<br><br>
+Can be formatted as an HTML table using <code>as_flextable()</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">crosstable(
+  data,
+  cols = everything(),
+  ...,
+  by = NULL,
+  total = c("none", "row", "column", "both"),
+  percent_pattern = "{n} ({p_row})",
+  percent_digits = 2,
+  num_digits = 1,
+  showNA = c("ifany", "always", "no"),
+  label = TRUE,
+  funs = c(` ` = cross_summary),
+  funs_arg = list(),
+  cor_method = c("pearson", "kendall", "spearman"),
+  drop_levels = FALSE,
+  remove_zero_percent = NULL,
+  unique_numeric = 3,
+  date_format = NULL,
+  times = NULL,
+  followup = FALSE,
+  test = FALSE,
+  test_args = crosstable_test_args(),
+  effect = FALSE,
+  effect_args = crosstable_effect_args(),
+  margin = deprecated(),
+  .vars = deprecated()
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data.frame</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cols</code></td>
+<td>
+<p>&lt;<code>tidy-select</code>&gt; Columns to describe, default to <code>everything()</code>. See examples or <code>vignette("crosstable-selection")</code> for more details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Unused. All parameters after this one must be named.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by</code></td>
+<td>
+<p>The variable to group on. Character or name.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>total</code></td>
+<td>
+<p>one of ["none", "row", "column" or "both"] to indicate whether to add total rows and/or columns. Default to <code>none</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>percent_pattern</code></td>
+<td>
+<p>Pattern used to describe proportions in categorical data. Syntax uses a <code>glue::glue()</code> specification, see the <strong>section</strong> below for more details. Default to <code>"{n} ({p_col})"</code> if <code>by</code> is null and <code>"{n} ({p_row})"</code> if it is not.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>percent_digits</code></td>
+<td>
+<p>Number of digits for percentages.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>num_digits</code></td>
+<td>
+<p>Number of digits for numeric summaries.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>showNA</code></td>
+<td>
+<p>Whether to show NA in categorical variables (one of <code>c("ifany", "always", "no")</code>, like in <code>table()</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>label</code></td>
+<td>
+<p>Whether to show labels. See <code>import_labels()</code> or <code>set_label()</code>for how to add labels to the dataset columns.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>funs</code></td>
+<td>
+<p>Functions to apply to numeric variables. Default to <code>cross_summary()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>funs_arg</code></td>
+<td>
+<p>Additional parameters for <code>funs</code>, e.g. <code>digits</code> (the number of decimal places) for the default <code>cross_summary()</code>. Ultimately, these arguments are passed to <code>format_fixed()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cor_method</code></td>
+<td>
+<p>One of <code>c("pearson", "kendall", "spearman")</code> to indicate which correlation coefficient is to be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop_levels</code></td>
+<td>
+<p>Whether to drop unused levels of factor variables. Default to <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>remove_zero_percent</code></td>
+<td>
+<p>Whether to remove proportions when <code>n==0</code>. Default to <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>unique_numeric</code></td>
+<td>
+<p>The number of non-missing different levels a variable should have to be considered as numeric.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>date_format</code></td>
+<td>
+<p>if <code>x</code> is a vector of Date or POSIXt, the format to apply (see strptime for formats)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>times</code></td>
+<td>
+<p>When using formula with <code>survival::Surv()</code> objects, which times to summarize.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>followup</code></td>
+<td>
+<p>When using formula with <code>survival::Surv()</code> objects, whether to display follow-up time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test</code></td>
+<td>
+<p>Whether to perform tests.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test_args</code></td>
+<td>
+<p>See <code>crosstable_test_args</code> to override default testing behaviour.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>effect</code></td>
+<td>
+<p>Whether to compute a effect measure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>effect_args</code></td>
+<td>
+<p>See <code>crosstable_effect_args</code> to override default behaviour.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>margin</code></td>
+<td>
+<p>Deprecated in favor of <code>percent_pattern</code>. One of ["row", "column", "cell", "none", or "all"]. Default to <code>row</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.vars</code></td>
+<td>
+<p>Deprecated in favor of <code>cols</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A <code>data.frame</code>/<code>tibble</code> of class <code>crosstable</code>
+</p>
+
+
+<h3>About <code>percent_pattern</code>
+</h3>
+
+<p>The <code>percent_pattern</code> argument is very powerful but can be difficult to understand at first :
+</p>
+
+<ul>
+<li>
+<p> It is usually a single string that uses the glue syntax, where variables are put in curly braces (<code>{x}</code>).
+</p>
+</li>
+<li>
+<p> Counts are expressed as <code>{n}</code>, <code>{n_row}</code>, <code>{n_col}</code>, and <code>{n_tot}</code>, and proportions as <code>{p_row}</code>, <code>{p_col}</code>, and <code>{p_cell}</code>, depending on the margin on which they are calculated.
+</p>
+</li>
+<li>
+<p> For each variable, a version including missing values in the total is proposed as <code>{n_xxx_na}</code> or <code>{p_xxx_na}</code>.
+</p>
+</li>
+<li>
+<p> For each proportion, a confidence interval is also calculated using <a href="https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Wilson_score_interval">Wilson score</a> and can be expressed as <code>{p_xxx_inf}</code> and <code>{p_xxx_sup}</code>. See examples for practical applications.
+</p>
+</li>
+<li>
+<p> Alternatively, <code>percent_pattern</code> can be a list of characters with names <code>body</code>, <code>total_row</code>, <code>total_col</code>, and <code>total_all</code> to also control the pattern in other parts of the crosstable than the body.
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Dan Chaltiel
+</p>
+
+
+<h3>See Also</h3>
+
+<p>https://danchaltiel.github.io/crosstable/, as_flextable, import_labels
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#whole table
+crosstable(iris)
+crosstable(mtcars)
+crosstable(mtcars2)
+
+#tidyselection, custom functions
+library(dplyr)
+crosstable(mtcars2, c(ends_with("t"), starts_with("c")), by=vs,
+           funs=c(mean, quantile), funs_arg=list(probs=c(.25,.75)))
+
+#margin and totals, multiple by
+crosstable(mtcars2, c(disp, cyl), by=c(am, vs),
+           margin=c("row", "col"), total = "both")
+
+#predicate selection, correlation, effect calculation
+crosstable(mtcars2, where(is.numeric), by=hp, effect=TRUE)
+
+#lambda selection &amp; statistical tests
+crosstable(mtcars2, ~is.numeric(.x) &amp;&amp; mean(.x)&gt;50, by=vs, test=TRUE)
+
+#Dates
+mtcars2$my_date = as.Date(mtcars2$hp , origin="2010-01-01") %&gt;% set_label("Some nonsense date")
+crosstable(mtcars2, my_date, by=vs, date_format="%d/%m/%Y")
+
+#Survival data (using formula syntax)
+library(survival)
+crosstable(aml, Surv(time, status) ~ x, times=c(0,15,30,150), followup=TRUE)
+
+#Patterns
+crosstable(mtcars2, vs, by=am, percent_digits=0,
+           percent_pattern="{n} ({p_col} / {p_row})")
+crosstable(mtcars2, vs, by=am, percent_digits=0,
+           percent_pattern="N={n} \np[95%CI] = {p_col} [{p_col_inf}; {p_col_sup}]")
+str_high="n&gt;5"; str_lo="n&lt;=5"
+crosstable(mtcars2, vs, by=am, percent_digits=0,
+           percent_pattern="col={p_col}, row={p_row} ({ifelse(n&lt;5, str_lo, str_high)})")
+</code></pre>
+
+
+</div>

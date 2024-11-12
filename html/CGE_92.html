@@ -1,0 +1,552 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>iep</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Compute Instantaneous Equilibrium Path (alias Market Clearing Path)
+</h2>
+
+<h3>Description</h3>
+
+<p>This function computes the instantaneous equilibrium path (alias market clearing path).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">iep(A.iep = NULL, A = NULL,  B.iep = NULL, B = NULL,
+    SExg.iep, InitialEndowments, nPeriods.iep, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>A.iep</code></td>
+<td>
+<p>A.iep(state.iep) is a function which returns a demand coefficient matrix or a function A(state). state.iep is a list consisting of time (the iep time), p (the price vector at the iep time), z (output and utility vector at the iep time).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>A</code></td>
+<td>
+<p>a demand coefficient matrix or a function A(state) which returns a demand coefficient matrix. If A.iep is not NULL, A will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B.iep</code></td>
+<td>
+<p>B.iep(state.iep) is a function which returns a supply coefficient matrix or a function B(state) at the iep time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p>a supply coefficient matrix or a function B(state) which returns a supply coefficient matrix. If B.iep is not NULL, B will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SExg.iep</code></td>
+<td>
+<p>an exogenous supply matrix or a function SExg.iep(state.iep) which returns an exogenous supply matrix at the iep time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>InitialEndowments</code></td>
+<td>
+<p>a matrix indicating the initial endowments.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nPeriods.iep</code></td>
+<td>
+<p>number of periods of the instantaneous equilibrium path.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>parameters of the function sdm.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function computes the instantaneous equilibrium path (alias market clearing path) of a dynamic economy with the structural dynamic model (the sdm function).
+</p>
+
+
+<h3>Value</h3>
+
+<p>a list of general equilibria.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>LI Wu &lt;liwu@staff.shu.edu.cn&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Acemoglu, D. (2009, ISBN: 9780691132921) Introduction to Modern Economic Growth. Princeton University Press.
+</p>
+<p>LI Wu (2019, ISBN: 9787521804225) General Equilibrium and Structural Dynamics: Perspectives of New Structural Economics. Beijing: Economic Science Press. (In Chinese)
+</p>
+<p>LI Wu (2010) A Structural Growth Model and its Applications to Sraffa's System. http://www.iioa.org/conferences/18th/papers/files/104_20100729011_AStructuralGrowthModelanditsApplicationstoSraffasSstem.pdf
+</p>
+<p>Torres, Jose L. (2016, ISBN: 9781622730452). Introduction to Dynamic Macroeconomic General Equilibrium Models (Second Edition). Vernon Press.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>sdm</code>;
+<code>Example7.2</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## example 6.4 of Acemoglu (2009, page 206)
+discount.factor &lt;- 0.97
+return.rate &lt;- 1 / discount.factor - 1
+
+A &lt;- function(state) {
+  a1 &lt;- CD_A(
+    1, rbind(0.35, 0.65, 0),
+    c(state$p[1] * (1 + return.rate), state$p[2:3])
+  )
+  a2 &lt;- c(1, 0, 0)
+  a1[3] &lt;- state$p[1] * a1[1] * return.rate / state$p[3]
+  cbind(a1, a2)
+}
+
+B &lt;- matrix(c(
+  1, 0,
+  0, 1,
+  0, 1
+), 3, 2, TRUE)
+
+
+SExg.iep &lt;- {
+  tmp &lt;- matrix(NA, 3, 2)
+  tmp[2, 2] &lt;- tmp[3, 2] &lt;- 1
+  tmp
+}
+
+InitialEndowments &lt;- {
+  tmp &lt;- matrix(0, 3, 2)
+  tmp[1, 1] &lt;- 0.01
+  tmp[2, 2] &lt;- tmp[3, 2] &lt;- 1
+  tmp
+}
+
+ge.list &lt;- iep(
+  A = A, B = B, SExg.iep = SExg.iep,
+  InitialEndowments = InitialEndowments,
+  nPeriods.iep = 50
+)
+
+z &lt;- t(sapply(ge.list, function(x) x$z))
+matplot(z, type = "l")
+
+z[1:49, 1] * (1 - 0.97 * 0.35) # the same as z[-1,2] (i.e. consumption)
+
+# stochastic (instantaneous) equilibrium path (SEP) in the economy above.
+nPeriods.iep &lt;-  150
+set.seed(1)
+alpha.SEP &lt;- rep(1, 50)
+for (t in 51:nPeriods.iep) {
+  alpha.SEP[t] &lt;- exp(0.95 * log(alpha.SEP[t - 1]) +
+    rnorm(1, sd = 0.01))
+}
+
+A.iep &lt;- function(state.iep) {
+  A &lt;- function(state) {
+    a1 &lt;- CD_A(
+      alpha.SEP[state.iep$time],
+      rbind(0.35, 0.65, 0),
+      c(state$p[1] * (1 + return.rate), state$p[2:3])
+    )
+    a2 &lt;- c(1, 0, 0)
+    a1[3] &lt;- state$p[1] * a1[1] * return.rate / state$p[3]
+    cbind(a1, a2)
+  }
+
+  return(A)
+}
+
+ge.list &lt;- iep(
+  A.iep = A.iep, B = B, SExg.iep = SExg.iep,
+  InitialEndowments = InitialEndowments,
+  nPeriods.iep = nPeriods.iep
+)
+
+z &lt;- t(sapply(ge.list, function(x) x$z))
+matplot(z, type = "l")
+
+## an example with two firms
+sigma &lt;- 0 # 0 implies Cobb-Douglas production functions
+gamma1 &lt;- 0.01
+gamma2 &lt;- 0.01
+gamma3 &lt;- 0.01
+beta1 &lt;- 0.35
+beta2 &lt;- 0.4
+
+A.iep &lt;- function(state.iep) {
+  A &lt;- function(state) {
+    a1 &lt;- CES_A(sigma, exp(gamma1 * (state.iep$time - 1)), rbind(beta1, 0, 1 - beta1), state$p)
+    a2 &lt;- CES_A(sigma, exp(gamma2 * (state.iep$time - 1)), rbind(beta2, 0, 1 - beta2), state$p)
+    a3 &lt;- c(0, 1, 0)
+    cbind(a1, a2, a3)
+  }
+
+  return(A)
+}
+
+B &lt;- diag(3)
+
+SExg.iep &lt;- function(state.iep) {
+  tmp &lt;- matrix(NA, 3, 3)
+  tmp[3, 3] &lt;- exp(gamma3 * (state.iep$time - 1))
+  tmp
+}
+
+InitialEndowments &lt;- {
+  tmp &lt;- matrix(0, 3, 3)
+  tmp[1, 1] &lt;- 0.01
+  tmp[2, 2] &lt;- 0.02
+  tmp[3, 3] &lt;- 1
+  tmp
+}
+
+ge.list &lt;- iep(
+  A.iep = A.iep, B = B, SExg.iep = SExg.iep,
+  InitialEndowments = InitialEndowments,
+  nPeriods.iep = 100, trace = FALSE
+)
+
+z &lt;- t(sapply(ge.list, function(x) x$z)) # outputs and utility
+matplot(z, type = "l")
+
+diff(log(z)) # logarithmic growth rate
+
+## an example with heterogeneous firms
+A &lt;- function(state) {
+  a1 &lt;- CD_A(1, rbind(0.35, 0.65), state$p)
+  a2 &lt;- CD_A(1.3, rbind(0.9, 0.1), state$p)
+  a3 &lt;- c(1, 0)
+  cbind(a1, a2, a3)
+}
+
+B &lt;- matrix(c(
+  1, 1, 0,
+  0, 0, 1
+), 2, 3, TRUE)
+
+SExg.iep &lt;- {
+  tmp &lt;- matrix(NA, 2, 3)
+  tmp[2, 3] &lt;- 1
+  tmp
+}
+
+InitialEndowments &lt;- {
+  tmp &lt;- matrix(0, 2, 3)
+  tmp[1, 1] &lt;- tmp[1, 2] &lt;- 0.01
+  tmp[2, 3] &lt;- 1
+  tmp
+}
+
+ge.list &lt;- iep(
+  A = A, B = B, SExg.iep = SExg.iep,
+  InitialEndowments = InitialEndowments,
+  nPeriods.iep = 200, trace = FALSE
+)
+
+z &lt;- t(sapply(ge.list, function(x) x$z))
+matplot(z, type = "l")
+
+## an iep of the example (see Table 2.1 and 2.2) of the canonical dynamic
+## macroeconomic general equilibrium model in Torres (2016).
+discount.factor &lt;- 0.97
+return.rate &lt;- 1 / discount.factor - 1
+depreciation.rate &lt;- 0.06
+
+A &lt;- function(state) {
+  a1 &lt;- CD_A(1, rbind(0, 0.65, 0.35, 0), state$p)
+  a2 &lt;- CD_A(1, rbind(0.4, 1 - 0.4, 0, 0), state$p)
+  a3 &lt;- c(1, 0, 0, state$p[1] * return.rate / state$p[4])
+  cbind(a1, a2, a3)
+}
+
+B &lt;- matrix(c(
+  1, 0, 1 - depreciation.rate,
+  0, 1, 0,
+  0, 0, 1,
+  0, 1, 0
+), 4, 3, TRUE)
+
+SExg.iep &lt;- {
+  tmp &lt;- matrix(NA, 4, 3)
+  tmp[2, 2] &lt;- tmp[4, 2] &lt;- 1
+  tmp
+}
+
+InitialEndowments &lt;- {
+  tmp &lt;- matrix(0, 4, 3)
+  tmp[1, 1] &lt;- 0.01
+  tmp[2, 2] &lt;- tmp[4, 2] &lt;- 1
+  tmp[3, 3] &lt;- 0.01
+  tmp
+}
+
+ge.list &lt;- iep(
+  A = A, B = B, SExg.iep = SExg.iep,
+  InitialEndowments = InitialEndowments,
+  nPeriods.iep = 200, trace = FALSE
+)
+
+z &lt;- t(sapply(ge.list, function(x) x$z))
+matplot(z, type = "l")
+
+## another iep of the economy above
+discount.factor &lt;- 0.97
+return.rate &lt;- 1 / discount.factor - 1
+depreciation.rate &lt;- 0.06
+
+A &lt;- function(state) {
+  a1 &lt;- CD_A(
+    1, rbind(0.35, 0.65, 0),
+    c(state$p[1] * (return.rate + depreciation.rate), state$p[2:3])
+  )
+  a2 &lt;- CD_A(1, rbind(0.4, 1 - 0.4, 0), state$p)
+  a1[3] &lt;- state$p[1] * a1[1] * return.rate / state$p[3]
+  cbind(a1, a2)
+}
+
+B &lt;- function(state) {
+  tmp &lt;- matrix(c(
+    1, 0,
+    0, 1,
+    0, 1
+  ), 3, 2, TRUE)
+
+  tmp[1] &lt;- tmp[1] + A(state)[1, 1] * (1 - depreciation.rate)
+  tmp
+}
+
+SExg.iep &lt;- {
+  tmp &lt;- matrix(NA, 3, 2)
+  tmp[2, 2] &lt;- tmp[3, 2] &lt;- 1
+  tmp
+}
+
+InitialEndowments &lt;- {
+  tmp &lt;- matrix(0, 3, 2)
+  tmp[1, 1] &lt;- 0.01
+  tmp[2, 2] &lt;- tmp[3, 2] &lt;- 1
+  tmp
+}
+
+ge.list &lt;- iep(
+  A = A, B = B, SExg.iep = SExg.iep,
+  InitialEndowments = InitialEndowments,
+  nPeriods.iep = 100, n = 3, m = 2, trace = FALSE
+)
+
+z &lt;- t(sapply(ge.list, function(x) x$z))
+matplot(z, type = "l")
+
+## TFP shock in the economy above (see Torres, 2016, section 2.8).
+nPeriods.iep &lt;- 200
+
+discount.factor &lt;- 0.97
+return.rate &lt;- 1 / discount.factor - 1
+depreciation.rate &lt;- 0.06
+
+set.seed(1)
+alpha.shock &lt;- rep(1, 100)
+alpha.shock[101] &lt;- exp(0.01)
+for (t in 102:nPeriods.iep) {
+  alpha.shock[t] &lt;- exp(0.95 * log(alpha.shock[t - 1]))
+}
+
+A.iep &lt;- function(state.iep) {
+  A &lt;- function(state) {
+    a1 &lt;- CD_A(
+      alpha.shock[state.iep$time],
+      rbind(0.35, 0.65, 0),
+      c(state$p[1] * (return.rate + depreciation.rate), state$p[2:3])
+    )
+    a2 &lt;- CD_A(1, rbind(0.4, 1 - 0.4, 0), state$p)
+    a1[3] &lt;- state$p[1] * a1[1] * return.rate / state$p[3]
+    cbind(a1, a2)
+  }
+
+  return(A)
+}
+
+B.iep &lt;- function(state.iep) {
+  B &lt;- function(state) {
+    tmp &lt;- matrix(c(
+      1, 0,
+      0, 1,
+      0, 1
+    ), 3, 2, TRUE)
+
+    a1 &lt;- CD_A(
+      alpha.shock[state.iep$time],
+      rbind(0.35, 0.65, 0),
+      c(state$p[1] * (return.rate + depreciation.rate), state$p[2:3])
+    )
+
+    tmp[1] &lt;- tmp[1] + a1[1] * (1 - depreciation.rate)
+    tmp
+  }
+
+  return(B)
+}
+
+SExg.iep &lt;- {
+  tmp &lt;- matrix(NA, 3, 2)
+  tmp[2, 2] &lt;- tmp[3, 2] &lt;- 1
+  tmp
+}
+
+InitialEndowments &lt;- {
+  tmp &lt;- matrix(0, 3, 2)
+  tmp[1, 1] &lt;- tmp[2, 2] &lt;- tmp[3, 2] &lt;- 1
+  tmp
+}
+
+ge.list &lt;- iep(
+  A.iep = A.iep, B.iep = B.iep, SExg.iep = SExg.iep,
+  InitialEndowments = InitialEndowments,
+  nPeriods.iep = nPeriods.iep, n = 3, m = 2, trace = FALSE
+)
+
+z &lt;- t(sapply(ge.list, function(x) x$z))
+c &lt;- sapply(ge.list, function(x) x$A[1,2]*x$z[2]) #consumption
+
+par(mfrow = c(2, 2))
+matplot(z, type = "l")
+x &lt;- 100:140
+plot(x, z[x, 1] / z[x[1], 1], type = "b", pch = 20)
+plot(x, z[x, 2] / z[x[1], 2], type = "b", pch = 20)
+plot(x, c[x] / c[x[1]], type = "b", pch = 20)
+
+## an iep of example 7.2 (a monetary economy) in Li (2019).
+A &lt;- function(state) {
+  alpha &lt;- rbind(1, 1, 1)
+  Beta &lt;- matrix(c(
+    0.5, 0.5, 0.5,
+    0.5, 0.5, 0.5,
+    -1, -1, -1
+  ), 3, 3, TRUE)
+  CD_mA(alpha, Beta, state$p)
+}
+
+B &lt;- diag(3)
+
+SExg.iep &lt;- {
+  tmp &lt;- matrix(NA, 3, 3)
+  tmp[2, 2] &lt;- 100
+  tmp[3, 3] &lt;- 100
+  tmp
+}
+
+InitialEndowments &lt;- {
+  tmp &lt;- matrix(0, 3, 3)
+  tmp[1, 1] &lt;- 10
+  tmp[2, 2] &lt;- tmp[3, 3] &lt;- 100
+  tmp
+}
+
+ge.list &lt;- iep(
+  A = A, B = B, SExg.iep = SExg.iep,
+  InitialEndowments = InitialEndowments,
+  nPeriods.iep = 20,
+  moneyIndex = 3,
+  moneyOwnerIndex = 3,
+  pExg = rbind(NA, NA, 0.25)
+)
+
+par(mfrow = c(1, 2))
+z &lt;- t(sapply(ge.list, function(x) x$z))
+matplot(z, type = "b", pch = 20)
+p &lt;- t(sapply(ge.list, function(x) x$p))
+matplot(p, type = "b", pch = 20)
+
+## an example of structural transition policy
+A.iep &lt;- function(state.iep) {
+  a &lt;- 15
+  b &lt;- 25
+  A &lt;- function(state) {
+    alpha1 &lt;- 5
+    alpha2 &lt;- 15
+
+    if (state.iep$time == 1 || state.iep$z[1] &lt;= a) {
+      alpha &lt;- alpha1
+    } else if (state.iep$z[1] &gt; b) {
+      alpha &lt;- alpha2
+    } else {
+      alpha &lt;- (b - state.iep$z[1]) / (b - a) * alpha1 +
+        (state.iep$z[1] - a) / (b - a) * alpha2
+    }
+
+    return(cbind(
+      CD_A(alpha, c(0.5, 0.5), state$p),
+      c(1, 0)
+    ))
+  }
+
+  return(A)
+}
+
+B &lt;- matrix(c(
+  1, 0,
+  0, 1
+), 2, 2, TRUE)
+
+SExg.iep &lt;- function(state.iep) {
+  if (state.iep$time &gt;= 15 &amp;&amp; state.iep$z[1] &lt; 30) {
+    result &lt;- matrix(c(
+      NA, NA,
+      0.6, 0.4
+    ), 2, 2, TRUE)
+  } else {
+    result &lt;- matrix(c(
+      NA, NA,
+      0, 1
+    ), 2, 2, TRUE)
+  }
+
+  return(result)
+}
+
+InitialEndowments &lt;- {
+  tmp &lt;- matrix(0, 2, 2)
+  tmp[1, 1] &lt;- 1
+  tmp[2, 2] &lt;- 1
+  tmp
+}
+
+ge.list &lt;- iep(
+  A.iep = A.iep, B = B, SExg.iep = SExg.iep,
+  InitialEndowments = InitialEndowments,
+  nPeriods.iep = 30, trace = FALSE
+)
+
+z &lt;- t(sapply(ge.list, function(x) x$z))
+matplot(z, type = "b", pch = 20)
+
+</code></pre>
+
+
+</div>

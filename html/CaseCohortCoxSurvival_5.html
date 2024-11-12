@@ -1,0 +1,527 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>caseCohortCoxSurvival</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Parameter and variance estimation for case-cohort analyses under the Cox model</h2>
+
+<h3>Description</h3>
+
+<p>Function for estimating parameters (log-relative hazard, baseline hazards,
+cumulative baseline hazard, pure risks) and their variance
+(robust or the one accounting for sampling features) from cohort or case-cohort data,
+under the Cox model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">caseCohortCoxSurvival(data, status, time, cox.phase1 = NULL, cox.phase2 = NULL,
+other.covars = NULL, strata = NULL, weights.phase2 = NULL, calibrated = FALSE,
+subcohort = NULL, subcohort.strata.counts = NULL, predict = TRUE,
+predicted.cox.phase2 = NULL, predictors.cox.phase2 = NULL, aux.vars = NULL,
+aux.method = "Shin", phase3 = NULL, strata.phase3 = NULL, weights.phase3 = NULL,
+weights.phase3.type = "both", Tau1 = NULL, Tau2 = NULL, x = NULL,
+weights.op = NULL, print = 1)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>Data frame containing the cohort and all variables needed for the analysis.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>status</code></td>
+<td>
+<p>Column name in <code>data</code> giving the case status for each
+individual in the cohort. This variable
+must be coded as 0 for non-cases and 1 for cases.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>Column name(s) in <code>data</code> giving the time to event for each individual
+in the case-cohort. One variable
+is required for a time-on-study time scale, two variables for age-scale,
+with the first variable as the start age and second as the end age.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cox.phase1</code></td>
+<td>
+<p>Column name(s) in <code>data</code> giving the Cox model covariates
+measured on the entire cohort.
+See covariates and prediction in details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cox.phase2</code></td>
+<td>
+<p>Column name(s) in <code>data</code> giving the Cox model covariates
+measured only on phase-two individuals.
+See covariates and prediction in details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>other.covars</code></td>
+<td>
+<p>Column name(s) in data giving other covariates
+measured on the entire cohort that might be useful,
+alone or in combination with <code>cox.phase1</code>,
+if predicted values of the phase-two covariates (<code>cox.phase2</code>)
+need to be obtained on the whole cohort for the weight calibration.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>strata</code></td>
+<td>
+<p>NULL or column name in data with the stratum value for each
+individual in the cohort. The number of strata used for the
+sampling of the subcohort equals the number of different stratum values.
+For example, a stratum variable might take values 0,1,2,3 or 4.
+The default is NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights.phase2</code></td>
+<td>
+<p>NULL or column name in data giving the phase-two design
+weights for each individual in the cohort.
+For a whole cohort analysis (see <code>subcohort</code> below),
+weights are not used in the <code>coxph</code> call.
+If NULL but subcohort is not NULL, <code>subcohort.strata.counts</code>
+will be used to estimate <code>weights.phase2</code>.
+The default is NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>calibrated</code></td>
+<td>
+<p>TRUE or FALSE to calibrate the <code>weights</code>.
+Calibrated weights will be computed using the function
+<code>calibration</code>.
+If TRUE, then <code>phase3</code> (below) will be set to NULL.
+See calibration in details.
+The default is FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subcohort</code></td>
+<td>
+<p>NULL or column name in <code>data</code> giving the indicators
+of membership in the subcohort.
+The indicators are 1 if the individual belongs to the subcohort
+and 0 otherwise. Some cases might be in the subcohort and others not.
+If NULL, then a whole cohort analysis will be performed.
+The default is NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subcohort.strata.counts</code></td>
+<td>
+<p>NULL or a list of the number of individuals sampled
+into the subcohort from each stratum of strata.
+The names in the list must be the strata values and the length of the
+list must be equal to the number of strata.
+If NULL, then the count for each stratum is estimated by the number of
+subcohort individuals in each stratum.
+The default is NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predict</code></td>
+<td>
+<p>TRUE or FALSE to predict the phase-two covariates using
+<code>predictors.cox.phase2</code>. This option is not used if
+<code>calibrated=FALSE</code>. If <code>calibrated=TRUE</code>, <code>aux.vars=NULL</code>
+and <code>predict=FALSE</code>, then <code>predicted.cox.phase2</code> must be specified.
+See covariates and prediction in details.
+This option is only used when <code>calibrated=TRUE</code>, <code>aux.vars=NULL</code>
+and <code>predicted.cox.phase2=NULL</code>.
+The default is TRUE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predicted.cox.phase2</code></td>
+<td>
+<p>NULL or a named list giving the predicted values of the
+phase-two covariates (<code>cox.phase2</code>) on the whole cohort. For example,
+if the phase-two covariates are <code>X1</code> and <code>X2</code>, then the list is
+of the form <code>list(X1=X1.pred, X2=X2.pred)</code>, where <code>X1.pred</code> and
+<code>X2.pred</code> are the predictions of <code>X1</code> and <code>X2</code> respectively.
+This option is only used when <code>calibrated=TRUE</code> and <code>aux.vars=NULL</code>.
+If <code>calibrated=TRUE</code>, <code>aux.vars=NULL</code> and <code>predict=FALSE</code>,
+then <code>predicted.cox.phase2</code> must be specified and must not contain missing values.
+The default is NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predictors.cox.phase2</code></td>
+<td>
+<p>NULL, a vector, or a list specifying the columns in data
+to use as predictor variables for obtaining the predicted values
+on the whole cohort for the phase-two covariates (<code>cox.phase2</code>).
+A list allows for different proxy variables to be used for the different
+phase-two covariates. The selected predictor variables must be from among
+<code>cox.phase1</code> and <code>other.covars</code>.
+See examples and covariates and prediction in details.
+If NULL, then the phase-two covariates will be predicted using <code>cox.phase1</code>
+and <code>other.covars</code>. If NULL, <code>cox.phase1=NULL</code> and <code>other.covars=NULL</code>,
+then the calibrated analysis will not be performed.
+This option is only used when <code>calibrated=TRUE</code>, <code>aux.vars=NULL</code>, <br><code>predicted.cox.phase2=NULL</code> and <code>predict=TRUE</code>. The default is NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aux.vars</code></td>
+<td>
+<p>NULL or column name(s) in data giving the auxiliary variables for
+each individual in the cohort. This option is only used when
+<code>calibrated=TRUE</code>. If NULL, then auxiliary variables will be constructed
+using method Breslow or Shin and predicted values on the whole cohort for the
+phase-two covariates (see <code>aux.method</code>, <code>predict</code>, <code>predicted.cox.phase2</code>
+and <code>predictors.cox.phase2</code>). <code>aux.vars</code> must not contain missing values.
+The default is NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aux.method</code></td>
+<td>
+<p>"Breslow", or "Shin" to specify the algorithm to construct the
+auxiliary variables. This option is only used if <code>aux.vars=NULL</code> and
+<code>calibrated=TRUE</code>.
+The default is "Shin".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>phase3</code></td>
+<td>
+<p>NULL or column name in data giving the indicators of membership in the in
+the phase-three sample. The indicators are 1 if the individual belongs to the
+phase-three sample and 0 otherwise. All individuals in the phase-three sample
+must also belong to the phase-two sample.
+This option is not used if <code>calibrated=TRUE</code>.
+The default is NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>strata.phase3</code></td>
+<td>
+<p>NULL or column name in <code>data</code> giving the phase-three stratification
+for each individual in phase-two. The number of strata used for the third phase
+of sampling equals the number of different stratum values.
+The default is NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights.phase3</code></td>
+<td>
+<p>NULL or column name in <code>data</code> giving the phase-three design weights
+for each individual in phase-two.
+If NULL but <code>phase3</code> is not NULL, then <code>phase3</code> and <code>subcohort</code>
+will be used to estimate <code>weights.phase3</code> (see details in
+<code>estimation.weights.phase3</code>).
+The default is NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights.phase3.type</code></td>
+<td>
+<p>One of NULL, "design", "estimated", or "both" to specify whether
+the phase-three weights are design weights (known), or
+to be estimated. The variance estimation differs for estimated
+and design weights. If set to "both", then both variance estimates
+will be computed. If not NULL, then only the first letter is matched for this option.
+The default is "both".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Tau1</code></td>
+<td>
+<p>NULL or left bound of the time interval considered for the cumulative
+baseline hazard and the pure risk.
+If NULL, then the first event time is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Tau2</code></td>
+<td>
+<p>NULL or right bound of the time interval considered for the cumulative
+baseline hazard and the pure risk.
+If NULL, then the last event time is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Data frame containing <code>cox.phase1</code> and <code>cox.phase2</code>
+variables for which pure risk is estimated.
+The default is NULL so that no pure risk estimates will be computed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights.op</code></td>
+<td>
+<p>NULL or a list of options for calibration of phase-two design weights
+or estimating phase-three design weights.
+The available options are <code>niter.max</code>, and
+<code>epsilon.stop</code> (see <code>calibration</code> or
+<code>estimation.weights.phase3</code>).
+The default is NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>print</code></td>
+<td>
+<p>0-3 to print information as the analysis is performed.
+The larger the value, the more information will be printed. To not
+print any information, set <code>print = 0</code>.
+The default is 1.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The different scenarios covered by the function are:<br>
+1) Whole cohort (<code>subcohort = NULL</code>)<br></p>
+<p>2) (stratified) case-cohort (= stratified phase-two sample with no missing covariate data)<br>
+a. With design weights (<code>subcohort</code>, <code>strata</code>, <code>calibrated = FALSE</code>)<br>
+b. With calibrated weights and proxies to predict phase-two covariates and the
+auxiliary variables (<code>subcohort</code>, <code>strata</code>, <code>calibrated=TRUE</code>,
+<code>predict=TRUE</code>, <code>predictors.cox.phase2</code>, <code>aux.method</code>) <br>
+c. With calibrated weights and externally supplied predicted values of phase-two covariates
+(<code>calibrated=TRUE</code>, <code>strata</code>, <code>predict=FALSE</code>, <code>predicted.cox.phase2</code>) <br></p>
+<p>3) (unstratified) case-cohort (= unstratified phase-two sample with no missing covariate data)<br>
+a. With design weights (<code>subcohort</code>, <code>strata=NULL</code>, <code>calibrated=FALSE</code>)<br>
+b. With calibrated weights and proxies to predict phase-two covariates and obtain the
+auxiliary variables (<code>subcohort</code>, <code>strata=NULL</code>, <code>calibrated=TRUE</code>,
+<code>predict=TRUE</code>, <code>predictors.cox.phase2</code>, <code>aux.method</code>) <br>
+c. With calibrated weights and externally supplied predicted values of phase-two covariates
+(<code>calibrated=TRUE</code>, <code>strata=NULL</code>, <code>predict=FALSE</code>, <code>predicted.cox.phase2</code>) <br></p>
+<p>4) Case-cohort (= phase-three sample, because of missing covariate information in phase-two
+data, with stratified or unstratified phase-two sampling)<br>
+a. With known phase-three design weights (<code>subcohort</code>, <code>strata</code>, <code>phase3</code>,
+<code>strata.phase3</code>, <br><code>weights.phase3.type="design"</code>) <br>
+b. With estimated phase-three design weights (<code>subcohort</code>, <code>strata</code>, <code>phase3</code>,
+<code>strata.phase3</code>, <br><code>weights.phase3.type="estimated"</code>)<br></p>
+<p>covariates and prediction <br>
+Prediction of phase-two covariates is performed when <code>calibrated = TRUE</code>, <code>predict = TRUE</code>,
+<code>aux.vars = NULL</code> and <code>predicted.cox.phase2 = NULL</code>. If <code>predictors.cox.phase2 = NULL</code>,
+all the covariates measured on the entire cohort will be used for the prediction
+(see <code>cox.phase1</code> and <code>other.covars</code>).
+Prediction of phase-two covariates is performed by linear regression for a continuous variable,
+logistic regression for a binary variable and the function <code>multinom</code> for a
+categorical variable. Dummy variables should not be used for categorical covariates,
+because independent logistic (or linear) regressions will be performed using the dummy variables. <br>
+Alternatively, predicted values of phase-two covariates on the whole cohort can be specified with
+<code>predicted.cox.phase2</code>.
+</p>
+<p>calibration <br>
+Calibrating the design weights against some informative auxiliary variables,
+measured on all cohort members, can increase efficiency.
+When <code>calibrated = TRUE</code>, the user can either provide the auxiliary variables
+(<code>aux.vars</code>), or let the driver function build the auxiliary variables (<code>aux.method</code>).
+Construction of the auxiliary variables follows Breslow et al. (2009) or Shin et al. (2020)
+(see <code>aux.method</code>), and relies on predictions of the phase-two covariates for all members
+of the cohort (see covariates and prediction above).
+The auxiliary variables are given by (i) the influences for the log-relative hazard parameters
+estimated from the Cox model with imputed cohort data; and (ii) the products of total
+follow-up time (on the time interval for which pure risk is to be estimated) with the estimated
+relative hazard for the imputed cohort data, where the log-relative hazard parameters are
+estimated from the Cox model with case-cohort data and weights calibrated with (i).
+When <code>aux.method = Breslow</code>, calibration of the design weights is against (i),
+as proposed by Breslow et al. (2009) to improve efficiency of case-cohort estimates
+of relative hazard. When <code>aux.method = Shin</code>, calibration is against (i) and (ii),
+as proposed by Shin et al. (2020) to improve efficiency of relative hazard and pure risk
+estimates under the nested case-control design.
+</p>
+<p>Note <br>
+If <code>subcohort = NULL</code>, then a whole cohort analysis will be run and only robust variance estimates
+will be computed.<br></p>
+
+
+<h3>Value</h3>
+
+<p>A list with class <code>casecohortcoxsurv</code> containing:
+</p>
+
+<ul>
+<li> <p><code>beta</code> Estimated log-relative hazard estimates
+</p>
+</li>
+<li> <p><code>Lambda0</code> Cumulative baseline hazard estimate in [Tau1, Tau2]
+</p>
+</li>
+<li> <p><code>beta.var</code> Influence-based variance estimate for <code>beta</code>
+</p>
+</li>
+<li> <p><code>Lambda0.var</code> Influence-based variance estimate for <code>Lambda0</code>
+</p>
+</li>
+<li> <p><code>beta.var.estimated</code> Influence-based variance estimate for <code>beta</code> with estimated
+phase-three weights
+</p>
+</li>
+<li> <p><code>Lambda0.var.estimated</code> Influence-based variance estimate for <code>Lambda0</code> with estimated
+phase-three weights
+</p>
+</li>
+<li> <p><code>beta.var.design</code> Influence-based variance estimate for <code>beta</code> with design
+phase-three weights
+</p>
+</li>
+<li> <p><code>Lambda0.var.design</code> Influence-based variance estimate for <code>Lambda0</code> with design
+phase-three weights
+</p>
+</li>
+<li> <p><code>beta.robustvar</code> Robust variance estimate for <code>beta</code>
+</p>
+</li>
+<li> <p><code>Lambda0.robustvar</code> Robust variance estimate for <code>Lambda0</code>
+</p>
+</li>
+<li> <p><code>beta.robustvar.estimated</code> Robust variance estimate for <code>beta</code> with estimated
+phase-three weights
+</p>
+</li>
+<li> <p><code>Lambda0.robustvar.estimated</code> Robust variance estimate for <code>Lambda0</code> with estimated
+phase-three weights
+</p>
+</li>
+<li> <p><code>beta.robustvar.design</code> Robust variance estimate for <code>beta</code> with design
+phase-three weights
+</p>
+</li>
+<li> <p><code>Lambda0.robustvar.design</code> Robust variance estimate for <code>Lambda0</code> with design
+phase-three weights
+</p>
+</li>
+<li> <p><code>Pi.var</code> Matrix of pure risk estimates in [Tau1, Tau2] and variance estimates
+</p>
+</li>
+<li> <p><code>Pi.var.estimated</code> Matrix of pure risk estimates in [Tau1, Tau2] and variance estimates
+with estimated phase-three weights
+</p>
+</li>
+<li> <p><code>Pi.var.design</code> Matrix of pure risk estimates in [Tau1, Tau2] and variance estimates
+with design phase-three weights
+</p>
+</li>
+<li> <p><code>coxph.fit</code> Return object from <code>coxph</code> of the model fit
+</p>
+</li>
+<li> <p><code>changed.times</code> Matrix of original and new event times for individuals who had their event times
+changed due to ties. Will be NULL if event times were not changed.
+</p>
+</li>
+<li> <p><code>args</code> List containing the values of the input arguments (except <code>data</code>)
+</p>
+</li>
+<li> <p><code>risk.obj</code> List containing objects needed to compute pure risk estimates and variances
+for a different set of data
+</p>
+</li>
+</ul>
+<h3>References</h3>
+
+<p>Etievant, L., Gail, M. H. (2024). Cox model inference for relative hazard and pure risk from stratified weight-calibrated case-cohort data. Lifetime Data Analysis, 30, 572-599.
+</p>
+<p>Etievant, L., Gail, M. H. (2024). Software Application Profile: CaseCohortCoxSurvival: an R package for case-cohort inference for relative hazard and pure risk under the Cox model. Submitted.
+</p>
+<p>Shin Y.E., Pfeiffer R.M., Graubard B.I., Gail M.H. (2020) Weight calibration to improve
+the efficiency of pure risk estimates from case-control samples nested in a cohort.
+Biometrics, 76, 1087-1097.
+</p>
+<p>Breslow, N.E., Lumley, T., Ballantyne, C.M., Chambless, L.E. and Kulich, M. (2009).
+Improved Horvitz-Thompson Estimation of Model Parameters from Two-phase Stratified Samples:
+Applications in Epidemiology. Statistics in Biosciences, 1, 32-49.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+  data(dataexample.missingdata.stratified, package="CaseCohortCoxSurvival")
+  data &lt;- dataexample.missingdata.stratified$cohort
+  cov1 &lt;- "X2"
+  cov2 &lt;- c("X1", "X3")
+
+  # Whole cohort, get pure risk estimate for every individual's profile in the
+  # cohort. Only robust variance estimates are computed for a whole cohort analysis
+  caseCohortCoxSurvival(data = data, status = "status", time = "event.time",
+                        cox.phase1 = cov1, x = data)
+
+  # Stratified case-cohort analysis with missing covariate information in the
+  # phase-two data, and with phase-three strata based on W3
+  caseCohortCoxSurvival(data = data, status = "status", time = "event.time",
+                        cox.phase1 = cov1, cox.phase2 = cov2, strata = "W",
+                        subcohort = "subcohort", phase3 = "phase3",
+                        strata.phase3 = "W3")
+
+
+  # Stratified case-cohort (phase-two) analysis with weight calibration specifying
+  # a different set of proxy variables to predict each phase-two covariate
+  data(dataexample.stratified, package="CaseCohortCoxSurvival")
+  data &lt;- dataexample.stratified$cohort
+  cov1 &lt;- "X2"
+  cov2 &lt;- c("X1", "X3")
+
+  caseCohortCoxSurvival(data = data, status = "status", time = "event.time",
+                        cox.phase1 = cov1, cox.phase2 = cov2, strata = "W",
+                        subcohort = "subcohort", calibrated = TRUE,
+                        predictors.cox.phase2 = list(X1 = c("X1.proxy", "W"),
+                                                     X3 = c("X1.proxy", "X3.proxy", "X2")))
+
+  # Stratified case-cohort (phase-two) analysis with weight calibration, get pure
+  # risk estimate for one given covariate profile
+  est &lt;- caseCohortCoxSurvival(data = data, status = "status", time = "event.time",
+                               cox.phase1 = cov1, cox.phase2 = cov2, strata = "W",
+                               subcohort = "subcohort", calibrated = TRUE,
+                               predictors.cox.phase2 = list(X1 = c("X1.proxy", "W"),
+                                                            X3 = c("X1.proxy", "X3.proxy", "X2")),
+                               x = list(X1 = 1, X2 = -1, X3 = 0.6), Tau1 = 0, Tau2 = 8)
+
+  est$Pi.var
+
+  # Stratified case-cohort (phase-two) analysis with weight calibration, get pure
+  # risk estimate for two given covariate profiles
+  pr1 &lt;- as.data.frame(cbind(X1 = -1, X2 = 1, X3 = -0.6))
+  pr2 &lt;- as.data.frame(cbind(X1 = 1, X2 = -1, X3 = 0.6))
+
+  est &lt;- caseCohortCoxSurvival(data = data, status = "status", time = "event.time",
+                               cox.phase1 = cov1, cox.phase2 = cov2, strata = "W",
+                               subcohort = "subcohort", calibrated = TRUE,
+                               predictors.cox.phase2 = list(X1 = c("X1.proxy", "W"),
+                                                            X3 = c("X1.proxy", "X3.proxy", "X2")),
+                               x = rbind(pr1, pr2), Tau1 = 0, Tau2 = 8)
+
+  est$Pi.var
+
+  # Stratified case-cohort (phase-two) analysis with design weights, get pure
+  # risk estimate for one given covariate profile
+  est &lt;- caseCohortCoxSurvival(data = data, status = "status", time = "event.time",
+                        cox.phase1 = cov1, cox.phase2 = cov2, strata = "W",
+                        subcohort = "subcohort",
+                        x = list(X1 = 1, X2 = -1, X3 = 0.6), Tau1 = 0, Tau2 = 8)
+  est$beta
+  est$Pi.var
+
+  # Set the correct sampling counts in phase-two for each level of strata.
+  # The strata variable W has levels 0-3.
+  est &lt;- caseCohortCoxSurvival(data = data, status = "status", time = "event.time",
+                               cox.phase1 = cov1, cox.phase2 = cov2, strata = "W",
+                               subcohort = "subcohort",
+                               subcohort.strata.counts = list("0" = 97, "1" = 294,
+                                                              "2" = 300, "3" = 380))
+
+  est$beta
+</code></pre>
+
+
+</div>

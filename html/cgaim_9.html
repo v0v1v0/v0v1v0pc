@@ -1,0 +1,146 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>predict.cgaim</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Predictions from a fitted CGAIM object</h2>
+
+<h3>Description</h3>
+
+<p>Uses a fitted <code>cgaim</code> object and computes prediction for the
+observed data or new data. Predicts the response, indices or 
+ridge functions values at the provided data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'cgaim'
+predict(object, newdata, type = c("response", "terms",
+  "scterms", "indices"), select = NULL, na.action = "na.pass", ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>A <code>gaim</code> object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdata</code></td>
+<td>
+<p>A list or data.frame containing the new data to predict.
+If missing, fitted values from the model are returned.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>A character indicating the type of prediction to return.
+<code>type = "response"</code> returns the predicted response. 
+<code>type = "terms"</code>, returns ridge and smooth functions evaluated at
+index predicted for <code>newdata</code>. <code>type = "scterms"</code> is the same,
+except that terms are postmultiplied by their scaling coefficients beta.
+<code>type = "indices"</code> returns predicted indices values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>select</code></td>
+<td>
+<p>A numeric or character vector indicating terms to return
+for all types except <code>"response"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.action</code></td>
+<td>
+<p>A function indicating how to treat NAs. See
+<code>na.fail</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>For compatibility with the default <code>predict</code> method. Unused
+at the moment.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>type = "terms"</code> returns the scaled ridge functions, i.e. before being multiplied by scaling coefficients beta.
+</p>
+
+
+<h3>Value</h3>
+
+<p>When <code>type = "response"</code> returns a vector of predicted response.
+When <code>type = "terms"</code> or <code>"scterms"</code>, returns a matrix of evaluated ridge and 
+smooth terms. When <code>type = "indices"</code>, returns
+a matrix of evaluated indices.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cgaim</code> for main fitting function
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Simulate some data
+n &lt;- 200
+x1 &lt;- rnorm(n)
+x2 &lt;- rnorm(n)
+x3 &lt;- rnorm(n)
+x4 &lt;- rnorm(n)
+mu &lt;- 4 * exp(8 * x1) / (1 + exp(8 * x1)) + exp(x3)
+y &lt;- mu + rnorm(n)
+df1 &lt;- data.frame(y, x1, x2, x3, x4)
+
+## Fit an unconstrained the model
+ans &lt;- cgaim(y ~ g(x1, x2, label = "foo") + g(x3, x4, label = "bar"), 
+  data = df1)
+
+## Get fitted values
+yhat &lt;- predict(ans)
+
+## Predict on new data
+newdf &lt;- as.data.frame(matrix(rnorm(100), 25, 4))
+names(newdf) &lt;- sprintf("x%i", 1:4)
+
+# predicted response
+ypred &lt;- predict(ans, newdf)
+
+# Indices
+indices &lt;- predict(ans, newdata = newdf, type = "indices")
+
+# Ridge functions
+funs &lt;- predict(ans, newdata = newdf, type = "terms")
+
+## Select specific terms
+ind1 &lt;- predict(ans, newdata = newdf, select = "foo", type = "indices")
+fun1 &lt;- predict(ans, newdata = newdf, select = "foo", type = "terms")
+
+# Plot
+plot(ans, select = "foo")
+points(ind1, fun1)
+
+## Scaled terms
+fun2 &lt;- predict(ans, newdata = newdf, select = "foo", type = "scterms")
+
+# Plot
+plot(ans, select = "foo", yscale = TRUE)
+points(ind1, fun2)
+ 
+</code></pre>
+
+
+</div>

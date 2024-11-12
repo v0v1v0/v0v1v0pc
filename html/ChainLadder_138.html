@@ -1,0 +1,481 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>tweedieReserve</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Tweedie Stochastic Reserving Model
+</h2>
+
+<h3>Description</h3>
+
+<p>This function implements loss reserving models within the generalized
+linear model framework in order to generate the full predictive 
+distribution for loss reserves. Besides, it generates also the one year 
+risk view useful to derive the reserve risk capital in a Solvency II 
+framework. Finally, it allows the user to validate the model error while changing different model parameters, as the regression structure and diagnostics on the Tweedie p parameter.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">tweedieReserve(triangle, var.power = 1, 
+                    link.power = 0, design.type = c(1, 1, 0), 
+                    rereserving = FALSE, cum = TRUE, exposure = FALSE, 
+                    bootstrap = 1, boot.adj = 0, nsim = 1000, 
+                    proc.err = TRUE, p.optim = FALSE,
+                    p.check = c(0, seq(1.1, 2.1, by = 0.1), 3),
+                    progressBar = TRUE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>triangle</code></td>
+<td>
+
+<p>An object of class <code>triangle</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var.power</code></td>
+<td>
+
+<p>The index (p) of the power variance function <code class="reqn">V(\mu)=\mu^p</code>. 
+Default to <code>p = 1</code>, which is the over-dispersed Poisson model. 
+If <code>NULL</code>, it will be assumed to be in <code>(1, 2)</code> and 
+estimated using the <code>cplm</code> package.  
+See <code>tweedie</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link.power</code></td>
+<td>
+
+<p>The index of power link function. The default <code>link.power = 0</code> 
+produces a log link. See <code>tweedie</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>design.type</code></td>
+<td>
+
+<p>It's a 3 dimension array that specifies the design matrix underlying 
+the GLM. The dimensions represent respectively: origin period, 
+development and calendar period. Accepted values are: <code>0</code> (not   
+modelled), <code>1</code> (modelled as factor) and <code>2</code> (modelled as 
+variable). Default to <code>c(1,1,0)</code>, which is the common 
+specification in actuarial literature (origin and development period 
+as factors, calendar period not modelled). If a parameter for the calendar period is specified,       a linear regression on the log CY parameter is fitted to estimate future values, thus is recommended to validate them running a plot of the gamma values (see output <code>gamma_y</code>) . 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rereserving</code></td>
+<td>
+
+<p>Boolean, if <code>TRUE</code> the one year risk view loss reserve 
+distribution is derived. Default to <code>FALSE</code>. Note, the runtime 
+can materially increase if set to <code>TRUE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cum</code></td>
+<td>
+
+<p>Boolean, indicating whether the input triangle is
+cumulative or incremental along the development period. 
+If <code>TRUE</code>, then
+<code>triangle</code> is assumed to be on the cumulative scale, and it will
+be converted to incremental losses internally before a GLM is fitted. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>exposure</code></td>
+<td>
+
+<p>Boolean, if <code>TRUE</code> the <code>exposure</code> defined in the 
+<code>triangle</code> object is specified as <code>offset</code> in the GLM 
+model specification. Default to <code>FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bootstrap</code></td>
+<td>
+
+<p>Integer, it specifies the type of bootstrap for parameter error.
+Accepted values are: <code>0</code> (disabled), <code>1</code> (parametric), 
+<code>2</code> (semi-parametric). Default to <code>1</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>boot.adj</code></td>
+<td>
+
+<p>Integer, it specified the methodology when using semi-parametric 
+bootstrapping. Accepted values are: <code>0</code> (cycles until all the 
+values of the pseudo-triangle are &gt;= 0), <code>1</code> (overwrite negative 
+values to 0.01). Default to <code>0</code>. Note, runtime can materially 
+increase when set to  <code>0</code>, as it could struggle to find pseudo-triangles &gt;= 0)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsim</code></td>
+<td>
+
+<p>Integer, number of simulations to derive the loss reserve distribution.   
+Default to <code>1000</code>. Note, high num of simulations could materially 
+increase runtime, in particular if a re-reserving algorithm is used 
+as well.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>proc.err</code></td>
+<td>
+
+<p>Boolean, if <code>TRUE</code> a process error (coherent with the specified 
+model) is added to the forecasted distribution. Default to <code>TRUE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p.optim</code></td>
+<td>
+
+<p>Boolean, if <code>TRUE</code> the model estimates the MLE for the Tweedie's 
+<code>p</code> parameter. Default to <code>FALSE</code>. Recommended to use to validate the Tweedie's     <code>p</code> parameter.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p.check</code></td>
+<td>
+
+<p>If <code>p.optim=TRUE</code>, a vector of <code>p</code> values for consideration. The values must all be larger than one (if the response variable has exact zeros, the values must all be between one and two). Default to <code>c(0,seq(1.1,2.1,by=0.1),3)</code>. As fitting the Tweedie p-value isn't a straightforward process, please refer to <code>tweedie.profile</code>, <code>p.vec</code> argument.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>progressBar</code></td>
+<td>
+
+<p>Boolean, if <code>TRUE</code> a progress bar will be shown in the console to 
+give an indication of bootstrap progress.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+
+<p>Arguments to be passed onto the function <code>glm</code> or 
+<code>cpglm</code> such as <code>contrasts</code> or <code>control</code>. It is 
+important that <code>offset</code> and <code>weight</code> should not be specified. 
+Otherwise, an error will be reported and the program will quit.
+</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The output is an object of class <code>"glm"</code> that has the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the matched call.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>summary</code></td>
+<td>
+<p>A data frame containing the predicted loss reserve 
+statistics. The following items are displayed: 
+</p>
+
+<ul>
+<li> <p><code>Latest</code>: Latest paid
+</p>
+</li>
+<li> <p><code>Det.Reserve</code>: Deterministic reserve, i.e. the MLE GLM 
+estimate of the Reserve
+</p>
+</li>
+<li> <p><code>Ultimate</code>: Ultimate cost, defined as 
+<code>Latest+Det.Reserve</code>
+</p>
+</li>
+<li> <p><code>Dev.To.Date</code>: Development to date, defined as 
+<code>Latest/Ultimate</code>
+</p>
+</li>
+</ul>
+<p>The following items are available if <code>bootstrap&gt;0</code>
+</p>
+
+<ul>
+<li> <p><code>Expected.Reserve</code>: The expected reserve, defined as 
+the average of the reserve simulations. 
+Should be roughly as <code>Det.Reserve</code>.
+</p>
+</li>
+<li> <p><code>Prediction.Error</code>: The prediction error of the reserve, 
+defined as sqrt of the simulations. Please note that if 
+<code>proc.err=FALSE</code>, this field contains only the parameter 
+error given by the bootstrap.
+</p>
+</li>
+<li> <p><code>CoV</code>: Coefficient of Variation, defined as 
+<code>Prediction. Error/Expected.Reserve</code>.
+</p>
+</li>
+<li> <p><code>Expected Ultimate</code>: The expected ultimate, defined as 
+<code>Expected.Reserve+Latest</code>.
+</p>
+</li>
+</ul>
+<p>The following items are availbale if <code>bootstrap&gt;0 &amp; reserving=TRUE</code>
+</p>
+
+<ul>
+<li> <p><code>Expected.Reserve_1yr</code>: The reserve derived as sum of 
+next year payment and the expected value of the re-reserve at the 
+end of the year. It should be similar to both 
+<code>Expected.Reserve</code> and <code>Det.Reserve</code>. If it isn't, it's 
+recommended to change regression structure and parameters.
+</p>
+</li>
+<li> <p><code>Prediction.Error_1yr</code>: The prediction error of the 
+prospective Claims Development Result (CDR), as defined by 
+Wüthrich (CDR=R(0)-X-R(1)). 
+</p>
+</li>
+<li> <p><code>Emergence.Pattern</code>: It's the emergence pattern defined 
+as <code>Prediction.Error_1yr/Prediction.Error</code>.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Triangle</code></td>
+<td>
+<p>The input triangle.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FullTriangle</code></td>
+<td>
+<p>The completed triangle, where empty cells in the 
+original triangle are filled with model predictions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>The fitted GLM, a class of <code>glm</code> or <code>cpglm</code>. 
+It is most convenient to work with this component when model fit 
+information is wanted. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scale</code></td>
+<td>
+<p>The dispersion parameter phi</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bias</code></td>
+<td>
+<p>The model bias, defined as <code>bias&lt;-sqrt(n/d.f)</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>GLMReserve</code></td>
+<td>
+<p>Deterministic reserve, i.e. the MLE GLM estimate 
+of the Reserve</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gamma_y</code></td>
+<td>
+<p>When the calendar year is used, it displays the observed 
+and fitted calendar year (usually called "gamma"") factors.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>res.diag</code></td>
+<td>
+<p>It's a data frame for residual diagnostics. It 
+contains:
+</p>
+
+<ul>
+<li> <p><code>unscaled</code>: The GLM Pearson residuals.
+</p>
+</li>
+<li> <p><code>unscaled.biasadj</code>: The GLM Person residuals adjusted by 
+the bias, i.e. <code>unscaled.biasadj=unscaled*bias</code>. 
+</p>
+</li>
+<li> <p><code>scaled</code>: The GLM Person scaled residuals, i.e. 
+<code>scaled=unscaled/sqrt(phi)</code>.
+</p>
+</li>
+<li> <p><code>scaled, biasadj</code>: The GLM Person scaled residuals 
+adjusted by the bias, i.e. <code>scaled.biasadj=scaled*bias</code>. 
+</p>
+</li>
+<li> <p><code>dev</code>: Development year.
+</p>
+</li>
+<li> <p><code>origin</code>: Origin year.
+</p>
+</li>
+<li> <p><code>cy</code>: Calendar year.      
+</p>
+</li>
+</ul>
+</td>
+</tr>
+</table>
+<p>[If <code>boostrap&gt;1</code>]
+</p>
+<table><tr style="vertical-align: top;">
+<td><code>distr.res_ult</code></td>
+<td>
+<p>The full distribution "Ultimate View"</p>
+</td>
+</tr></table>
+<p>[If <code>rereserve=TRUE</code>] 
+</p>
+<table><tr style="vertical-align: top;">
+<td><code>distr.res_1yr</code></td>
+<td>
+<p>The full distribution "1yr View"</p>
+</td>
+</tr></table>
+<h3>Warning</h3>
+
+<p>Note that the runtime can materially increase for certain parameter
+setting. See above for more details.
+</p>
+
+
+<h3>Note</h3>
+
+<p>This function was born initially as a fork of the <code>glmReserve</code> by 
+Wayne Zhang. I would like to thank him for his work that permitted me to 
+speed up my coding.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Alessandro Carrato MSc FIA OA <a href="mailto:alessandro.carrato@gmail.com">alessandro.carrato@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Gigante, Sigalotti. <em>Model risk in claims reserving with generalized linear models</em>. 
+Giornale dell'Istituto Italiano degli Attuari, Volume LXVIII. 55-87. 2005
+</p>
+<p>England, Verrall. <em>Stochastic claims reserving in general insurance</em>. 
+B.A.J. 8, III. 443-544. 2002
+</p>
+<p>England, Verrall. <em>Predictive distributions of outstanding liabilities in general insurance</em>.
+A.A.S. 1, II. 221-270. 2006
+</p>
+<p>Peters, Shevchenko, Wüthrich, <em>Model uncertainty in claims reserving within 
+Tweedie's compound poisson models</em>. Astin Bulletin 39(1). 1-33. 2009
+</p>
+<p>Renshaw, Verrall. <em>A stochastic model underlying the chain-ladder technique</em>.
+B.A.J. 4, IV. 903-923. 1998
+</p>
+
+
+<h3>See Also</h3>
+
+<p>See also <code>summary.tweedieReserve</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+## Verrall's ODP Model is a Tweedie with p=1, log link and 
+## origin/development periods as factors, thus c(1,1,0)
+res1 &lt;- tweedieReserve(MW2008, var.power=1, link.power=0, 
+                           design.type=c(1,1,0), rereserving=TRUE,
+                           progressBar=TRUE)
+
+## To get directly ultimate view and respective one year view 
+## at selected percentiles
+summary(res1) 
+
+#To get other interesting statistics
+res1$summary
+
+## In order to validate the Tweedie parameter 'p', it is interesting to 
+## review its loglikelihood profile. Please note that, given the nature 
+## of our data, it is expected that we may have some fitting issues for 
+## given 'p' parameters, thus any results/errors should be considered 
+## only indicatively. Considering different regression structures is anyway 
+## recommended. Different 'p' values can be defined via the p.check array 
+## as input of the function. 
+## See help(tweedie.profile), p.vec parameter, for further information.
+## Note: The parameters rereserving and bootstrap can be set to 0 to speed up 
+## the process, as they aren't needed. 
+
+## Runs a 'p' loglikelihood profile on the parameters 
+## p=c(0,1.1,1.2,1.3,1.4,1.5,2,3)
+res2 &lt;- tweedieReserve(MW2008, p.optim=TRUE, 
+                       p.check=c(0,1.1,1.2,1.3,1.4,1.5,2,3), 
+                       design.type=c(1,1,0), 
+                        rereserving=FALSE, bootstrap=0, 
+                        progressBar=FALSE)
+
+## As it is possible to see in this example, the MLE of p (or xi) results 
+## between 0 and 1, which is not possible as Tweedie models aren't 
+## defined for 0 &lt; p &lt; 1, thus the Error message. 
+## But, despite this, we can conclude that overall the value p=1 could be 
+## reasonable for this dataset, as anyway it seems to be near the MLE. 
+
+## In order to consider an inflation parameter across the origin period, 
+## it may be interesting to change the regression structure to c(0,1,1) 
+## to get the same estimates of the Arithmetic Separation Method, as 
+## referred in Gigante/Sigalotti. 
+res3 &lt;- tweedieReserve(MW2008, var.power=1, link.power=0, 
+                           design.type=c(0,1,1), rereserving=TRUE,
+                           progressBar=TRUE)
+res3
+
+## An assessment on future fitted calendar year values (usually defined 
+## as "gamma") is recommended
+plot(res3$gamma_y)
+
+## Model residuals can be plotted using the res.diag output
+plot(scaled.biasadj ~ dev, data=res3$res.diag) # Development year
+plot(scaled.biasadj ~ cy, data=res3$res.diag) # Calendar year
+plot(scaled.biasadj ~ origin, data=res3$res.diag) # Origin year
+
+## End(Not run)
+</code></pre>
+
+
+</div>

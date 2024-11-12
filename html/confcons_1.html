@@ -1,0 +1,189 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>confidence</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Confidence of the predictive distribution model</h2>
+
+<h3>Description</h3>
+
+<p>Calculate the confidence in positive predictions within known presences (CPP,
+<code>type = "positive"</code>) or confidence in predictions within known presences
+(CP, <code>type = "neutral"</code>) based on the occurrence <code>observations</code>,
+the <code>predictions</code> of the probability of occurrence, and the two
+<code>thresholds</code> distinguishing certain negatives/positives from uncertain
+predictions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">confidence(
+  observations,
+  predictions,
+  thresholds = confcons::thresholds(observations = observations, predictions =
+    predictions),
+  type = "positive"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>observations</code></td>
+<td>
+<p>Either an integer or logical vector containing the binary
+observations where presences are encoded as <code>1</code>s/<code>TRUE</code>s and
+absences as <code>0</code>s/<code>FALSE</code>s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predictions</code></td>
+<td>
+<p>A numeric vector containing the predicted probabilities of
+occurrence typically within the <code>[0, 1]</code> interval.
+<code>length(predictions)</code> should be equal to <code>length(observations)</code>
+and the order of the elements should match.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thresholds</code></td>
+<td>
+<p>A numeric vector of length two, typically calculated by
+<code>thresholds()</code>. The first element distinguishes certain
+negatives (certain absences) from uncertain predictions. The second element
+distinguishes certain positives (certain presences) from uncertain
+predictions. If missing, <code>confcons::thresholds(observations =
+observations, predictions = predictions)</code> is called, but see section 'Note'
+about why you should not use the default value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>A character vector of length one containing the value "positive"
+(for calculating <em>confidence in positive predictions</em> within known
+presences (CPP)) or "neutral" (for calculating <em>confidence in
+predictions</em> within known presences (CP)). Defaults to "positive".</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A numeric vector of length one. It is either NA_real_ or a positive
+number within the <code>[0, 1]</code> interval. Larger value indicates that the
+model is more confident.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Technically, confidence can be calculated for the training subset, the
+evaluation subset, or the whole dataset as well. Note, however, that there
+is not so much sense to calculate confidence in the training subset, except
+for using the result for <code>consistency</code> calculation. If you need
+only the confidence measure, calculate it on the evaluation subset using
+<code>thresholds</code> previously determined on the whole dataset (i.e.,
+do not use the default value of parameter <code>thresholds</code>). See the last
+example below and the vignette.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>thresholds</code> for calculating the two thresholds,
+<code>consistency</code> for calculating consistency
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(12345)
+
+# Using logical observations, default 'thresholds' and 'type' parameter:
+observations_1000_logical &lt;- c(rep(x = FALSE, times = 500),
+                               rep(x = TRUE, times = 500))
+predictions_1000 &lt;- c(runif(n = 500, min = 0, max = 0.7),
+                      runif(n = 500, min = 0.3, max = 1))
+confidence(observations = observations_1000_logical,
+           predictions = predictions_1000) # 0.561
+
+# Using integer observations, default 'thresholds' parameter,
+# both 'positive' and 'neutral' confidence type:
+observations_4000_integer &lt;- c(rep(x = 0L, times = 3000),
+                               rep(x = 1L, times = 1000))
+predictions_4000 &lt;- c(runif(n = 3000, min = 0, max = 0.8),
+                      runif(n = 1000, min = 0.2, max = 0.9))
+confidence(observations = observations_4000_integer,
+           predictions = predictions_4000, type = "positive") # 0.691
+confidence(observations = observations_4000_integer,
+           predictions = predictions_4000, type = "neutral") # 0.778
+
+# Using some previously selected thresholds:
+strict_thresholds &lt;- c(0.1, 0.9)
+permissive_thresholds &lt;- c(0.4, 0.5)
+percentile_thresholds &lt;- quantile(x = predictions_4000[observations_4000_integer == 1],
+                                  probs = c(0.1, 0.9)) # 10th and 90th percentile
+confidence(observations = observations_4000_integer,
+           predictions = predictions_4000,
+           thresholds = strict_thresholds,
+           type = "neutral") # 0
+confidence(observations = observations_4000_integer,
+           predictions = predictions_4000,
+           thresholds = permissive_thresholds,
+           type = "neutral") # 0.836
+confidence(observations = observations_4000_integer,
+           predictions = predictions_4000,
+           thresholds = percentile_thresholds,
+           type = "neutral") # 0.2
+
+# Real-life case
+# (thresholds calculated from the whole dataset, confidence from the evaluation subset):
+dataset &lt;- data.frame(
+  observations = observations_4000_integer,
+  predictions = predictions_4000,
+  evaluation_mask = c(rep(x = FALSE, times = 250),
+                      rep(x = TRUE, times = 250),
+                      rep(x = FALSE, times = 250),
+                      rep(x = TRUE, times = 250))
+)
+thresholds_whole &lt;- thresholds(observations = dataset$observations,
+                               predictions = dataset$predictions)
+(confidence_evaluation &lt;- confidence(observations = dataset$observations[dataset$evaluation_mask],
+                                     predictions = dataset$predictions[dataset$evaluation_mask],
+                                     thresholds = thresholds_whole)) # 0.671
+
+# Wrong parameterization:
+try(confidence(observations = observations_1000_logical,
+               predictions = predictions_1000,
+               type = "pos")) # error
+try(confidence(observations = observations_1000_logical,
+               predictions = predictions_1000,
+               thresholds = c(0.2, NA_real_))) # warning
+try(confidence(observations = observations_1000_logical,
+               predictions = predictions_1000,
+               thresholds = c(-0.4, 0.85))) # warning
+try(confidence(observations = observations_1000_logical,
+               predictions = predictions_1000,
+               thresholds = c(0.6, 0.3))) # warning
+try(confidence(observations = observations_1000_logical,
+               predictions = predictions_4000)) # error
+set.seed(12345)
+observations_4000_numeric &lt;- c(rep(x = 0, times = 3000),
+                               rep(x = 1, times = 1000))
+predictions_4000_strange &lt;- c(runif(n = 3000, min = -0.3, max = 0.4),
+                              runif(n = 1000, min = 0.6, max = 1.5))
+try(confidence(observations = observations_4000_numeric,
+               predictions = predictions_4000_strange,
+               thresholds = c(0.2, 0.7))) # multiple warnings
+mask_of_normal_predictions &lt;- predictions_4000_strange &gt;= 0 &amp; predictions_4000_strange &lt;= 1
+confidence(observations = as.integer(observations_4000_numeric)[mask_of_normal_predictions],
+           predictions = predictions_4000_strange[mask_of_normal_predictions],
+           thresholds = c(0.2, 0.7)) # OK
+</code></pre>
+
+
+</div>

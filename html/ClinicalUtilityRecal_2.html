@@ -1,0 +1,149 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>calWt</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Calibration Weights
+</h2>
+
+<h3>Description</h3>
+
+<p>Calculates observation weights used for weighted calibration method using LOESS smoother. Observations with predicted risks outside clinically relevant interval [Rl,Ru] are downweighted.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">calWt(rl,ru,p,y,r,lambda,delta,returnSmoothedEvent=FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>rl</code></td>
+<td>
+
+<p>Lower bound of clinically relevant region</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ru</code></td>
+<td>
+
+<p>Upper bound of clinically relevant region</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+
+<p>Vector of risk score values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+
+<p>Vector of binary outcomes, with 1 indicating event (cases) and 0 indicating no event (controls)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>r</code></td>
+<td>
+
+<p>Clinically relevant risk threshold</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+
+<p>Tuning parameter for weights inside relevant region</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta</code></td>
+<td>
+
+<p>Weight assigned to observations outside relevant region
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>returnSmoothedEvent</code></td>
+<td>
+
+<p>If TRUE returns smoothed observed event rate used for calculationg weights
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Computes observation weights for weighted recalibration method. Observations with risk scores near a pre-defined clinically relevant risk threshold <code class="reqn">r</code> are given weights near 1, while observations far from the risk threshold are down-weighted.
+</p>
+<p>For observations with risk scores within a pre-defined clinically relevant region [R_l, R_u], the weighting function follows an exponential decay form with observations recieving smaller weights as they move farther from the clincally relevant risk threhsold. Distance is measured by the squared difference between the risk threshold and <code class="reqn">o(p_i)</code>, where <code class="reqn">o(p_i)</code> isa smoothed observed event rate,obtained via LOESS regression of <code class="reqn">y</code> on the risk scores <code class="reqn">p_i</code>.
+</p>
+<p>The amount of decay is set by the tuning parameter <code class="reqn">\lambda</code>, with larger lambda indicating little down-weighting applied. For observations outside the clinically relevant risk interval, a weight of <code class="reqn">delta</code> is assigned. An indicator type weight can be choosen by select large <code class="reqn">\lambda</code> (e.g <code class="reqn">\lambda=10</code>). Clinically relevant region can be [R_l, R_u] = [<code class="reqn">-\infty</code>,<code class="reqn">\infty</code>], and in these cases it is not necessary to specify <code class="reqn">delta</code>. See Mishra et al (2020) for functional form of weights and more details.</p>
+
+
+<h3>Value</h3>
+
+
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>wt</code></td>
+<td>
+<p>Vector of weights, between 0 and 1, to be used for weighted recalibration</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>o</code></td>
+<td>
+<p>Vector of smoothed observed event rates</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Anu Mishra
+</p>
+
+
+<h3>References</h3>
+
+<p>Mishra, A. (2019). Methods for Risk Markers that Incorporate Clinical Utility (Doctoral dissertation). (Available Upon Request)</p>
+
+
+<h3>See Also</h3>
+
+<p><code>wtRecal</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#load data
+data(fakeData)
+
+#exponential decay type weight
+expWt &lt;- calWt(rl=-Inf,ru=Inf,p=fakeData$p,y=fakeData$y,r=0.2,
+                lambda=0.05,delta=0.2,returnSmoothedEvent = TRUE)
+plot(expWt$o,expWt$wt,xlab="Smoothed Observed Event Rate",
+     ylab="Calibration Weight",ylim=c(0,1))
+
+
+#indicator type weight
+indWt &lt;- calWt(rl=0.1,ru=0.3,p=fakeData$p,y=fakeData$y,r=0.2,
+                lambda=0.05,delta=0.2,returnSmoothedEvent = TRUE)
+plot(indWt$o,indWt$wt,xlab="Smoothed Observed Event Rate",
+    ylab="Calibration Weight",ylim=c(0,1))
+</code></pre>
+
+
+</div>

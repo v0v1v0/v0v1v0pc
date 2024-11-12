@@ -1,0 +1,125 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>contrastinf</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generalized linearization of a smooth function of survey statistics</h2>
+
+<h3>Description</h3>
+
+<p>Generalized linearization of a smooth function of survey statistics
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">contrastinf(exprlist, infunlist)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>exprlist</code></td>
+<td>
+<p>a call</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>infunlist</code></td>
+<td>
+<p>a list of lists, each having two components: value - the estimate value and lin - the linearized variable</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The call must use function that <code>deriv</code> knows how to differentiate. It allows to compute the linearized variable of a complex indicator from the linearized variables of simpler component variables, avoiding the formal derivatives calculations.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a list with two components: values - the estimate value and lin - the linearized variable
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Djalma Pessoa, Guilherme Jacob, and Anthony Damico
+</p>
+
+
+<h3>References</h3>
+
+<p>Guillaume Osier (2009). Variance estimation for complex indicators
+of poverty and inequality. <em>Journal of the European Survey Research
+Association</em>, Vol.3, No.3, pp. 167-195,
+ISSN 1864-3361, URL <a href="https://ojs.ub.uni-konstanz.de/srm/article/view/369">https://ojs.ub.uni-konstanz.de/srm/article/view/369</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>svyqsr</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(survey)
+library(laeken)
+data(eusilc) ; names( eusilc ) &lt;- tolower( names( eusilc ) )
+
+# linearized design
+des_eusilc &lt;- svydesign( ids = ~rb030 , strata = ~db040 ,  weights = ~rb050 , data = eusilc )
+des_eusilc &lt;- convey_prep(des_eusilc)
+
+w &lt;- weights(des_eusilc)
+
+# ratio linearization
+T1 = list(value = sum(w*eusilc$eqincome) , lin = eusilc$eqincome )
+T2 = list(value = sum(w), lin = rep (1, nrow(eusilc)) )
+list_all &lt;- list( T1 = T1, T2 = T2)
+lin_R = contrastinf (quote(T1/T2), list_all)
+
+# estimate of the variable eqincome mean
+lin_R$value
+# se estimate of the variable eqincome mean
+SE(svytotal(lin_R$lin, des_eusilc))
+# to check, use
+svymean (~eqincome, des_eusilc)
+
+# quintile share ratio (qsr) linearization
+S20 &lt;- svyisq(~ eqincome, design = des_eusilc, .20, linearized = TRUE)
+S20_val &lt;- coef (S20); attributes (S20_val) &lt;- NULL
+S20_lin &lt;- attr(S20 , "linearized" )
+S80 &lt;- svyisq(~ eqincome, design = des_eusilc, .80, linearized = TRUE)
+S80_val &lt;- coef (S80); attributes (S80_val) &lt;- NULL
+S80_lin &lt;- attr(S80 , "linearized" )
+SU &lt;- list (value = S80_val, lin = S80_lin )
+SI &lt;- list (value = S20_val, lin = S20_lin )
+TOT &lt;- list(value = sum( w * eusilc$eqincome) , lin = eusilc$eqincome )
+list_all &lt;- list (TOT = TOT, SI = SI, SU = SU )
+lin_QSR &lt;- contrastinf( quote((TOT-SU)/SI), list_all)
+
+# estimate of the qsr
+lin_QSR$value
+# se estimate of the qsr:
+SE(svytotal(lin_QSR$lin, des_eusilc))
+# to check, use
+svyqsr(~eqincome, des_eusilc )
+# proportion of income below the quantile .20
+list_all &lt;- list (TOT = TOT, SI = SI )
+lin_Lor &lt;- contrastinf( quote(SI/TOT), list_all)
+# estimate of the proportion of income below the quantile .20
+lin_Lor$value
+# se estimate
+SE(svytotal(lin_Lor$lin,des_eusilc))
+
+</code></pre>
+
+
+</div>

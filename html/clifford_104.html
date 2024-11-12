@@ -1,0 +1,143 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Extract.clifford</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Extract or Replace Parts of a clifford</h2>
+
+<h3>Description</h3>
+
+<p>Extract or replace subsets of cliffords.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'clifford'
+C[index, ...]
+## S3 replacement method for class 'clifford'
+C[index, ...] &lt;- value
+coeffs(x)
+coeffs(x) &lt;- value
+list_modifier(B)
+getcoeffs(C, B)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>C,x</code></td>
+<td>
+<p>A clifford object</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>index</code></td>
+<td>
+<p>elements to extract or replace</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>value</code></td>
+<td>
+<p>replacement value</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p>A list of integer vectors, terms</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Extraction and replacement methods.  The extraction method uses
+<code>getcoeffs()</code> and the replacement method uses low-level helper
+function <code>c_overwrite()</code>.
+</p>
+<p>In the extraction function <code>a[index]</code>, if <code>index</code> is a list,
+further arguments are ignored; if not, the dots are used.  If
+<code>index</code> is a list, its elements are interpreted as integer vectors
+indicating which terms to be extracted (even if it is a <code>disord</code>
+object).  If <code>index</code> is a <code>disord</code> object, standard
+consistency rules are applied.  The extraction methods are designed so
+that idiom such as <code>a[coeffs(a)&gt;3]</code> works.
+</p>
+<p>For replacement methods, the standard use-case is <code>a[i] &lt;- b</code> in
+which argument <code>i</code> is a list of integer vectors and <code>b</code> a
+length-one numeric vector.  Otherwise, to manipulate parts of a clifford
+object, use <code>coeffs(a) &lt;- value</code>; this effectively leverages
+<code>disord</code> formalism.  Idiom such as <code>a[coeffs(a)&lt;2] &lt;- 0</code> is
+not currently implemented (to do this, use <code>coeffs(a)[coeffs(a)&lt;2]
+&lt;- 0</code>).  Replacement using a list-valued index, as in <code>A[i] &lt;-
+value</code> uses an ugly hack if <code>value</code> is zero.  Replacement methods
+are not yet finalised and not yet fully integrated with the
+<code>disordR</code> package.
+</p>
+<p>Idiom such as <code>a[] &lt;- b</code> follows the <code>spray</code> package.  If
+<code>b</code> is a length-one scalar, then <code>coeffs(a) &lt;- b</code> has the same
+effect as <code>a[] &lt;- b</code>.
+</p>
+<p>Functions <code>terms()</code> [see <code>term.Rd</code>] and <code>coeffs()</code>
+extract the terms and coefficients from a clifford object.  These
+functions return <code>disord</code> objects but the ordering is consistent
+between them (an extended discussion of this phenomenon is presented in
+the <code>mvp</code> package).
+</p>
+<p>Function <code>coeffs&lt;-()</code> (idiom <code>coeffs(a) &lt;- b</code>) sets all
+coefficients of <code>a</code> to <code>b</code>.  This has the same effect as
+<code>a[] &lt;- b</code>.
+</p>
+<p>Extraction and replacement methods treat <code>0</code> specially, translating
+it (via <code>list_modifier()</code>) to <code>numeric(0)</code>.
+</p>
+<p>Extracting or replacing a list with a repeated elements is usually a Bad
+Idea (tm).  However, if option <code>warn_on_repeats</code> is set to
+<code>FALSE</code>, no warning will be given (and the coefficient will be the
+sum of the coefficients of the term; see the examples).
+</p>
+<p>Function <code>getcoeffs()</code> is a lower-level helper function that lacks
+the succour offered by <code>[.clifford()</code>.  It returns a numeric vector
+[not a <code>disord</code> object: the order of the elements is determined by
+the order of argument <code>B</code>].  Compare standard extraction, eg
+<code>a[index]</code>, which returns a clifford object.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>Ops.clifford</code>,<code>clifford</code>,<code>term</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">A &lt;- clifford(list(1,1:2,1:3),1:3)
+B &lt;- clifford(list(1:2,1:6),c(44,45))
+
+A[1,c(1,3,4)]
+
+A[2:3, 4] &lt;- 99
+A[] &lt;- B
+
+# clifford(list(1,1:2,1:2),1:3)  # would give a warning
+
+options("warn_on_repeats" = FALSE)
+clifford(list(1,1:2,1:2),1:3)  # works; 1e1 + 5e_12
+
+options("warn_on_repeats" = TRUE) # return to default behaviour.
+
+
+</code></pre>
+
+
+</div>

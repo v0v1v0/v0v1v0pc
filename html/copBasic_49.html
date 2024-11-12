@@ -1,0 +1,134 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>EMPIRsimv</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simulate a Bivariate Empirical Copula For a Fixed Value of U</h2>
+
+<h3>Description</h3>
+
+<p><em>EXPERIMENTAL</em>—Perform a simulation on a <em>bivariate empirical copula</em> to extract the random variates <code class="reqn">V</code> from a given and fixed value for <code class="reqn">u=</code> constant. The purpose of this function is to return a simple vector of the <code class="reqn">V</code> simulations. This behavior is similar to <code>simCOPmicro</code> but differs from the general 2-D simulation implemented in the other functions: <code>EMPIRsim</code> and <code>simCOP</code>—these two functions generate <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> <code>data.frame</code>s of simulated random variates <code class="reqn">U</code> and <code class="reqn">V</code> and optional graphics as well.
+</p>
+<p>For the usual situation in which <code class="reqn">u</code> is not a value aligned on the grid, then the bounding conditional quantile functions are solved for each of the <code class="reqn">n</code> simulations and the following interpolation is made by
+</p>
+<p style="text-align: center;"><code class="reqn">v = \frac{v_1/w_1 + v_2/w_2}{1/w_1 + 1/w_2}\mbox{,}</code>
+</p>
+
+<p>which states that that the weighted mean is computed. The values <code class="reqn">v_1</code> and <code class="reqn">v_2</code> are ordinates of the conditional quantile function for the respective grid lines to the left and right of the <code class="reqn">u</code> value. The values <code class="reqn">w_1</code> <code class="reqn">=</code> <code class="reqn">u - u^\mathrm{left}_\mathrm{grid}</code> and <code class="reqn">w_2</code> <code class="reqn">=</code> <code class="reqn">u^\mathrm{right}_\mathrm{grid} - u</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">EMPIRsimv(u, n=1, empgrid=NULL, kumaraswamy=FALSE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>The fixed probability <code class="reqn">u</code> on which to perform conditional simulation for a sample of size <code class="reqn">n</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>A sample size, default is 1;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>empgrid</code></td>
+<td>
+<p>Gridded empirical copula from <code>EMPIRgrid</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kumaraswamy</code></td>
+<td>
+<p>A logical to trigger Kumaraswamy distribution smoothing of the conditional quantile function that is passed to <code>EMPIRgridderinv</code>. The Kumaraswamy distribution is a distribution having support <code class="reqn">[0,1]</code> with an explicit quantile function and takes the place of a Beta distribution (see <span class="pkg">lmomco</span> function <code>quakur()</code> for more details); and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A vector of simulated <code class="reqn">V</code> values is returned.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>See Also</h3>
+
+<p><code>EMPIRgrid</code>, <code>EMPIRsim</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+nsim &lt;- 3000
+para &lt;- list(alpha=0.15,  beta=0.65,
+             cop1=PLACKETTcop, cop2=PLACKETTcop, para1=.005, para2=1000)
+set.seed(10)
+uv &lt;- simCOP(n=nsim, cop=composite2COP, para=para, pch=16, col=rgb(0,0,0,0.2))
+uv.grid &lt;- EMPIRgrid(para=uv, deluv=.1)
+set.seed(1)
+V1 &lt;- EMPIRsimv(u=0.6, n=nsim, empgrid=uv.grid)
+set.seed(1)
+V2 &lt;- EMPIRsimv(u=0.6, n=nsim, empgrid=uv.grid, kumaraswamy=TRUE)
+plot(V1,V2)
+abline(0,1)
+
+invgrid1 &lt;- EMPIRgridderinv(empgrid=uv.grid)
+invgrid2 &lt;- EMPIRgridderinv(empgrid=uv.grid, kumaraswamy=TRUE)
+att &lt;- attributes(invgrid2); kur &lt;- att$kumaraswamy
+# Now draw random variates from the Kumaraswamy distribution using
+# rlmomco() and vec2par() provided by the lmomco package.
+set.seed(1)
+kurpar &lt;- lmomco::vec2par(c(kur$Alpha[7], kur$Beta[7]), type="kur")
+Vsim &lt;- lmomco::rlmomco(nsim, kurpar)
+
+print(summary(V1))   # Kumaraswamy not core in QDF reconstruction
+print(summary(V2))   # Kumaraswamy core in QDF reconstruction
+print(summary(Vsim)) # Kumaraswamy use of the kumaraswamy
+
+# Continuing with a conditional quantile 0.74 that will not land along one of the
+# grid lines, a weighted interpolation will be done.
+set.seed(1) # try not resetting the seed
+nsim &lt;- 5000
+V &lt;- EMPIRsimv(u=0.74, n=nsim, empgrid=uv.grid)
+# It is important that the uv.grid used to make V is the same grid used in inversion
+# with kumaraswamy=TRUE to guarantee that the correct Kumaraswamy parameters are
+# available if a user is doing cut and paste and exploring these examples.
+set.seed(1)
+V1 &lt;- lmomco::rlmomco(nsim, lmomco::vec2par(c(kur$Alpha[8], kur$Beta[8]), type="kur"))
+set.seed(1)
+V2 &lt;- lmomco::rlmomco(nsim, lmomco::vec2par(c(kur$Alpha[9], kur$Beta[9]), type="kur"))
+
+plot( lmomco::pp(V),  sort(V), type="l", lwd=4, col=8) # GREY is empirical from grid
+lines(lmomco::pp(V1), sort(V1), col=2, lwd=2) # Kumaraswamy at u=0.7 # RED
+lines(lmomco::pp(V2), sort(V2), col=3, lwd=2) # Kumaraswamy at u=0.8 # GREEN
+
+W1 &lt;- 0.74 - 0.7; W2 &lt;- 0.8 - 0.74
+Vblend &lt;- (V1/W1 + V2/W2) / sum(1/W1 + 1/W2)
+lines(lmomco::pp(Vblend), sort(Vblend), col=4, lwd=2) # BLUE LINE
+# Notice how the grey line and the blue diverge for about F &lt; 0.1 and F &gt; 0.9.
+# These are the limits of the grid spacing and linear interpolation within the
+# grid intervals is being used and not direct simulation from the Kumaraswamy.
+## End(Not run)
+</code></pre>
+
+
+</div>

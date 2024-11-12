@@ -1,0 +1,295 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fit_gev</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fit a generalized extreme value model to block maxima or minima</h2>
+
+<h3>Description</h3>
+
+<p>Fit a generalized extreme value model, designed specifically for climate data. It includes options for variable weights (useful for local likelihood), as well as for bootstrapping to estimate uncertainties. Results can be returned in terms of parameter values, return values, return periods, return probabilities, and differences in either return values or log return probabilities (i.e., log risk ratios).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fit_gev(
+  y,
+  x = NULL,
+  locationFun = NULL,
+  scaleFun = NULL,
+  shapeFun = NULL,
+  nReplicates = 1,
+  replicateIndex = NULL,
+  weights = NULL,
+  returnPeriod = NULL,
+  returnValue = NULL,
+  getParams = FALSE,
+  getFit = FALSE,
+  xNew = NULL,
+  xContrast = NULL,
+  maxes = TRUE,
+  scaling = 1,
+  bootSE = FALSE,
+  bootControl = NULL,
+  optimArgs = NULL,
+  optimControl = NULL,
+  missingFlag = NULL,
+  initial = NULL,
+  logScale = NULL,
+  .normalizeX = TRUE,
+  .getInputs = FALSE,
+  .allowNoInt = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>a numeric vector of observed maxima or minima values. See <code>Details</code> for how the values of <code>y</code> should be ordered if there are multiple replicates and the values of <code>x</code> are identical for all replicates. For better optimization performance, it is recommended that the <code>y</code> have magnitude around one (see <code>Details</code>), for which one can use <code>scaling</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a data frame, or object that can be converted to a data frame with columns corresponding to covariate/predictor/feature variables and each row containing the values of the variable for the corresponding observed maximum/minimum. The number of rows should either equal the length of <code>y</code> or (if there is more than one replicate) it can optionally equal the number of observations in a single replicate, in which case the values will be assumed to be the same for all replicates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>locationFun</code></td>
+<td>
+<p>formula, vector of character strings, or indices describing a linear model (i.e., regression function) for the location parameter using columns from <code>x</code>.  <code>x</code> must be supplied if this is anything other than NULL or ~1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scaleFun</code></td>
+<td>
+<p>formula, vector of character strings, or indices describing a linear model (i.e., regression function) for the (potentially transformed) scale parameter using columns from <code>x</code>.  <code>x</code> must be supplied if this is anything other than NULL or ~1. <code>logScale</code> controls whether this determines the log of the scale or the scale directly.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>shapeFun</code></td>
+<td>
+<p>formula, vector of character strings, or indices describing a linear model (i.e., regression function) for the shape parameter using columns from <code>x</code>.  <code>x</code> must be supplied if this is anything other than NULL or ~1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nReplicates</code></td>
+<td>
+<p>numeric value indicating the number of replicates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>replicateIndex</code></td>
+<td>
+<p>numeric vector providing the index of the replicate corresponding to each element of <code>y</code>. Used (and therefore required) only when using bootstrapping with the resampling by replicates based on the <code>by</code> element of <code>bootControl</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>a vector providing the weights for each observation. When there is only one replicate or the weights do not vary by replicate, a vector of length equal to the number of observations. When weights vary by replicate, this should be of equal length to <code>y</code>. Likelihood contribution of each observation is multiplied by the corresponding weight.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>returnPeriod</code></td>
+<td>
+<p>numeric value giving the number of blocks for which return values should be calculated. For example a returnPeriod of 20 corresponds to the value of an event that occurs with probability 1/20 in any block and therefore occurs on average every 20 blocks. Often blocks will correspond to years.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>returnValue</code></td>
+<td>
+<p>numeric value giving the value for which return probabilities/periods should be calculated, where the period would be the average number of blocks until the value is exceeded and the probability the probability of exceeding the value in any single block.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>getParams</code></td>
+<td>
+<p>logical indicating whether to return the fitted parameter values and their standard errors; WARNING: parameter values for models with covariates for the scale parameter must interpreted based on the value of <code>logScale</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>getFit</code></td>
+<td>
+<p>logical indicating whether to return the full fitted model (potentially useful for model evaluation and for understanding optimization problems); note that estimated parameters in the fit object for nonstationary models will not generally match the MLE provided when <code>getParams</code> is <code>TRUE</code> because covariates are normalized before fitting and the fit object is based on the normalized covariates. Similarly, parameters will not match if <code>scaling</code> is not 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xNew</code></td>
+<td>
+<p>object of the same form as <code>x</code>, providing covariate/predictor/feature values for which return values/periods/probabilities are desired.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xContrast</code></td>
+<td>
+<p>object of the same form and dimensions as <code>xNew</code>, providing covariate/predictor/feature values for which to calculate the differences of the return values and/or log return probabilities relative to the values in <code>xNew</code>. This provides a way to estimate the difference in return value or log return probabilities (i.e., log risk ratios).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxes</code></td>
+<td>
+<p>logical indicating whether analysis is for block maxima (TRUE) or block minima (FALSE); in the latter case, the function works with the negative of the values, changing the sign of the resulting location parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scaling</code></td>
+<td>
+<p>positive-valued scalar used to scale the data values for more robust optimization performance. When multiplied by the values, it should produce values with magnitude around 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bootSE</code></td>
+<td>
+<p>logical indicating whether to use the bootstrap to estimate standard errors.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bootControl</code></td>
+<td>
+<p>a list of control parameters for the bootstrapping. See <code>Details</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimArgs</code></td>
+<td>
+<p>a list with named components matching exactly any arguments that the user wishes to pass to R's <code>optim</code> function. See <code>help(optim)</code> for details. Of particular note, <code>'method'</code> can be used to choose the optimization method used for maximizing the log-likelihood to fit the model and <code>control=list(maxit=VALUE)</code> for a user-specified VALUE can be used to increase the number of iterations if the optimization is converging slowly.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimControl</code></td>
+<td>
+<p>a list with named components matching exactly any elements that the user wishes to pass as the <code>control</code> argument to R's <code>optim</code> function. See <code>help(optim)</code> for details. Primarily provided for the Python interface because <code>control</code> can also be passed as part of <code>optimArgs</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>missingFlag</code></td>
+<td>
+<p>value to be interpreted as missing values (instead of <code>NA</code>), intended for use in other languages (e.g., Python) calling this function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>initial</code></td>
+<td>
+<p>a list with components named <code>'location'</code>, <code>'scale'</code>, and <code>'shape'</code> providing initial parameter values, intended for use in speeding up or enabling optimization when the default initial values are resulting in failure of the optimization; note that use of <code>scaling</code>, <code>logScale</code>, and <code>.normalizeX = TRUE</code> cause numerical changes in some of the parameters. For example with <code>logScale = TRUE</code>, initial value(s) for <code>'scale'</code> should be specified on the log scale.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logScale</code></td>
+<td>
+<p>logical indicating whether optimization for the scale parameter should be done on the log scale. By default this is <code>FALSE</code> when the scale is not a function of covariates and <code>TRUE</code> when the scale is a function of covariates (to ensure the scale is positive regardless of the regression coefficients).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.normalizeX</code></td>
+<td>
+<p>logical indicating whether to normalize <code>x</code> values for better numerical performance; default is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.getInputs</code></td>
+<td>
+<p>logical indicating whether to return intermediate objects used in fitting. Defaults to <code>FALSE</code> and intended for internal use only</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.allowNoInt</code></td>
+<td>
+<p>logical indicating whether no-intercept models are allowed. Defaults to <code>TRUE</code> and provided primarily to enable backwards compatibility with versions &lt;= 0.2.2.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function allows one to fit stationary or nonstationary block maxima/minima models using the generalized extreme value distribution. The function can return parameter estimates, return value/level for a given return period (number of blocks), and return probabilities/periods for a given return value/level. The function provides standard errors based on the usual MLE asymptotics, with delta-method-based standard errors for functionals of the parameters, but also standard errors based on the nonparametric bootstrap, either resampling by block or by replicate or both.
+</p>
+<p>Replicates:
+</p>
+<p>Replicates are repeated datasets, each with the same structure, including the same number of block maxima/minima. The additional observations in multiple replicates could simply be treated as additional blocks without replication (see next paragraph), but when the covariate values and weights are the same across replicates, it is simpler to make use of <code>nReplicates</code> and <code>replicateIndex</code>.
+</p>
+<p>When using multiple replicates (e.g., multiple members of a climate model initial condition ensemble), the standard input format is to append observations for additional replicates to the <code>y</code> argument and indicate the replicate ID for each value via <code>replicateIndex</code>, which would be of the form 1,1,1,...2,2,2,...3,3,3,... etc. The values for each replicate should be grouped together and in the same order within replicate so that <code>x</code> can be correctly matched to the <code>y</code> values when <code>x</code> is only supplied for the first replicate. In other words, <code>y</code> should first contain all the values for the first replicate, then all the values for the second replicate in the same block order as for the first replicate, and so forth. Note that if <code>y</code> is provided as a matrix with the number of rows equal to the number of observations in each replicate and the columns corresponding to replicates, this ordering will occur naturally.
+</p>
+<p>However, if one has different covariate values for different replicates, then one needs to treat the additional replicates as providing additional blocks, with only a single replicate (and <code>nReplicates</code> set to 1). The covariate values can then be included as additional rows in <code>x</code>. Similarly, if there is a varying number of replicates by block, then all block-replicate pairs should be treated as individual blocks with a corresponding row in <code>x</code> (and <code>nReplicates</code> set to 1).
+</p>
+<p><code>bootControl</code> arguments:
+</p>
+<p>The <code>bootControl</code> argument is a list (or dictionary when calling from Python) that can supply any of the following components:
+</p>
+
+<ul>
+<li>
+<p> seed. Value of the random number seed as a single value, or in the form of <code>.Random.seed</code>, to set before doing resampling. Defaults to <code>1</code>.
+</p>
+</li>
+<li>
+<p> n. Number of bootstrap samples. Defaults to <code>250</code>.
+</p>
+</li>
+<li>
+<p> by. Character string, one of <code>'block'</code>, <code>'replicate'</code>, or <code>'joint'</code>, indicating the basis for the resampling. If <code>'block'</code>, resampled datasets will consist of blocks drawn at random from the original set of blocks; if there are replicates, each replicate will occur once for every resampled block. If <code>'replicate'</code>, resampled datasets will consist of replicates drawn at random from the original set of replicates; all blocks from a replicate will occur in each resampled replicate. Note that this preserves any dependence across blocks rather than assuming independence between blocks. If <code>'joint'</code> resampled datasets will consist of block-replicate pairs drawn at random from the original set of block-replicate pairs. Defaults to <code>'block'</code>. 
+</p>
+</li>
+<li>
+<p> getSample. Logical/boolean indicating whether the user wants the full bootstrap sample of parameter estimates and/or return value/period/probability information returned for use in subsequent calculations; if FALSE (the default), only the bootstrap-based estimated standard errors are returned.
+</p>
+</li>
+</ul>
+<p>Optimization failures:
+</p>
+<p>It is not uncommon for maximization of the log-likelihood to fail for extreme value models. Users should carefully check the <code>info</code> element of the return object to ensure that the optimization converged. For better optimization performance, it is recommended that the observations be scaled to have magnitude around one (e.g., converting precipitation from mm to cm). When there is a convergence failure, one can try a different optimization method, more iterations, or different starting values – see <code>optimArgs</code> and <code>initial</code>. In particular, the Nelder-Mead method is used; users may want to try the BFGS method by setting <code>optimArgs = list(method = 'BFGS')</code> (or <code>optimArgs = {'method': 'BFGS'}</code> when calling from Python). 
+</p>
+<p>When using the bootstrap, users should check that the number of convergence failures when fitting to the boostrapped datasets is small, as it is not clear how to interpret the bootstrap results when there are convergence failures for some bootstrapped datasets.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The primary outputs of this function are as follows, depending on what is requested via <code>returnPeriod</code>, <code>returnValue</code>, <code>getParams</code> and <code>xContrast</code>:
+</p>
+<p>when <code>returnPeriod</code> is given: for the period given in <code>returnPeriod</code> the return value(s) (<code>returnValue</code>) and its corresponding asymptotic standard error (<code>se_returnValue</code>) and, when <code>bootSE=TRUE</code>, also the bootstrapped standard error (<code>se_returnValue_boot</code>). For nonstationary models, these correspond to the covariate values given in <code>x</code>.
+</p>
+<p>when <code>returnValue</code> is given: for the value given in <code>returnValue</code>, the log exceedance probability (<code>logReturnProb</code>) and the corresponding asymptotic standard error (<code>se_logReturnProb</code>) and, when <code>bootSE=TRUE</code>, also the bootstrapped standard error (<code>se_logReturnProb_boot</code>). This exceedance probability is the probability of exceedance for a single block. Also returned are the log return period (<code>logReturnPeriod</code>) and its corresponding asymptotic standard error (<code>se_logReturnPeriod</code>) and, when <code>bootSE=TRUE</code>, also the bootstrapped standard error (<code>se_logReturnPeriod_boot</code>). For nonstationary models, these correspond to the covariate values given in <code>x</code>. Note that results are on the log scale as probabilities and return times are likely to be closer to normally distributed on the log scale and therefore standard errors are more naturally given on this scale. Confidence intervals for return probabilities/periods can be obtained by exponentiating the interval obtained from plus/minus twice the standard error of the log probabilities/periods. 
+</p>
+<p>when <code>getParams=TRUE</code>: the MLE for the model parameters (<code>mle</code>) and corresponding asymptotic standard error (<code>se_mle</code>) and, when <code>bootSE=TRUE</code>, also the bootstrapped standard error (<code>se_mle_boot</code>).
+</p>
+<p>when <code>xContrast</code> is specified for nonstationary models: the difference in return values (<code>returnValueDiff</code>) and its corresponding asymptotic standard error (<code>se_returnValueDiff</code>) and,  when <code>bootSE=TRUE</code>, bootstrapped standard error (<code>se_returnValueDiff_boot</code>). These differences correspond to the differences when contrasting each row in <code>x</code> with the corresponding row in <code>xContrast</code>. Also returned are the difference in log return probabilities (i.e., the log risk ratio) (<code>logReturnProbDiff</code>) and its corresponding asymptotic standard error (<code>se_logReturnProbDiff</code>) and,  when <code>bootSE=TRUE</code>, bootstrapped standard error (<code>se_logReturnProbDiff_boot</code>).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Christopher J. Paciorek
+</p>
+
+
+<h3>References</h3>
+
+<p>Coles, S. 2001. An Introduction to Statistical Modeling of Extreme Values. Springer.
+</p>
+<p>Paciorek, C.J., D.A. Stone, and M.F. Wehner. 2018. Quantifying uncertainty in the attribution of human influence on severe weather. Weather and Climate Extremes 20:69-80. arXiv preprint &lt;https://arxiv.org/abs/1706.03388&gt;.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(Fort, package = 'extRemes')
+FortMax &lt;- aggregate(Prec ~ year, data = Fort, max)
+
+# stationary fit
+out &lt;- fit_gev(FortMax$Prec, returnPeriod = 20, returnValue = 3.5,
+        getParams = TRUE, bootSE = FALSE)
+
+# nonstationary fit with location linear in year
+out &lt;- fit_gev(FortMax$Prec, x = data.frame(years = FortMax$year), 
+        locationFun = ~years, returnPeriod = 20, returnValue = 3.5,
+        getParams = TRUE, xNew = data.frame(years = range(FortMax$year)), bootSE = FALSE)
+</code></pre>
+
+
+</div>

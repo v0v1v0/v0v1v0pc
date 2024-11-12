@@ -1,0 +1,101 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CFparse</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Parse series of timestamps in CF format to date-time elements</h2>
+
+<h3>Description</h3>
+
+<p>This function will parse a vector of timestamps in ISO8601 or UDUNITS format
+into a data frame with columns for the elements of the timestamp: year,
+month, day, hour, minute, second, time zone. Those timestamps that could not
+be parsed or which represent an invalid date in the indicated <code>CFtime</code>
+instance will have <code>NA</code> values for the elements of the offending timestamp
+(which will generate a warning).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CFparse(cf, x)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cf</code></td>
+<td>
+<p>CFtime. An instance of <code>CFtime</code> indicating the CF calendar and
+datum to use when parsing the date.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>character. Vector of character strings representing timestamps in
+ISO8601 extended or UDUNITS broken format.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The supported formats are the <em>broken timestamp</em> format from the UDUNITS
+library and ISO8601 <em>extended</em>, both with minor changes, as suggested by the
+CF Metadata Conventions. In general, the format is <code style="white-space: pre;">⁠YYYY-MM-DD hh:mm:ss.sss hh:mm⁠</code>. The year can be from 1 to 4 digits and is interpreted literally, so
+<code>79-10-24</code> is the day Mount Vesuvius erupted and destroyed Pompeii, not
+<code>1979-10-24</code>. The year and month are mandatory, all other fields are
+optional. There are defaults for all missing values, following the UDUNITS
+and CF Metadata Conventions. Leading zeros can be omitted in the UDUNITS
+format, but not in the ISO8601 format. The optional fractional part can have
+as many digits as the precision calls for and will be applied to the smallest
+specified time unit. In the result of this function, if the fraction is
+associated with the minute or the hour, it is converted into a regular
+<code>hh:mm:ss.sss</code> format, i.e. any fraction in the result is always associated
+with the second, rounded down to milli-second accuracy. The separator between
+the date and the time can be a single whitespace character or a <code>T</code>.
+</p>
+<p>The time zone is optional and should have at least the hour or <code>Z</code> if
+present, the minute is optional. The time zone hour can have an optional
+sign. In the UDUNITS format the separator between the time and the time zone
+must be a single whitespace character, in ISO8601 there is no separation
+between the time and the timezone. Time zone names are not supported (as
+neither UDUNITS nor ISO8601 support them) and will cause parsing to fail when
+supplied, with one exception: the designator "UTC" is silently dropped (i.e.
+interpreted as "00:00").
+</p>
+<p>Currently only the extended formats (with separators between the elements)
+are supported. The vector of timestamps may have any combination of ISO8601
+and UDUNITS formats.
+</p>
+<p>Timestamps that are prior to the datum are not allowed. The corresponding row
+in the result will have <code>NA</code> values.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame with constituent elements of the parsed timestamps in
+numeric format. The columns are year, month, day, hour, minute, second
+(with an optional fraction), time zone (character string), and the
+corresponding offset value from the datum. Invalid input data will appear
+as <code>NA</code> - if this is the case, a warning message will be displayed - other
+missing information on input will use default values.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">cf &lt;- CFtime("days since 0001-01-01", "proleptic_gregorian")
+
+# This will have `NA`s on output and generate a warning
+timestamps &lt;- c("2012-01-01T12:21:34Z", "12-1-23", "today",
+                "2022-08-16T11:07:34.45-10", "2022-08-16 10.5+04")
+CFparse(cf, timestamps)
+</code></pre>
+
+
+</div>

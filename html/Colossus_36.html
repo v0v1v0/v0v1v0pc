@@ -1,0 +1,188 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>RunCoxRegression_STRATA</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Performs basic Cox Proportional Hazards regression with strata effect</h2>
+
+<h3>Description</h3>
+
+<p><code>RunCoxRegression_STRATA</code> uses user provided data,
+time/event columns, vectors specifying the model, and options to control
+the convergence and starting positions
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">RunCoxRegression_STRATA(
+  df,
+  time1,
+  time2,
+  event0,
+  names,
+  term_n,
+  tform,
+  keep_constant,
+  a_n,
+  modelform,
+  fir,
+  der_iden,
+  control,
+  strat_col
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>a data.table containing the columns of interest</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time1</code></td>
+<td>
+<p>column used for time period starts</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time2</code></td>
+<td>
+<p>column used for time period end</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>event0</code></td>
+<td>
+<p>column used for event status</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>names</code></td>
+<td>
+<p>columns for elements of the model, used to identify data columns</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>term_n</code></td>
+<td>
+<p>term numbers for each element of the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tform</code></td>
+<td>
+<p>list of string function identifiers, used for linear/step</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep_constant</code></td>
+<td>
+<p>binary values to denote which parameters to change</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>a_n</code></td>
+<td>
+<p>list of initial parameter values, used to determine number of parameters. May be either a list of vectors or a single vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelform</code></td>
+<td>
+<p>string specifying the model type: M, ME, A, PA, PAE, GMIX, GMIX-R, GMIX-E</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fir</code></td>
+<td>
+<p>term number for the initial term, used for models of the form T0*f(Ti) in which the order matters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>der_iden</code></td>
+<td>
+<p>number for the subterm to test derivative at, only used for testing runs with a single varying parameter, should be smaller than total number of parameters. indexed starting at 0</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>list of parameters controlling the convergence, see Def_Control() for options or vignette("Control_Options")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>strat_col</code></td>
+<td>
+<p>column to stratify by if needed</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>returns a list of the final results
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other Cox Wrapper Functions: 
+<code>RunCoxNull()</code>,
+<code>RunCoxRegression()</code>,
+<code>RunCoxRegression_Basic()</code>,
+<code>RunCoxRegression_CR()</code>,
+<code>RunCoxRegression_Guesses_CPP()</code>,
+<code>RunCoxRegression_Omnibus()</code>,
+<code>RunCoxRegression_Omnibus_Multidose()</code>,
+<code>RunCoxRegression_Single()</code>,
+<code>RunCoxRegression_Tier_Guesses()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(data.table)
+## basic example code reproduced from the starting-description vignette
+
+df &lt;- data.table::data.table("UserID"=c(112, 114, 213, 214, 115, 116, 117),
+           "Starting_Age"=c(18,  20,  18,  19,  21,  20,  18),
+             "Ending_Age"=c(30,  45,  57,  47,  36,  60,  55),
+          "Cancer_Status"=c(0,   0,   1,   0,   1,   0,   0),
+                      "a"=c(0,   1,   1,   0,   1,   0,   1),
+                      "b"=c(1,   1.1, 2.1, 2,   0.1, 1,   0.2),
+                      "c"=c(10,  11,  10,  11,  12,  9,   11),
+                      "d"=c(0,   0,   0,   1,   1,   1,   1),
+                      "e"=c(0,   0,   0,   0,   1,   0,   1))
+# For the interval case
+time1 &lt;- "Starting_Age"
+time2 &lt;- "Ending_Age"
+event &lt;- "Cancer_Status"
+names &lt;- c('a','b','c','d')
+a_n &lt;- c(1.1, -0.1, 0.2, 0.5) #used to test at a specific point
+term_n &lt;- c(0,1,1,2)
+tform &lt;- c("loglin","lin","lin","plin")
+modelform &lt;- "M"
+fir &lt;- 0
+
+keep_constant &lt;- c(0,0,0,0)
+der_iden &lt;- 0
+
+control &lt;- list("ncores"=2,'lr' = 0.75,'maxiter' = 5,'halfmax' = 5,
+   'epsilon' = 1e-3,'deriv_epsilon' = 1e-3,
+   'abs_max'=1.0,'change_all'=TRUE,'dose_abs_max'=100.0,
+   'verbose'=FALSE, 'ties'='breslow','double_step'=1)
+strat_col &lt;- 'e'
+
+e &lt;- RunCoxRegression_STRATA(df, time1, time2, event, names, term_n,
+                             tform, keep_constant, a_n, modelform,
+                             fir, der_iden, control,strat_col)
+
+</code></pre>
+
+
+</div>

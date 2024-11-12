@@ -1,0 +1,169 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Aggregate.coin</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Aggregate indicators in a coin</h2>
+
+<h3>Description</h3>
+
+<p>Aggregates a named data set specified by <code>dset</code> using aggregation function(s) <code>f_ag</code>, weights <code>w</code>, and optional
+function parameters <code>f_ag_para</code>. Note that COINr has a number of aggregation functions built in,
+all of which are of the form <code style="white-space: pre;">⁠a_*()⁠</code>, e.g. <code>a_amean()</code>, <code>a_gmean()</code> and friends.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'coin'
+Aggregate(
+  x,
+  dset,
+  f_ag = NULL,
+  w = NULL,
+  f_ag_para = NULL,
+  dat_thresh = NULL,
+  by_df = FALSE,
+  out2 = "coin",
+  write_to = NULL,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A coin class object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dset</code></td>
+<td>
+<p>The name of the data set to apply the function to, which should be accessible in <code>.$Data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f_ag</code></td>
+<td>
+<p>The name of an aggregation function, a string. This can either be a single string naming
+a function to use for all aggregation levels, or else a character vector of function names of length <code>n-1</code>, where <code>n</code> is
+the number of levels in the index structure. In this latter case, a different aggregation function may be used for each level
+in the index: the first in the vector will be used to aggregate from Level 1 to Level 2, the second from Level 2 to Level 3, and
+so on.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>An optional data frame of weights. If <code>f_ag</code> does not require accept weights, set to <code>"none"</code>. Alternatively, can be the
+name of a weight set found in <code>.$Meta$Weights</code>. This can also be specified as a list specifying the aggregation weights for each
+level, in the same way as the previous parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f_ag_para</code></td>
+<td>
+<p>Optional parameters to pass to <code>f_ag</code>, other than <code>x</code> and <code>w</code>. As with <code>f_ag</code>, this can specified to have different
+parameters for each aggregation level by specifying as a nested list of length <code>n-1</code>. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dat_thresh</code></td>
+<td>
+<p>An optional data availability threshold, specified as a number between 0 and 1. If a row
+within an aggregation group has data availability lower than this threshold, the aggregated value for that row will be
+<code>NA</code>. Data availability, for a row <code>x_row</code> is defined as <code>sum(!is.na(x_row))/length(x_row)</code>, i.e. the
+fraction of non-<code>NA</code> values. Can also be specified as a vector of length <code>n-1</code>, where <code>n</code> is
+the number of levels in the index structure, to specify different data availability thresholds by level.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by_df</code></td>
+<td>
+<p>Controls whether to send a numeric vector to <code>f_ag</code> (if <code>FALSE</code>, default) or a data frame (if <code>TRUE</code>) - see
+details. Can also be specified as a logical vector of length <code>n-1</code>, where <code>n</code> is
+the number of levels in the index structure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>out2</code></td>
+<td>
+<p>Either <code>"coin"</code> (default) to return updated coin or <code>"df"</code> to output the aggregated data set.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>write_to</code></td>
+<td>
+<p>If specified, writes the aggregated data to <code>.$Data[[write_to]]</code>. Default <code>write_to = "Aggregated"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments passed to or from other methods.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>When <code>by_df = FALSE</code>, aggregation is performed row-wise using the function <code>f_ag</code>, such that for each row <code>x_row</code>, the output is
+<code>f_ag(x_row, f_ag_para)</code>, and for the whole data frame, it outputs a numeric vector. Otherwise if <code>by_df = TRUE</code>,
+the entire data frame of each indicator group is passed to <code>f_ag</code>.
+</p>
+<p>The function <code>f_ag</code> must be supplied as a string, e.g. <code>"a_amean"</code>, and it must take as a minimum an input
+<code>x</code> which is either a numeric vector (if <code>by_df = FALSE</code>), or a data frame (if <code>by_df = TRUE</code>). In the former
+case <code>f_ag</code> should return a single numeric value (i.e. the result of aggregating <code>x</code>), or in the latter case
+a numeric vector (the result of aggregating the whole data frame in one go).
+</p>
+<p>Weights are passed to the function <code>f_ag</code> as an argument named <code>w</code>. This means that the function should have
+arguments that look like <code>f_ag(x, w, ...)</code>, where <code>...</code> are possibly other input arguments to the function. If the
+aggregation function doesn't use weights, you can set <code>w = "none"</code>, and no weights will be passed to it.
+</p>
+<p><code>f_ag</code> can optionally have other parameters, apart from <code>x</code> and <code>w</code>, specified as a list in <code>f_ag_para</code>.
+</p>
+<p>The aggregation specifications can be set to be different for each level of aggregation: the arguments <code>f_ag</code>,
+<code>f_ag_para</code>, <code>dat_thresh</code>, <code>w</code> and <code>by_df</code> can all be optionally specified as vectors or lists of length n-1, where
+n is the number of levels in the index. In this case, the first value in each vector/list will be used for the first
+round of aggregation, i.e. from indicators to the aggregates at level 2. The next will be used to aggregate from
+level 2 to level 3, and so on.
+</p>
+<p>When different functions are used for different levels, it is important to get the list syntax correct. For example, in a case with
+three aggregations using different functions, say we want to use <code>a_amean()</code> for the first two levels, then a custom
+function <code>f_cust()</code> for the last. <code>f_cust()</code> has some additional parameters <code>a</code> and <code>b</code>. In this case, we would specify e.g.
+<code>f_ag_para = list(NULL, NULL, list(a = 2, b = 3))</code> - this is becauase <code>a_amean()</code> requires no additional parameters, so
+we pass <code>NULL</code>.
+</p>
+<p>Note that COINr has a number of aggregation functions built in,
+all of which are of the form <code style="white-space: pre;">⁠a_*()⁠</code>, e.g. <code>a_amean()</code>, <code>a_gmean()</code> and friends. To see a list browse COINr functions alphabetically or
+type <code>a_</code> in the R Studio console and press the tab key (after loading COINr), or see the <a href="https://bluefoxr.github.io/COINr/articles/aggregate.html#coinr-aggregation-functions">online documentation</a>.
+</p>
+<p>Optionally, a data availability threshold can be assigned below which the aggregated value will return
+<code>NA</code> (see <code>dat_thresh</code> argument). If <code>by_df = TRUE</code>, this will however be ignored because aggregation is not
+done on individual rows. Note that more complex constraints could be built into <code>f_ag</code> if needed.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An updated coin with aggregated data set added at <code>.$Data[[write_to]]</code> if <code>out2 = "coin"</code>,
+else if <code>out2 = "df"</code> outputs the aggregated data set as a data frame.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># build example up to normalised data set
+coin &lt;- build_example_coin(up_to = "Normalise")
+
+# aggregate normalised data set
+coin &lt;- Aggregate(coin, dset = "Normalised")
+
+</code></pre>
+
+
+</div>

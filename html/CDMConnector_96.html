@@ -1,0 +1,94 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>summarise_quantile</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Quantile calculation using dbplyr</h2>
+
+<h3>Description</h3>
+
+<p>This function provides DBMS independent syntax for quantiles estimation.
+Can be used by itself or in combination with <code>mutate()</code>
+when calculating other aggregate metrics (min, max, mean).
+</p>
+<p><code>summarise_quantile()</code>, <code>summarize_quantile()</code>, <code>summariseQuantile()</code> and <code>summarizeQuantile()</code> are synonyms.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">summarise_quantile(.data, x = NULL, probs, name_suffix = "value")
+
+summarize_quantile(.data, x = NULL, probs, name_suffix = "value")
+
+summariseQuantile(.data, x = NULL, probs, nameSuffix = "value")
+
+summarizeQuantile(.data, x = NULL, probs, nameSuffix = "value")
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>.data</code></td>
+<td>
+<p>lazy data frame backed by a database query.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>column name whose sample quantiles are wanted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>probs</code></td>
+<td>
+<p>numeric vector of probabilities with values in [0,1].</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name_suffix, nameSuffix</code></td>
+<td>
+<p>character; is appended to numerical quantile value as a column name part.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Implemented quantiles estimation algorithm returns values analogous to
+<code style="white-space: pre;">⁠quantile{stats}⁠</code> with argument <code>type = 1</code>.
+See discussion in Hyndman and Fan (1996).
+Results differ from <code>PERCENTILE_CONT</code> natively implemented in various DBMS,
+where returned values are equal to <code style="white-space: pre;">⁠quantile{stats}⁠</code> with default argument <code>type = 7</code>
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of the same type as '.data'
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+con &lt;- DBI::dbConnect(duckdb::duckdb())
+mtcars_tbl &lt;- dplyr::copy_to(con, mtcars, name = "tmp", overwrite = TRUE, temporary = TRUE)
+
+df &lt;- mtcars_tbl %&gt;%
+ dplyr::group_by(cyl) %&gt;%
+ dplyr::mutate(mean = mean(mpg, na.rm = TRUE)) %&gt;%
+ summarise_quantile(mpg, probs = c(0, 0.2, 0.4, 0.6, 0.8, 1),
+                    name_suffix = "quant") %&gt;%
+ dplyr::collect()
+
+DBI::dbDisconnect(con, shutdown = TRUE)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

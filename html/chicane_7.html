@@ -1,0 +1,309 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>chicane</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>chicane</h2>
+
+<h3>Description</h3>
+
+<p>Run full method for detecting significant interactions in capture Hi-C experiments, starting 
+either from a BAM file or preprocessed data from <code>prepare.data</code>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">chicane(
+  bam = NULL,
+  baits = NULL,
+  fragments = NULL,
+  interactions = NULL,
+  replicate.merging.method = "sum",
+  distribution = "negative-binomial",
+  include.zeros = "none",
+  bait.filters = c(0, 1),
+  target.filters = c(0, 1),
+  distance.bins = NULL,
+  multiple.testing.correction = c("bait-level", "global"),
+  adjustment.terms = NULL,
+  remove.adjacent = FALSE,
+  temp.directory = NULL,
+  keep.files = FALSE,
+  maxit = 100,
+  epsilon = 1e-08,
+  cores = 1,
+  trace = FALSE,
+  verbose = FALSE,
+  interim.data.dir = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>bam</code></td>
+<td>
+<p>Path to a BAM file</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>baits</code></td>
+<td>
+<p>Path to a BED file containing the baits</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fragments</code></td>
+<td>
+<p>Path to a BED file containing all restriction fragments in the genome</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interactions</code></td>
+<td>
+<p>Data table or path to a text file detailing fragment interactions, typically from <code>prepare.data</code>. 
+Can be used instead of bam/baits/fragments specification if the text files have already been prepared.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>replicate.merging.method</code></td>
+<td>
+<p>Method that should be used for merging replicates, if applicable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>distribution</code></td>
+<td>
+<p>Name of distribution of the counts. Options are 'negative-binomial', 
+'poisson', 'truncated-poisson', and 'truncated-negative-binomial'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include.zeros</code></td>
+<td>
+<p>String specifying what zero counts to include. Options are none (default), cis, and all.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bait.filters</code></td>
+<td>
+<p>Vector of length two, where the first element corresponds to the lower-end filter and the second to the upper-end filter.
+When global multiple testing correction is performed, altering the bait filtering settings may affect the number of significant results.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>target.filters</code></td>
+<td>
+<p>Vector of length two, giving lower and higher filter, respectively. 
+Changing this filtering setting may affect multiple testing correction by altering the number of tests performed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>distance.bins</code></td>
+<td>
+<p>Number of bins to split distance into. Models are fit separately in each bin.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>multiple.testing.correction</code></td>
+<td>
+<p>String specifying how multiple testing correction should be performed, by bait or globally.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>adjustment.terms</code></td>
+<td>
+<p>Character vector of extra terms to adjust for in the model fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>remove.adjacent</code></td>
+<td>
+<p>Logical indicating whether to remove all reads mapping to adjacent restriction fragments.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>temp.directory</code></td>
+<td>
+<p>Directory where temporary files should be stored. Defaults to current directory.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.files</code></td>
+<td>
+<p>Logical indicating whether to keep temporary files</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxit</code></td>
+<td>
+<p>Maximum number of IWLS iterations for fitting the model (passed to <code>glm.control</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>epsilon</code></td>
+<td>
+<p>Positive convergence tolerance for Poisson and negative binomial models. Passed to <code>glm.control</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cores</code></td>
+<td>
+<p>Integer value specifying how many cores to use to fit model for cis-interactions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>Logical indicating if output should be produced for each of model fitting procedure. Passed to <code>glm.control</code> or <code>gamlss.control</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Logical indicating whether to print progress reports.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interim.data.dir</code></td>
+<td>
+<p>Path to directory to store intermediate QC data and plots. NULL indicate skip intermediate results.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Data table with columns
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>target.id</code></td>
+<td>
+<p>String in chrN:start-end format identifying target fragment</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bait.id</code></td>
+<td>
+<p>String in chrN:start-end format identifying bait fragment</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>target.chr</code></td>
+<td>
+<p>Chromosome of target fragment</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>target.start</code></td>
+<td>
+<p>Start coordinate of target fragment (zero-based)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>target.end</code></td>
+<td>
+<p>End coordinate of target fragment</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bait.chr</code></td>
+<td>
+<p>Chromosome of bait fragment</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bait.start</code></td>
+<td>
+<p>Start coordinate of bait fragment (zero-based)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bait.end</code></td>
+<td>
+<p>End coordinate of bait fragment</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bait.to.bait</code></td>
+<td>
+<p>Boolean indicating if the interaction is bait-to-bait (i.e. the fragment listed as target is also a bait)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bait.trans.count</code></td>
+<td>
+<p>The number of reads linking the bait to fragments in trans (a measure of "interactibility")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>target.trans.count</code></td>
+<td>
+<p>The number of reads linking the target to fragments in trans (a measure of "interactibility")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>distance</code></td>
+<td>
+<p>Distance between the midpoints of the bait and target fragments (basepairs). NA for trans interactions</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>count</code></td>
+<td>
+<p>The number of reads linking the two fragments</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>expected</code></td>
+<td>
+<p>The expected number of reads linking the two fragments under the fitted model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p.value</code></td>
+<td>
+<p>P-value for test of the observed number of reads significantly exceeding the expected count</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>q.value</code></td>
+<td>
+<p>FDR-corrected p-value</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Erle Holgersen &lt;Erle.Holgersen@icr.ac.uk&gt;
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+if( bedtools.installed() ) {
+  # start from BAM file
+  bam &lt;- system.file('extdata', 'Bre80_2q35.bam', package = 'chicane');
+  baits &lt;- system.file('extdata', '2q35.bed', package = 'chicane');
+  fragments &lt;- system.file('extdata', 'GRCh38_HindIII_chr2.bed.gz', package = 'chicane');
+  results &lt;- chicane(
+	bam = bam, 
+	baits = baits, 
+	fragments = fragments
+	);
+}
+
+# start from pre-processed data
+data(bre80); 
+results &lt;- chicane(interactions = bre80);
+
+
+</code></pre>
+
+
+</div>

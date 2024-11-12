@@ -1,0 +1,189 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>map_single</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Visualize distributions in a single map</h2>
+
+<h3>Description</h3>
+
+<p>This function enables visualization of distributional
+information in a single map by combining distribution metrics and an HCL
+color palette.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">map_single(
+  x,
+  palette,
+  layer,
+  lambda_i = 0,
+  lambda_s = 0,
+  return_type = c("plot", "stack", "df")
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>RasterStack of distributions processed by <code>metrics_pull()</code> or
+<code>metrics_distill()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>palette</code></td>
+<td>
+<p>data frame containing an HCL color palette generated using
+<code>palette_timecycle()</code>, <code>palette_timeline()</code>, or <code>palette_set()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>layer</code></td>
+<td>
+<p>integer (or character) corresponding to the layer ID (or name)
+of layer. A single distribution from within <code>x</code> is mapped when the <code>layer</code>
+argument is specified. The <code>layer</code> argument is ignored if
+<code>metrics_distill()</code> was used to generate <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda_i</code></td>
+<td>
+<p>number that allows visual tuning of intensity values via the
+<code>scales::modulus_trans()</code> function (see Details). Negative numbers increase
+the opacity of cells with low intensity values. Positive numbers decrease
+the opacity of cells with low intensity values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda_s</code></td>
+<td>
+<p>number that allows visual tuning of specificity values via
+the <code>scales::modulus_trans()</code> function (see Details). Negative numbers
+increase the chroma of cells with low specificity values. Positive numbers
+decrease the chroma of cells with low specificity values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return_type</code></td>
+<td>
+<p>character specifying whether the function should return a
+<code>ggplot2</code> plot object ("plot"), <code>RasterStack</code> ("stack"), or data frame
+("df"). The default is to return a <code>ggplot2</code> object.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>lambda_i</code> parameter allows for visual tuning of intensity
+values with unusual distributions. For example, distributions often
+contain highly skewed intensity values because individuals spend a vast
+majority of their time within a relatively small area or because
+populations are relatively dense during some seasons and relatively
+dispersed during others. This can make visualizing distributions a
+challenge. The <code>lambda_i</code> parameter transforms intensity values via the
+<code>scales::modulus_trans()</code> function, allowing users to adjust the relative
+visual weight of high and low intensity values.
+</p>
+<p>The <code>lambda_s</code> parameter allows for visual tuning of specificity
+values via the <code>scales::modulus_trans()</code> function. Adjustment of
+<code>lambda_s</code> affects the distribution of chroma values across areas of
+relatively low and high specificity, thus modifying information available
+to viewers. USE WITH CAUTION!
+</p>
+
+
+<h3>Value</h3>
+
+<p>By default, or when <code>return_type = "plot"</code>, the function returns a
+map that is a <code>ggplot2</code> plot object.
+</p>
+<p>When <code>return_type = "stack"</code>, the function returns a <code>RasterStack</code>
+containing five layers that enable RGBa visualization of a map using other
+R packages or external GIS software:
+</p>
+
+<ul>
+<li> <p><code>R</code>: red, integer values (0-255).
+</p>
+</li>
+<li> <p><code>G</code>: green, integer values (0-255).
+</p>
+</li>
+<li> <p><code>B</code>: blue, integer values (0-255).
+</p>
+</li>
+<li> <p><code>alpha</code>: opacity, numeric values (0-255).
+</p>
+</li>
+<li> <p><code>n_layers</code>: number of layers in <code>x</code> with non-NA values.
+</p>
+</li>
+</ul>
+<p>When <code>return_type = "df"</code>, the function returns a data frame containing
+seven columns:
+</p>
+
+<ul>
+<li> <p><code>x</code>,<code>y</code>: coordinates of raster cell centers.
+</p>
+</li>
+<li> <p><code>cell_number</code>: integer indicating the cell number within the raster.
+</p>
+</li>
+<li> <p><code>intensity</code>: maximum cell value across layers divided by the maximum
+value across all layers and cells; mapped to alpha level.
+</p>
+</li>
+<li> <p><code>specificity</code>: the degree to which intensity values are unevenly
+distributed across layers; mapped to chroma.
+</p>
+</li>
+<li> <p><code>layer_id</code>: integer identifying the layer containing the maximum
+intensity value; mapped to hue.
+</p>
+</li>
+<li> <p><code>color</code>: the hexadecimal color associated with the given layer and
+specificity values.
+</p>
+</li>
+</ul>
+<h3>See Also</h3>
+
+<p>Other map: 
+<code>map_multiples()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># load elephant data
+data("elephant_ud")
+
+# prepare metrics
+r &lt;- metrics_distill(elephant_ud)
+
+# generate palette
+pal &lt;- palette_set(elephant_ud)
+
+# produce map, adjusting lambda_i to make areas that were used less
+# intensively more conspicuous
+map_single(r, pal, lambda_i = -5)
+
+# return RasterStack containing RGBa values
+m &lt;- map_single(r, pal, lambda_i = -5, return_type = "stack")
+
+# visualize RGBa values
+library(raster)
+plotRGB(m, 1, 2, 3, alpha = as.vector(m[[4]]))
+</code></pre>
+
+
+</div>

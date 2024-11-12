@@ -1,0 +1,252 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cpg.work</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Does the analysis between the CpG sites and phenotype of interest
+</h2>
+
+<h3>Description</h3>
+
+<p>Association Analysis Between Methylation Beta Values and Phenotype of Interest. This function contains the code that does the brunt of the work for <code>cpg.assoc</code> and <code>cpg.perm</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cpg.work(beta.values, indep, covariates = NULL, data = NULL, logit.transform = FALSE,
+chip.id = NULL, subset = NULL, random = FALSE, fdr.cutoff = 0.05, callarge = FALSE,
+fdr.method = "BH", logitperm = FALSE,big.split=FALSE,return.data=FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>beta.values</code></td>
+<td>
+
+<p>A vector, matrix, or data frame containing the beta values of interest (1 row per CpG site, 1 column per individual).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>indep</code></td>
+<td>
+
+<p>A vector containing the main variable of interest.  <code>cpg.work</code> will evaluate the association between indep and the beta values. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covariates</code></td>
+<td>
+
+<p>A data frame consisting of the covariates of interest. covariates can also be a matrix if it is a model matrix minus the intercept column. 
+It can also be a vector if there is only one covariate of interest. Can also be a formula (e.g. <code>~cov1+cov2</code>).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+
+<p>an optional data frame, list or environment (or object coercible by <code>as.data.frame</code> to a data frame) containing the variables in the model. If not found in data, the variables are taken from the environment from which <code>cpg.work</code> is called.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logit.transform</code></td>
+<td>
+
+<p>logical. If <code>TRUE</code>, the logit transform of the beta values log(beta.val/(1-beta.val)) will be used. Any values equal to zero or one will be set to the 
+next smallest or  next largest value, respectively; values &lt;0 or &gt;1 will be set to NA.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>chip.id</code></td>
+<td>
+
+<p>An optional vector containing chip, batch identities, or other categorical factor of interest to the researcher. If specified, chip id will be included as a factor in the model.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subset</code></td>
+<td>
+
+<p>an optional logical vector specifying a subset of observations to be used in the fitting process.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>random</code></td>
+<td>
+
+<p>logical. If <code>TRUE</code>, the <span class="option">chip.id</span> will be included in the model as a random effect, and a random intercept model will be fitted. If <code>FALSE</code>, <span class="option">chip.id</span> will be included
+in the model as an ordinary categorical covariate, for a much faster analysis.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fdr.cutoff</code></td>
+<td>
+
+<p>The threshold at which to compare the FDR values. The default setting is .05. Any FDR values less than .05 will be considered significant.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>callarge</code></td>
+<td>
+
+<p>logical. Used by <code>cpg.assoc</code> when it calls <code>cpg.work</code>. If <code>TRUE</code> it means that beta.values is actually split up from a larger data set and that <code>memory.limit</code> may be a problem.
+This tells <code>cpg.work</code> to perform more <code>rm()</code> and <code>gc()</code> to clear up space.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fdr.method</code></td>
+<td>
+
+<p>Character.Method used to calculate False Discovery Rate. Can be any of the methods listed in <code>p.adjust</code>. The default method is "BH" for the Benjamini &amp; Hochberg method.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logitperm</code></td>
+<td>
+
+<p>Passes from <code>cpg.perm</code> when permutation test is performed. Stops from future checks involving the logistic transformation.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>big.split</code></td>
+<td>
+
+<p>Passes from <code>cpg.assoc</code>. Internal flag to inform <code>cpg.work</code> that the large data did not need to be split up.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return.data</code></td>
+<td>
+
+<p>Logical. cpg.assoc can return dataframes containing the the variable of interest, covariates, and the chip id (if present). Defaults to FALSE. Set to TRUE if plan on using the downstream scatterplot functions).
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>cpg.work</code> does the analysis between the methylation and the phenotype of interest. It is called by <code>cpg.assoc</code> to do the brunt of the work. It can be called itself with the same input as <code>cpg.assoc</code>, it just cannot handle large data sets.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>cpg.work</code> will return an object of class <code>"cpg"</code>.
+The functions summary and plot can be called to get a summary of results and to create QQ plots. The output is in the same order as the original input. To sort it by p-value, use the <code>sort</code> function.
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>results</code></td>
+<td>
+
+<p>A data frame consisting of the statistics and P-values for each CpG site. Also has the adjusted p-value based on the fdr.method and whether the site was Holm significant.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Holm.sig</code></td>
+<td>
+
+<p>A list of sites that met criteria for Holm significance.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FDR.sig</code></td>
+<td>
+
+<p>A data.frame of the sites that were FDR significant by the fdr method. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>info</code></td>
+<td>
+
+<p>A data frame consisting of the minimum P-value observed, the fdr method used, what the phenotype of interest was, and the number of covariates in the model.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>indep</code></td>
+<td>
+
+<p>If <code>return.data=T</code>, the independent variable that was tested for association.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covariates</code></td>
+<td>
+
+<p>If <code>return.data=T</code>, data.frame or matrix of covariates, if specified (otherwise <code>NULL</code>).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>chip</code></td>
+<td>
+
+<p>If <code>return.data=T</code>, chip.id vector, if specified (otherwise <code>NULL</code>).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coefficients</code></td>
+<td>
+
+<p>A data frame consisting of the degrees of freedom, and if object is continuous the intercept effect adjusted for possible covariates in the model, the estimated effect size, and the standard error. 
+The degrees of freedom is used in <code>plot.cpg</code> to compute the genomic inflation factors.<br></p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Barfield, R.; Kilaru,V.; Conneely, K.<br>
+Maintainer: R. Barfield: &lt;barfieldrichard8@gmail.com&gt;
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cpg.perm</code>
+<code>cpg.assoc</code>
+<code>plot.cpg</code>
+<code>scatterplot</code>
+<code>cpg.combine</code>
+<code>manhattan</code>
+<code>plot.cpg.perm</code>
+<code>sort.cpg.perm</code>
+<code>sort.cpg</code>
+<code>cpg.qc</code>
+<code>cpg.GC</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">##See the examples listed in cpg.assoc for ways in which to use cpg.work.
+##Just change the cpg.assoc to cpg.work.
+</code></pre>
+
+
+</div>

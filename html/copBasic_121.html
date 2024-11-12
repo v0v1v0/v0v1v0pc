@@ -1,0 +1,151 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>RAYcop</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>The Rayleigh Copula</h2>
+
+<h3>Description</h3>
+
+<p>The <em>Rayleigh copula</em> (Boškoskia and others, 2018) is
+</p>
+<p style="text-align: center;"><code class="reqn">\mathbf{C}_{\Theta}(u,v) = \mathbf{RAY}(u,v; \Theta) = 1 + A - B\mbox{,}</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">A = e^{\Theta a_2 - a_2}\biggl(e^{-a_1}\int_0^{\Theta a_2} e^{-s}I_0\bigl(2\sqrt{a_1 s}\bigr)\,\mathrm{d}s - 1\biggr)\,\mathrm{d}s\mbox{,}</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">B = e^{-a_1}\int_0^{a_2}e^{-s}I_0\bigl(2\sqrt{\Theta a_1 s}\bigr)\,\mathrm{d}s\mbox{,}</code>
+</p>
+
+<p>where <code class="reqn">a1 = -\log(1-u)/(1-\Theta)</code>, <code class="reqn">a2 = -\log(1-v)/(1-\Theta)</code>, <code class="reqn">I_\nu(x)</code> is the modified Bessel function of the first kind of order <code class="reqn">\nu</code> (see <code>base::besselI()</code>), and <code class="reqn">\Theta \in (0,1]</code>. The copula, as <code class="reqn">\Theta \rightarrow 0^{+}</code> limits, to the <em>independence coupla</em> (<code class="reqn">\mathbf{\Pi}(u,v)</code>; <code>P</code>) and as <code class="reqn">\Theta \rightarrow 1^{-}</code> limits to the <em>comonotonicity copula</em> (<code class="reqn">\mathbf{M}(u,v)</code>; <code>M</code>). Finally, there are formulations of the Rayleigh copula using the <em>Marcum-Q function</em>, but the <span class="pkg">copBasic</span> developer has not been able to make such work. If the Marcum-Q function could be used, then only one integration and not the two involving the modified Bessel function are possible. Infinite integrations begin occurring in the upper right corner for about <code class="reqn">\Theta &gt; 0.995</code> at which point the <code class="reqn">\mathbf{M}(u,v)</code> copula is called in the source code.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">RAYcop(u, v, para=NULL, rho=NULL, method=c("default"),
+             rel.tol=.Machine$double.eps^0.5, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">u</code> in the <code class="reqn">X</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>v</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">v</code> in the <code class="reqn">Y</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>A vector (single element) of parameters—the <code class="reqn">\Theta</code> parameter of the copula;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rho</code></td>
+<td>
+<p>Value for Spearman Rho from which parameter <code class="reqn">\Theta</code> is computed by polynomial approximation and returned. The estimation appears sufficient for most pratical applications (see <b>Examples</b>);</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>The computational method of integrals associated with the definition of the copula; this is designed for the ability to switch eventually in sources to Marcum-Q function implementation. The definition in January 2023 and default is to call the two Bessel function integrals shown for the definition in this documentation;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rel.tol</code></td>
+<td>
+<p>Argument of the same name for <code>integrate()</code> call; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Value(s) for the copula are returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The documentation in Zeng and other [Part II] appear to have corrected the Marcum-Q function solution to the copula. The essence of that solution is with a Chi-distribution computation the Marcum-Q. Testing indictates that this is a correct solution, but the derivative for the conditional simulation as built into the design of <span class="pkg">copBasic</span> has difficulties. Perhaps this is related to numerical precision of the Marcum-Q?
+</p>
+<pre>
+  sapply(seq_len(length((u))), function(i) {
+    a1 &lt;- -log(1-u[i])
+    if(is.infinite(a1)) return(v[i])
+    a2 &lt;- -log(1-v[i])
+    if(is.infinite(a2)) return(u[i])
+    a1 &lt;- exp(log(a1) - log(1-p))
+    a2 &lt;- exp(log(a2) - log(1-p))
+    a3 &lt;- marcumq.chi(sqrt(2*  a1), sqrt(2*p*a2)) # Zeng and others (Part II)
+    a4 &lt;- marcumq.chi(sqrt(2*p*a1), sqrt(2*  a2)) # Zeng and others (Part II)
+    zz &lt;- 1 + (1-v[i])*a3 - (1-u[i])*(1-a4)       # Zeng and others (Part II)
+    zz[zz &lt; 0] &lt;- 0
+    zz[zz &gt; 1] &lt;- 1
+    return(zz)
+  })
+</pre>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Boškoskia, P., Debenjaka, A., Boshkoskab, B.M., 2018, Rayleigh copula for describing impedance data with application to condition monitoring of proton exchange membrane fuel cells: European Journal of Operational Research, v. 266, pp. 269–277, <a href="https://doi.org/10.1016/j.ejor.2017.08.058">doi:10.1016/j.ejor.2017.08.058</a>.
+</p>
+<p>Zeng, X., Ren, J., Wang, Z., Marshall, S., and Durrani, T., [undated], Copulas for statistical signal processing (Part I)—Extensions and generalization, accessed January 14, 2024, at <a href="https://pure.strath.ac.uk/ws/portalfiles/portal/34078849/Copulas_Part1_v2_6.pdf">https://pure.strath.ac.uk/ws/portalfiles/portal/34078849/Copulas_Part1_v2_6.pdf</a>.
+</p>
+<p>Zeng, X., Ren, J., Sun, M., Marshall, S., and Durrani, T., [undated], Copulas for statistical signal processing (Part II)—Simulation, optimal selection and practical applications, accessed January 14, 2024, at <a href="https://strathprints.strath.ac.uk/48371/1/Copulas_Part2s_v2_5_2.pdf">https://strathprints.strath.ac.uk/48371/1/Copulas_Part2s_v2_5_2.pdf</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>M</code>, <code>P</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">RAYcop(0.2, 0.8, para=0.8) # [1] 0.1994658  (by the dual Bessel functions)
+
+RAYcop(0.8, 0.2, para=RAYcop(rho=rhoCOP(cop=RAYcop, para=0.8)))
+# [1] 0.1994651 from polynomial conversion of Rho to Theta
+
+## Not run: 
+# Recipe for assembling the Spearman Rho to Theta polynomial in sources.
+Thetas &lt;- seq(0, 0.999, by=0.001); RHOs &lt;- NULL
+for(p in Thetas) RHOs &lt;- c(RHOs, rhoCOP(cop=RAYcop, para=p))
+LM &lt;- lm(Thetas ~ RHOs + I(RHOs^2) + I(RHOs^4) + I(RHOs^6) - 1 )
+Rho2Theta &lt;- function(rho) {
+  coes &lt;- c(1.32682824, -0.38876290, 0.09072305, -0.02921836)
+  sapply(rho, function(r) coes[1]*r^1 + coes[2]*r^2 + coes[3]*r^4 + coes[4]*r^6 )
+}
+plot(RHOs, Thetas, type="l", col=grey(0.8), lwd=12, lend=1,
+      xlab="Spearman Rho", ylab="Rayleigh Copula Parameter Theta")
+lines(RHOs, Rho2Theta(RHOs), col="red", lwd=2) # 
+## End(Not run)
+</code></pre>
+
+
+</div>

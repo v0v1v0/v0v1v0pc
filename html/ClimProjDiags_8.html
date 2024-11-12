@@ -1,0 +1,156 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Extremes</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Sum of spell lengths exceeding daily threshold for n-dimensional arrays</h2>
+
+<h3>Description</h3>
+
+<p>This function returns the number of spells of more than 
+<code>min.length</code> days which exceed or are below the given <code>threshold</code> 
+from daily data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">Extremes(
+  data,
+  threshold,
+  op = "&gt;",
+  min.length = 6,
+  spells.can.span.years = TRUE,
+  max.missing.days = 5,
+  dates = NULL,
+  timedim = NULL,
+  calendar = NULL,
+  ncores = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A n-dimensional array containing daily data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold</code></td>
+<td>
+<p>A n-dimensional array with the threshold to be/not to be 
+reach, usually given by the a percentile computed with the <code>Threshold</code> 
+function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>op</code></td>
+<td>
+<p>The operator to use to compare data to threshold.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min.length</code></td>
+<td>
+<p>The minimum spell length to be considered.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>spells.can.span.years</code></td>
+<td>
+<p>Whether spells can span years.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.missing.days</code></td>
+<td>
+<p>Maximum number of NA values per time period.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dates</code></td>
+<td>
+<p>A vector of dates with a calendar attributes. If NULL 
+(by default), the 'time' attributes of parameter 'data' are considered.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>timedim</code></td>
+<td>
+<p>An integer number indicating the position of the time dimension 
+in the parameter <code>data</code>. If NULL (by default), the dimension called 
+'time' in parameter <code>data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>calendar</code></td>
+<td>
+<p>A character indicating the calendar type.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncores</code></td>
+<td>
+<p>The number of cores to be used when computing the extreme.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This routine compares data to the thresholds using the given 
+operator, generating a series of TRUE or FALSE values; these values are then 
+filtered to remove any sequences of less than <code>min.length</code> days of TRUE 
+values. It then computes the lengths of the remaining sequences of TRUE values 
+(spells) and sums their lengths. The <code>spells.can.spa .years</code> option 
+controls whether spells must always terminate at the end of a period, or 
+whether they may continue until the criteria ceases to be met or the end of 
+the data is reached. The default for fclimdex is FALSE.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of length 2:
+</p>
+
+<ul>
+<li>
+<p><code>$output1</code>, an array with the same dimensions as the original 
+<code>data</code>, except the time dimension which is reduced to annual 
+resolution given a timeseries of maximum spell lengths for each year.
+</p>
+</li>
+<li>
+<p><code>$year</code>, a vector indicating the corresponding years.
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">##Example synthetic data:
+data &lt;- 1:(2 * 3 * 310 * 1)
+dim(data) &lt;- c(time = 310, lon = 2, lat = 3, model = 1)
+time &lt;- as.POSIXct(paste(sort(rep(1902:1911, 31)), 1, 1:31, sep = "-"), tz = "CET")
+metadata &lt;- list(time = list(standard_name = 'time', long_name = 'time', 
+                            calendar = 'noleap', 
+                            units = 'days since 1970-01-01 00:00:00', 
+                            prec = 'double', 
+                            dim = list(list(name = 'time', unlim = FALSE))))
+attr(time, "variables") &lt;- metadata
+attr(data, 'Variables')$dat1$time &lt;- time
+threshold &lt;- Threshold(data, dates = NULL, base.range = NULL, qtiles = 0.9, 
+                      ncores = NULL)
+res &lt;- Extremes(data, threshold = threshold, op = "&gt;", min.length = 6, 
+               spells.can.span.years = TRUE, max.missing.days = 5, 
+               ncores = NULL)
+str(res)
+
+</code></pre>
+
+
+</div>

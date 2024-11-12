@@ -1,0 +1,180 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>time_point_count_between</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Counting: time point</h2>
+
+<h3>Description</h3>
+
+<p><code>time_point_count_between()</code> counts the number of <code>precision</code> units
+between <code>start</code> and <code>end</code> (i.e., the number of days or hours). This count
+corresponds to the <em>whole number</em> of units, and will never return a
+fractional value.
+</p>
+<p>This is suitable for, say, computing the whole number of days between two
+time points, accounting for the time of day.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">time_point_count_between(start, end, precision, ..., n = 1L)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>start, end</code></td>
+<td>
+<p><code style="white-space: pre;">⁠[clock_time_point]⁠</code>
+</p>
+<p>A pair of time points. These will be recycled to their common size.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>precision</code></td>
+<td>
+<p><code style="white-space: pre;">⁠[character(1)]⁠</code>
+</p>
+<p>One of:
+</p>
+
+<ul>
+<li> <p><code>"week"</code>
+</p>
+</li>
+<li> <p><code>"day"</code>
+</p>
+</li>
+<li> <p><code>"hour"</code>
+</p>
+</li>
+<li> <p><code>"minute"</code>
+</p>
+</li>
+<li> <p><code>"second"</code>
+</p>
+</li>
+<li> <p><code>"millisecond"</code>
+</p>
+</li>
+<li> <p><code>"microsecond"</code>
+</p>
+</li>
+<li> <p><code>"nanosecond"</code>
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>These dots are for future extensions and must be empty.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p><code style="white-space: pre;">⁠[positive integer(1)]⁠</code>
+</p>
+<p>A single positive integer specifying a multiple of <code>precision</code> to use.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Remember that <code>time_point_count_between()</code> returns an integer vector.
+With extremely fine precisions, such as nanoseconds, the count can quickly
+exceed the maximum value that is allowed in an integer. In this case, an
+<code>NA</code> will be returned with a warning.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An integer representing the number of <code>precision</code> units between
+<code>start</code> and <code>end</code>.
+</p>
+
+
+<h3>Comparison Direction</h3>
+
+<p>The computed count has the property that if <code>start &lt;= end</code>, then
+<code style="white-space: pre;">⁠start + &lt;count&gt; &lt;= end⁠</code>. Similarly, if <code>start &gt;= end</code>, then
+<code style="white-space: pre;">⁠start + &lt;count&gt; &gt;= end⁠</code>. In other words, the comparison direction between
+<code>start</code> and <code>end</code> will never change after adding the count to <code>start</code>. This
+makes this function useful for repeated count computations at
+increasingly fine precisions.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">x &lt;- as_naive_time(year_month_day(2019, 2, 3))
+y &lt;- as_naive_time(year_month_day(2019, 2, 10))
+
+# Whole number of days or hours between two time points
+time_point_count_between(x, y, "day")
+time_point_count_between(x, y, "hour")
+
+# Whole number of 2-day units
+time_point_count_between(x, y, "day", n = 2)
+
+# Leap years are taken into account
+x &lt;- as_naive_time(year_month_day(c(2020, 2021), 2, 28))
+y &lt;- as_naive_time(year_month_day(c(2020, 2021), 3, 01))
+time_point_count_between(x, y, "day")
+
+# Time of day is taken into account.
+# `2020-02-02T04 -&gt; 2020-02-03T03` is not a whole day (because of the hour)
+# `2020-02-02T04 -&gt; 2020-02-03T05` is a whole day
+x &lt;- as_naive_time(year_month_day(2020, 2, 2, 4))
+y &lt;- as_naive_time(year_month_day(2020, 2, 3, c(3, 5)))
+time_point_count_between(x, y, "day")
+time_point_count_between(x, y, "hour")
+
+# Can compute negative counts (using the same example from above)
+time_point_count_between(y, x, "day")
+time_point_count_between(y, x, "hour")
+
+# Repeated computation at increasingly fine precisions
+x &lt;- as_naive_time(year_month_day(
+  2020, 2, 2, 4, 5, 6, 200,
+  subsecond_precision = "microsecond"
+))
+y &lt;- as_naive_time(year_month_day(
+  2020, 3, 1, 8, 9, 10, 100,
+  subsecond_precision = "microsecond"
+))
+
+days &lt;- time_point_count_between(x, y, "day")
+x &lt;- x + duration_days(days)
+
+hours &lt;- time_point_count_between(x, y, "hour")
+x &lt;- x + duration_hours(hours)
+
+minutes &lt;- time_point_count_between(x, y, "minute")
+x &lt;- x + duration_minutes(minutes)
+
+seconds &lt;- time_point_count_between(x, y, "second")
+x &lt;- x + duration_seconds(seconds)
+
+microseconds &lt;- time_point_count_between(x, y, "microsecond")
+x &lt;- x + duration_microseconds(microseconds)
+
+data.frame(
+  days = days,
+  hours = hours,
+  minutes = minutes,
+  seconds = seconds,
+  microseconds = microseconds
+)
+</code></pre>
+
+
+</div>

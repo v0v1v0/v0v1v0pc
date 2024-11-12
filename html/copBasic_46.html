@@ -1,0 +1,352 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>EMPIRqua.regress</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Quantile Regression of the Grid of the Bivariate Empirical Copula for V with respect to U</h2>
+
+<h3>Description</h3>
+
+<p>Perform <em>quantile regression</em> from the gridded inversion of the <em>bivariate empirical copula</em> of <code class="reqn">V</code> with respect to <code class="reqn">U</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">EMPIRqua.regress(f=0.5, u=seq(0.01,0.99, by=0.01), empinv=NULL,
+                 lowess=FALSE, f.lowess=1/5, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+<p>The nonexceedance probability <code class="reqn">F</code> to perform regression at and defaults to median regression <code class="reqn">F=1/2</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>A vector of <code class="reqn">u</code> nonexceedance probabilities;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>empinv</code></td>
+<td>
+<p>The grid from <code>EMPIRgridderinv</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lowess</code></td>
+<td>
+<p>Perform <code>lowess</code> smooth on the quantile regression using the smooth factor of <code>f.lowess</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f.lowess</code></td>
+<td>
+<p>Smooth factor of almost the same argument name fed to the <code>lowess()</code> function in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The gridded values of the quantile regression of <code class="reqn">V</code> with respect to <code class="reqn">U</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>See Also</h3>
+
+<p><code>EMPIRgridderinv</code>, <code>EMPIRqua.regress2</code>, <code>EMPIRmed.regress</code>, <code>EMPIRmed.regress2</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run:  # EXAMPLE 1
+theta &lt;- 25
+uv &lt;- simCOP(n=1000, cop=PLACKETTcop, para=theta, ploton=FALSE, points=FALSE)
+fakeU &lt;- lmomco::pp(uv[,1], sort=FALSE)
+fakeV &lt;- lmomco::pp(uv[,2], sort=FALSE)
+uv &lt;- data.frame(U=fakeU, V=fakeV)
+
+uv.grid &lt;- EMPIRgrid(para=uv, deluv=0.05) # CPU hungry
+uv.inv1 &lt;- EMPIRgridderinv(empgrid=uv.grid)
+plot(uv, pch=16, col=rgb(0,0,0,.1), xlim=c(0,1), ylim=c(0,1),
+     xlab="U, NONEXCEEDANCE PROBABILITY", ylab="V, NONEXCEEDANCE PROBABILITY")
+lines(qua.regressCOP(f=0.5, cop=PLACKETTcop, para=theta), lwd=2)
+lines(qua.regressCOP(f=0.2, cop=PLACKETTcop, para=theta), lwd=2)
+lines(qua.regressCOP(f=0.7, cop=PLACKETTcop, para=theta), lwd=2)
+lines(qua.regressCOP(f=0.1, cop=PLACKETTcop, para=theta), lwd=2)
+lines(qua.regressCOP(f=0.9, cop=PLACKETTcop, para=theta), lwd=2)
+
+med.wrtu &lt;- EMPIRqua.regress(f=0.5, empinv=uv.inv1, lowess=TRUE, f.lowess=0.1)
+lines(med.wrtu, col=2, lwd=4)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.2, empinv=uv.inv1, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtu, col=2, lwd=2, lty=2)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.7, empinv=uv.inv1, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtu, col=2, lwd=2, lty=2)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.1, empinv=uv.inv1, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtu, col=2, lwd=2, lty=4)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.9, empinv=uv.inv1, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtu, col=2, lwd=2, lty=4)
+
+library(quantreg) # Quantile Regression by quantreg
+U &lt;- seq(0.01, 0.99, by=0.01)
+rqlm &lt;- rq(V~U, data=uv, tau=0.1)
+rq.1 &lt;- rqlm$coefficients[1] + rqlm$coefficients[2]*U
+rqlm &lt;- rq(V~U, data=uv, tau=0.2)
+rq.2 &lt;- rqlm$coefficients[1] + rqlm$coefficients[2]*U
+rqlm &lt;- rq(V~U, data=uv, tau=0.5)
+rq.5 &lt;- rqlm$coefficients[1] + rqlm$coefficients[2]*U
+rqlm &lt;- rq(V~U, data=uv, tau=0.7)
+rq.7 &lt;- rqlm$coefficients[1] + rqlm$coefficients[2]*U
+rqlm &lt;- rq(V~U, data=uv, tau=0.9)
+rq.9 &lt;- rqlm$coefficients[1] + rqlm$coefficients[2]*U
+
+lines(U, rq.1, col=4, lwd=2, lty=4)
+lines(U, rq.2, col=4, lwd=2, lty=2)
+lines(U, rq.5, col=4, lwd=4)
+lines(U, rq.7, col=4, lwd=2, lty=2)
+lines(U, rq.9, col=4, lwd=2, lty=4)#
+## End(Not run)
+
+## Not run:  # EXAMPLE 2
+# Start again with the PSP copula
+uv &lt;- simCOP(n=10000, cop=PSP, ploton=FALSE, points=FALSE)
+fakeU &lt;- lmomco::pp(uv[,1], sort=FALSE)
+fakeV &lt;- lmomco::pp(uv[,2], sort=FALSE)
+uv &lt;- data.frame(U=fakeU, V=fakeV)
+
+uv.grid &lt;- EMPIRgrid(para=uv, deluv=0.05) # CPU hungry
+uv.inv1 &lt;- EMPIRgridderinv(empgrid=uv.grid)
+plot(uv, pch=16, col=rgb(0,0,0,0.1), xlim=c(0,1), ylim=c(0,1),
+     xlab="U, NONEXCEEDANCE PROBABILITY", ylab="V, NONEXCEEDANCE PROBABILITY")
+lines(qua.regressCOP(f=0.5, cop=PSP), lwd=2)
+lines(qua.regressCOP(f=0.2, cop=PSP), lwd=2)
+lines(qua.regressCOP(f=0.7, cop=PSP), lwd=2)
+lines(qua.regressCOP(f=0.1, cop=PSP), lwd=2)
+lines(qua.regressCOP(f=0.9, cop=PSP), lwd=2)
+
+med.wrtu &lt;- EMPIRqua.regress(f=0.5, empinv=uv.inv1, lowess=TRUE, f.lowess=0.1)
+lines(med.wrtu, col=2, lwd=4)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.2, empinv=uv.inv1, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtu, col=2, lwd=2, lty=2)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.7, empinv=uv.inv1, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtu, col=2, lwd=2, lty=2)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.1, empinv=uv.inv1, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtu, col=2, lwd=2, lty=4)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.9, empinv=uv.inv1, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtu, col=2, lwd=2, lty=4)
+
+library(quantreg) # Quantile Regression by quantreg
+U &lt;- seq(0.01, 0.99, by=0.01)
+rqlm &lt;- rq(V~U, data=uv, tau=0.1)
+rq.1 &lt;- rqlm$coefficients[1] + rqlm$coefficients[2]*U
+rqlm &lt;- rq(V~U, data=uv, tau=0.2)
+rq.2 &lt;- rqlm$coefficients[1] + rqlm$coefficients[2]*U
+rqlm &lt;- rq(V~U, data=uv, tau=0.5)
+rq.5 &lt;- rqlm$coefficients[1] + rqlm$coefficients[2]*U
+rqlm &lt;- rq(V~U, data=uv, tau=0.7)
+rq.7 &lt;- rqlm$coefficients[1] + rqlm$coefficients[2]*U
+rqlm &lt;- rq(V~U, data=uv, tau=0.9)
+rq.9 &lt;- rqlm$coefficients[1] + rqlm$coefficients[2]*U
+
+lines(U, rq.1, col=4, lwd=2, lty=4)
+lines(U, rq.2, col=4, lwd=2, lty=2)
+lines(U, rq.5, col=4, lwd=4)
+lines(U, rq.7, col=4, lwd=2, lty=2)
+lines(U, rq.9, col=4, lwd=2, lty=4)#
+## End(Not run)
+
+## Not run:  # EXAMPLE 3
+uv &lt;- simCOP(n=10000, cop=PSP, ploton=FALSE, points=FALSE)
+fakeU &lt;- lmomco::pp(uv[,1], sort=FALSE)
+fakeV &lt;- lmomco::pp(uv[,2], sort=FALSE)
+uv &lt;- data.frame(U=fakeU, V=fakeV)
+
+uv.grid &lt;- EMPIRgrid(para=uv, deluv=0.1) # CPU hungry
+uv.inv1 &lt;- EMPIRgridderinv(empgrid=uv.grid)
+uv.inv2 &lt;- EMPIRgridderinv2(empgrid=uv.grid)
+plot(uv, pch=16, col=rgb(0,0,0,.1), xlim=c(0,1), ylim=c(0,1),
+     xlab="U, NONEXCEEDANCE PROBABILITY", ylab="V, NONEXCEEDANCE PROBABILITY")
+lines(qua.regressCOP(f=0.5, cop=PSP), col=2)
+lines(qua.regressCOP(f=0.2, cop=PSP), col=2)
+lines(qua.regressCOP(f=0.7, cop=PSP), col=2)
+lines(qua.regressCOP(f=0.1, cop=PSP), col=2)
+lines(qua.regressCOP(f=0.9, cop=PSP), col=2)
+
+med.wrtu &lt;- EMPIRqua.regress(f=0.5, empinv=uv.inv1)
+lines(med.wrtu, col=2, lwd=4)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.2, empinv=uv.inv1)
+lines(qua.wrtu, col=2, lwd=2, lty=2)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.7, empinv=uv.inv1)
+lines(qua.wrtu, col=2, lwd=2, lty=2)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.1, empinv=uv.inv1)
+lines(qua.wrtu, col=2, lwd=2, lty=4)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.9, empinv=uv.inv1)
+lines(qua.wrtu, col=2, lwd=2, lty=4)
+
+lines(qua.regressCOP2(f=0.5, cop=PSP), col=4)
+lines(qua.regressCOP2(f=0.2, cop=PSP), col=4)
+lines(qua.regressCOP2(f=0.7, cop=PSP), col=4)
+lines(qua.regressCOP2(f=0.1, cop=PSP), col=4)
+lines(qua.regressCOP2(f=0.9, cop=PSP), col=4)
+
+med.wrtv &lt;- EMPIRqua.regress2(f=0.5, empinv=uv.inv2)
+lines(med.wrtv, col=4, lwd=4)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.2, empinv=uv.inv2)
+lines(qua.wrtv, col=4, lwd=2, lty=2)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.7, empinv=uv.inv2)
+lines(qua.wrtv, col=4, lwd=2, lty=2)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.1, empinv=uv.inv2)
+lines(qua.wrtv, col=4, lwd=2, lty=4)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.9, empinv=uv.inv2)
+lines(qua.wrtv, col=4, lwd=2, lty=4)#
+## End(Not run)
+
+## Not run:  # EXAMPLE 4
+# Now try a much more complex shape
+# lowess smoothing on quantile regression is possible,
+# see next example
+para   &lt;- list(alpha=0.15,  beta=0.65,
+               cop1=PLACKETTcop, cop2=PLACKETTcop, para1=0.005, para2=1000)
+uv &lt;- simCOP(n=20000, cop=composite2COP, para=para)
+fakeU &lt;- lmomco::pp(uv[,1], sort=FALSE)
+fakeV &lt;- lmomco::pp(uv[,2], sort=FALSE)
+uv &lt;- data.frame(U=fakeU, V=fakeV)
+
+uv.grid &lt;- EMPIRgrid(para=uv, deluv=0.025) # CPU hungry
+uv.inv1 &lt;- EMPIRgridderinv(empgrid=uv.grid)
+uv.inv2 &lt;- EMPIRgridderinv2(empgrid=uv.grid)
+plot(uv, pch=16, col=rgb(0,0,0,0.1), xlim=c(0,1), ylim=c(0,1),
+     xlab="U, NONEXCEEDANCE PROBABILITY", ylab="V, NONEXCEEDANCE PROBABILTIY")
+lines(qua.regressCOP(f=0.5, cop=composite2COP, para=para), col=2)
+lines(qua.regressCOP(f=0.2, cop=composite2COP, para=para), col=2)
+lines(qua.regressCOP(f=0.7, cop=composite2COP, para=para), col=2)
+lines(qua.regressCOP(f=0.1, cop=composite2COP, para=para), col=2)
+lines(qua.regressCOP(f=0.9, cop=composite2COP, para=para), col=2)
+
+med.wrtu &lt;- EMPIRqua.regress(f=0.5, empinv=uv.inv1)
+lines(med.wrtu, col=2, lwd=4)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.2, empinv=uv.inv1)
+lines(qua.wrtu, col=2, lwd=2, lty=2)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.7, empinv=uv.inv1)
+lines(qua.wrtu, col=2, lwd=2, lty=2)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.1, empinv=uv.inv1)
+lines(qua.wrtu, col=2, lwd=2, lty=4)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.9, empinv=uv.inv1)
+lines(qua.wrtu, col=2, lwd=2, lty=4)
+
+lines(qua.regressCOP2(f=0.5, cop=composite2COP, para=para), col=4)
+lines(qua.regressCOP2(f=0.2, cop=composite2COP, para=para), col=4)
+lines(qua.regressCOP2(f=0.7, cop=composite2COP, para=para), col=4)
+lines(qua.regressCOP2(f=0.1, cop=composite2COP, para=para), col=4)
+lines(qua.regressCOP2(f=0.9, cop=composite2COP, para=para), col=4)
+
+med.wrtv &lt;- EMPIRqua.regress2(f=0.5, empinv=uv.inv2)
+lines(med.wrtv, col=4, lwd=4)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.2, empinv=uv.inv2)
+lines(qua.wrtv, col=4, lwd=2, lty=2)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.7, empinv=uv.inv2)
+lines(qua.wrtv, col=4, lwd=2, lty=2)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.1, empinv=uv.inv2)
+lines(qua.wrtv, col=4, lwd=2, lty=4)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.9, empinv=uv.inv2)
+lines(qua.wrtv, col=4, lwd=2, lty=4)#
+## End(Not run)
+
+## Not run:  # EXAMPLE 5
+plot(uv, pch=16, col=rgb(0,0,0,.1), xlim=c(0,1), ylim=c(0,1),
+     xlab="U, NONEXCEEDANCE PROBABILITY", ylab="V, NONEXCEEDANCE PROBABILITY")
+lines(qua.regressCOP(f=0.5, cop=composite2COP, para=para), col=2)
+lines(qua.regressCOP(f=0.2, cop=composite2COP, para=para), col=2)
+lines(qua.regressCOP(f=0.7, cop=composite2COP, para=para), col=2)
+lines(qua.regressCOP(f=0.1, cop=composite2COP, para=para), col=2)
+lines(qua.regressCOP(f=0.9, cop=composite2COP, para=para), col=2)
+
+med.wrtu &lt;- EMPIRqua.regress(f=0.5, empinv=uv.inv1, lowess=TRUE)
+lines(med.wrtu, col=2, lwd=4)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.2, empinv=uv.inv1, lowess=TRUE)
+lines(qua.wrtu, col=2, lwd=2, lty=2)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.7, empinv=uv.inv1, lowess=TRUE)
+lines(qua.wrtu, col=2, lwd=2, lty=2)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.1, empinv=uv.inv1, lowess=TRUE)
+lines(qua.wrtu, col=2, lwd=2, lty=4)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.9, empinv=uv.inv1, lowess=TRUE)
+lines(qua.wrtu, col=2, lwd=2, lty=4)
+
+lines(qua.regressCOP2(f=0.5, cop=composite2COP, para=para), col=4)
+lines(qua.regressCOP2(f=0.2, cop=composite2COP, para=para), col=4)
+lines(qua.regressCOP2(f=0.7, cop=composite2COP, para=para), col=4)
+lines(qua.regressCOP2(f=0.1, cop=composite2COP, para=para), col=4)
+lines(qua.regressCOP2(f=0.9, cop=composite2COP, para=para), col=4)
+
+med.wrtv &lt;- EMPIRqua.regress2(f=0.5, empinv=uv.inv2, lowess=TRUE)
+lines(med.wrtv, col=4, lwd=4)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.2, empinv=uv.inv2, lowess=TRUE)
+lines(qua.wrtv, col=4, lwd=2, lty=2)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.7, empinv=uv.inv2, lowess=TRUE)
+lines(qua.wrtv, col=4, lwd=2, lty=2)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.1, empinv=uv.inv2, lowess=TRUE)
+lines(qua.wrtv, col=4, lwd=2, lty=4)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.9, empinv=uv.inv2, lowess=TRUE)
+lines(qua.wrtv, col=4, lwd=2, lty=4)#
+## End(Not run)
+
+## Not run:  # EXAMPLE 6 (changing the smoothing on the lowess)
+plot(uv, pch=16, col=rgb(0,0,0,0.1), xlim=c(0,1), ylim=c(0,1),
+     xlab="U, NONEXCEEDANCE PROBABILITY", ylab="V, NONEXCEEDANCE PROBABILTIY")
+lines(qua.regressCOP(f=0.5, cop=composite2COP, para=para), col=2)
+lines(qua.regressCOP(f=0.2, cop=composite2COP, para=para), col=2)
+lines(qua.regressCOP(f=0.7, cop=composite2COP, para=para), col=2)
+lines(qua.regressCOP(f=0.1, cop=composite2COP, para=para), col=2)
+lines(qua.regressCOP(f=0.9, cop=composite2COP, para=para), col=2)
+
+med.wrtu &lt;- EMPIRqua.regress(f=0.5, empinv=uv.inv1, lowess=TRUE, f.lowess=0.1)
+lines(med.wrtu, col=2, lwd=4)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.2, empinv=uv.inv1, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtu, col=2, lwd=2, lty=2)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.7, empinv=uv.inv1, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtu, col=2, lwd=2, lty=2)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.1, empinv=uv.inv1, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtu, col=2, lwd=2, lty=4)
+qua.wrtu &lt;- EMPIRqua.regress(f=0.9, empinv=uv.inv1, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtu, col=2, lwd=2, lty=4)
+
+lines(qua.regressCOP2(f=0.5, cop=composite2COP, para=para), col=4)
+lines(qua.regressCOP2(f=0.2, cop=composite2COP, para=para), col=4)
+lines(qua.regressCOP2(f=0.7, cop=composite2COP, para=para), col=4)
+lines(qua.regressCOP2(f=0.1, cop=composite2COP, para=para), col=4)
+lines(qua.regressCOP2(f=0.9, cop=composite2COP, para=para), col=4)
+
+med.wrtv &lt;- EMPIRqua.regress2(f=0.5, empinv=uv.inv2, lowess=TRUE, f.lowess=0.1)
+lines(med.wrtv, col=4, lwd=4)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.2, empinv=uv.inv2, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtv, col=4, lwd=2, lty=2)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.7, empinv=uv.inv2, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtv, col=4, lwd=2, lty=2)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.1, empinv=uv.inv2, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtv, col=4, lwd=2, lty=4)
+qua.wrtv &lt;- EMPIRqua.regress2(f=0.9, empinv=uv.inv2, lowess=TRUE, f.lowess=0.1)
+lines(qua.wrtv, col=4, lwd=2, lty=4)#
+## End(Not run)
+</code></pre>
+
+
+</div>

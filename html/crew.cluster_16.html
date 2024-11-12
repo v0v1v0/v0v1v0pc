@@ -1,0 +1,351 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>crew_launcher_pbs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+<a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt="[Experimental]"></a> Create a launcher with
+PBS or TORQUE workers.</h2>
+
+<h3>Description</h3>
+
+<p>Create an <code>R6</code> object to launch and maintain
+workers as jobs on a PBS or TORQUE cluster.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">crew_launcher_pbs(
+  name = NULL,
+  seconds_interval = 0.5,
+  seconds_timeout = 60,
+  seconds_launch = 86400,
+  seconds_idle = Inf,
+  seconds_wall = Inf,
+  tasks_max = Inf,
+  tasks_timers = 0L,
+  reset_globals = TRUE,
+  reset_packages = FALSE,
+  reset_options = FALSE,
+  garbage_collection = FALSE,
+  launch_max = 5L,
+  tls = crew::crew_tls(mode = "automatic"),
+  verbose = FALSE,
+  command_submit = as.character(Sys.which("qsub")),
+  command_terminate = as.character(Sys.which("qdel")),
+  command_delete = NULL,
+  script_directory = tempdir(),
+  script_lines = character(0L),
+  pbs_cwd = TRUE,
+  pbs_log_output = "/dev/null",
+  pbs_log_error = NULL,
+  pbs_log_join = TRUE,
+  pbs_memory_gigabytes_required = NULL,
+  pbs_cores = NULL,
+  pbs_walltime_hours = 12
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p>Name of the launcher.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seconds_interval</code></td>
+<td>
+<p>Number of seconds between
+polling intervals waiting for certain internal
+synchronous operations to complete,
+such as checking <code>mirai::status()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seconds_timeout</code></td>
+<td>
+<p>Number of seconds until timing
+out while waiting for certain synchronous operations to complete,
+such as checking <code>mirai::status()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seconds_launch</code></td>
+<td>
+<p>Seconds of startup time to allow.
+A worker is unconditionally assumed to be alive
+from the moment of its launch until <code>seconds_launch</code> seconds later.
+After <code>seconds_launch</code> seconds, the worker is only
+considered alive if it is actively connected to its assign websocket.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seconds_idle</code></td>
+<td>
+<p>Maximum number of seconds that a worker can idle
+since the completion of the last task. If exceeded, the worker exits.
+But the timer does not launch until <code>tasks_timers</code> tasks
+have completed.
+See the <code>idletime</code> argument of <code>mirai::daemon()</code>. <code>crew</code> does not
+excel with perfectly transient workers because it does not micromanage
+the assignment of tasks to workers, so please allow enough idle
+time for a new worker to be delegated a new task.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seconds_wall</code></td>
+<td>
+<p>Soft wall time in seconds.
+The timer does not launch until <code>tasks_timers</code> tasks
+have completed.
+See the <code>walltime</code> argument of <code>mirai::daemon()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tasks_max</code></td>
+<td>
+<p>Maximum number of tasks that a worker will do before
+exiting. See the <code>maxtasks</code> argument of <code>mirai::daemon()</code>.
+<code>crew</code> does not
+excel with perfectly transient workers because it does not micromanage
+the assignment of tasks to workers, it is recommended to set
+<code>tasks_max</code> to a value greater than 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tasks_timers</code></td>
+<td>
+<p>Number of tasks to do before activating
+the timers for <code>seconds_idle</code> and <code>seconds_wall</code>.
+See the <code>timerstart</code> argument of <code>mirai::daemon()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reset_globals</code></td>
+<td>
+<p><code>TRUE</code> to reset global environment
+variables between tasks, <code>FALSE</code> to leave them alone.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reset_packages</code></td>
+<td>
+<p><code>TRUE</code> to unload any packages loaded during
+a task (runs between each task), <code>FALSE</code> to leave packages alone.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reset_options</code></td>
+<td>
+<p><code>TRUE</code> to reset global options to their original
+state between each task, <code>FALSE</code> otherwise. It is recommended to
+only set <code>reset_options = TRUE</code> if <code>reset_packages</code> is also <code>TRUE</code>
+because packages sometimes rely on options they set at loading time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>garbage_collection</code></td>
+<td>
+<p><code>TRUE</code> to run garbage collection between
+tasks, <code>FALSE</code> to skip.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>launch_max</code></td>
+<td>
+<p>Positive integer of length 1, maximum allowed
+consecutive launch attempts which do not complete any tasks.
+Enforced on a worker-by-worker basis.
+The futile launch count resets to back 0
+for each worker that completes a task.
+It is recommended to set <code>launch_max</code> above 0
+because sometimes workers are unproductive under perfectly ordinary
+circumstances. But <code>launch_max</code> should still be small enough
+to detect errors in the underlying platform.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tls</code></td>
+<td>
+<p>A TLS configuration object from <code>crew_tls()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Logical, whether to see console output and error messages
+when submitting worker.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>command_submit</code></td>
+<td>
+<p>Character of length 1,
+file path to the executable to submit a worker job.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>command_terminate</code></td>
+<td>
+<p>Character of length 1,
+file path to the executable to terminate a worker job.
+Set to <code>""</code> to skip manually terminating the worker.
+Unless there is an issue with the platform,
+the job should still exit thanks to the NNG-powered network programming
+capabilities of <code>mirai</code>. Still, if you set <code>command_terminate = ""</code>,
+you are assuming extra responsibility for manually monitoring
+your jobs on the cluster and manually terminating jobs as appropriate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>command_delete</code></td>
+<td>
+<p>Deprecated on 2024-01-08 (version 0.1.4.9001).
+Use <code>command_terminate</code> instead.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>script_directory</code></td>
+<td>
+<p>Character of length 1, directory path to the
+job scripts. Just before each job submission, a job script
+is created in this folder. Script base names are unique to each
+launcher and worker, and the launcher deletes the script when the
+worker is manually terminated. <code>tempdir()</code> is the default, but it
+might not work for some systems.
+<code>tools::R_user_dir("crew.cluster", which = "cache")</code>
+is another reasonable choice.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>script_lines</code></td>
+<td>
+<p>Optional character vector of additional lines to be
+added to the job script just after the more common flags.
+An example would be <code>script_lines = "module load R"</code> if your cluster
+supports R through an environment module.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pbs_cwd</code></td>
+<td>
+<p>Logical of length 1, whether to set the working directory
+of the worker to the working directory it was launched from.
+<code>pbs_cwd = TRUE</code> is translates to a line of <code style="white-space: pre;">⁠cd "$PBS_O_WORKDIR"⁠</code>
+in the job script. This line is inserted after the content of
+<code>script_lines</code> to make sure the <code style="white-space: pre;">⁠#PBS⁠</code> directives are above
+system commands. <code>pbs_cwd = FALSE</code> omits this line.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pbs_log_output</code></td>
+<td>
+<p>Character of length 1, file or directory path to PBS
+worker log files for standard output.
+<code>pbs_log_output = "VALUE"</code> translates to a line of
+<code style="white-space: pre;">⁠#PBS -o VALUE⁠</code> in the PBS job script. The default is <code style="white-space: pre;">⁠/dev/null⁠</code> to omit
+the logs. If you do supply a non-<code style="white-space: pre;">⁠/dev/null⁠</code> value,
+it is recommended to supply a
+directory path with a trailing slash so that each worker gets its own set
+of log files.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pbs_log_error</code></td>
+<td>
+<p>Character of length 1, file or directory path to PBS
+worker log files for standard error.
+<code>pbs_log_error = "VALUE"</code> translates to a line of
+<code style="white-space: pre;">⁠#PBS -e VALUE⁠</code> in the PBS job script.
+The default of <code>NULL</code> omits this line.
+If you do supply a non-<code style="white-space: pre;">⁠/dev/null⁠</code> value, it is recommended to supply a
+directory path with a trailing slash so that each worker gets its own set
+of log files.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pbs_log_join</code></td>
+<td>
+<p>Logical, whether to join the stdout and stderr log
+files together into one file. <code>pbs_log_join = TRUE</code> translates to a line
+of <code style="white-space: pre;">⁠#PBS -j oe⁠</code> in the PBS job script, while <code>pbs_log_join = FALSE</code> is
+equivalent to <code style="white-space: pre;">⁠#PBS -j n⁠</code>. If <code>pbs_log_join = TRUE</code>, then <code>pbs_log_error</code>
+should be <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pbs_memory_gigabytes_required</code></td>
+<td>
+<p>Optional positive numeric of length 1
+with the gigabytes of memory required to run the worker.
+<code>pbs_memory_gigabytes_required = 2.4</code>
+translates to a line of <code style="white-space: pre;">⁠#PBS -l mem=2.4gb⁠</code> in the PBS job script.
+<code>pbs_memory_gigabytes_required = NULL</code> omits this line.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pbs_cores</code></td>
+<td>
+<p>Optional positive integer of length 1,
+number of cores per worker ("slots" in PBS lingo).
+<code>pbs_cores = 4</code> translates
+to a line of <code style="white-space: pre;">⁠#PBS -l ppn=4⁠</code> in the PBS job script.
+<code>pbs_cores = NULL</code> omits this line.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pbs_walltime_hours</code></td>
+<td>
+<p>Numeric of length 1 with the hours of wall time
+to request for the job. <code>pbs_walltime_hours = 23</code> translates to
+a line of <code style="white-space: pre;">⁠#PBS -l walltime=23:00:00⁠</code> in the job script.
+<code>pbs_walltime_hours = NULL</code> omits this line.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>WARNING: the <code>crew.cluster</code> PBS plugin is experimental
+and has not actually been tested on a PBS cluster. Please proceed
+with caution and report bugs to
+<a href="https://github.com/wlandau/crew.cluster">https://github.com/wlandau/crew.cluster</a>.
+</p>
+<p>To launch a PBS/TORQUE worker, this launcher
+creates a temporary job script with a call to <code>crew::crew_worker()</code>
+and submits it as an PBS job with <code>qsub</code>. To see most of the lines
+of the job script in advance, use the <code>script()</code> method of the launcher.
+It has all the lines except for the job name and the
+call to <code>crew::crew_worker()</code>, both of
+which will be inserted at the last minute when it is time
+to actually launch a worker.
+</p>
+
+
+<h3>Attribution</h3>
+
+<p>The template files at
+<a href="https://github.com/mschubert/clustermq/tree/master/inst">https://github.com/mschubert/clustermq/tree/master/inst</a>
+informed the development of the <code>crew</code> launcher plugins in
+<code>crew.cluster</code>, and we would like to thank
+Michael Schubert for developing <code>clustermq</code> and releasing it under
+the permissive Apache License 2.0.
+See the <code>NOTICE</code> and <code>README.md</code> files in the <code>crew.cluster</code>
+source code for additional attribution.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other pbs: 
+<code>crew_class_launcher_pbs</code>,
+<code>crew_controller_pbs()</code>
+</p>
+
+
+</div>

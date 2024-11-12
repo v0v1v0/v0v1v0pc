@@ -1,0 +1,149 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>outcome_regression</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Outcome Regression</h2>
+
+<h3>Description</h3>
+
+<p>'outcome_regression' builds a linear model using all covariates. The treatment effects are stratified
+within the levels of the covariates. The model will automatically provide all discrete covariates in a contrast matrix.
+To view estimated change in treatment effect from continuous variables, a list called <code>contrasts</code>, needs to be given
+with specific values to estimate. A vector of values can be given for any particular continuous variable.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">outcome_regression(
+  data,
+  f = NA,
+  simple = pkg.env$simple,
+  family = gaussian(),
+  contrasts = list(),
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a data frame containing the variables in the model.
+This should be the same data used in <code>init_params</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+<p>(optional) an object of class "formula" that overrides the default parameter</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>simple</code></td>
+<td>
+<p>a boolean indicator to build default formula with interactions.
+If true, interactions will be excluded. If false, interactions will be included. By
+default, simple is set to false.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>the family to be used in the general linear model.
+By default, this is set to <code>gaussian</code>.
+NOTE: if this is changed, the assumptions about the model output may be incorrect and may not provide
+accurate treatment effects.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>contrasts</code></td>
+<td>
+<p>a list of continuous covariates and values in the model to be included in the contrast matrix
+(e.g. <code>list(age = c(18, 25, 40), weight = c(90, 159))</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments that may be passed to the underlying <code>glht</code> model.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>outcome_regression</code> returns an object of <code>class "outcome_regression"</code>
+</p>
+<p>The functions <code>print</code>, <code>summary</code>, and <code>predict</code> can be used to interact with
+the underlying <code>glht</code> model.
+</p>
+<p>An object of class <code>"outcome_regression"</code> is a list containing the following:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the matched call.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>the formula used in the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>the underlying glht model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ATE</code></td>
+<td>
+<p>a data frame containing the ATE, SE, and 95% CI of the ATE. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ATE.summary</code></td>
+<td>
+<p>a more detailed summary of the ATE estimations from glht. </p>
+</td>
+</tr>
+</table>
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(causaldata)
+library(multcomp)
+
+data(nhefs)
+nhefs.nmv &lt;- nhefs[which(!is.na(nhefs$wt82)), ]
+nhefs.nmv$qsmk &lt;- as.factor(nhefs.nmv$qsmk)
+
+confounders &lt;- c(
+  "sex", "race", "age", "education", "smokeintensity",
+  "smokeyrs", "exercise", "active", "wt71"
+)
+
+init_params(wt82_71, qsmk,
+  covariates = confounders,
+  data = nhefs.nmv
+)
+
+out.mod &lt;- outcome_regression(nhefs.nmv, contrasts = list(
+  age = c(21, 55),
+  smokeintensity = c(5, 20, 40)
+))
+print(out.mod)
+summary(out.mod)
+head(data.frame(preds = predict(out.mod)))
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,208 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>newcustomer</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>New customer prediction data</h2>
+
+<h3>Description</h3>
+
+<p>The methods documented here are to be used together with predict to obtain
+the expected number of transactions of an average newly alive customer.
+It describes the number of transactions a single, average new customer is expected to make in
+the <code>num.periods</code> periods since making the first transaction ("coming alive"). This prediction is only
+sensible for customers who just came alive and have not had the chance to reveal any more of their behavior.
+</p>
+<p>The data required for this new customer prediction is produced by the methods described here. This is mostly covariate data
+for static and dynamic covariate models. See details for the required format.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">newcustomer(num.periods)
+
+newcustomer.static(num.periods, data.cov.life, data.cov.trans)
+
+newcustomer.dynamic(
+  num.periods,
+  data.cov.life,
+  data.cov.trans,
+  first.transaction
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>num.periods</code></td>
+<td>
+<p>A positive, numeric scalar indicating the number of periods to predict.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data.cov.life</code></td>
+<td>
+<p>Numeric-only covariate data for the lifetime process for a single customer, <code>data.table</code> or <code>data.frame</code>. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data.cov.trans</code></td>
+<td>
+<p>Numeric-only covariate data for the transaction process for a single customer, <code>data.table</code> or <code>data.frame</code>. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>first.transaction</code></td>
+<td>
+<p>For dynamic covariate models only: The time point of the first transaction of the customer ("coming alive") for which a prediction is made.
+Has to be within the time range of the covariate data.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The covariate data has to contain one column for every covariate parameter in the fitted model. Only numeric values are allowed, no factors or characters.
+No customer Id is required because the data on which the model was fit is not used for this prediction.
+</p>
+<p>For <code>newcustomer.static()</code>: One column for every covariate parameter in the estimated model.
+No column <code>Id</code>. Exactly 1 row of numeric covariate data. <br>
+For example: <code>data.frame(Gender=1, Age=30, Channel=0)</code>.
+</p>
+<p>For <code>newcustomer.dynamic()</code>: One column for every covariate parameter in the estimated model.
+No column <code>Id</code>. A column <code>Cov.Date</code> with time points that mark the start of the period defined by <code>time.unit</code>.
+For every <code>Cov.Date</code>, exactly 1 row of numeric covariate data. <br>
+For example for weekly covariates: <code>data.frame(Cov.Date=c("2000-01-03", "2000-01-10"), Gender=c(1,1), Channel=c(1, 1), High.Season=c(0,1,0))</code> <br>
+If <code>Cov.Date</code> is of type character, the <code>date.format</code> given when creating the the <code>clv.data</code> object is used to parse it.
+The data has to cover the time from the customer's first transaction <code>first.transaction</code>
+to the end of the prediction period given by <code>t</code>. It does not have to cover the same time range as when fitting the model.
+See examples.
+</p>
+<p>For models with dynamic covariates, the time point of the first purchase (<code>first.transaction</code>) is
+additionally required because the exact covariates that are active during the prediction period have
+to be known.
+</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>newcustomer()</code></td>
+<td>
+<p>An object of class <code>clv.newcustomer.no.cov</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newcustomer.static()</code></td>
+<td>
+<p>An object of class <code>clv.newcustomer.static.cov</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newcustomer.dynamic()</code></td>
+<td>
+<p>An object of class <code>clv.newcustomer.dynamic.cov</code></p>
+</td>
+</tr>
+</table>
+<h3>See Also</h3>
+
+<p>predict to use the output of the methods described here.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data("apparelTrans")
+data("apparelStaticCov")
+data("apparelDynCov")
+
+clv.data.apparel &lt;- clvdata(apparelTrans, date.format = "ymd",
+                            time.unit = "w", estimation.split = 52)
+clv.data.static.cov &lt;-
+ SetStaticCovariates(clv.data.apparel,
+                     data.cov.life = apparelStaticCov,
+                     names.cov.life = "Gender",
+                     data.cov.trans = apparelStaticCov,
+                     names.cov.trans = c("Gender", "Channel"))
+clv.data.dyn.cov &lt;-
+  SetDynamicCovariates(clv.data = clv.data.apparel,
+                       data.cov.life = apparelDynCov,
+                       data.cov.trans = apparelDynCov,
+                       names.cov.life = c("High.Season", "Gender"),
+                       names.cov.trans = c("High.Season", "Gender"),
+                       name.date = "Cov.Date")
+
+
+
+# No covariate model
+p.apparel &lt;- pnbd(clv.data.apparel)
+
+# Predict the number of transactions an average new
+# customer is expected to make in the first 3.68 weeks
+predict(
+  p.apparel,
+  newdata=newcustomer(num.periods=3.68)
+)
+
+
+
+# Static covariate model
+p.apparel.static &lt;- pnbd(clv.data.static.cov)
+
+# Predict the number of transactions an average new
+# customer who is female (Gender=1) and who was acquired
+# online (Channel=1) is expected to make in the first 3.68 weeks
+predict(
+  p.apparel.static,
+  newdata=newcustomer.static(
+    num.periods=3.68,
+    # For the lifetime process, only Gender was used when fitting
+    data.cov.life=data.frame(Gender=1),
+    data.cov.trans=data.frame(Gender=1, Channel=0)
+  )
+)
+
+
+## Not run: 
+# Dynamic covariate model
+
+p.apparel.dyn &lt;- pnbd(clv.data.dyn.cov)
+
+# Predict the number of transactions an average new
+# customer who is male (Gender=0), who did not purchase during
+# high.season, and who was
+# acquired on "2005-02-16" (first.transaction) is expected
+# to make in the first 2.12 weeks.
+# Note that the time range is very different from the one used
+# when fitting the model. Cov.Date still has to match the
+# beginning of the week.
+predict(
+  p.apparel.dyn,
+  newdata=newcustomer.dynamic(
+    num.periods=2.12,
+    data.cov.life=data.frame(
+      Cov.Date=c("2051-02-12", "2051-02-19", "2051-02-26"),
+      Gender=c(0, 0, 0),
+      High.Season=c(4, 0, 7)),
+    data.cov.trans=data.frame(
+      Cov.Date=c("2051-02-12", "2051-02-19", "2051-02-26"),
+      Gender=c(0, 0, 0),
+      High.Season=c(4, 0, 7)),
+    first.transaction = "2051-02-16"
+  )
+)
+
+
+## End(Not run)
+
+
+</code></pre>
+
+
+</div>

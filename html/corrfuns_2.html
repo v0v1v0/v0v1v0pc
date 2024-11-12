@@ -1,0 +1,119 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Bootstrap p-value for the correlation coefficient</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Bootstrap p-value for the correlation coefficient
+</h2>
+
+<h3>Description</h3>
+
+<p>Bootstrap p-value for the correlation coefficient.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">bootcor(x, B = 999)
+bootcor2(x, B = 999)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+
+<p>A numerical matrix with two columns.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+
+<p>The number of bootstrap samples to generate.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The functions perform non-parametric bootstrap hypothesis testing that the correlation coefficient is zero. A good pivotal statistic is the Fisher's transformation (see <code>correl</code>). Then the data have to be transformed under the null hypothesis (<code class="reqn">\rho=0</code>). This is doable via the eigen-analysis of the covariance matrix. We transform the bivariate data such that the covariance (and thus the correlation) matrix equals the identity matrix. remind that the correlation matrix is independent of measurements and is location free. The next step is easy, we draw bootstrap samples (from the transformed data) and every time we calculate the Fisher's transformation. The bootstrap p-value is calculated in the usual way (Davison and Hinkley, 1997).
+</p>
+<p>If you want to perform a non-parametric bootstrap hypothesis for a value of the correlation other than zero the procedure is similar. The data have already been transformed such that their correlation is zero. Now instead of the zeroes in the off-diagonal values of the identity matrix you will have the value of the correlation matrix you want to test. Eigen analysis of the matrix is performed and the square root of the matrix is used to multiply the transformed data. I could write a more general function to include all case, but I will leave this task to you. If you do write it please send it to me and I will put it with your name of course.
+</p>
+<p>The function "bootcor()" is a vectorised version of "bootcor2()". Instead of using a <b>for</b> loop you can do things vectorised. This idea cam when I found the vectorised bootstrap correlation by Neto (2015). I cannot say I understood fully what he did, so I decided to write my own code based on the direction he pointed.
+</p>
+<p>Pearson's correlation coefficient of <code class="reqn">x</code> and <code class="reqn">y</code> for a sample size <code class="reqn">n</code> is given by
+</p>
+<p style="text-align: center;"><code class="reqn">
+r = \frac{\sum_{i=1}^nx_iy_i-n\bar{x}\bar{y}}
+{ \sqrt{\left(\sum_{i=1}^nx_i^2-n\bar{x}^2\right) \left(\sum_{i=1}^ny_i^2-n\bar{y}^2\right)} }
+</code>
+</p>
+
+<p>So, we can see that need 5 terms to calculate, <code class="reqn">\sum_{i=1}^nx_iy_i, \bar{x}, \bar{y}, \sum_{i=1}^nx_i^2</code> and <code class="reqn">\sum_{i=1}^ny_i^2</code>. After transforming the data under the null hypothesis using the spectral decomposition we proceed as follows with <code class="reqn">B</code> number of resamples.
+</p>
+<p><b>Algorithm for vectorised bootstrap</b>
+</p>
+<p>1. Set a seed number in R. This is to make sure that the pairs of <code class="reqn">\left(x_i, y_i\right)</code> are still the same.
+</p>
+<p>2. Sample with replacement <code class="reqn">B \times n</code> values of <code class="reqn">x</code> and put them in a matrix with <code class="reqn">n</code> rows and <code class="reqn">B</code> columns, named <code class="reqn">X_B</code>.
+</p>
+<p>3. Sample with replacement <code class="reqn">B \times n</code> values of <code class="reqn">y</code> and put them in a matrix with <code class="reqn">n</code> rows and <code class="reqn">B</code> columns, names <code class="reqn">Y_B</code>.
+</p>
+<p>4. Calculate the mean vectors of <code class="reqn">X_B</code> and <code class="reqn">Y_B</code>.
+</p>
+<p>5. Calculate the sum vector of <code class="reqn">X_B^2</code> and <code class="reqn">Y_B^2</code>.
+</p>
+<p>6. Finally calculate the sum vector of <code class="reqn">X_B * Y_B</code>. This is the term <code class="reqn">\sum_{i=1}^nx_iy_i</code> for all resamples.
+</p>
+<p>So we now have 5 vectors containing the 5 terms we want. We calculate the correlation coefficient and then the Fisher's transformation (see <code>correl</code>) and so we have <code class="reqn">B</code> bootstrap test statistics. In order to see the time gain I tested both of these functions with <code class="reqn">B=9999</code> resamples and 1000 repetitions. The gain is not super wow, I would like it if it was 1/10, but even saw, it is still good. Parallelised versions reduce time to 1/3, so from this perspective, I did better. If we now put parallel inside this vectorised version, computations will be even faster. I leave this with you.
+</p>
+<p>But, I noticed one thing, the same thing Neto (2015) mentions. For big sample sizes, for example 1000 pairs, the time difference is not that big and perhaps a <b>for</b> loop is faster. The big difference is in the small to moderate sample sizes. At least for this example. What I mean by this is that you should not be afraid and say, then why? If I have big sample, I do not need vectorization. Maybe yes, but even then I still recommend it. Maybe someone else will have a better alternative for vectorization which is better even in the big samples, for the correlation of course. In the contour plots though, vectorised versions are always faster no matter what.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The correlation coefficient and the bootstrap based p-value for the test of zero correlation.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Michail Tsagris
+</p>
+<p>R implementation and documentation: Michail Tsagris <a href="mailto:mtsagris@uoc.gr">mtsagris@uoc.gr</a>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Davison A.C. and Hinkley D.V. (1997). Bootstrap methods and their application. Cambridge
+university Press.
+</p>
+<p>Neto E.C. (2015). Speeding up non-parametric bootstrap computations for statistics based
+on sample moments in small/moderate sample size applications. PloS ONE, 10(6): e0131333.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code> permcor
+</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">bootcor( iris[, 1:2] )
+</code></pre>
+
+
+</div>

@@ -1,0 +1,183 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ipweighting</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Parametric IP Weighting</h2>
+
+<h3>Description</h3>
+
+<p>'ipweighting' uses the <code>propensity_scores</code> function to generate inverse probability
+weights. The weights can either be standardized weights or non-standardized weights. The weights are used to train a
+general linear model whose coefficient for treatment represents the average treatment effect on the additive scale.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ipweighting(
+  data,
+  f = NA,
+  family = gaussian(),
+  p.f = NA,
+  p.simple = pkg.env$simple,
+  p.family = binomial(),
+  p.scores = NA,
+  SW = TRUE,
+  n.boot = 0,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a data frame containing the variables in the model.
+This should be the same data used in <code>init_params</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+<p>(optional) an object of class "formula" that overrides the default parameter</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>the family to be used in the general linear model.
+By default, this is set to <code>gaussian</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p.f</code></td>
+<td>
+<p>(optional) an object of class "formula" that overrides the default formula for the denominator of the IP
+weighting function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p.simple</code></td>
+<td>
+<p>a boolean indicator to build default formula with interactions for the propensity models.
+If true, interactions will be excluded. If false, interactions will be included. By
+default, simple is set to false.
+NOTE: if this is changed, the coefficient for treatment may not accurately represent the average causal effect.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p.family</code></td>
+<td>
+<p>the family to be used in the underlying propensity model.
+By default, this is set to <code>binomial</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p.scores</code></td>
+<td>
+<p>(optional) use calculated propensity scores for the weights. If using standardized weights,
+the numerator will still be modeled.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SW</code></td>
+<td>
+<p>a boolean indicator to indicate the use of standardized weights. By default, this is set to true.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.boot</code></td>
+<td>
+<p>(optional) an integer value that indicates number of bootstrap iterations to calculate standard error.
+If no value is given, the standard error from the underlying linear model will be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments that may be passed to the underlying <code>glm</code> model.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>ipweighting</code> returns an object of <code>class "ipweighting"</code>.
+</p>
+<p>The functions <code>print</code>, <code>summary</code>, and <code>predict</code> can be used to interact with
+the underlying <code>glm</code> model.
+</p>
+<p>An object of class <code>"ipweighting"</code> is a list containing the following:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the matched call.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>the formula used in the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>the underlying glm model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>the estimated IP weights.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ATE</code></td>
+<td>
+<p>the estimated average treatment effect (risk difference).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ATE.summary</code></td>
+<td>
+<p>a data frame containing the ATE, SE, and 95% CI of the ATE. </p>
+</td>
+</tr>
+</table>
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(causaldata)
+data(nhefs)
+nhefs.nmv &lt;- nhefs[which(!is.na(nhefs$wt82)), ]
+nhefs.nmv$qsmk &lt;- as.factor(nhefs.nmv$qsmk)
+
+confounders &lt;- c(
+  "sex", "race", "age", "education", "smokeintensity",
+  "smokeyrs", "exercise", "active", "wt71"
+)
+
+init_params(wt82_71, qsmk,
+  covariates = confounders,
+  data = nhefs.nmv
+)
+
+# model using all defaults
+model &lt;- ipweighting(data = nhefs.nmv)
+summary(model)
+
+# Model using calculated propensity scores and manual outcome formula
+p.scores &lt;- propensity_scores(nhefs.nmv)$p.scores
+model &lt;- ipweighting(wt82_71 ~ qsmk, p.scores = p.scores, data = nhefs.nmv)
+summary(model)
+
+</code></pre>
+
+
+</div>

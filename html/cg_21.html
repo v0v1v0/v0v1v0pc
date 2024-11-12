@@ -1,0 +1,500 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>prepareCGOneFactorData</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Prepare data object from a data frame for One Factor / One-Way /
+Unpaired Samples evaluations
+</h2>
+
+<h3>Description</h3>
+
+<p>The function <code>prepareCGOneFactorData</code> reads in a data frame and
+settings
+in order to create a
+<code>cgOneFactorData</code> object. The created object is designed to have exploratory and
+fit methods applied to it. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">prepareCGOneFactorData(dfr, format = "listed", analysisname = "",
+ endptname = "", endptunits = "", logscale = TRUE, zeroscore = NULL,
+ addconstant = NULL, rightcensor = NULL, leftcensor = NULL, digits = NULL,
+ refgrp = NULL, stamps = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>dfr </code></td>
+<td>
+<p>A valid data frame, see the <code>format</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>format </code></td>
+<td>
+<p>Default value of <code>"listed"</code>. Either <code>"listed"</code> or
+<code>"groupcolumns"</code>
+must be used. Abbreviations of <code>"l"</code> or <code>"g"</code>, respectively,
+or otherwise sufficient matching values can be used:
+</p>
+
+<dl>
+<dt><code>"listed"</code></dt>
+<dd>
+<p>At least two columns, with the factor levels in
+the first column and response values in the second column. If there
+is censored data, then two or three more columns are required, see
+the Details Input Data Frame section below.</p>
+</dd>
+<dt><code>"groupcolumns"</code></dt>
+<dd>
+<p>Each column must represent a group. Each
+group is a unique level of the one factor, so the levels of the factor
+make up the column headers. The values in the data frame are for
+the response. If the groups have unequal sample sizes, the empty
+cells within the data frame can have <code>NA</code>'s or be left
+blank. Censored values can be represented; see the Details Input
+Data Frame section below. Otherwise, any character data will be coerced to
+numeric data with possibly undesirable results.
+</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>analysisname </code></td>
+<td>
+<p><em>Optional</em>, a character text or
+math-valid expression that will be set for
+default use in graph title and table methods. The default
+value is the empty <code>""</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>endptname </code></td>
+<td>
+<p><em>Optional</em>, a character text or math-valid expression
+that will be set for default use as the y-axis label of graph
+methods, and also used for table methods. The default
+value is the empty <code>""</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>endptunits </code></td>
+<td>
+<p><em>Optional</em>, a character text or math-valid
+expression that can be used in combination with the endptname
+argument.
+Parentheses are
+automatically added to this input, which will be added to the end
+of the endptname character value or expression. The default
+value is the empty <code>""</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logscale </code></td>
+<td>
+<p>Apply a log-transformation to the data for
+evaluations. The default value is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>zeroscore </code></td>
+<td>
+<p><em>Optional</em>,
+replace response values of zero with a derived or specified
+numeric value, as an approach to overcome the presence of zeroes
+when evaluation in the
+logarithmic scale (<code>logscale=TRUE</code>) is specified. The default value
+is <code>NULL</code>. To derive a score value to replace zero,
+<code>"estimate"</code> can be specified, see Details below on the algorithm used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>addconstant </code></td>
+<td>
+<p><em>Optional</em>,
+add a numeric constant to all response values, as an
+approach to overcome the presence of zeroes when evaluation in the
+logarithmic scale <code>logscale=TRUE</code> is desired. The default value is
+<code>NULL</code>.   positive numeric value can be specified to be added, or a "simple"
+algorthm specified to estimate a value to add. See Details secion
+below on the algorithm used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rightcensor </code></td>
+<td>
+<p><em>Optional</em>, can be specified with a numeric
+value where any value equal to or greater will be regarded as
+right censored in the evaluation. The value of <code>TRUE</code> can be
+used to coerce a binary status variable in the data frame to be
+right censored for its values.The default value is <code>NULL</code>.
+See the Details Input Data Frame section
+below for specifications and consequences.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>leftcensor </code></td>
+<td>
+<p><em>Optional</em>, can be specified with a numeric
+value where any value equal to or lesser will be regarded as
+left censored in the evaluation. The value of <code>TRUE</code> can be
+used to coerce a binary status variable in the data frame to be
+right censored for its values. The default value is <code>NULL</code>.
+See the Details Input Data Frame section
+below for specifications and consequences.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>digits </code></td>
+<td>
+<p><em>Optional</em>, for output display purposes in graphs
+and table methods, values will be rounded to this numeric
+value. Only the integers of 0, 1, 2, 3, and 4 are accepted. No
+rounding is done during any calculations. The default value is
+<code>NULL</code>, which will examine each individual data value and choose the
+one that has the maximum number of digits after any trailing
+zeroes are ignored. The max number of digits will be 4.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>refgrp</code></td>
+<td>
+<p><em>Optional</em>, specify one of the factor levels to be the
+“reference group”, such as a “control” group.
+The default value is <code>NULL</code>,
+which will just use the first level determined in the data frame.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stamps </code></td>
+<td>
+<p><em>Optional</em>, specify a time stamp in graphs, along
+with <span class="pkg">cg</span> package
+version identification. The default value is <code>FALSE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+
+<dl>
+<dt><b>Input Data Frame</b></dt>
+<dd>
+<p>The input data frame <code>dfr</code> can be of the format
+<code>"listed"</code> or <code>"groupcolumns"</code>. Another distinguishing
+characteristic is whether or not it contains censored data
+representations.
+</p>
+<p>Censored observations can be represented by <code>&lt;</code> for
+left-censoring
+and <code>&gt;</code> for
+right-censoring. The <code>&lt;</code> value refers to values less than or equal
+to a numeric value. For example, <code>&lt;0.76</code> denotes a left-censored
+value of 0.76
+or less. Similarly, <code>&gt;2.02</code> denotes a value of 2.02 or greater for
+a right-censored value. There must be no space between the direction
+indicator and the numeric value. These representations can be used in
+either the <code>listed</code> or <code>groupcolumns</code> formats for <code>dfr</code>.
+</p>
+<p>No interval-censored representations are currently handled when
+<code>format="groupcolumns"</code>. 
+</p>
+<p>If <code>format="groupcolumns"</code> for <code>dfr</code> is specified, then the
+number of columns must equal the number of groups, and any censored
+values must follow the <code>&lt;</code> and <code>&gt;</code> representations.
+The individual group values are of mode character, since any
+censored values will be represented for example as <code>&lt;0.76</code> or
+<code>&gt;2.02</code>. If any of the groups have less number of
+observations than any others, i.e. there are unequal sample sizes,
+then the corresponding "no data" cells in the data frame need to
+contain empty quote <code>""</code> values.
+</p>
+<p>If <code>format="listed"</code> for <code>dfr</code> is specified, then there may be
+anywhere from two to four columns for an input data frame.
+</p>
+
+<dl>
+<dt><b>two columns</b></dt>
+<dd>
+<p>The first column has the group levels to define the
+factor, and the second column contains the response values. Censored
+representations of <code>&lt;</code> and <code>&gt;</code> can be used here. One or
+both of
+<code>rightcensor</code> or <code>leftcensor</code> may also be specified as a
+number. If
+a number is specified for <code>rightcensor</code>, then all values in
+the second column equal to this value will be processed as
+right-censored. Analogously, if
+a number is specified for <code>leftcensor</code>, then all values in
+the second column equal to this value will be processed as
+left-censored. <b>WARNING:</b> This should be used cautiously to make sure the
+equality occurs as desired. This convention is designed for simple
+Type I censoring scenarios.</p>
+</dd>
+<dt><b>three columns</b></dt>
+<dd>
+<p>Like the two column case, the first column has
+the group
+levels to define the
+factor, and the second column contains the response values, which will
+all be coerced to numeric. Any censoring information must be specified
+in the third column. Borrowing the convention of <code>Surv</code>
+from the <span class="pkg">survival</span> package, <code>0</code>=right censored, <code>1</code>=no censoring, and
+<code>2</code>=left censored. If <code>rightcensor=NULL</code> and
+<code>leftcensor=NULL</code> are left as defaults in the call, and
+values of 0, 1, and 2 are all represented, then the
+processing will create a suitable data frame <code>dfru</code> for
+modeling that the canonical <code>survreg</code> function understands.
+</p>
+<p>However, if 0 and 1 are the only specified values
+in the third censoring status column, then one of
+<code>rightcensor=TRUE</code> or <code>leftcensor=TRUE</code> must be specified,
+but NOT both, or an error message will occur. A column of all 1's or
+all 0's will also raise an error message.</p>
+</dd>
+<dt><b>four columns</b></dt>
+<dd>
+<p>Like the two column case, the first column has
+the group
+levels to define the
+factor. The second and third columns need to have numeric response
+information, and the fourth column needs to have censoring
+status. This is the most general representation, where any combination
+of left-censoring, right-censoring, and interval-censoring is
+permitted. The <code>rightcensor</code> and <code>leftcensor</code> input
+arguments are ignored and set to <code>NULL</code>. <b>IMPORTANT:</b> The
+convention of <code>Surv</code>
+from the <span class="pkg">survival</span> package, 0=right censored, 1=no censoring, and
+2=left censored, 3=interval censored, and
+<code>type="interval"</code>,
+is followed. For status=0, 1, and 2, the second and
+third columns match in value, so that the status variable in the
+fourth column distinguishes the lower and upper bounds for the
+right-censored (0) and left-censored (2) cases.
+For status=3, the two values differ to
+define the interval boundaries. The 
+processing will create a suitable data frame <code>dfru</code> for
+modeling that the canonical <code>survreg</code> and <code>survfit</code>
+functions from the <span class="pkg">survival</span> package understand.
+</p>
+</dd>
+</dl>
+</dd>
+<dt><b>zeroscore</b></dt>
+<dd>
+<p>If <code>zeroscore="estimate"</code> is specified, a number 
+close to zero is derived to replace all zeroes for subsequent
+log-scale analyses. A spline fit (using <code>spline</code> and
+<code>method="natural"</code>)
+of the log of the
+response vector on the original response vector is performed. The
+zeroscore is then derived from the log-scale value of the spline curve at the original
+scale value of zero. This approach comes from the concept of
+arithmetic-logarithmic scaling discussed in Tukey, Ciminera, and
+Heyse (1985).
+</p>
+</dd>
+<dt><b>addconstant</b></dt>
+<dd>
+<p>If <code>addconstant="simple"</code> or  
+<code>addconstant="VR"</code> is specified, a number is derived and added
+to all response values.
+</p>
+
+<dl>
+<dt><code>"simple"</code></dt>
+<dd>
+<p>Taken from the "white" book on S (Chambers and Hastie, 1992), 
+page 68. The range (<code>max - min</code>) of the response values
+is multiplied by <code>0.0001</code> to derive the number to add to all the
+response values.
+</p>
+</dd> 
+<dt><code>"VR"</code></dt>
+<dd>
+<p>Based on the <code>logtrans</code> function discussed in Venables and Ripley 
+(2002), pages 171-172 and available in the <span class="pkg">MASS</span>
+package. The algorithm applies a Box-Cox profile likelihood
+approach with a log scale translation model. 
+</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<h3>Value</h3>
+
+<p>A <code>cgOneFactorData</code> object is returned, with the following slots:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>dfr </code></td>
+<td>
+<p>The original input data frame that is the specified value of the
+<code>dfr</code> argument in the function call.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dfru </code></td>
+<td>
+<p>Processed version of the input data frame, which will be
+used for the various evaluation methods.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fmt.dfru </code></td>
+<td>
+<p>A list version of the input data frame, which will only
+differ from the <code>dfr</code> value if the input data frame was specified in the
+<code>groupcolumns</code> format.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>has.censored </code></td>
+<td>
+<p>Boolean <code>TRUE</code> or <code>FALSE</code> on whether there are any
+censored data observations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>settings </code></td>
+<td>
+<p>A list of properties associated with the data
+frame:
+</p>
+
+<dl>
+<dt><code>analysisname</code></dt>
+<dd>
+<p>Drawn from the input argument value of
+<code>analysisname</code>.</p>
+</dd>
+<dt><code>endptname</code></dt>
+<dd>
+<p>Drawn from the input argument value of
+<code>endptname</code>.</p>
+</dd>
+<dt><code>endptunits</code></dt>
+<dd>
+<p>Drawn from the input argument value of
+<code>endptunits</code>.</p>
+</dd>
+<dt><code>endptscale</code></dt>
+<dd>
+<p>Has the value of <code>"log"</code> if
+<code>logscale=TRUE</code> and <code>"original"</code> if
+<code>logscale=FALSE</code>.</p>
+</dd>
+<dt><code>zeroscore</code></dt>
+<dd>
+<p>Has the value of <code>NULL</code> if the input argument
+was <code>NULL</code>. Otherwise has the derived (from
+<code>zeroscore="estimate"</code>)
+or specified numeric value.</p>
+</dd>
+<dt><code>addconstant</code></dt>
+<dd>
+<p>Has the value of <code>NULL</code> if the input argument
+was <code>NULL</code>. Otherwise has the specified numeric value.</p>
+</dd>
+<dt><code>rightcensor</code></dt>
+<dd>
+<p>Has the value of the input argument
+<code>rightcensor</code> or is set to <code>NULL</code> if no censored
+observations are determined.</p>
+</dd>
+<dt><code>leftcensor</code></dt>
+<dd>
+<p>Has the value of the input argument
+<code>leftcensor</code> or
+is set to <code>NULL</code> if no censored
+observations are determined.</p>
+</dd>
+<dt><code>digits</code></dt>
+<dd>
+<p>Has the value of the input argument
+<code>digits</code> or is set to the determined value of digits from the
+input data. Will be an integer of 0, 1, 2, 3, or 4.</p>
+</dd>
+<dt><code>grpnames</code></dt>
+<dd>
+<p>Determined from the single factor identified of the
+group names. The order is determined by their first occurence in the
+input data frame <code>dfr</code>.</p>
+</dd>
+<dt><code>refgrp</code></dt>
+<dd>
+<p>Drawn from the input argument of <code>refgrp</code>.</p>
+</dd>
+<dt><code>stamps</code></dt>
+<dd>
+<p>Drawn from the input argument of <code>stamps</code>.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>Contact <a href="mailto:cg@billpikounis.net">cg@billpikounis.net</a> for bug reports, questions,
+concerns, and comments.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Bill Pikounis [aut, cre, cph], John Oleynick [aut], Eva Ye [ctb] 
+</p>
+
+
+<h3>References</h3>
+
+<p>Tukey, J.W., Ciminera, J.L., and Heyse, J.F. (1985). "Testing the
+Statistical Certainty of a Response to Increasing Doses of a
+Drug," <em>Biometrics</em>, Volume 41, 295-301.
+</p>
+<p>Chambers, J.M, and Hastie, T.R. (1992), 
+<em>Statistical Modeling in S.</em>  Chapman &amp; Hall/CRC.
+</p>
+<p>Venables, W. N., and Ripley, B. D. (2002), 
+<em>Modern Applied Statistics with S.</em>  Fourth edition. Springer.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>Surv</code>, <code>canine</code>,
+<code>gmcsfcens</code>,
+<code>prepare</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(canine)
+canine.data &lt;- prepareCGOneFactorData(canine, format="groupcolumns",
+                                      analysisname="Canine",
+                                      endptname="Prostate Volume",
+                                      endptunits=expression(plain(cm)^3),
+                                      digits=1, logscale=TRUE, refgrp="CC")
+
+## Censored Data
+data(gmcsfcens)
+gmcsfcens.data &lt;- prepareCGOneFactorData(gmcsfcens, format="groupcolumns",
+                                         analysisname="cytokine",
+                                         endptname="GM-CSF (pg/ml)",
+                                         logscale=TRUE)
+
+</code></pre>
+
+
+</div>

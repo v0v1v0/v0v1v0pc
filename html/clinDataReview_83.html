@@ -1,0 +1,165 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>processData</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Process a dataset.</h2>
+
+<h3>Description</h3>
+
+<p>This function is intended to automate all data processing
+steps for use in the 'clinDataReview' reports using config files.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">processData(data, processing, labelVars = NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>Data.frame with data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>processing</code></td>
+<td>
+<p>List with processing steps for the data.
+Each element in the list should be a named list containing the parameters
+for the specific processing function. The name specifies the processing
+step, among: 
+</p>
+
+<ul>
+<li>
+<p> 'annotate' for <code>annotateData</code> (<code>annotations</code> parameter)
+</p>
+</li>
+<li>
+<p> 'filter' for <code>filterData</code> (<code>filters</code> parameter)
+</p>
+</li>
+<li>
+<p> 'transform' for <code>transformData</code> (<code>transformations</code> parameter)
+</p>
+</li>
+</ul>
+<p>Multiple steps of each kind can be specified after each other (e.g. 1: filter,
+2: transform,  3: filter, ...).<br>
+If a filter step is specified as a list of multiple filters, the filters are run 
+<strong>independently of each other on the entire dataset</strong> (see the documentation of <code>filters</code> in 
+<code>filterData</code>). <br>
+If filters should be run <strong>sequentially</strong>, i.e. filter from step 2
+should be applied on the filtered dataset from step 1, <strong>separated 
+filtering steps</strong> should be specified, e.g. <br><code>list(filter = list(var = "ANL01FL", value = "Y"), 
+filter = list(var = "PARAM", value = "QTCF"))</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>labelVars</code></td>
+<td>
+<p>Named character vector containing variable labels.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Any parameters passed to all processing functions
+(if this parameter is available).
+If specified, these parameters shouldn't be specified also in <code>processing</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Data.frame with processed <code>data</code>,
+with extra attribute: <code>labelVars</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Laure Cougnaud
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(clinUtils)
+
+data(dataADaMCDISCP01)
+
+dataLB &lt;- dataADaMCDISCP01$ADLBC
+
+# filter and annotate data
+processData(
+  data = dataLB,
+  processing = list(
+    list(filter = list(var = "ANL01FL", value = "Y")),
+    list(annotate = list(vars = "ANRIND", varFct = 'factor(ANRIND, levels = c("L", "N", "H"))'))
+  )
+)
+
+## multiple filtering steps:
+
+# If these are specified in the same 'filter' step condition, these are considered independently,
+# and the selected records combined with an 'AND' operator.
+# Example: consider only records:
+# - with analysis flag AND
+# - from subject with high/low measurement (for all records) for each parameter
+processData(
+  data = dataLB,
+  processing = list(
+    list(filter = list(
+      list(var = "ANL01FL", value = "Y"),
+      list(var = "ANRIND", value = c("L", "H"), 
+           postFct = any, varsBy = c("USUBJID", "PARAM"))
+    )
+    )
+  )
+)
+
+# a custom operator to combine the selected records can be specified
+# Example: consider only records:
+# - with analysis flag OR
+# - from subject with high/low measurement (for all records) for each parameter
+processData(
+  data = dataLB,
+  processing = list(
+    list(filter = list(
+      list(var = "ANL01FL", value = "Y"),
+      "|",
+      list(var = "ANRIND", value = c("L", "H"), 
+           postFct = any, varsBy = c("USUBJID", "PARAM"))
+    )
+    )
+  )
+)
+
+# If the filtering conditions are specified in different filtering steps, these are
+# considered sequentially.
+# Example: 
+# 1) consider only analysis records and 
+# 2) from these records, consider only subject with high/low measurement for 
+# each parameter
+processData(
+  data = dataLB,
+  processing = list(
+    list(filter = list(var = "ANL01FL", value = "Y")),
+    list(filter = list(var = "ANRIND", value = c("L", "H"), 
+      postFct = any, varsBy = c("USUBJID", "PARAM")))
+  )
+)
+# Note for this particular 
+
+</code></pre>
+
+
+</div>

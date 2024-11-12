@@ -1,0 +1,153 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>constellate</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Identify when a constellation of events occur</h2>
+
+<h3>Description</h3>
+
+<p>A function that reads in multiple time series data frames and calculates
+instances when a constellation of events occur.
+The user must specify the number of hours over which each event must take
+place, a variable to use to join the tables, and the time stamp variable.
+The timestamps variable in every data frame must be POSIXct class. In 
+addition, the user must specify the event name and whether to keep all
+instances that events occur, or only the first or last instance. This
+function can ingest an arbitrary number of data frames with longitudinal
+time series data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">constellate(..., window_hours, join_key, time_var, event_name, mult = c("all",
+  "first", "last"))
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>An arbitrary number of time series data frames that each include
+the columns 'join_key' and 'time_var'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>window_hours</code></td>
+<td>
+<p>A single numeric or vector of numerics specifying the
+number of hours to search for each event. The order of numerics in the
+vector should align with the order of data frames passed in '...'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>join_key</code></td>
+<td>
+<p>A string name of the column to join all time series data
+frames</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_var</code></td>
+<td>
+<p>A string name of the time stamp column in all time series
+data frames. The class of time_var must be POSIXct in all data frames.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>event_name</code></td>
+<td>
+<p>A string name for events across the time series data
+frames</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mult</code></td>
+<td>
+<p>A string specifying whether to return the first, last, or all
+instance(s) with a default value of all</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A data.frame, data.table with time stamps of qualifying events.
+</p>
+
+
+<h3>Imported functions</h3>
+
+<p>general data.table syntax
+</p>
+
+
+<h3>Errors</h3>
+
+<p>This function returns errors for:
+</p>
+
+<ul>
+<li>
+<p> missing arguments (no arguments have defaults)
+</p>
+</li>
+<li>
+<p> passing an invalid mult value
+</p>
+</li>
+<li>
+<p> passing arguments with invalid classes (window_hours must be numeric
+and event_name must be a string)
+</p>
+</li>
+<li>
+<p> passing join_key or time_var values that are not column names in all
+time series data frames
+</p>
+</li>
+<li>
+<p> passing an invalid number of window_hours values (1 or the number of
+event data frames).
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(data.table)
+temp &lt;- as.data.table(vitals[VARIABLE == "TEMPERATURE"])
+pulse &lt;- as.data.table(vitals[VARIABLE == "PULSE"])
+resp &lt;- as.data.table(vitals[VARIABLE == "RESPIRATORY_RATE"])
+wbc &lt;- as.data.table(labs[VARIABLE == "WBC"])
+temp[, RECORDED_TIME := as.POSIXct(RECORDED_TIME,
+  format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")]
+pulse[, RECORDED_TIME := as.POSIXct(RECORDED_TIME,
+  format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")]
+resp[, RECORDED_TIME := as.POSIXct(RECORDED_TIME,
+  format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")]
+wbc[, RECORDED_TIME := as.POSIXct(RECORDED_TIME,
+  format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")]
+
+# Pass single time window for all time series data frames
+# Subset first event
+constellate(temp, pulse, resp, window_hours = 6, join_key = "PAT_ID",
+ time_var = "RECORDED_TIME", event_name = "sirs_vitals", mult = "first")
+# Pass different time window for each time series data frame
+# Subset first event
+constellate(temp, pulse, resp, wbc, window_hours = c(6,6,6,24),
+ join_key = "PAT_ID", time_var = "RECORDED_TIME",
+ event_name = "SEPSIS", mult = "first")
+# Pass different time window for each time series data frame
+# Identify all events
+constellate(temp, pulse, resp, wbc, window_hours = c(6,6,6,24),
+ join_key = "PAT_ID", time_var = "RECORDED_TIME",
+ event_name = "SEPSIS", mult = "all")
+
+</code></pre>
+
+
+</div>

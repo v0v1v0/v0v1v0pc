@@ -1,0 +1,132 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>crf_cbind_attributes</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Enrich a data.frame by adding frequently used CRF attributes</h2>
+
+<h3>Description</h3>
+
+<p>The CRF attributes which are implemented in this function 
+are merely the neighbouring information of a certain field.
+For example the previous word, the next word, the combination of the previous 2 words.
+This function <code>cbind</code>s these neighbouring attributes as columns to the provided data.frame.<br></p>
+<p>By default it adds the following columns to the data.frame 
+</p>
+
+<ul>
+<li>
+<p>the term itself <code>(term[t])</code>
+</p>
+</li>
+<li>
+<p>the next term <code>(term[t+1])</code>
+</p>
+</li>
+<li>
+<p>the term after that <code>(term[t+2])</code>
+</p>
+</li>
+<li>
+<p>the previous term <code>(term[t-1])</code>
+</p>
+</li>
+<li>
+<p>the term before the previous term <code>(term[t-2])</code>
+</p>
+</li>
+<li>
+<p>as well as all combinations of these terms (bigrams/trigrams/...) where up to <code>ngram_max</code>
+number of terms are combined.
+</p>
+</li>
+</ul>
+<p>See the examples.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">crf_cbind_attributes(
+  data,
+  terms,
+  by,
+  from = -2,
+  to = 2,
+  ngram_max = 3,
+  sep = "-"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a data.frame which will be coerced to a data.table (cbinding will be done by reference on the existing data.frame)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>terms</code></td>
+<td>
+<p>a character vector of column names which are part of <code>data</code> 
+for which the function will look to the preceding and following rows in order to cbind this information to the <code>data</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by</code></td>
+<td>
+<p>a character vector of column names which are part of <code>data</code> indicating the fields which define the sequence. 
+Preceding/following terms will be looked for within data of <code>by</code>. 
+Typically this will be a document identifier or sentence identifier in an NLP context.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>from</code></td>
+<td>
+<p>integer, by default set to -2, indicating to look up to 2 terms before the current term</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>to</code></td>
+<td>
+<p>integer, by default  set to 2, indicating to look up to 2 terms after the current term</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ngram_max</code></td>
+<td>
+<p>integer indicating the maximum number of terms to combine (2 means bigrams, 3 trigrams, ...)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sep</code></td>
+<td>
+<p>character indicating how to combine the previous/next/current terms. Defaults to '-'.</p>
+</td>
+</tr>
+</table>
+<h3>Examples</h3>
+
+<pre><code class="language-R">x &lt;- data.frame(doc_id = sort(sample.int(n = 10, size = 1000, replace = TRUE)))
+x$pos &lt;- sample(c("Art", "N", "Prep", "V", "Adv", "Adj", "Conj", 
+                  "Punc", "Num", "Pron", "Int", "Misc"), 
+                  size = nrow(x), replace = TRUE)
+x &lt;- crf_cbind_attributes(x, terms = "pos", by = "doc_id", 
+                          from = -1, to = 1, ngram_max = 3)
+head(x)
+
+
+## Example on some real data
+x &lt;- ner_download_modeldata("conll2002-nl")
+x &lt;- crf_cbind_attributes(x, terms = c("token", "pos"), 
+                          by = c("doc_id", "sentence_id"),
+                          ngram_max = 3, sep = "|")
+
+</code></pre>
+
+
+</div>

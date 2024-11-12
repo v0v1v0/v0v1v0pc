@@ -1,0 +1,109 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>auto_match_seqs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Build a template table with automatically matched sequence names</h2>
+
+<h3>Description</h3>
+
+<p>The algorithm used to match sequences across fasta files based on their
+names is outlined below.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">auto_match_seqs(x, method = "lv", xlsx)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A table (data frame or tibble) typically produced by
+<code>concatipede_prepare</code>. It must be of the same format as a
+table returned by this function: a first column called "name" followed
+by one column per fasta file. Those columns have the name of their
+corresponding fasta file, and they contain the names of the sequences in
+this file, with one sequence name per cell. The number of rows in the
+number of sequences of the fasta file with the most sequences, and the
+columns for the other fasta files are filled with <code>NA</code> for padding.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Method for string distance calculation. See
+<code>?stringdist::stringdist-metrics</code> for details. Default is
+<code>"lv"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xlsx</code></td>
+<td>
+<p>Optional, a path to use to save the output table as an Excel
+file.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Let's assume a situation with N fasta files, with each fasta file i having
+n_i sequence names. The problem of matching the names in the best possible
+way across the fasta files is similar to that of identifying homologous
+proteins across species, using e.g. reciprocal blast.
+</p>
+<p>The algorithm steps are:
+</p>
+
+<ul>
+<li>
+<p> For each pair of fasta files, identify matching names using a
+reciprocal match approach: two names match if and only if they are their
+reciprocal best match.
+</p>
+</li>
+<li>
+<p> Those matches across fasta files define a graph.
+</p>
+</li>
+<li>
+<p> We identify sub-graphs such that (i) they contain at most one
+sequence name per fasta file and (ii) all nodes in a given sub-graph are
+fully connected (i.e., they are all their best reciprocal matches across
+any pair of fasta files).
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p>A table (tibble) with the same columns as <code>x</code> and with sequence
+names automatically matched across fasta files. Sequence names which did
+not have a best reciprocal match in other fasta files are appended to
+the end of the table, so that the output table columns contain all the
+unique sequence names present in the corresponding column of the input
+table. The first column, "name", contains a suggested name for the row
+(not guaranteed to be unique). If a path was provided to the <code>xlsx</code>
+argument, an Excel file is saved and the table is returned invisibly.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">xlsx_file &lt;- concatipede_example("sequences-test-matching.xlsx")
+xlsx_template &lt;- readxl::read_xlsx(xlsx_file)
+auto_match_seqs(xlsx_template)
+## Not run: 
+  auto_match_seqs(xlsx_template, xlsx = "my-automatic-output.xlsx")
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

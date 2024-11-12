@@ -1,0 +1,91 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>combine_chkpt_draws</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Combine Checkpoint Draws</h2>
+
+<h3>Description</h3>
+
+<p>Combine Checkpoint Draws
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">combine_chkpt_draws(object, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>An object of class <code>brmsfit</code> or <code>chkpt_stan</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Currently ignored.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An object of class <code>draws_array</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"> 
+## Not run:   
+path &lt;- create_folder(folder_name = "chkpt_folder_fit1")
+
+stan_code &lt;- "
+data {
+ int&lt;lower=0&gt; n;
+  real y[n];
+  real&lt;lower=0&gt; sigma[n];
+}
+parameters {
+  real mu;
+  real&lt;lower=0&gt; tau;
+  vector[n] eta;
+}
+transformed parameters {
+  vector[n] theta;
+  theta = mu + tau * eta;
+}
+model {
+  target += normal_lpdf(eta | 0, 1);
+  target += normal_lpdf(y | theta, sigma);
+}
+"
+
+stan_data &lt;- schools.data &lt;- list(
+  n = 8,
+  y = c(28,  8, -3,  7, -1,  1, 18, 12),
+  sigma = c(15, 10, 16, 11,  9, 11, 10, 18)
+)
+
+fit2 &lt;- chkpt_stan(model_code = stan_code,
+                   data = stan_data,
+                   iter_warmup = 1000,
+                   iter_sampling = 1000,
+                   iter_per_chkpt = 250,
+                   path = path)
+
+draws &lt;- combine_chkpt_draws(object = fit2)
+
+draws
+
+## End(Not run)
+</code></pre>
+
+
+</div>

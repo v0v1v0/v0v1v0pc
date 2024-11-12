@@ -1,0 +1,182 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>plot.calibrationband</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Plotting monotone confidence bands</h2>
+
+<h3>Description</h3>
+
+<p>Uses the <span class="pkg">ggplot2</span> package to illustrate monotone confidence bands to assess calibration of
+prediction methods that issue probability forecasts.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'calibrationband'
+autoplot(
+  object,
+  ...,
+  approx.equi = NULL,
+  cut.bands = FALSE,
+  p_ribbon = NULL,
+  p_isoreg = NULL,
+  p_diag = NULL
+)
+
+## S3 method for class 'calibrationband'
+autolayer(
+  object,
+  ...,
+  approx.equi = NULL,
+  cut.bands = FALSE,
+  p_diag = NA,
+  p_isoreg = NA,
+  p_ribbon = NA
+)
+
+## S3 method for class 'calibrationband'
+plot(x, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>object of class <code>calibrationband</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments to be passed to or from methods.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>approx.equi</code></td>
+<td>
+<p>If <code>NULL</code>, the bands are drawn for each
+prediction-realization pair. If it is a scalar, say <code>z</code>,  the bounds are
+approximated at <code>z</code> equidistant point on the x-axis. Also see the effect of
+<code>cut.bands</code> if a scalar is specified.
+</p>
+<p>In large data sets, <code>approx.equi = NULL</code>  might result in
+capacity-consuming plots. In these cases, we recommend to set <code>approx.equi</code>
+equal to a value that is at least 200.
+</p>
+<p>Note, we add important additional points the initial scalar of
+<code>approx.equi</code> to assure accurate transition areas (changes between
+miscalibrated and calibrated areas).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cut.bands</code></td>
+<td>
+<p>Cut the bands at most extreme prediction values.
+Bands will not be extended to 0 and 1 respectively if option is set equal to true.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p_ribbon</code></td>
+<td>
+<p>If non <code>NULL</code>, a ribbon is drawn. Contains a list of
+arguments for <code>ggplot2::geom_polygon</code>. See details for default list settings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p_isoreg</code></td>
+<td>
+<p>If non <code>NULL</code> the isotonic regression curve is drawn.
+Contains a list of arguments for <code>ggplot2::geom_line</code>. See details for default list settings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p_diag</code></td>
+<td>
+<p>If non <code>NULL</code>, the diagonal line is drawn.
+Contains list of arguments for <code>ggplot2::geom_segment</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>object of class <code>calibrationband</code></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>When plotting the monotone confidence band, the upper bound should be
+extended to the left, that is, the bound at <code>x[i]</code> is valid on the
+interval <code>(x[i-1],x[i]]</code>. The lower bound should be extended to the
+right, i.e. the bound at x[i] is extended to the interval <code>[x[i],x[i +
+1])</code>. This function creates x and y values for correct plotting of these
+bounds.
+</p>
+<p><code>autoplot</code> behaves like any <code>ggplot() + layer()</code> combination.
+That means, customized plots should be created using <code>autoplot</code> and
+<code>autolayer</code>.
+</p>
+<p>Setting any of the <code>p_*</code> arguments to <code>NA</code> disables that layer.
+</p>
+<p>Default parameter values for <code>p_*</code>
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<code>p_isoreg</code> </td>
+<td style="text-align: left;"> <code>list(color = "darkgray")</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>p_diag</code> </td>
+<td style="text-align: left;"> <code>list(color = "black", fill="blue", alpha = .1)</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>p_ribbon</code> </td>
+<td style="text-align: left;"> <code> list(low = "gray", high = "red", guide = "none", limits=c(0,1))</code>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An object inheriting from class <code>'ggplot'</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">s=.8
+n=10000
+x &lt;- sort(runif(n))
+
+p &lt;- function(x,s){p = 1/(1+((1/x*(1-x))^(s+1)));return(p)}
+dat &lt;- data.frame(pr=x, y=rbinom(n,1,p(x,s)))
+
+cb &lt;- calibration_bands(x=dat$pr, y=dat$y,alpha=0.05, method="round", digits =3)
+
+#simple plotting
+plot(cb)
+autoplot(cb)
+
+#customize the plot using  ggplot2::autolayer
+autoplot(
+cb,
+approx.equi=NULL,
+p_ribbon = NA
+)+
+ggplot2::autolayer(
+cb,
+p_ribbon = list(alpha = .3, fill = "gray", colour = "blue"),
+)
+</code></pre>
+
+
+</div>

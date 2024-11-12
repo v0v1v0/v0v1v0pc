@@ -1,0 +1,139 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>semnet_window</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create a semantic network based on the co-occurence of tokens in token windows</h2>
+
+<h3>Description</h3>
+
+<p>This function calculates the co-occurence of features and returns a network/graph
+in the igraph format, where nodes are tokens and edges represent the similarity/adjacency of tokens.
+Co-occurence is calcuated based on how often two tokens co-occurr within a given token distance.
+</p>
+<p>If a featureHits object is given as input, then for for query hits that have multiple positions (i.e. terms
+connected with AND statements or word proximity) the raw count score is biased. For the count_* measures
+therefore only the first position of the query hit is used.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">semnet_window(
+  tc,
+  feature = "token",
+  measure = c("con_prob", "cosine", "count_directed", "count_undirected", "chi2"),
+  context_level = c("document", "sentence"),
+  window.size = 10,
+  direction = "&lt;&gt;",
+  backbone = F,
+  n.batches = 5,
+  matrix_mode = c("positionXwindow", "windowXwindow")
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>tc</code></td>
+<td>
+<p>a tCorpus or a featureHits object (i.e. the result of search_features)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>feature</code></td>
+<td>
+<p>The name of the feature column</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>measure</code></td>
+<td>
+<p>The similarity measure. Currently supports: "con_prob" (conditional probability),
+"cosine" similarity, "count_directed" (i.e number of cooccurrences) and "count_undirected"
+(same as count_directed, but returned as an undirected network, chi2 (chi-square score))</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>context_level</code></td>
+<td>
+<p>Determine whether features need to co-occurr within "documents" or "sentences"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>window.size</code></td>
+<td>
+<p>The token distance within which features are considered to co-occurr</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>direction</code></td>
+<td>
+<p>Determine whether co-occurrence is assymmetricsl ("&lt;&gt;") or takes the order of tokens
+into account. If direction is '&lt;', then the from/x feature needs to occur before the
+to/y feature. If direction is '&gt;', then after.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>backbone</code></td>
+<td>
+<p>If True, add an edge attribute for the backbone alpha</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.batches</code></td>
+<td>
+<p>To limit memory use the calculation is divided into batches. This parameter controls
+the number of batches.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>matrix_mode</code></td>
+<td>
+<p>There are two approaches for calculating window co-occurrence (see details). By
+default we use positionXmatrix, but matrixXmatrix is optional because it might
+be favourable for some uses, and might make more sense for cosine similarity.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>There are two approaches for calculating window co-occurrence.
+One is to measure how often a feature occurs within a given token window, which
+can be calculating by calculating the inner product of a matrix that contains the
+exact position of features and a matrix that contains the occurrence window.
+We refer to this as the "positionXwindow" mode. Alternatively, we can measure how
+much the windows of features overlap, for which take the inner product of two window
+matrices, which we call the "windowXwindow" mode. The positionXwindow approach has the advantage
+of being easy to interpret (e.g. how likely is feature "Y" to occurr within 10
+tokens from feature "X"?). The windowXwindow mode, on the other hand, has the interesting
+feature that similarity is stronger if tokens co-occurr more closely together
+(since then their windows overlap more), but this only works well for similarity measures that
+normalize the similarity (e.g., cosine). Currently, we only use the positionXwindow mode,
+but windowXwindow could be interesting to use as well, and for cosine it might actually make more
+sense.
+</p>
+
+
+<h3>Value</h3>
+
+<p>an Igraph graph in which nodes are features and edges are similarity scores
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">text = c('A B C', 'D E F. G H I', 'A D', 'GGG')
+tc = create_tcorpus(text, doc_id = c('a','b','c','d'), split_sentences = TRUE)
+
+g = semnet_window(tc, 'token', window.size = 1)
+g
+igraph::get.data.frame(g)
+plot_semnet(g)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,160 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>DispersalPerRecruitModel</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Population dynamics model based on lifetime-egg-production</h2>
+
+<h3>Description</h3>
+
+<p>This function implements the marine population dynamics model described in 
+Kaplan et al. (2006).  This model is most appropriate for examining 
+equilibrium dynamics of age-structured populations or temporal dynamics of 
+semelparous populations.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">DispersalPerRecruitModel(
+  LEP,
+  conn.mat,
+  recruits0,
+  timesteps = 10,
+  settler.recruit.func = hockeyStick,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>LEP</code></td>
+<td>
+<p>a vector of lifetime-egg-production (LEP; also known as 
+eggs-per-recruit (EPR)) for each site.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conn.mat</code></td>
+<td>
+<p>a square connectivity matrix.  <code>dim(conn.mat) = 
+rep(length(LEP),2)</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>recruits0</code></td>
+<td>
+<p>a vector of initial recruitment values for each site.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>timesteps</code></td>
+<td>
+<p>a vector of timesteps at which to record egg production, 
+settlement and recruitment.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>settler.recruit.func</code></td>
+<td>
+<p>a function to calculate recruitment from the 
+number of settlers at each site.  Defaults to <code>hockeyStick</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments to settler.recruit.func.  Typically
+<code>Rmax</code> and <code>slope</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list with the following elements: </p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>eggs</code></td>
+<td>
+<p>egg production for
+the timesteps in <code>timesteps</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>settlers</code></td>
+<td>
+<p>Similar for settlement</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>recruits</code></td>
+<td>
+<p>Similar for recruitment</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>David M. Kaplan <a href="mailto:dmkaplan2000@gmail.com">dmkaplan2000@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Kaplan, D. M., Botsford, L. W., and Jorgensen, S. 2006. Dispersal
+per recruit: An efficient method for assessing sustainability in marine 
+reserve networks. Ecological Applications, 16: 2248-2263.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>See also <code>BevertonHolt</code>, <code>hockeyStick</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(ConnMatTools)
+data(chile.loco)
+
+# Get appropriate collapse slope
+# critical.FLEP=0.2 is just an example
+slope &lt;- settlerRecruitSlopeCorrection(chile.loco,critical.FLEP=0.2)
+
+# Make the middle 20 sites a reserve
+# All other sites: scorched earth
+n &lt;- dim(chile.loco)[2]
+LEP &lt;- rep(0,n)
+nn &lt;- round(n/2)-9
+LEP[nn:(nn+19)] &lt;- 1
+
+Rmax &lt;- 1
+
+recruits0 &lt;- rep(Rmax,n)
+
+# Use DPR model
+ret &lt;- DispersalPerRecruitModel(LEP,chile.loco,recruits0,1:20,slope=slope,Rmax=Rmax,
+                                settler.recruit.func=BevertonHolt)
+image(1:n,1:20,ret$settlers,xlab="sites",ylab="timesteps",
+      main=c("Settlement","click to proceed"))
+locator(1)
+plot(ret$settlers[,20],xlab="sites",ylab="equilibrium settlement",
+     main="click to proceed")
+locator(1)
+
+# Same, but with a uniform Laplacian dispersal matrix and hockeyStick
+cm &lt;- laplacianConnMat(n,10,0,"circular")
+ret &lt;- DispersalPerRecruitModel(LEP,cm,recruits0,1:20,slope=1/0.35,Rmax=Rmax)
+image(1:n,1:20,ret$settlers,xlab="sites",ylab="timesteps",
+      main=c("Settlement","click to proceed"))
+locator(1)
+plot(ret$settlers[,20],xlab="sites",ylab="equilibrium settlement")
+</code></pre>
+
+
+</div>

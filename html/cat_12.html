@@ -1,0 +1,140 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>mda.cat</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Monotone Data Augmentation algorithm for incomplete categorical data
+</h2>
+
+<h3>Description</h3>
+
+<p>Markov-Chain Monte Carlo method for simulating draws from the
+observed-data posterior distribution of underlying cell probabilities
+under a saturated multinomial model. May be used in conjunction with
+<code>imp.cat</code> to create proper multiple imputations. Tends to converge
+more quickly than <code>da.cat</code> when the pattern of observed data is nearly
+monotone. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">mda.cat(s, start, steps=1, prior=0.5, showits=FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>s</code></td>
+<td>
+
+<p>summary list of an incomplete categorical dataset created by the
+function <code>prelim.cat</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start</code></td>
+<td>
+
+<p>starting value of the parameter. This is an array of cell
+probabilities of dimension <code>s$d</code>, such as one created by <code>em.cat</code>.
+If structural zeros appear in the table, starting values for those
+cells should be zero.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>steps</code></td>
+<td>
+
+<p>number of data augmentation steps to be taken. Each step consists of
+an imputation or I-step followed by a posterior or P-step.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior</code></td>
+<td>
+
+<p>optional vector of hyperparameters specifying a Dirichlet prior
+distribution. The default is the Jeffreys prior (all hyperparameters =
+supplied with hyperparameters set to <code>NA</code> for those cells.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>showits</code></td>
+<td>
+
+<p>if <code>TRUE</code>, reports the iterations so the user can monitor the
+progress of the algorithm.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>At each step, the missing data are randomly imputed under their
+predictive distribution given the observed data and the current value
+of <code>theta</code> (I-step) Unlike <code>da.cat</code>, however, not all of the missing
+data are filled in, but only enough to complete a monotone pattern.
+Then a new value of <code>theta</code> is drawn from its Dirichlet posterior
+distribution given the monotone data (P-step).  After a suitable
+number of steps are taken, the resulting value of the parameter may be
+regarded as a random draw from its observed-data posterior
+distribution.
+</p>
+<p>For good performance, the variables in the original data matrix <code>x</code>
+(which is used to create <code>s</code>) should be ordered according to their
+rates of missingness from most observed (in the first columns) to
+least observed (in the last columns).
+</p>
+
+
+<h3>Value</h3>
+
+<p>an array like <code>start</code> containing simulated cell probabilities.
+</p>
+
+
+<h3>Note</h3>
+
+<p>IMPORTANT: The random number generator seed must be set at least once
+by the function <code>rngseed</code> before this function can be used.
+</p>
+
+
+<h3>References</h3>
+
+<p>Schafer (1996)  <em>Analysis of Incomplete Multivariate Data.</em>
+Chapman &amp; Hall,  Chapter 7.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>prelim.cat</code>, <code>rngseed</code>, <code>da.cat</code>, <code>imp.cat</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(older)
+x      &lt;- older[1:80,1:4]               # subset of the data with
+counts &lt;- older[1:80,7]                 # monotone pattern.
+s &lt;- prelim.cat(x,counts)               # preliminary manipulations
+thetahat &lt;- em.cat(s)                   # mle under saturated model
+rngseed(7817)                           # set random generator seed
+theta &lt;- mda.cat(s,thetahat,50)         # take 50 steps from mle
+ximp &lt;- imp.cat(s,theta)                # impute under theta
+theta &lt;- mda.cat(s,theta,50)            # take another 50 steps
+ximp &lt;- imp.cat(s,theta)                # impute under new theta
+</code></pre>
+
+
+</div>

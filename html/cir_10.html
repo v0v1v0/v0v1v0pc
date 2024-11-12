@@ -1,0 +1,119 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>is.DRtrace</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Constructor functions and class-checking functions for DRtrace and doseResponse classes</h2>
+
+<h3>Description</h3>
+
+<p>Functions to create and sanity-check objects of the <code>DRtrace</code> (dose-response experiment trace/trajectory) and <code>doseResponse</code> (dose-response raw summary) classes. Note that the latter inherits from the former, purely for programming-convenience reasons.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">is.DRtrace(dr)
+
+is.doseResponse(dr)
+
+DRtrace(y, x = NULL, cohort = NULL, noyes = FALSE, ...)
+
+doseResponse(y, x = NULL, wt = rep(1, length(y)), noyes = FALSE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>dr</code></td>
+<td>
+<p>the object being checked</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y, x</code></td>
+<td>
+<p>see Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cohort</code></td>
+<td>
+<p>(<code>DRtrace</code> only) specify each observation's cohorts, if there were cohorts. If all cohorts were the same size, then you can specify the size as a single number. If there were no cohorts, code will default this variable to <code>1:n</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>noyes</code></td>
+<td>
+<p>logical, in case of a 2-column input is the 1st column 'no'? Default <code>FALSE</code>, meaning the 1st column is 'yes'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>parameters passed on to <code>DRtrace()</code>, or ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wt</code></td>
+<td>
+<p>(<code>doseResponse</code> only) the weights associated with each <code>x</code> value; usually the sample size or similar.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The input argument <code>y</code> can include the entire information, or as little as the <code>y</code> vector of responses (for a <code>DRtrace</code> object) or response rates (<code>doseResponse</code>). When including the entire information, it has to be a data frame with at least <code>y</code> (both y and x for <code>DRtrace</code>), or a two-column matrix with 'yes' and 'no' responses (assumed in this order, but can be the reverse with <code>noyes=TRUE</code>). In this case the doses <code>x</code> can be provided as a separate vector, or as the matrix row names. <code>doseResponse</code> will return an error if there are any duplicates in <code>x</code>.
+</p>
+<p>Even though both <code>DRtrace</code> and <code>doseResponse</code> accept two-column yes/no matrix input, the interpretation is different. For the former, this form of input is intended mostly to enable shorthand input when the experiment was run in cohorts. Each row represents a cohort's results, and rows must be in the order the experiment was run. For the latter, the yes-no table is a summary tabulation of responses and is treated accordingly, including rearrangement of rows to increasing <code>x</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>For constructor functions, the relevant object. For checking functions, a logical value indicating whether the object meets class definition.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Assaf P. Oron <code>&lt;assaf.oron.at.gmail.com&gt;</code>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cirPAVA</code>, <code>plot.doseResponse</code>,<code>plot.DRtrace</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Summary of raw data from the notorious Neuenschwander et al. (Stat. Med., 2008) trial
+## Note the use of the 'cohort' argument to specify the cohort order
+neundatTrace = DRtrace(x = c(rep(1:4,each=4), 7, 7, rep(6,9)),
+                       y = c(rep(0,16), 1,1, rep(c(0,0,1),2), 0,0,0), 
+                       cohort = rep(1:8, c(4,4,4,4, 2, 3,3,3)) )
+par(mar=c(3,3,3,1), mgp=c(2,.5,0), tcl=-0.25)
+layout(t(1:2))
+plot(neundatTrace ,main="N. et al. (2008) Cohort Trace", xlab = 'Cohort', 
+          ylab="Ordinal Dose Level" ,cex.main=1.5)
+
+## Same data, in 'doseResponse' format with actual doses rather than dose levels
+neundatDose = doseResponse(x=c(1,2.5,5,10,20,25), y = c(rep(0,4),2/9,1), wt = c(3,4,5,4,9,2) )
+plot(neundatDose ,main="N. et al. (2008) Final Dose-Toxicity", ylim=c(0,1),
+	xlab="Dose (mg/sq.m./wk)", ylab="Toxicity Response Curve (F)", cex.main=1.5)
+## We can also convert the DRtrace object to doseResponse...
+neundatLevel = doseResponse(neundatTrace)
+
+### Now plotting the former, vs. IR/CIR estimates
+neunCIR0 = cirPAVA(neundatDose,full=TRUE, adaptiveShrink = TRUE, target = 0.3)
+lines(neunCIR0$shrinkage$x, neunCIR0$shrinkage$y, type='b' ,pch=19)
+legend(1,1, pch=c(4,19), legend=c('Observations', 'CIR w/bias corr.'), bty='n')
+</code></pre>
+
+
+</div>

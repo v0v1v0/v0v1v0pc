@@ -1,0 +1,171 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ctSFTM</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Continuous-time Structural Failure Time Model</h2>
+
+<h3>Description</h3>
+
+<p>The function estimates the regime (in terms of time to treatment initiation)
+of treatment effect for a survival outcome under a 
+Structural Failure Time Model (SFTM)
+with time-varying confounding in the presence of dependent censoring.
+Studying the effect of time to treatment discontinuation is applicable 
+by redefining "treatment initiation" in the current description to 
+"treatment discontinuation".
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ctSFTM(data, base = NULL, td = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data.frame object. A data.frame containing all observed data.
+At a minimum, this data.frame must contain columns with headers 
+"id", "U", "V", "deltaU", and "deltaV". If time-dependent covariates are
+included, additional columns include "stop" and "start". See Details for
+further information</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>base</code></td>
+<td>
+<p>A character or integer vector or NULL. The columns of data to be
+included in the time-independent component of the model. If NULL, 
+time-independent covariates are excluded from the Cox model for 
+treatment discontinuation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>td</code></td>
+<td>
+<p>A character or integer vector or NULL. The columns of data to be
+included in the time-dependent component of the model. If NULL, 
+time-dependent covariates are excluded from the Cox model for 
+treatment discontinuation.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The SFTM assumes that the potential failure time <code>U</code> had the individual 
+never received treatment and the observed failure time <code>T</code> follow
+</p>
+<p style="text-align: center;"><code class="reqn">U \sim \int_0^T e^{\psi A_u}d u, </code>
+</p>
+
+<p>where <code>~</code> means "has the same distribution as", and <code class="reqn">A_u</code> is the 
+treatment indicator at time <code class="reqn">u</code>.
+We assume that the individual continuously received treatment until 
+time <code class="reqn">V</code>. The observed failure time can be censored assuming the 
+censoring time is independent of the failure time given the treatment and 
+covariate history (the so-called ignorable censoring). The current 
+function allows for multi-dimensional baseline covariates and/or
+multi-dimensional time-dependent covariate.
+Variance estimates should be implemented by delete-one-group jackknifing 
+and recalling ctSFTM.
+</p>
+<p>If only time-independent covariates are included, the data.frame must 
+contain the following columns:
+</p>
+
+<dl>
+<dt>id:</dt>
+<dd>
+<p>A unique participant identifier.</p>
+</dd>
+<dt>U:</dt>
+<dd>
+<p>The time to the clinical event or censoring.</p>
+</dd>
+<dt>deltaU:</dt>
+<dd>
+<p>The clinical event indicator (1 if U is the event time;
+0 otherwise.</p>
+</dd>
+<dt>V:</dt>
+<dd>
+<p>The time to optional treatment discontinuation, a clinical 
+event, censoring, or a treatment-terminating event.</p>
+</dd>
+<dt>deltaV:</dt>
+<dd>
+<p>The indicator of optional treatment discontinuation 
+(1 if treatment discontinuation was optional; 0 if 
+treatment discontinuation was due to a clinical event, 
+censoring or a treatment-terminating event.</p>
+</dd>
+</dl>
+<p>If time-dependent covariates are to be included, the data.frame must be
+a time-dependent dataset as described by package survival. Specifically,
+the time-dependent data must be specified for an interval (lower,upper]
+and the data must include the following additional columns:
+</p>
+
+<dl>
+<dt>start:</dt>
+<dd>
+<p>The lower boundary of the time interval to which the
+data pertain.</p>
+</dd>
+<dt>stop:</dt>
+<dd>
+<p>The upper boundary of the time interval to which the
+data pertain.</p>
+</dd>
+</dl>
+<h3>Value</h3>
+
+<p>An S3 object of class ctc. Object contains element ‘psi’, the 
+estimate of the SFTM parameter(s) and ‘coxPH’, the Cox 
+regression for V.
+</p>
+
+
+<h3>References</h3>
+
+<p>Yang, S., K. Pieper, and F. Cools. (2019) 
+Semiparametric estimation of structural failure time model in 
+continuous-time processes.
+Biometrika, 107(1), 123-136.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>ctCoxMSM</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+  data(ctcData)
+
+ # sample data to reduce computation time of example
+ smp &lt;- ctcData$id %in% sample(1:1000, 200, FALSE)
+ ctcData &lt;- ctcData[smp,]
+
+ # analysis with both time-dependent and time-independent components
+ res &lt;- ctSFTM(data = ctcData, base = "x", td = "xt")
+
+ # analysis with only the time-independent component
+ res &lt;- ctSFTM(data = ctcData, base = "x")
+
+ # analysis with only the time-dependent component
+ res &lt;- ctSFTM(data = ctcData, td = "xt")
+
+</code></pre>
+
+
+</div>

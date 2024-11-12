@@ -1,0 +1,254 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>inputCollector</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Create customized input/output collector for use in getInputs
+</h2>
+
+<h3>Description</h3>
+
+<p>Create a custom input collector which will be used by getInputs to
+process
+to collect various aspects of the code as it is being processed. Custom
+collector functions can be specified which will be called when a
+particular function is called within the code.One major use for this is
+leveraging knowledge of specific functions' behavior to track side
+effects relevant to a particular use-case.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">inputCollector(..., functionHandlers = list(...), inclPrevOutput =
+FALSE, checkLibrarySymbols = FALSE, funcsAsInputs = checkLibrarySymbols)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+
+<p>Custom information collection functions. Argument names correspond to
+R functions, with the custom collection function being called when a
+call to the named function is detected within the code being
+processed. Overridden by <code>functionHandlers</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>functionHandlers</code></td>
+<td>
+
+<p>A named list of custom collection functions. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inclPrevOutput</code></td>
+<td>
+<p>Should variables which were output previously
+within the code be treated as inputs in subsequent expressions. If
+<code>TRUE</code> each expression within the code is treated separately
+with respect to detecting input variables, if <code>FALSE</code> the code
+is treated as a single block. Defaults to <code>FALSE</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>checkLibrarySymbols</code></td>
+<td>
+<p>If <code>TRUE</code> symbols exported by default
+package and packages loaded within the code via <code>library</code> or
+<code>require</code> calls are tracked and excluded from the list of input
+variables. Defaults to<code>FALSE</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>funcsAsInputs</code></td>
+<td>
+<p>If <code>TRUE</code> functions called by the code being
+processed are treated as input variables and listed as
+such. Defaults to the value of <code>checkLibrarySymbols</code>. A value
+of <code>funcsAsInputs</code> which does not agree with the value of
+<code>checkLibrarySymbols</code> is NOT recommended.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Each custom collection function should accept three arguments:
+</p>
+
+<dl>
+<dt>e: </dt>
+<dd>
+<p>the code or expression currently being processed</p>
+</dd>
+<dt>collector: </dt>
+<dd>
+<p>the current inputCollector</p>
+</dd>
+<dt>basedir: </dt>
+<dd>
+<p>the base directory in which the processing is taking place, e.g. to determine whether strings correspond to files</p>
+</dd>
+</dl>
+<p>These functions should process the expression and then use
+<code>collector</code>'s collection functions and/or the <code>&lt;&lt;-</code>
+assignment operator to update the lists of found entities.
+</p>
+<p>Currently trackable entities, updatable by <code style="white-space: pre;">⁠&lt;entity&gt;&lt;&lt;-c(&lt;entity&gt;,
+    value)⁠</code> or as specified, include:
+</p>
+
+<dl>
+<dt>libraries: </dt>
+<dd>
+<p>libraries loaded by the code via <code>library</code> or
+<code>require</code>. Updatable by calling <code>collector$library</code>
+</p>
+</dd>
+<dt>libSymbols: </dt>
+<dd>
+<p>symbols exported by available libraries. Tracked
+automatically within <code>collector$library</code>
+</p>
+</dd>
+<dt>files: </dt>
+<dd>
+<p>string constants which correspond to an existing file in
+<code>basedir</code>. Tracked automatically when strings are passed to
+<code>collector$string</code>
+</p>
+</dd>
+<dt>strings: </dt>
+<dd>
+<p>string constants which do not correspond to existing
+files. Tracked automatically when strings are passed to
+<code>collector$string</code>
+</p>
+</dd>
+<dt>vars: </dt>
+<dd>
+<p>all variable names used in the code. Updatable by calling
+<code>collector$vars</code> with <code>input</code> as <code>TRUE</code> or <code>FALSE</code>
+as appropriate</p>
+</dd>
+<dt>set: </dt>
+<dd>
+<p>variable names which are assigned to in the code (input
+variables). Updatable by calling <code>collector$set</code> or
+<code>collector$vars</code> with <code>input=TRUE</code>
+</p>
+</dd>
+<dt>functions: </dt>
+<dd>
+<p>functions called by the code. Updatable by calling
+<code>collector$calls</code>. This will also update <code>vars</code> if the
+collector was created with <code>funcsAsInputs=TRUE</code>
+</p>
+</dd>
+<dt>removes: </dt>
+<dd>
+<p>variables removed by the vode via calls to
+<code>collector$removes</code>
+</p>
+</dd>
+<dt>updates: </dt>
+<dd>
+<p>variables which have had elements within them updated,
+e.g. via <code>x$foo &lt;- bar</code>. Updatable via calls to
+<code>collector$update</code>
+</p>
+</dd>
+<dt>sideEffects: </dt>
+<dd>
+<p>side effects generated by the code. Experimental,
+default side effect detection should not be assumed to be robust or
+exhaustive. Updatable via calls to <code>sideEffects</code>
+</p>
+</dd>
+<dt>formulaVariables: </dt>
+<dd>
+<p>If <code>formulaInputs</code> is <code>FALSE</code> within
+the call to getInputs, this tracks variables which appear within
+formulas, otherwise this is unused and such variables are treated as
+input. Updatable via the modelVars argument in calls to
+<code>collector$addInfo</code>
+</p>
+</dd>
+</dl>
+<h3>Value</h3>
+
+<p>A list of functions used to update internal tracking variables (see
+Details) as well as the following:
+</p>
+
+<dl>
+<dt>functionHandlers: </dt>
+<dd>
+<p>The list of function handlers in use by the
+collector.</p>
+</dd>
+<dt>reset: </dt>
+<dd>
+<p>A function which resets the internal tracking variables.</p>
+</dd>
+<dt>results: </dt>
+<dd>
+<p>A function which returns a
+<code>ScriptNodeInfo</code> object representing the current state of
+the collection.</p>
+</dd>
+</dl>
+<h3>Note</h3>
+
+<p>Custom handlers take precedence over default proccessing
+mechanism. Care should be taken when overriding core functions such as
+<code>=</code>, <code>~</code>, <code>$</code>, <code>library</code>, etc.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Specific internal behaviors of the default collection mechanisms are
+experimental and may change in future versions.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Duncan Temple Lang
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>ScriptNodeInfo</code> <code>getInputs</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">   f = system.file("samples", "results-multi.R", package="CodeDepends")
+   sc = readScript(f)
+  collector = inputCollector(library = function(e, collector, basedir, ...)
+  {
+    print(paste("loaded library",  e[[2]]))
+    collector$library(as.character(e[[2]]))
+})
+  res = getInputs(sc, collector = collector )
+  #[1] "loaded library splines"
+  #[1] "loaded library tsModel"
+</code></pre>
+
+
+</div>

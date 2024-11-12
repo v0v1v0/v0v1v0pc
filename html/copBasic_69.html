@@ -1,0 +1,170 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>isCOP.radsym</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Is a Copula Radially Symmetric</h2>
+
+<h3>Description</h3>
+
+<p>Numerically set a logical whether a copula is <em>radially symmetric</em> (Nelsen, 2006, p. 37) [<em>reflection symmetric</em>, Joe (2014, p. 64)]. A copula <code class="reqn">\mathbf{C}(u,v)</code> is radially symmetric if and only if for any <code class="reqn">\{u,v\} \in [0,1]</code> either of the following hold
+</p>
+<p style="text-align: center;"><code class="reqn">\mathbf{C}(u,v) = u + v - 1 + \mathbf{C}(1-u, 1-v)</code>
+</p>
+
+<p>or
+</p>
+<p style="text-align: center;"><code class="reqn">u + v - 1 + \mathbf{C}(1-u, 1-v) - \mathbf{C}(u,v) \equiv 0\mbox{.}</code>
+</p>
+
+<p>Thus, if the equality of the copula <code class="reqn">\mathbf{C}(u,v) = \hat{\mathbf{C}}(u,v)</code> (the <em>survival copula</em>), then radial symmetry exists: <code>COP</code> <code class="reqn">=</code> <code>surCOP</code> or <code class="reqn">\mathbf{C}(u,v) = \hat{\mathbf{C}}(1-u,1-v)</code>. The computation is (can be) CPU intensive.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">isCOP.radsym(cop=NULL, para=NULL, delta=0.005, tol=1e-4, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cop</code></td>
+<td>
+<p>A copula function;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>Vector of parameters, if needed, to pass to the copula;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta</code></td>
+<td>
+<p>The increments of  <code class="reqn">\{u,v\} \mapsto [0+\Delta\delta, 1-\Delta\delta, \Delta\delta]</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol</code></td>
+<td>
+<p>A tolerance on the check for symmetry, default 1 part in 10,000, which is the test for the <code class="reqn">\equiv 0</code> (zero equivalence, see source code); and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass to the copula or derivative of a copula function.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A logical <code>TRUE</code> or <code>FALSE</code> is returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>An open research question possibly exists: <em>Is a radially symmetric copula characterized by the L-comoments for orders</em> <code class="reqn">r{\ge}3</code> <em>as having values of zero</em>? The author asks this question partly out of intuition stemming from numerical experiments (some not show here) suggesting this condition, and review of copula literature does not seem to directly address this question. Let us consider the two symmetrical copulas: the parameterless <code class="reqn">\mathbf{PSP}(u,v)</code> (see <code>PSP</code>) and the single parameter <code class="reqn">\mathbf{PL}(u,v; \Theta)</code> (see <code>PLACKETTcop</code>) with the <code class="reqn">\Theta_\mathbf{PL} = 4.708664</code> (see <code>rhoCOP</code>). The two copulas have different radial symmetries as shown below.
+</p>
+<pre>
+  plackpar &lt;- PLACKETTpar(rho=rhoCOP(cop=PSP)) # Spearman Rho = 0.4784176
+  isCOP.radsym(cop=PSP)                        # FALSE
+  isCOP.radsym(cop=PLACKETTcop, para=plackpar) # TRUE
+</pre>
+<p>Now, let us compute the L-comoments from the <span class="pkg">lmomco</span> <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> package for <code class="reqn">n=10{,}000</code> simulations from each copula. The L-correlations are each about 0.48, which agree with the given <code class="reqn">\rho_\mathbf{C}</code>.
+</p>
+<pre>
+  set.seed(639)
+  UVa &lt;- simCOP(n=10000, cop=PSP,         para=NA,       graphics=FALSE)
+  set.seed(639)
+  UVb &lt;- simCOP(n=10000, cop=PLACKETTcop, para=plackpar, graphics=FALSE)
+  lmomco::lcomoms2(UVa, nmom=4)$T3[2,1] # Only show L-coskew of V wrt U.
+  lmomco::lcomoms2(UVb, nmom=4)$T3[2,1] # Only show L-coskew of V wrt U.
+</pre>
+<p>The L-coskew for the <code class="reqn">\mathbf{PSP}</code> is about <code class="reqn">-0.129</code> and that for the <code class="reqn">\mathbf{PL}</code> copula is about zero (<code class="reqn">&lt;0.0029</code>). L-cokurtosis provides a similar result if <code>T3</code> is changed to <code>T4</code>. The <code class="reqn">\mathbf{PSP}</code> L-cokurtosis is about <code class="reqn">0.041</code>, whereas the <code class="reqn">\mathbf{PL}</code> L-cokurtosis is about <code class="reqn">&lt;0.0037</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Nelsen, R.B., 2006, An introduction to copulas: New York, Springer, 269 p.
+</p>
+<p>Salvadori, G., De Michele, C., Kottegoda, N.T., and Rosso, R., 2007, Extremes in Nature—An approach using copulas: Springer, 289 p.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>isCOP.permsym</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Radially symmetry is computationally intensive and relies on a gridded [0,1]x[0,1]
+# space and laborious check on equality. Thus these examples are commented out for
+# R --timings check. Note, the proof of radial symmetry absent of algebraic
+# manipulation or verification is difficult and subject to the fineness of the grid
+# to find a nonequality from which to immediately conclude FALSE.
+## Not run: 
+isCOP.radsym(cop=P) # TRUE
+
+para &lt;- list(cop1=PLACKETTcop, cop2=M, para1=c(.3), para2=NA, alpha=0.8, beta=0.5)
+isCOP.radsym(composite2COP, para=para) # FALSE
+
+## End(Not run)
+## Not run: 
+gh &lt;- simCOP(n=34, cop=GHcop, para=theta, ploton=FALSE, points=FALSE) * 150
+# Pretend gh is real data, the * 150 is to clearly get into an arbitrary unit system.
+
+# The sort=FALSE is critical in the following two calls
+fakeU &lt;- lmomco::pp(gh[,1], sort=FALSE) # Weibull plotting position i/(n+1)
+fakeV &lt;- lmomco::pp(gh[,2], sort=FALSE) # Weibull plotting position i/(n+1)
+uv &lt;- data.frame(U=fakeU, V=fakeV); # our U-statistics
+
+set.seed(120); theta &lt;- 2
+gh &lt;- simCOP(n=34, cop=GHcop, para=theta, ploton=FALSE, points=FALSE) * 150
+# Pretend psp is real data, the * 150 is to clearly get into an arbitrary unit system.
+
+# The sort=FALSE is critical in the following two calls
+fakeU &lt;- lmomco::pp(gh[,1], sort=FALSE) # Weibull plotting position i/(n+1)
+fakeV &lt;- lmomco::pp(gh[,2], sort=FALSE) # Weibull plotting position i/(n+1)
+uv &lt;- data.frame(U=fakeU, V=fakeV); # our U-statistics
+
+isCOP.radsym(cop=EMPIRcop, para=uv) # FALSE
+isCOP.LTD(cop=EMPIRcop,    para=uv) # TRUE
+isCOP.RTI(cop=EMPIRcop,    para=uv) # FALSE
+isCOP.PQD(cop=EMPIRcop,    para=uv,
+                    empirical=TRUE) # TRUE
+  # Blomqvist's Beta = 0.2941
+  #     Gini's Gamma = 0.5606
+  #   Spearman's Rho = 0.6584
+  #    Kendall's Tau = 0.5045
+
+isCOP.radsym(cop=GHcop, para=theta) # FALSE
+isCOP.LTD(cop=GHcop,    para=theta) # TRUE
+isCOP.RTI(cop=GHcop,    para=theta) # TRUE
+isCOP.PQD(cop=GHcop,    para=theta) # TRUE
+  # Blomqvist's Beta = 0.5009
+  #     Gini's Gamma = 0.5591
+  #   Spearman's Rho = 0.6822
+  #    Kendall's Tau = 0.5000
+
+# Notice that isCOP.RTI is not the same for empirical and theoretical.
+# This shows the difficulty in tail dependence parameter estimation for
+# small samples (see Salvadori et al., 2007 p. 175).
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,118 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cfr_rolling</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate static severity for an expanding time series</h2>
+
+<h3>Description</h3>
+
+<p>Calculates the CFR at each time point in the case and death time
+series supplied, using an expanding window of time. The static CFR is
+calculated for each time point, using the time series from the start to each
+time point, and increasing the number of time points included by one in each
+iteration.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cfr_rolling(data, delay_density = NULL, poisson_threshold = 100)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A <code style="white-space: pre;">⁠&lt;data.frame&gt;⁠</code> containing the outbreak data. A daily time
+series with dates or some other absolute indicator of time (e.g. epiday or
+epiweek) and the numbers of new cases and new deaths at each time point.
+Note that the required columns are "date" (for the date), "cases" (for the
+number of reported cases), and "deaths" (for the number of reported deaths)
+on each day of the outbreak.
+</p>
+<p>Note that the <code style="white-space: pre;">⁠&lt;data.frame&gt;⁠</code> is required to have an unbroken sequence of
+dates with no missing dates in between. The "date" column must be of class
+<code>Date</code> (see <code>as.Date()</code>).
+</p>
+<p>Note also that the total number of cases must be greater than the total
+number of reported deaths.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delay_density</code></td>
+<td>
+<p>An optional argument that controls whether delay
+correction is applied in the severity estimation.
+May be <code>NULL</code>, for no delay correction, or a function that returns the
+density function of a distribution to evaluate
+density at user-specified values, e.g.
+<code>function(x) stats::dgamma(x = x, shape = 5, scale = 1)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>poisson_threshold</code></td>
+<td>
+<p>The case count above which to use Poisson
+approximation. Set to 100 by default. Must be &gt; 0.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>When delay correction is applied by passing a delay distribution
+density function to <code>delay_density</code>, the internal function
+<code>.estimate_severity()</code> is used to calculate the rolling severity.
+</p>
+<p>Note that in the naive method the severity estimate and confidence intervals
+cannot be calculated for days on which the cumulative number of cases since
+the start of the time-series, and for days on which the cumulative number of
+deaths reported exceeds the cumulative reported cases, and is returned as
+<code>NA</code>.
+</p>
+<p><code>cfr_rolling()</code> applies the internal function <code>.estimate_severity()</code> to an
+expanding time-series of total cases, total estimated outcomes, and total
+deaths. The method used to generate a profile likelihood for each day depends
+on the outbreak size and initial severity estimate for that day. This is
+essentially the same as running <code>cfr_static()</code> on each new day. The method
+used for each day is not communicated to the user, in order to prevent
+cluttering the terminal with messages.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code style="white-space: pre;">⁠&lt;data.frame&gt;⁠</code> with the date, maximum likelihood estimate and 95%
+confidence interval of the daily severity estimates, named
+"severity_estimate", "severity_low", and "severity_high", with one row for
+each day in the original data.frame.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># load package data
+data("ebola1976")
+
+# estimate severity without correcting for delays
+cfr_static(ebola1976)
+
+# estimate severity for each day while correcting for delays
+# obtain onset-to-death delay distribution parameters from Barry et al. 2018
+# The Lancet. &lt;https://doi.org/10.1016/S0140-6736(18)31387-4&gt;
+# view only the first values
+estimate &lt;- cfr_rolling(
+  ebola1976,
+  delay_density = function(x) dgamma(x, shape = 2.40, scale = 3.33)
+)
+
+head(estimate)
+
+</code></pre>
+
+
+</div>

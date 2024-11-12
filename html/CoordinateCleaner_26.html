@@ -1,0 +1,202 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>clean_dataset</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Coordinate Cleaning using Dataset Properties</h2>
+
+<h3>Description</h3>
+
+<p>Tests for problems associated with coordinate conversions and rounding,
+based on dataset properties. Includes test to identify contributing datasets with
+potential errors with converting ddmm to dd.dd, and
+periodicity in the data decimals indicating rounding or a raster basis
+linked to low coordinate precision. Specifically:
+</p>
+
+<ul>
+<li>
+<p> ddmm  tests for erroneous conversion from a degree
+minute format (ddmm) to a decimal degree (dd.dd) format
+</p>
+</li>
+<li>
+<p> periodicity test for periodicity in the data,
+which can indicate imprecise coordinates, due to rounding or rasterization.
+</p>
+</li>
+</ul>
+<h3>Usage</h3>
+
+<pre><code class="language-R">clean_dataset(
+  x,
+  lon = "decimalLongitude",
+  lat = "decimalLatitude",
+  ds = "dataset",
+  tests = c("ddmm", "periodicity"),
+  value = "dataset",
+  verbose = TRUE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>data.frame. Containing geographical coordinates and species names.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lon</code></td>
+<td>
+<p>character string. The column with the longitude coordinates.
+Default = “decimalLongitude”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lat</code></td>
+<td>
+<p>character string. The column with the latitude coordinates.
+Default = “decimalLatitude”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ds</code></td>
+<td>
+<p>a character string. The column with the dataset of each record. In
+case <code>x</code> should be treated as a single dataset, identical for all
+records. Default = “dataset”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tests</code></td>
+<td>
+<p>a vector of character strings, indicating which tests to run.
+See details for all tests available. Default = c("ddmm", "periodicity")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>value</code></td>
+<td>
+<p>a character string.  Defining the output value. See value.
+Default = “dataset”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>logical. If TRUE reports the name of the test and the number
+of records flagged.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments to be passed to <code>cd_ddmm</code> and
+<code>cd_round</code> to customize test sensitivity.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>These tests are based on the statistical distribution of coordinates and
+their decimals within
+datasets of geographic distribution records to identify datasets with
+potential errors/biases. Three potential error sources can be identified.
+The ddmm flag tests for the particular pattern that emerges if geographical
+coordinates in a degree minute annotation are transferred into decimal
+degrees, simply replacing the degree symbol with the decimal point. This
+kind of problem has been observed by in older datasets first recorded on
+paper using typewriters, where e.g. a floating point was used as symbol for
+degrees. The function uses a binomial test to check if more records than
+expected have decimals below 0.6 (which is the maximum that can be obtained
+in minutes, as one degree has 60 minutes) and if the number of these records
+is higher than those above 0.59 by a certain proportion. The periodicity
+test uses rate estimation in a Poisson process to estimate if there is
+periodicity in the decimals of a dataset (as would be expected by for
+example rounding or data that was collected in a raster format) and if there
+is an over proportional number of records with the decimal 0 (full degrees)
+which indicates rounding and thus low precision. The default values are
+empirically optimized by with GBIF data, but should probably be adapted.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Depending on the ‘value’ argument:
+</p>
+
+<dl>
+<dt>“dataset”</dt>
+<dd>
+<p>a <code>data.frame</code> with the
+the test summary statistics for each dataset in <code>x</code></p>
+</dd>
+<dt>“clean”</dt>
+<dd>
+<p>a <code>data.frame</code> containing only
+records from datasets in <code>x</code> that passed the tests</p>
+</dd>
+<dt>“flagged”</dt>
+<dd>
+<p>a logical vector of the same length as
+rows in <code>x</code>, with TRUE = test passed and
+FALSE = test failed/potentially problematic.</p>
+</dd>
+</dl>
+<h3>Note</h3>
+
+<p>See <a href="https://ropensci.github.io/CoordinateCleaner/">https://ropensci.github.io/CoordinateCleaner/</a> for more details
+and tutorials.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cd_ddmm</code> <code>cd_round</code>
+</p>
+<p>Other Wrapper functions: 
+<code>clean_coordinates()</code>,
+<code>clean_fossils()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#Create test dataset
+clean &lt;- data.frame(dataset = rep("clean", 1000),
+                    decimalLongitude = runif(min = -43, max = -40, n = 1000),
+                    decimalLatitude = runif(min = -13, max = -10, n = 1000))
+                    
+bias.long &lt;- c(round(runif(min = -42, max = -40, n = 500), 1),
+               round(runif(min = -42, max = -40, n = 300), 0),
+               runif(min = -42, max = -40, n = 200))
+bias.lat &lt;- c(round(runif(min = -12, max = -10, n = 500), 1),
+              round(runif(min = -12, max = -10, n = 300), 0),
+              runif(min = -12, max = -10, n = 200))
+bias &lt;- data.frame(dataset = rep("biased", 1000),
+                   decimalLongitude = bias.long,
+                   decimalLatitude = bias.lat)
+test &lt;- rbind(clean, bias)
+
+## Not run:                   
+#run clean_dataset
+flags &lt;- clean_dataset(test)
+
+#check problems
+#clean
+hist(test[test$dataset == rownames(flags[flags$summary,]), "decimalLongitude"])
+#biased
+hist(test[test$dataset == rownames(flags[!flags$summary,]), "decimalLongitude"])
+
+
+## End(Not run)
+</code></pre>
+
+
+</div>

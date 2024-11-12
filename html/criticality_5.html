@@ -1,0 +1,154 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Risk</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Risk Function</h2>
+
+<h3>Description</h3>
+
+<p>This function estimates process criticality accident risk (imports Sample function).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">Risk(
+  bn,
+  code = "mcnp",
+  cores = parallel::detectCores()/2,
+  dist = "gamma",
+  facility.data,
+  keff.cutoff = 0.9,
+  metamodel,
+  risk.pool = 100,
+  sample.size = 1e+09,
+  usl = 0.95,
+  ext.dir,
+  training.dir = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>bn</code></td>
+<td>
+<p>Bayesian network</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>code</code></td>
+<td>
+<p>Monte Carlo radiation transport code (e.g., "cog", "mcnp")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cores</code></td>
+<td>
+<p>Number of CPU cores to use for generating Bayesian network samples</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist</code></td>
+<td>
+<p>Truncated probability distribution (e.g., "gamma", "normal")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>facility.data</code></td>
+<td>
+<p>.csv file name</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keff.cutoff</code></td>
+<td>
+<p>keff cutoff value (e.g., keff &gt;= 0.9)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metamodel</code></td>
+<td>
+<p>List of deep neural network metamodels and weights</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>risk.pool</code></td>
+<td>
+<p>Number of times risk is calculated</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sample.size</code></td>
+<td>
+<p>Number of samples used to calculate risk</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>usl</code></td>
+<td>
+<p>Upper subcritical limit (e.g., keff &gt;= 0.95)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ext.dir</code></td>
+<td>
+<p>External directory (full path)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>training.dir</code></td>
+<td>
+<p>Training directory (full path)</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list of lists containing process criticality accident risk estimates and Bayesian network samples
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+ext.dir &lt;- paste0(tempdir(), "/criticality/extdata")
+dir.create(ext.dir, recursive = TRUE, showWarnings = FALSE)
+
+extdata &lt;- paste0(.libPaths()[1], "/criticality/extdata")
+file.copy(paste0(extdata, "/facility.csv"), ext.dir, recursive = TRUE)
+file.copy(paste0(extdata, "/mcnp-dataset.RData"), ext.dir, recursive = TRUE)
+
+config &lt;- FALSE
+try(config &lt;- reticulate::py_config()$available)
+try(if (config == TRUE) {
+  Risk(
+    bn = BN(
+      facility.data = "facility.csv",
+      ext.dir = ext.dir),
+    code = "mcnp",
+    cores = 1,
+    facility.data = "facility.csv",
+    keff.cutoff = 0.5,
+    metamodel = NN(
+      batch.size = 128,
+      ensemble.size = 1,
+      epochs = 10,
+      layers = "256-256-16",
+      replot = FALSE,
+      ext.dir = ext.dir),
+    risk.pool = 10,
+    sample.size = 1e+04,
+    ext.dir = ext.dir,
+    training.dir = NULL
+  )
+})
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,202 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>rcpp_calc_anclikes_sp_COOprobs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Faster version of rcpp_calc_anclikes_sp</h2>
+
+<h3>Description</h3>
+
+<p>This function is a faster version of <code>rcpp_calc_anclikes_sp</code>. Like
+<code>rcpp_calc_anclikes_sp</code>, this function calculates the conditional
+probability of every allowed combination of ancestral range, left descendent range,
+and right descendent range.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">rcpp_calc_anclikes_sp_COOprobs(Rcpp_leftprobs, Rcpp_rightprobs, l, s = 1,
+  v = 1, j = 0, y = 1, dmat = NULL, maxent01s = NULL,
+  maxent01v = NULL, maxent01j = NULL, maxent01y = NULL,
+  max_minsize_as_function_of_ancsize = NULL, printmat = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Rcpp_leftprobs</code></td>
+<td>
+<p>Probabilities of the states at the base of the left descendant branch</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Rcpp_rightprobs</code></td>
+<td>
+<p>Probabilities of the states at the base of the right descendant branch</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>l</code></td>
+<td>
+<p>List of state indices (0-based)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>s</code></td>
+<td>
+<p>Relative weight of sympatric "subset" speciation. Default <code>s=1</code> mimics LAGRANGE model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>v</code></td>
+<td>
+<p>Relative weight of vicariant speciation. Default <code>v=1</code> mimics LAGRANGE model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>j</code></td>
+<td>
+<p>Relative weight of "founder event speciation"/jump speciation. Default <code>j=0</code> mimics LAGRANGE model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Relative weight of fully sympatric speciation (range-copying). Default <code>y=1</code> mimics LAGRANGE model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dmat</code></td>
+<td>
+<p>If given, a matrix of rank numareas giving multipliers for the probability
+of each dispersal event between areas. Default NULL, which sets every cell of the 
+<code>dmat</code> matrix to value 1.  Users may construct their own parameterized <code>dmat</code>
+(for example, making <code>dmat</code> a function of distance) for inclusion in ML or
+Bayesian analyses.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxent01s</code></td>
+<td>
+<p>Matrix giving the relative weight of each possible descendant rangesize for 
+the smaller range, for a given ancestral rangesize, for a subset-sympatric speciation event. 
+Default is <code>NULL</code>, which means the script will set up the LAGRANGE model (one descendent
+always has range size 1).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxent01v</code></td>
+<td>
+<p>Matrix giving the relative weight of each possible descendant rangesize for 
+the smaller range, for a given ancestral rangesize, for a vicariance speciation event. 
+Default is <code>NULL</code>, which means the script will set up the LAGRANGE model (one descendent 
+always has range size 1).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxent01j</code></td>
+<td>
+<p>Matrix giving the relative weight of each possible descendant rangesize for 
+the smaller range, for a given ancestral rangesize, for a founder-event speciation event. 
+Default is <code>NULL</code>, which means the script will set up the LAGRANGE model (one descendent 
+always has range size 1).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxent01y</code></td>
+<td>
+<p>Matrix giving the relative weight of each possible descendant rangesize for 
+the smaller range, for a given ancestral rangesize, for a full-sympatric (range-copying) 
+speciation event. 
+Default is <code>NULL</code>, which means the script will set up the LAGRANGE model (one descendent 
+always has range size 1).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_minsize_as_function_of_ancsize</code></td>
+<td>
+<p>If given, any state with a range larger that this value will 
+be given a probability of zero (for the branch with the smaller rangesize).  This means that not every
+possible combination of ranges has to be checked, which can get very slow for large state spaces.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>printmat</code></td>
+<td>
+<p>Should the probability matrix output be printed to screen? (useful for debugging, but 
+can be dramatically slow in R.app for some reason for even moderate numbers of states; perhaps 
+overrunning the line length...)</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function improves upon <code>rcpp_calc_anclikes_sp</code> by
+returning a COO-like list of the nonzero cells in the transition matrix
+for the speciation event.
+</p>
+<p>(COO = Coordinate list format for a matrix, see 
+<a href="http://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_.28COO.29">http://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_.28COO.29</a>
+</p>
+<p>Whereas a COO-formatted square matrix stores, for each nonzero cell, the row #, column #, and 
+cell value, <code>rcpp_calc_anclikes_sp</code> returns lists containing, for each nonzero cell:
+</p>
+<p>1. 0-based index of the ancestral state<br>
+2. 0-based index of the left state<br>
+3. 0-based index of the right state<br>
+4. Value of the specified nonzero cell<br></p>
+<p>Time savings over <code>rcpp_calc_anclikes_sp</code> are realized by skipping many 
+ancestor/descendent combinations which are impossible transitions on the model, and 
+neither recording, nor storing, nor passing them.  This becomes important with 
+large state spaces.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>list_weights_of_transitions</code> A list of 3 lists. Each list has (numstates) items, 
+representing the ancestral states.  List #1 gives the 0-based state index for the nonzero left descendents
+of each ancestral state. List #2 gives the 0-based state index for the nonzero right descendents
+of each ancestral state. List #3 gives the weight of each nonzero transition from each ancestral state.
+Summing these weights within each ancestral state for list #3 gives the total of the weights for
+each ancestral state.  Dividing the weights by the sum of weights gives the conditional probability
+of each descendent state, conditional on the ancestral state.  These conditional probabilities
+need only be calculated once per 
+tree+model combination, stored, and then re-used for each node in the tree, yielding significant 
+time savings.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Nicholas Matzke <a href="mailto:matzke@berkeley.edu">matzke@berkeley.edu</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>rcpp_calc_anclikes_sp</code>, <code>rcpp_calc_anclikes_sp_COOprobs</code>, 
+<code>rcpp_calc_anclikes_sp_COOweights_faster</code>
+#bibliography /Dropbox/_njm/__packages/cladoRcpp_setup/cladoRcpp_refs.bib
+@cite Matzke_2013
+@cite Matzke_2014
+@cite ReeSmith2008
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># For the basic logic of a probablistic cladogenesis model, see
+?rcpp_calc_anclikes_sp
+
+# For examples of running the functions, see the comparison of all functions at:
+# ?cladoRcpp
+
+</code></pre>
+
+
+</div>

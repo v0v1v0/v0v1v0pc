@@ -1,0 +1,270 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>PLS_pheno</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Partial Least Squares analysis of phenology vs. daily mean temperatures</h2>
+
+<h3>Description</h3>
+
+<p>This function conducts a Partial Least Squares (PLS) regression analysis
+relating an annual biological phenomenon, e.g. fruit tree flowering or leaf
+emergence, to mean daily temperatures of the preceding 12 months. It
+produces figures that illustrate statistical correlations between
+temperature variation during certain phases and the timing of phenological
+event.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">PLS_pheno(
+  weather_data,
+  bio_data,
+  split_month = 7,
+  runn_mean = 11,
+  expl.var = 30,
+  ncomp.fix = NULL,
+  use_Tmean = FALSE,
+  return.all = FALSE,
+  crossvalidate = "none",
+  end_at_pheno_end = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>weather_data</code></td>
+<td>
+<p>a dataframe containing daily minimum and maximum
+temperature data (in columns called Tmin and Tmax, respectively), and/or
+mean daily temperature (in a column called Tmean). There also has to be a
+column for Year and one for JDay (the Julian date, or day of the year).
+Alternatively, the date can also be given in three columns (Years, Month and
+Day).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bio_data</code></td>
+<td>
+<p>a data frame that contains information on the timing of
+phenological events by year. It should consist of two columns called Year
+and pheno. Data in the pheno column should be in Julian date (day of the
+year).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>split_month</code></td>
+<td>
+<p>the procedure analyzes data by phenological year, which
+can start and end in any month during the calendar year (currently only at
+the beginning of a month). This variable indicates the last month (e.g. 5
+for May) that should be included in the record for a given phenological
+year. All subsequent months are assigned to the following phenological year.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>runn_mean</code></td>
+<td>
+<p>application of a running mean function to daily mean
+temperatures before running the PLS procedure substantially enhances the
+clarity of outputs. runn_mean requires an odd integer value specifying how
+many days should be included in this running mean. runn_mean=11 has usually
+produced good results.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>expl.var</code></td>
+<td>
+<p>percentage of the variation in the dependent variable that
+the PLS model should explain. This is used as a threshold in finding the
+appropriate number of components in the PLS regression procedure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncomp.fix</code></td>
+<td>
+<p>fixed number of components for the PLS model. Defaults to
+NULL, so that the number is automatically determined, but is can also be set
+by the user.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use_Tmean</code></td>
+<td>
+<p>boolean variable indicating whether or not the column Tmean
+from the weather_data_frame should be used as input for the PLS analysis. If
+this is set to FALSE, Tmean is calculated as the arithmetic mean of Tmin and
+Tmax.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return.all</code></td>
+<td>
+<p>boolean variable indicating whether or not the full set of
+PLS results should be output from the function. If this is set to TRUE, the
+function output is a list with two elements: PLS_summary and PLS_output; if
+it is set to FALSE, only the PLS_summary is returned.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>crossvalidate</code></td>
+<td>
+<p>character variable indicating what kind of validation
+should be performed by the PLS procedure. This defaults to "none", but the
+plsr function (of the pls package) also takes "CV" and "LOO" as inputs. See
+the documentation for the plsr function for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>end_at_pheno_end</code></td>
+<td>
+<p>boolean variable indicating whether the analysis
+should disregard temperatures after the last date included in the
+bio_data_frame dataset. If set to TRUE, only temperatures up this date are
+considered. Phenology data is extracted from the PLS output files. If this
+parameter is assigned a numeric value, only data up to the Julian date
+specified by this number are considered.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>PLS regression is useful for exploring the relationship between daily
+temperature data and biological phenomena that only occur once per year. The
+statistical challenge is that a normally quite small number of observations
+must be related to variation in a much larger number (365) of daily
+temperatures, which are also highly autocorrelated. Most regression
+approaches are not suitable for this, but PLS regression offers a potential
+solution. The method is frequently used in chemometrics and hyperspectral
+remote sensing, where similar statistical challenges are encountered. The
+basic mechanism is that PLS first constructs latent factors (similar to
+principal components) from the independent data (temperatures) and then uses
+these components for the regression. The contribution of each individual
+variable to the PLS model is then evaluated with two main metrics: the
+Variable Importance in the Projection statistic (VIP) indicates how much
+variation in a given independent variable is correlated with variation in
+the dependent variable. A threshold of 0.8 is often used for determining
+importance. The standardized model coefficients of the PLS model then give
+an indication of the direction and strength of the effect, e.g. if
+coefficients are positive and high, high values for the respective
+independent variable are correlated with high values of the dependent
+variable (e.g. late occurrence of a phenological stage). This procedure was
+inspired by the challenge of explaining variation in bloom and leaf
+emergence dates of temperate fruit trees in Mediterranean climates. These
+are generally understood to result from (more of less) sequential
+fulfillment of a chilling and a forcing requirement. During the chilling
+phase, cool temperatures are needed; during the forcing phase, trees need
+heat. There is no easily visible change in tree buds that would indicate the
+transition between these two phases, making it difficult to develop a good
+model of these processes. Where long-term phenology data are available and
+can be couple with daily temperature records, PLS regression allows
+detection of the chilling/forcing transition. This procedure has not often
+been applied to biological phenomena at the time of writing this, and there
+may be constraints to how generally applicable it is. Yet is has passed the
+test of scientific peer review a few times, and it has produced plausible
+results in a number of settings. This package draws heavily from the pls
+package. It also incorporates very helpful comments from Sabine Guesewell of
+ETH Zurich (Switzerland), who pointed out some errors in the PLS procedure
+and made suggestions for improvement.
+</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object_type</code></td>
+<td>
+<p> the character string "PLS_Temp_pheno". This is
+only needed for choosing the correct method for the plot_PLS function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pheno</code></td>
+<td>
+<p> a data frame containing the phenology data used for the PLS
+regression, with columns Year and pheno.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PLS_summary</code></td>
+<td>
+<p> a data frame
+containing all important outputs of the PLS regression. Columns are Date (in
+MMDD format), JDay (Julian date, or day of the year), Coefficient (the PLS
+model coefficient for each daily temperature variable), and VIP (the
+Variable Importance in the Projection score). The columns Tmean and Tstdev
+contain the means and standard deviations of temperature for each day of the
+year.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PLS_output</code></td>
+<td>
+<p> this is the complete output of the plsr function
+of the pls package. See the documentation for that package for further
+details.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Eike Luedeling, with contributions from Sabine Guesewell
+</p>
+
+
+<h3>References</h3>
+
+<p>The method is described here:
+</p>
+<p>Luedeling E and Gassner A, 2012. Partial Least Squares Regression for
+analyzing walnut phenology in California. Agricultural and Forest
+Meteorology 158, 43-52.
+</p>
+<p>Wold S (1995) PLS for multivariate linear modeling. In: van der Waterbeemd H
+(ed) Chemometric methods in molecular design: methods and principles in
+medicinal chemistry, vol 2. Chemie, Weinheim, pp 195-218.
+</p>
+<p>Wold S, Sjostrom M, Eriksson L (2001) PLS-regression: a basic tool of
+chemometrics. Chemometr Intell Lab 58(2), 109-130.
+</p>
+<p>Mevik B-H, Wehrens R, Liland KH (2011) PLS: Partial Least Squares and
+Principal Component Regression. R package version 2.3-0.
+http://CRAN.R-project.org/package0pls.
+</p>
+<p>Some applications:
+</p>
+<p>Luedeling E, Kunz A and Blanke M, 2013. Identification of chilling and heat
+requirements of cherry trees - a statistical approach. International Journal
+of Biometeorology 57,679-689.
+</p>
+<p>Yu H, Luedeling E and Xu J, 2010. Stronger winter than spring warming delays
+spring phenology on the Tibetan Plateau. Proceedings of the National Academy
+of Sciences (PNAS) 107 (51), 22151-22156.
+</p>
+<p>Yu H, Xu J, Okuto E and Luedeling E, 2012. Seasonal Response of Grasslands
+to Climate Change on the Tibetan Plateau. PLoS ONE 7(11), e49230.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+PLS_results&lt;-PLS_pheno(
+  weather_data=KA_weather,
+  split_month=6,   #last month in same year
+  bio_data=KA_bloom)
+  
+PLS_results_path&lt;-paste(getwd(),"/PLS_output",sep="")
+  
+# plot_PLS(PLS_results,PLS_results_path)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,158 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>bCond.treeCKT</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Construct a binary tree for the modeling the conditional Kendall's tau</h2>
+
+<h3>Description</h3>
+
+<p>This function takes in parameter two matrices of observations:
+the first one contains the observations of <code>XI</code> (the conditioned variables)
+and the second on contains the observations of <code>XJ</code> (the conditioning variables).
+The goal of this procedure is to find which of the variables in <code>XJ</code>
+have important influence on the dependence between the components of <code>XI</code>,
+(measured by the Kendall's tau).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">bCond.treeCKT(
+  XI,
+  XJ,
+  minCut = 0,
+  minProb = 0.01,
+  minSize = minProb * nrow(XI),
+  nPoints_xJ = 10,
+  type.quantile = 7,
+  verbose = 2
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>XI</code></td>
+<td>
+<p>matrix of size n*p of observations of the conditioned variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>XJ</code></td>
+<td>
+<p>matrix of size n*(d-p) containing observations of the conditioning vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minCut</code></td>
+<td>
+<p>minimum difference in probabilities that is necessary to cut.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minProb</code></td>
+<td>
+<p>minimum probability of being in one of the node.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minSize</code></td>
+<td>
+<p>minimum number of observations in each node.
+This is an alternative to minProb and has priority over it.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nPoints_xJ</code></td>
+<td>
+<p>number of points in the grid that are considered
+when choosing the point for splitting the tree.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type.quantile</code></td>
+<td>
+<p>way of computing the quantiles,
+see <code>stats::quantile()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>control the text output of the procedure.
+If <code>verbose = 0</code>, suppress all output.
+If <code>verbose = 2</code>, the progress of the computation
+is printed during the computation.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The object return by this function is a binary tree. Each leaf of this tree
+correspond to one event (or, equivalently, one subset of <code class="reqn">R^{dim(XJ)}</code>),
+and the conditional Kendall's tau conditionally to it.
+</p>
+
+
+<h3>Value</h3>
+
+<p>the estimated tree using the data 'XI, XJ'.
+</p>
+
+
+<h3>References</h3>
+
+<p>Derumigny, A., Fermanian, J. D., &amp; Min, A. (2022).
+Testing for equality between conditional copulas
+given discretized conditioning events.
+Canadian Journal of Statistics.
+<a href="https://doi.org/10.1002/cjs.11742">doi:10.1002/cjs.11742</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>bCond.simpA.CKT</code> for a test of the simplifying assumption
+that all these conditional Kendall's tau are equal.
+</p>
+<p><code>treeCKT2matrixInd</code> for converting this tree to a matrix of indicators
+of each event. <code>matrixInd2matrixCKT</code> for getting the matrix of estimated
+conditional Kendall's taus for each event.
+</p>
+<p><code>CKT.estimate</code> for the estimation of
+pointwise conditional Kendall's tau,
+i.e. assuming a continuous conditioning variable <code class="reqn">Z</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(1)
+n = 400
+XJ = MASS::mvrnorm(n = n, mu = c(3,3), Sigma = rbind(c(1, 0.2), c(0.2, 1)))
+XI = matrix(nrow = n, ncol = 2)
+high_XJ1 = which(XJ[,1] &gt; 4)
+XI[high_XJ1, ]  = MASS::mvrnorm(n = length(high_XJ1), mu = c(10,10),
+                                Sigma = rbind(c(1, 0.8), c(0.8, 1)))
+XI[-high_XJ1, ] = MASS::mvrnorm(n = n - length(high_XJ1), mu = c(8,8),
+                                Sigma = rbind(c(1, -0.2), c(-0.2, 1)))
+
+result = bCond.treeCKT(XI = XI, XJ = XJ, minSize = 50, verbose = 2)
+# Plotting the corresponding tree using the "DiagrammeR" package
+if (requireNamespace("DiagrammeR", quietly = TRUE)){
+  plot(result)
+}
+
+# Number of observations in the first two children
+print(length(data.tree::GetAttribute(result$children[[1]], "condObs")))
+print(length(data.tree::GetAttribute(result$children[[2]], "condObs")))
+
+
+</code></pre>
+
+
+</div>

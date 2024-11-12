@@ -1,0 +1,146 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Select with shortcuts</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Confidence limits for the number of true hypotheses, with shortcuts.</h2>
+
+<h3>Description</h3>
+
+<p>Calculates confidence limits for the number of true hypotheses on the basis of the closed testing procedure using specific local tests that allow shortcuts.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">pickFisher (p, select = seq_along(p), alpha=0.05, silent=FALSE)
+
+curveFisher (p, select = seq_along(p), order, alpha=0.05, plot = TRUE)
+
+pickSimes (hommel, select, alpha=0.05, silent=FALSE)
+
+curveSimes (hommel, select, order, alpha=0.05, plot = TRUE)
+
+pickMeinshausen (p, PM, select = seq_along(p), alpha=0.05, silent=FALSE)
+
+curveMeinshausen (p, PM, select = seq_along(p), order, alpha=0.05, plot = TRUE) 
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p>The vector of p-values for all tested hypotheses.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hommel</code></td>
+<td>
+<p>The hommel object, obtained from the hommelFast function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PM</code></td>
+<td>
+<p>A matrix of permutation p-values. Rows are hypotheses; columns are permutations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>select</code></td>
+<td>
+<p>The indexing vector of the p-values of the hypotheses to be selected. May be any type of appropriate indexing vector (integers, logical, or character).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>order</code></td>
+<td>
+<p>The indexing vector specifying the order in which p-values of the hypotheses are to be rejected. May be integer or character.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>The significance level of the test procedure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>silent</code></td>
+<td>
+<p>If <code>FALSE</code>, prints verbose result to the screen.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot</code></td>
+<td>
+<p>If <code>TRUE</code>, plots the curve of correct rejections versus total rejections.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The results of the <code>pickFisher</code>, <code>pickSimes</code> and <code>pickMeinshausen</code> functions are identical to applying <code>closed</code> and <code>pick</code>, for specific choices of the local test, but are computationally more efficient. <code>pickFisher</code> uses local tests based on Fisher combinations. This local test is only valid if p-values of true hypotheses are independent. <code>pickSimes</code> uses a local test based on Simes' inequality. It is valid if p-values of true hypotheses are independent but also under some forms of positive correlations. The Hommel variant of the Simes local test is valid under any dependence structure of the p-values. <code>pickMeinshausen</code> is a permutation-based variant of <code>pickSimes</code>. See the reference below.
+</p>
+<p>In the curve functions, the user may specify either <code>select</code> or <code>order</code>. Specifying <code>order</code> fixes the precise order in which hypotheses are selected, whereas specifying <code>select</code> only specifies which hypotheses are candidates for selection, leaving the order to be chosen by the function to maximize the number of correct rejections.</p>
+
+
+<h3>Value</h3>
+
+<p>For <code>pickFisher</code>, <code>pickSimes</code> and <code>pickMeinshausen</code>, the function returns the lower confidence limit for the number of false hypotheses (correct rejection) among the set <code>reject</code>. The upper confidence limit is always equal to the number of rejections made. <code>curveFisher</code> and <code>curveSimes</code> return the same confidence limit, but for selecting only the first 1,2,3,... hypotheses from the selected set.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jelle Goeman: <a href="mailto:j.j.goeman@lumc.nl">j.j.goeman@lumc.nl</a>; Aldo Solari</p>
+
+
+<h3>References</h3>
+
+<p>Goeman and Solari (2011) Statistical Science 26 (4) 584-597.
+</p>
+<p>Meinshausen (2006) Scandinavian Journal of Statistics 33 (2), 227-237.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">  # Fisher's method
+  data(NAEP)
+  pickFisher(NAEP, c("NH", "NC", "IA"))
+  pickFisher(NAEP, 1:7)
+  curveFisher(NAEP)
+  curveFisher(NAEP, order=7:1)
+
+
+  # Simes method
+  hom &lt;- hommelFast(NAEP)
+  pickSimes(hom, c("NH", "NC", "IA"))
+  pickSimes(hom, 1:7)
+  curveSimes(hom)
+  curveSimes(hom, select=1:7)
+  
+  # Meinshausen's method
+  # This example uses data from the multtest package on bioconductor
+  if(require("multtest")) {
+    data(golub)
+    smallglb &lt;- golub[1:500,]
+    TM&lt;-sapply(1:nrow(smallglb), function(i) {
+      mt.sample.teststat(smallglb[i,], golub.cl,test="t.equalvar",B=500)
+    })
+    PM&lt;-2*(1-pt(abs(TM),df=length(golub.cl)-2)) # permutation matrix
+    
+    # p-values
+    p&lt;-apply(smallglb,1, function(z) t.test(z[golub.cl==0],z[golub.cl==1],var.equal=TRUE)$p.value) 
+    
+    pickMeinshausen(p, PM, select=1:100)
+    pickMeinshausen(p, PM, select=sort.list(p)[1:100])
+    curveMeinshausen(p,PM, select=1:200)
+    curveMeinshausen(p,PM, order=1:200)
+    
+  }
+</code></pre>
+
+
+</div>

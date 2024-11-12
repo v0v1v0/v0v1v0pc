@@ -1,0 +1,153 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>score</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute (weighted) comorbidity scores</h2>
+
+<h3>Description</h3>
+
+<p>Compute (weighted) comorbidity scores
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">score(x, weights = NULL, assign0)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>An object of class <code>comorbidty</code> returned by a call to the <code>comorbidity()</code> function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>A string denoting the weighting system to be used, which will depend on the mapping algorithm.
+</p>
+<p>Possible values for the Charlson index are:
+</p>
+
+<ul>
+<li> <p><code>charlson</code>, for the original weights by Charlson et al. (1987);
+</p>
+</li>
+<li> <p><code>quan</code>, for the revised weights by Quan et al. (2011).
+</p>
+</li>
+</ul>
+<p>Possible values for the Elixhauser score are:
+</p>
+
+<ul>
+<li> <p><code>vw</code>, for the weights by van Walraven et al. (2009);
+</p>
+</li>
+<li> <p><code>swiss</code>, for the Swiss Elixhauser weights by Sharma et al. (2021).
+</p>
+</li>
+</ul>
+<p>Defaults to <code>NULL</code>, in which case an unweighted score will be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>assign0</code></td>
+<td>
+<p>A logical value denoting whether to apply a hierarchy of comorbidities: should a comorbidity be present in a patient with different degrees of severity, then the milder form will be assigned a value of 0 when calculating the score.
+By doing this, a type of comorbidity is not counted more than once in each patient.
+If <code>assign0 = TRUE</code>, the comorbidities that are affected by this argument are:
+</p>
+
+<ul>
+<li>
+<p> "Mild liver disease" (<code>mld</code>) and "Moderate/severe liver disease" (<code>msld</code>) for the Charlson score;
+</p>
+</li>
+<li>
+<p> "Diabetes" (<code>diab</code>) and "Diabetes with complications" (<code>diabwc</code>) for the Charlson score;
+</p>
+</li>
+<li>
+<p> "Cancer" (<code>canc</code>) and "Metastatic solid tumour" (<code>metacanc</code>) for the Charlson score;
+</p>
+</li>
+<li>
+<p> "Hypertension, uncomplicated" (<code>hypunc</code>) and "Hypertension, complicated" (<code>hypc</code>) for the Elixhauser score;
+</p>
+</li>
+<li>
+<p> "Diabetes, uncomplicated" (<code>diabunc</code>) and "Diabetes, complicated" (<code>diabc</code>) for the Elixhauser score;
+</p>
+</li>
+<li>
+<p> "Solid tumour" (<code>solidtum</code>) and "Metastatic cancer" (<code>metacanc</code>) for the Elixhauser score.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A numeric vector with the (possibly weighted) comorbidity score for each subject from the input dataset.
+</p>
+
+
+<h3>References</h3>
+
+<p>Charlson ME, Pompei P, Ales KL, et al. <em>A new method of classifying prognostic comorbidity in longitudinal studies: development and validation</em>. Journal of Chronic Diseases 1987; 40:373-383.
+</p>
+<p>Quan H, Li B, Couris CM, et al. <em>Updating and validating the Charlson Comorbidity Index and Score for risk adjustment in hospital discharge abstracts using data from 6 countries</em>. American Journal of Epidemiology 2011; 173(6):676-682.
+</p>
+<p>van Walraven C, Austin PC, Jennings A, Quan H and Forster AJ. <em>A modification of the Elixhauser comorbidity measures into a point system for hospital death using administrative data</em>. Medical Care 2009; 47(6):626-633.
+</p>
+<p>Sharma N, Schwendimann R, Endrich O, et al. <em>Comparing Charlson and Elixhauser comorbidity indices with different weightings to predict in-hospital mortality: an analysis of national inpatient data</em>. BMC Health Services Research 2021; 21(13).
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(1)
+x &lt;- data.frame(
+  id = sample(1:15, size = 200, replace = TRUE),
+  code = sample_diag(200),
+  stringsAsFactors = FALSE
+)
+
+# Charlson score based on ICD-10 diagnostic codes:
+x1 &lt;- comorbidity(x = x, id = "id", code = "code", map = "charlson_icd10_quan", assign0 = FALSE)
+score(x = x1, weights = "charlson", assign0 = FALSE)
+
+# Elixhauser score based on ICD-10 diagnostic codes:
+x2 &lt;- comorbidity(x = x, id = "id", code = "code", map = "elixhauser_icd10_quan", assign0 = FALSE)
+score(x = x2, weights = "vw", assign0 = FALSE)
+
+# Checking the `assign0` argument.
+# Please make sure to check the example in the documentation of the
+# `comorbidity()` function first, with ?comorbidity().
+# We use the same dataset for a single subject with two codes, for
+# complicated and uncomplicated diabetes:
+x3 &lt;- data.frame(
+  id = 1,
+  code = c("E100", "E102"),
+  stringsAsFactors = FALSE
+)
+# Then, we calculate the Quan-ICD10 Charlson score:
+ccF &lt;- comorbidity(x = x3, id = "id", code = "code", map = "charlson_icd10_quan", assign0 = FALSE)
+ccF[, c("diab", "diabwc")]
+# If we calculate the unweighted score with `assign0 = FALSE`, both diabetes
+# conditions are counted:
+score(x = ccF, assign0 = FALSE)
+# Conversely, with `assign0 = TRUE`, only the most severe is considered:
+score(x = ccF, assign0 = TRUE)
+</code></pre>
+
+
+</div>

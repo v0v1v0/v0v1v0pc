@@ -1,0 +1,131 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>MH</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Very basic implementation of the Metropolis-Hastings algorithm</h2>
+
+<h3>Description</h3>
+
+<p>Very basic implementation of the Metropolis-Hastings algorithm using a
+multivariate Gaussian proposal distribution.   Useful for sampling
+from <code>p.eqn8.supp()</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">MH(n, start, sigma, pi)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>Number of samples to take</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start</code></td>
+<td>
+<p>Start value</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sigma</code></td>
+<td>
+<p>Variance matrix for kernel</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pi</code></td>
+<td>
+<p>Functional proportional to the desired sampling pdf</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This is a <strong>basic</strong> implementation.  The proposal
+distribution~<code class="reqn">q(X|Y)</code> is
+<code class="reqn">q(\cdot|X)=N(X,\sigma^2)</code>
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a matrix whose rows are samples from <code class="reqn">\pi()</code>.  Note
+that the first few rows will be “burn-in”, so should be
+ignored
+</p>
+
+
+<h3>Note</h3>
+
+<p>This function is a little slow because it is not vectorized.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Robin K. S. Hankin</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li>
+<p> W. R. Gilks et al 1996. <em>Markov Chain Monte Carlo in
+practice</em>.  Chapman and Hall, 1996.    ISBN 0-412-05551-1
+</p>
+</li>
+<li>
+<p> N. Metropolis and others 1953. <em>Equation of state
+calculations by fast computing machines</em>.  The Journal of Chemical
+Physics, volume 21, number 6, pages 1087-1092
+</p>
+</li>
+</ul>
+<h3>See Also</h3>
+
+<p><code>p.eqn8.supp</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># First, a bivariate Gaussian:
+A &lt;- diag(3) + 0.7
+quad.form &lt;- function(M,x){drop(crossprod(crossprod(M,x),x))}
+pi.gaussian &lt;- function(x){exp(-quad.form(A/2,x))}
+x.gauss &lt;- MH(n=1000, start=c(0,0,0),sigma=diag(3),pi=pi.gaussian)
+cov(x.gauss)/solve(A) # Should be a matrix of 1s.
+
+
+# Now something a bit weirder:
+pi.triangle &lt;- function(x){
+  1*as.numeric( (abs(x[1])&lt;1.0) &amp; (abs(x[2])&lt;1.0) ) +
+  5*as.numeric( (abs(x[1])&lt;0.5) &amp; (abs(x[2])&lt;0.5) ) *
+    as.numeric(x[1]&gt;x[2])
+}
+x.tri &lt;- MH(n=100,start=c(0,0),sigma=diag(2),pi=pi.triangle)
+plot(x.tri,main="Try with a higher n")
+
+
+# Now a Gaussian mixture model:
+pi.2gauss &lt;- function(x){
+  exp(-quad.form(A/2,x)) +
+  exp(-quad.form(A/2,x+c(2,2,2)))
+}
+x.2 &lt;- MH(n=100,start=c(0,0,0),sigma=diag(3),pi=pi.2gauss)
+## Not run: p3d(x.2, theta=44,d=1e4,d0=1,main="Try with more points")
+
+
+</code></pre>
+
+
+</div>

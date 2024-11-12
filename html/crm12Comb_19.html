@@ -1,0 +1,411 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>SIM_phase_I_II</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Single simulation of phase I/II adaptive design for drug combinations based on CRM design
+</h2>
+
+<h3>Description</h3>
+
+<p>This function is to realize the simulations of whole process of combined phase I and phase II design for drug combinations with early stopping rules and flexible user-defined model or prior distribution, returning operating characters for performace evaluations and comparisons.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">SIM_phase_I_II(nsim, Nmax, DoseComb, input_doseComb_forMat, 
+               input_type_forMat, input_Nphase,
+               input_DLT_skeleton, input_efficacy_skeleton,
+               input_DLT_thresh=0.3, input_efficacy_thresh=0.3,
+               input_M_prob=NULL, input_K_prob=NULL,
+               input_cohortsize=1, input_corr=0,
+               input_early_stopping_safety_thresh=0.33,
+               input_early_stopping_futility_thresh=0.2,
+               input_model="empiric", input_para_prior="normal",
+               input_beta_mean=0, input_beta_sd=1,
+               input_intcpt_lgst1=3,
+               input_beta_shape=1, input_beta_inverse_scale=1,
+               input_theta_mean=0, input_theta_sd=1,
+               input_theta_intcpt_lgst1=3,
+               input_theta_shape=1, input_theta_inverse_scale=1,
+               input_alpha_mean=3, input_alpha_sd=1,
+               input_alpha_shape=1, input_alpha_inverse_scale=1,
+               input_alphaT_mean=3, input_alphaT_sd=1,
+               input_alphaT_shape=1, input_alphaT_inverse_scale=1,
+               random_seed=42)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>nsim</code></td>
+<td>
+<p>Number of simulation trials.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Nmax</code></td>
+<td>
+<p>Number of maximum enrolled patients for each trial.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>DoseComb</code></td>
+<td>
+<p>A matrix with rows of length equaling number of dose combinations and columns of length equaling number of drugs for pre-defined true toxicity and true efficacy probabilities corresponding to each dose combinations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_doseComb_forMat</code></td>
+<td>
+<p>For 2 drugs, either a matrix with columns for all combinations and rows for two drugs when input_type_forMat is "comb", or a vector of length 2 indicating the number of levels of each drug when input_type_forMat is "matrix" should be input. For more than 2 drugs, a list of all possible orderings should be input when input_type_forMat is "self".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_type_forMat</code></td>
+<td>
+<p>A character string to indicate the input type of dose combinations. The type_forMat is either "comb" for inputting all tested dose combinations for 2 drugs, "matrix" for entering number of levels of two drugs so that a matrix of combinations can be constructed, or "self" for more than 3 drugs with directly input of all possible orderings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_Nphase</code></td>
+<td>
+<p>Number of patients for determination of randomization phase (current number of patients less than Nphase) or maximization phase (current number of patients larger than or equal to Nphase).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_DLT_skeleton</code></td>
+<td>
+<p>A vector with same length of dose combinations for toxicity skeleton for each dose combination.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_efficacy_skeleton</code></td>
+<td>
+<p>A vector with same length of dose combinations for efficacy skeleton for each dose combination.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_DLT_thresh</code></td>
+<td>
+<p>DLT threshold to define acceptable set.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_efficacy_thresh</code></td>
+<td>
+<p>Efficacy threshold to define target combinations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_M_prob</code></td>
+<td>
+<p>A vector with same length of possible toxicity orderings denoting prior probabilities of toxicity orderings (sum is 1).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_K_prob</code></td>
+<td>
+<p>A vector with same length of possible efficacy orderings denoting prior probabilities of efficacy orderings (sum is 1).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_cohortsize</code></td>
+<td>
+<p>Number of patients in each cohort.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_corr</code></td>
+<td>
+<p>Association parameter for efficacy and toxicity, where 0 means toxicity and efficacy is independent.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_early_stopping_safety_thresh</code></td>
+<td>
+<p>Safety threshold for early stopping condition.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_early_stopping_futility_thresh</code></td>
+<td>
+<p>Futility threshold for early stopping condition.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_model</code></td>
+<td>
+<p>A character string to specify the model used, must be one of "empiric", "tanh", "logistic" or "logistic2".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_para_prior</code></td>
+<td>
+<p>A character string to specify the prior distribution used for parameters, must be one of "normal" or "gamma" (when input_model is either "empiric" or "logistic" or "logistic2") or "exponential" (when input_model is "tanh").</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_beta_mean</code></td>
+<td>
+<p>The mean of parameter used when input_para_prior="exponential" or "normal", otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_beta_sd</code></td>
+<td>
+<p>The standard deviation of parameter used when input_para_prior="normal", otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_intcpt_lgst1</code></td>
+<td>
+<p>A constant value of intercept from a one-parameter logistic model only used when input_model="logistic" (suggested value is 3), otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_beta_shape</code></td>
+<td>
+<p>The shape parameter used when input_para_prior="gamma", otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_beta_inverse_scale</code></td>
+<td>
+<p>The scale parameter used when input_para_prior="gamma", otherwise will be ignoredL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_theta_mean</code></td>
+<td>
+<p>The mean of parameter used when input_para_prior="exponential" or "normal", otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_theta_sd</code></td>
+<td>
+<p>The standard deviation of parameter used when input_para_prior="normal", otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_theta_intcpt_lgst1</code></td>
+<td>
+<p>A constant value of intercept from a one-parameter logistic model only used when input_model="logistic" (default value is 3), otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_theta_shape</code></td>
+<td>
+<p>The shape parameter used when input_para_prior="gamma", otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_theta_inverse_scale</code></td>
+<td>
+<p>The scale parameter used when input_para_prior="gamma", otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_alpha_mean</code></td>
+<td>
+<p>The mean of intercept parameter of two-parameter logistic model only used when model="logistic2" and input_para_prior="normal", otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_alpha_sd</code></td>
+<td>
+<p>The standard deviation of intercept parameter of two-parameter logistic model only used when input_model="logistic2" and input_para_prior="normal", otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_alpha_shape</code></td>
+<td>
+<p>The shape parameter of intercept parameter from a two-parameter logistic model only used when input_model="logistic2" and input_para_prior="gamma", otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_alpha_inverse_scale</code></td>
+<td>
+<p>The scale parameter of intercept parameter from a two-parameter logistic model only used when input_model="logistic2" and input_para_prior="gamma", otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_alphaT_mean</code></td>
+<td>
+<p>The mean of intercept parameter of two-parameter logistic model only used when model="logistic2" and input_para_prior="normal", otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_alphaT_sd</code></td>
+<td>
+<p>The standard deviation of intercept parameter of two-parameter logistic model only used when input_model="logistic2" and input_para_prior="normal", otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_alphaT_shape</code></td>
+<td>
+<p>The shape parameter of intercept parameter from a two-parameter logistic model only used when input_model="logistic2" and input_para_prior="gamma", otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input_alphaT_inverse_scale</code></td>
+<td>
+<p>The scale parameter of intercept parameter from a two-parameter logistic model only used when input_model="logistic2" and input_para_prior="gamma", otherwise will be ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>random_seed</code></td>
+<td>
+<p>An integer for the start seed to generate random numbers, default is 42.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function is to realize the whole process of combined phase I and phase II adaptive design for drug combinations based on CRM amonng number of simulation trials. For each trial, basic steps include starting the trial for first patient or cohor of patients allocation, toxicity and efficacy estimations by current data, adaptive randomization or maximization phase for next patient or cohort of patients allocation, updating current data of patients enrollment, determining early stoppings for safety or fuility, and selecting optimal dose combination (ODC) after reaching maximum sample size or stopping early.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of operating characteristics is returned containing the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>prob_safe</code></td>
+<td>
+<p>Probability of simulation trials with ODC identified as safe/ineffective combinations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prob_target</code></td>
+<td>
+<p>Probability of simulation trials with ODC identified as target combinations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prob_toxic</code></td>
+<td>
+<p>Probability of simulation trials with ODC identified as toxic combinations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mean_SS</code></td>
+<td>
+<p>Average number of patients enrolled.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mean_ODC</code></td>
+<td>
+<p>Average proportion of patients allocated to target ODS(s).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prob_stop_safety</code></td>
+<td>
+<p>Probability of simulation trials stopping early for safety.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prob_stop_futility</code></td>
+<td>
+<p>Probability of simulation trials stopping early for futility.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mean_DLT</code></td>
+<td>
+<p>Average observed DLT rate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mean_ORR</code></td>
+<td>
+<p>Average observed response rate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Npatient</code></td>
+<td>
+<p>A vector of number of patients enrolled for all simulation trials.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ODC</code></td>
+<td>
+<p>A vector of ODC for all simulation trials.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prop_ODC</code></td>
+<td>
+<p>A list of vectors storing dose levels for each patients allocation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>datALL</code></td>
+<td>
+<p>A list of data frames storing data of (doselevel, toxicity, efficacy) for each patient.</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Wages, N. A., &amp; Conaway, M. R. (2014). Phase I/II adaptive design for drug combination oncology trials. Statistics in medicine, 33(12), 1990-2003. <a href="https://doi.org/10.1002/sim.6097">doi:10.1002/sim.6097</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>priorSkeletons</code>, <code>get_ordering</code>, <code>toxicity_est</code>, <code>efficacy_est</code>, <code>rBin2Corr</code>, <code>binom.test</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># input the scenario with pre-defined true toxicity and efficacy probabilities
+scenario &lt;- matrix(c(0.02, 0.05,
+                     0.04, 0.10,
+                     0.08, 0.15,
+                     0.12, 0.32,
+                     0.06, 0.10,
+                     0.10, 0.15,
+                     0.14, 0.25,
+                     0.20, 0.35,
+                     0.12, 0.18,
+                     0.16, 0.22,
+                     0.22, 0.35,
+                     0.25, 0.40,
+                     0.20, 0.24,
+                     0.24, 0.35,
+                     0.35, 0.45,
+                     0.40, 0.50), ncol=2, byrow = TRUE)
+
+# generate skeletons
+DLT_skeleton &lt;- priorSkeletons(updelta=0.025, target=0.3, npos=10, ndose=16, 
+                               model = "empiric", prior = "normal", beta_mean=0)
+Efficacy_skeleton &lt;- priorSkeletons(updelta=0.025, target=0.5, npos=10, ndose=16, 
+                                    model = "empiric", prior = "normal", beta_mean=0)
+
+# simulate 1 trial under the same model and prior distribution
+simRes &lt;- SIM_phase_I_II(nsim=1, Nmax=40, DoseComb=scenario, input_doseComb_forMat=c(4,4), 
+                         input_type_forMat="matrix", input_Nphase=20,
+                         input_DLT_skeleton=DLT_skeleton, 
+                         input_efficacy_skeleton=Efficacy_skeleton,
+                         input_DLT_thresh=0.3, input_efficacy_thresh=0.3,
+                         input_cohortsize=1, input_corr=0,
+                         input_early_stopping_safety_thresh=0.33,
+                         input_early_stopping_futility_thresh=0.2,
+                         input_model="empiric", input_para_prior="normal",
+                         input_beta_mean=0, input_beta_sd=1,
+                         input_theta_mean=0, input_theta_sd=1)
+</code></pre>
+
+
+</div>

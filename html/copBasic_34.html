@@ -1,0 +1,146 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>diagCOPatf</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Numerical Rooting the Diagonal of a Copula</h2>
+
+<h3>Description</h3>
+
+<p>Compute a numerical root along the <em>primary diagonal</em> (Nelsen, 2006, pp. 12 and 16) of copula <code class="reqn">\mathbf{C}(u,v) = F = \mathbf{C}(t,t)</code> having joint probability <code class="reqn">F</code>. The diagonals treat the nonexceedance probabilities <code class="reqn">u</code> and <code class="reqn">v</code> as equals (<code class="reqn">u=v=t</code>). The primary diagonal is defined for a joint nonexceedance probability <code class="reqn">t</code> as
+</p>
+<p style="text-align: center;"><code class="reqn">F = \mathbf{C}(t,t) \rightarrow t = \delta_{\mathbf{C}}^{(-1)}(f)\mbox{,}</code>
+</p>
+
+<p>where the function solves for <code class="reqn">t</code>. Examples using the concept behind <code>diagCOPatf</code> are available under <code>duCOP</code> and <code>jointCOP</code>, thus the <code>diagCOPatf</code> function can be also called by either <code>jointCOP</code> and <code>joint.curvesCOP</code>. Internally, the function uses limits of the root finder that are not equal to the anticipated interval <code class="reqn">[0,1]</code>, but equal to “small” (see description for argument <code>interval</code>). The function does trap for <code>f = 0</code> by returning zero and <code>f = 1</code> by returning unity.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">diagCOPatf(f, cop=NULL, para=NULL, interval=NULL, silent=TRUE, verbose=FALSE,
+                                   tol=.Machine$double.eps/10, ...)
+diagCOPinv(f, cop=NULL, para=NULL, interval=NULL, silent=TRUE, verbose=FALSE,
+                                   tol=.Machine$double.eps/10, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+<p>Joint probability values as a nonexceedance probability <code class="reqn">F</code> for which to compute the root <code class="reqn">t</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cop</code></td>
+<td>
+<p>A copula function;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>Vector of parameters, if needed, to pass to the copula;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interval</code></td>
+<td>
+<p>An optional interval for the root search. The default is <code>interval=</code><code>c(lo, 1-lo)</code> for <code>lo=.Machine$double.eps</code> because of difficulties for an interval on <code class="reqn">[0,1]</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>silent</code></td>
+<td>
+<p>The argument of the same name given over to <code>try()</code> wrapping the <code>uniroot()</code> operation;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>If <code>TRUE</code> then the whole output of the numerical root is returned using only the first value provided by argument <code>f</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol</code></td>
+<td>
+<p>The <code>tol</code>erance to pass to <code>uniroot</code>. The default here is much smaller than the default of the <code>uniroot()</code> function in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> because of possibility that <code>diagCOPatf</code> would be used at extremely large nonexceedance probabilities; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> <code>list</code> of the root by the <code>uniroot()</code> function in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> is returned if <code>verbose</code> is <code>TRUE</code>, otherwise the roots (diagonal inverses) for <code class="reqn">t</code> are returned, and if an individual inverse operation fails, then a <code>NA</code> is returned instead.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Nelsen, R.B., 2006, An introduction to copulas: New York, Springer, 269 p.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>diagCOP</code>, <code>jointCOP</code>, <code>joint.curvesCOP</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">diagCOPatf(0.67, cop=PSP) # 0.8023879
+diagCOPatf(0.99, cop=M)   # 0.99 (now see the example below)
+
+## Not run: 
+# Several functions from the lmomco package are needed.
+# Suppose we have two phenomena with these log10 L-moments:
+lmrA &lt;- lmomco::vec2lmom(c(3.97, 0.485, -0.1178, 0.06857))
+lmrB &lt;- lmomco::vec2lmom(c(3.77, 0.475, -0.1377, 0.08280))
+# Suppose we think that the Gumbel-Hougaard copula is appropriate with a Tau=0.45
+Tau &lt;- 0.45 #  Kendall Tau between A and B.
+# Suppose that the F=0.99 for either A and B provides a common risk level when they
+# are considered in isolation. But what if A and B are rivers that join and joint
+# FF=0.99 at their union is of interest?
+FF &lt;- 0.99
+parA   &lt;- lmomco::lmom2par(lmrA, type="kap")
+parB   &lt;- lmomco::lmom2par(lmrB, type="kap")
+EventA &lt;- lmomco::qlmomco(FF, parA)
+EventB &lt;- lmomco::qlmomco(FF, parB)
+ApB &lt;- 10^(EventA) + 10^(EventB) # Purely an additive conceptualization
+# The FF=0.99 event is assumed to occur simultaneously on both streams, which is
+# equivalent to saying that the correlation between the two is absolute 1-to-1.
+
+# Now consider including the association as measured by Kendall Tau:
+Fjoint  &lt;- diagCOPatf(FF, cop=GHcop, para=GHcop(tau=Tau)$para)
+EventAj &lt;- lmomco::qlmomco(Fjoint, parA)
+EventBj &lt;- lmomco::qlmomco(Fjoint, parB)
+AcB &lt;- 10^(EventAj) + 10^(EventBj) # Joint probability 0.99 at the union
+
+# Now consider the association if the rivers are INDEPENDENT:
+Fjoint  &lt;- diagCOPatf(FF, cop=GHcop, para=GHcop(tau=0)$para)
+EventAj &lt;- lmomco::qlmomco(Fjoint, parA)
+EventBj &lt;- lmomco::qlmomco(Fjoint, parB)
+AiB &lt;- 10^(EventAj) + 10^(EventBj) # Joint probability 0.99 at the union
+
+# ApB = 312,000 # The perfectly simultaneous addition makes too little.
+# AcB = 323,000 # The copula preserves at least the known association.
+# AiB = 330,000 # The independence conceptualization makes too much.
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,474 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cglasso</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Conditional Graphical Lasso Estimator</h2>
+
+<h3>Description</h3>
+
+<p>‘<code>cglasso</code>’ fits the conditional graphical lasso model to datasets with censored and/or missing values.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cglasso(formula, data, subset, contrasts = NULL, diagonal = FALSE,
+        weights.B = NULL, weights.Tht = NULL, nlambda, lambda.min.ratio,
+        lambda, nrho, rho.min.ratio, rho, maxit.em = 1.0E+4, thr.em = 1.0E-3,
+        maxit.bcd = 1.0E+5, thr.bcd = 1.0E-4, trace = 0L)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>an object of class ‘<code>formula</code>’ (or one that can be coerced to that class): a symbolic description of the model to be fitted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>an <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> object of S3 class ‘<code>datacggm</code>’, that is, the output of the function <code>datacggm</code>. See section ‘Description’ for more details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subset</code></td>
+<td>
+<p>an optional vector specifying a subset of observations to be used in the fitting process.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>contrasts</code></td>
+<td>
+<p>an optional list. See the <code>contrasts.arg</code> of <code>model.matrix.default</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>diagonal</code></td>
+<td>
+<p>logical. Should diagonal entries of the concentration matrix be penalized? Default is ‘<code>diagonal = FALSE</code>’.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights.B</code></td>
+<td>
+<p>an optional <code class="reqn">q\times p</code> dimensional matrix of non-negative weights used to penalize the regression coefficients (intercepts are unpenalized). This matrix can be also used to specify the unpenalized regression coefficients (‘<code>weights.B[i, j] = 0</code>’) or the structural zeros (‘<code>weights.B[i, j] = +Inf</code>’). By default, all weights are set equal to 1, meaning that the penalized regression coefficients are unweighted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights.Tht</code></td>
+<td>
+<p>an optional symmetric matrix of non-negative weights used to penalize the partial regression coefficients. This matrix can be used to specify the unpenalized partial correlation coefficients (‘<code>weights.Tht[i, j] = 0</code>’) or the structural zeros in the precision matrix (‘<code>weights.Tht[i, j] = +Inf</code>’). By default, the off-diagonal entries of the matrix ‘<code>weights.Tht</code>’  are set equal to 1, meaning that the partial correlation coefficients are unweighted, whereas the diagonal entries are equal to 0, that is the diagonal entries of the precision matrix are unpenalized.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nlambda</code></td>
+<td>
+<p>integer. The number of <code class="reqn">\lambda</code>-values used to penalize the regression coefficients. By default ‘<code>nlambda = 10</code>’.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.min.ratio</code></td>
+<td>
+<p>the smallest <code class="reqn">\lambda</code>-value is defined as a fraction of ‘<code>lambda.max</code>’ (i.e., the smallest <code class="reqn">\lambda</code>-value for which all the estimated regression coefficients are equal to zero). The default depends on the sample size ‘<code class="reqn">n</code>’ relative to the number of predictors ‘<code class="reqn">q</code>’. If ‘<code class="reqn">q &lt; n</code>’, default is ‘1.0E-6’ otherwise the value ‘1.0E-2’ is used as default. A very small value of ‘<code>lambda.min.ratio</code>’ will lead to a saturated fitted model in the ‘<code class="reqn">q &lt; n</code>’ case.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>an optional user-supplied decreasing sequence of <code class="reqn">\lambda</code>-values. By default <code>cglasso</code> computes a sequence of <code class="reqn">\lambda</code>-values using <code>nlambda</code> and <code>lambda.min.ratio</code>. If <code>lambda</code> is supplied then <code>nlambda</code> and <code>lambda.min.ratio</code> are overwritten. WARNING: use with care and avoid supplying a single <code class="reqn">\lambda</code>-value; supply instead a decreasing sequence.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nrho</code></td>
+<td>
+<p>integer. The number of <code class="reqn">\rho</code>-values used to penalize the partial correlation coefficients. By default ‘<code>nrho = 10</code>’.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rho.min.ratio</code></td>
+<td>
+<p>the smallest <code class="reqn">\rho</code>-value is defined as a fraction of ‘<code>rho.max</code>’ (i.e., the smallest <code class="reqn">\rho</code>-value for which all the estimated partial correlation coefficients are equal to zero). The default depends on the sample size ‘<code class="reqn">n</code>’ relative to the number of response variables ‘<code class="reqn">p</code>’. If ‘<code class="reqn">p &lt; n</code>’, the default is ‘1.0E-6’ otherwise the value ‘1.0E-2’ is used as default. A very small value of ‘<code>rho.min.ratio</code>’ will lead to a saturated fitted model in the ‘<code class="reqn">p &lt; n</code>’ case.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rho</code></td>
+<td>
+<p>an optional user supplied decreasing sequence of <code class="reqn">\rho</code>-values. By default <code>cglasso</code> computes a sequence of <code class="reqn">\rho</code>-values using <code>nrho</code> and <code>rho.min.ratio</code>. If <code>rho</code> is supplied then <code>nrho</code> and <code>rho.min.ratio</code> are overwritten. WARNING: use with care and avoid supplying a single <code class="reqn">\rho</code>-value; supply instead a decreasing sequence.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxit.em</code></td>
+<td>
+<p>maximum number of iterations of the EM algorithm. Default is <code>1.0E+4</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thr.em</code></td>
+<td>
+<p>threshold for the convergence of the EM algorithm. Default value is <code>1.0E-4</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxit.bcd</code></td>
+<td>
+<p>maximum number of iterations of the glasso algorithm. Default is <code>1.0E+5</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thr.bcd</code></td>
+<td>
+<p>threshold for the convergence of the glasso algorithm. Default is <code>1.0E-4</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>integer for printing information out as iterations proceed: <code>trace = 0</code> no information is printed out; <code>trace = 1</code> minimal information is printed on screen; <code>trace = 2</code> detailed information is printed on screen.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>cglasso</code> is the main model-fitting function and can be used to fit a broad range of extensions of the glasso estimator (Friedman <em>and other</em>, 2008). It is specifically proposed to study datasets with censored and/or missing response values. To help the user, the <code>cglasso</code> function has been designed to automatically select the most suitable extension by using the information stored in the ‘<code>datacggm</code>’ object passed through <code>Z</code>. 
+</p>
+<p>Below we sum up the available extenions:
+</p>
+
+<ul>
+<li>
+<p> if only left/right-censored are observed in the response matrix <code>Y</code> (without missing values) and no predictor matrix is stored in <code>Z</code>, then <code>cglasso</code> computes the censored glasso estimator (Augugliaro <em>and other</em>, 2020a);
+</p>
+</li>
+<li>
+<p> if only left/right-censored are observed in the response matrix <code>Y</code> (without missing values) and and a predictor matrix <code>X</code> is stored in <code>Z</code>, then <code>cglasso</code> computes the conditional censored glasso estimator (Augugliaro <em>and other</em>, 2020b);
+</p>
+</li>
+<li>
+<p> if only missing values are stored in the response matrix <code>Y</code> (without censored values), then <code>cglasso</code> computes the missglasso estimator (Stadler <em>and other</em>, 2012);
+</p>
+</li>
+<li>
+<p> starting with version 2.0.0, <code>cglasso</code> can also handle datasets with both missing and censored response values.
+</p>
+</li>
+</ul>
+<p>See section ‘Examples’ for some example.
+</p>
+<p>The model-fitting function <code>cglasso</code> returns an <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> object of S3 class ‘<code>cglasso</code>’ for which there are available a set of accessor functions, a set of functions designed to evaluate the goodness-of-fit of the fitted models and, finally, a set of functions developed to analyze the selected network. The function <code>ShowStructure</code> can be used to show the structure of the package.
+</p>
+<p>The accessor functions <code>coef.cglasso</code>, <code>fitted.cglasso</code>, <code>residuals.cglasso</code>, <code>predict.cglasso</code> and <code>impute</code> can be used to extract various useful features of the object fitted by <code>cglasso</code>.
+</p>
+<p>For an <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> object returned by <code>cglasso</code>, the functions <code>AIC.cglasso</code> and <code>BIC.cglasso</code> can be used to evaluate the goodness-of-fit of the fitted models. Usually, these functions are used together with the function <code>summary.cglasso</code>, which gives more information about the sequence of fitted models. The plotting function <code>plot.GoF</code> can be used to graphically identify the optimal pair of the tuning parameters.
+</p>
+<p>Given a pair of the tuning paremeters, the functions <code>to_graph</code> and <code>plot.cglasso2igraph</code> can be used to analyze and show the selected network. Finally, the function <code>cggm</code> can be used to produce post-hoc maximum likelihood refitting of the selected graphical model.  
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>cglasso</code> returns an object of S3 class “<code>cglasso</code>”, i.e., a named list containing the
+following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the call that produced this object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Yipt</code></td>
+<td>
+<p>an array of dimension ‘<code>n x p x nlambda x nrho</code>’ storing the ‘working response matrices’, that is, <code>Yipt[, , i, j]</code> is used as response matrix to compute the multilasso estimator (Augugliaro <em>and other</em>, 2020b). The accessor function ‘<code>impute</code>’ can be used to extract the desidered imputed matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p>an array of dimension ‘<code>(q + 1) x p x nlambda x nrho</code>’ storing the penalized estimate of the regression coefficient matrices. The accessor function ‘<code>coef.cglasso</code>’ can be used to extract the desired estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mu</code></td>
+<td>
+<p>an array of dimension ‘<code>n x p x nlambda x nrho</code>’ storing the fitted values. The accessor function ‘<code>fitted.cglasso</code>’ can be used to extract the desired fitted values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>R</code></td>
+<td>
+<p>an array of dimension ‘<code>n x p x nlambda x nrho</code>’ storing the ‘working residuals’, that is, <code>R[, , i, j]</code> is defined as the difference between <code>Yipt[, , i, j]</code> and <code>mu[, , i, j]</code>. The accessor function ‘<code>residuals.cglasso</code>’ can be used to extract the desidered residual matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>S</code></td>
+<td>
+<p>an array of dimension ‘<code>p x p x nlambda x nrho</code>’ storing the ‘working empirical covariance matrices’, that is, ‘<code>S[, , i, j]</code>’ is used to compute the glasso estimator.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Sgm</code></td>
+<td>
+<p>an array of dimension ‘<code>p x p x nlambda x nrho</code>’ storing the estimated covariance matrices. The accessor function  ‘<code>coef</code>’ can be used to extract the desired estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Tht</code></td>
+<td>
+<p>an array of dimension ‘<code>p x p x nlambda x nrho</code>’ storing the estimated precision matrices. The accessor funtion ‘<code>coef</code>’ can be used to extract the desired estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dfB</code></td>
+<td>
+<p>a matrix of dimension ‘<code>(p + 1) x nlambda x nrho</code>’ storing the number of estimated non-zero regression coefficients. Only for internal purpose.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dfTht</code></td>
+<td>
+<p>a matrix of dimension ‘<code>nlambda x nrho</code>’ storing the number of estimated non-zero (off-diagonal) partial correlation coefficients. Only for internal purpose.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>InfoStructure</code></td>
+<td>
+<p>a named list whose elements contain information about the estimated networks. Only for internal purpose.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nit</code></td>
+<td>
+<p>an array of dimension ‘<code>2 x nlambda x nrho</code>’ storing the number of EM steps.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Z</code></td>
+<td>
+<p>the ‘<code>datacggm</code>’ object used to compute the censored graphical lasso estimator.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>diagonal</code></td>
+<td>
+<p>the flag used to specify if the diagonal entries of the precision matrix are penalized.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights.B</code></td>
+<td>
+<p>the matrix of non-negative weights used for the regression coefficients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights.Tht</code></td>
+<td>
+<p>the matrix of non-negative weights used for the precision matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nlambda</code></td>
+<td>
+<p>the number of <code class="reqn">\lambda</code>-values used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.min.ratio</code></td>
+<td>
+<p>the value used to compute the smallest <code class="reqn">\lambda</code>-value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>the sequence of <code class="reqn">\lambda</code>-values used to fit the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nrho</code></td>
+<td>
+<p>the number of <code class="reqn">\rho</code>-values used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rho.min.ratio</code></td>
+<td>
+<p>the value used to compute the smallest <code class="reqn">\rho</code>-value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rho</code></td>
+<td>
+<p>the sequence of <code class="reqn">\rho</code>-values used to fit the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>a description of the fitted model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxit.em</code></td>
+<td>
+<p>maximum number of iterations of the EM algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thr.em</code></td>
+<td>
+<p>threshold for the convergence of the EM algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxit.bcd</code></td>
+<td>
+<p>maximum number of iterations of the glasso algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thr.bcd</code></td>
+<td>
+<p>threshold for the convergence of the glasso algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conv</code></td>
+<td>
+<p>a description of the error that has occurred.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subrout</code></td>
+<td>
+<p>the name of the Fortran subroutine where the error has occurred (for internal debug only).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>the integer used for printing information on screen.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nobs</code></td>
+<td>
+<p>the sample size</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nresp</code></td>
+<td>
+<p>the number of response variables used to fit the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>npred</code></td>
+<td>
+<p>the number of predictors used to fit the model.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Luigi Augugliaro (<a href="mailto:luigi.augugliaro@unipa.it">luigi.augugliaro@unipa.it</a>)</p>
+
+
+<h3>References</h3>
+
+<p>Augugliaro L., Sottile G., Wit E.C., and Vinciotti V. (2023) &lt;<a href="https://doi.org/10.18637/jss.v105.i01">doi:10.18637/jss.v105.i01</a>&gt;.
+cglasso: An R Package for Conditional Graphical Lasso Inference with Censored and Missing Values.
+<em>Journal of Statistical Software</em> <b>105</b>(1), 1–58.
+</p>
+<p>Augugliaro, L., Abbruzzo, A., and Vinciotti, V. (2020a) &lt;<a href="https://doi.org/10.1093/biostatistics/kxy043">doi:10.1093/biostatistics/kxy043</a>&gt;.
+<code class="reqn">\ell_1</code>-Penalized censored Gaussian graphical model.
+<em>Biostatistics</em> <b>21</b>, e1–e16.
+</p>
+<p>Augugliaro, L., Sottile, G., and Vinciotti, V. (2020b) &lt;<a href="https://doi.org/10.1007/s11222-020-09945-7">doi:10.1007/s11222-020-09945-7</a>&gt;.
+The conditional censored graphical lasso estimator.
+<em>Statistics and Computing</em> <b>30</b>, 1273–1289.
+</p>
+<p>Friedman, J.H., Hastie, T., and Tibshirani, R. (2008) &lt;<a href="https://doi.org/10.1093/biostatistics/kxm045">doi:10.1093/biostatistics/kxm045</a>&gt;.
+Sparse inverse covariance estimation with the graphical lasso.
+<em>Biostatistics</em> <b>9</b>, 432–441.
+</p>
+<p>Stadler, N. and Buhlmann, P. (2012) &lt;<a href="https://doi.org/10.1007/s11222-010-9219-7">doi:10.1007/s11222-010-9219-7</a>&gt;.
+Missing values: sparse inverse covariance estimation and an extension to sparse regression.
+<em>Statistics and Computing</em> <b>22</b>, 219–235.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>datacggm</code>, <code>coef.cglasso</code>, <code>fitted.cglasso</code>, <code>residuals.cglasso</code>, <code>predict.cglasso</code>, <code>impute</code>, <code>AIC.cglasso</code>, <code>BIC.cglasso</code>, <code>summary.cglasso</code>, <code>select_cglasso</code>, <code>plot.GoF</code>, <code>to_graph</code>, <code>plot.cglasso2igraph</code>, <code>cggm</code> and <code>ShowStructure</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(123)
+
+# Model 1: censored glasso estimator (Augugliaro \emph{and other}, 2020a)
+# Y ~ N(0, Sigma) and probability of left/right censored values equal to 0.05
+n &lt;- 1000L
+p &lt;- 3L
+rho &lt;- 0.3
+Sigma &lt;- outer(1L:p, 1L:p, function(i, j) rho^abs(i - j))
+Z &lt;- rcggm(n = n, Sigma = Sigma, probl = 0.05, probr = 0.05)
+out &lt;- cglasso(. ~ ., data = Z)
+out
+
+# Model 2: conditional censored glasso estimator (Augugliaro \emph{and other}, 2020b)
+# Y ~ N(b0 + XB, Sigma)  and probability of left/right censored values equal to 0.05
+n &lt;- 1000L
+p &lt;- 3L
+q &lt;- 2L
+b0 &lt;- runif(p)
+B &lt;- matrix(runif(q * p), nrow = q, ncol = p)
+X &lt;- matrix(rnorm(n * q), nrow = n, ncol = q)
+rho &lt;- 0.3
+Sigma &lt;- outer(1L:p, 1L:p, function(i, j) rho^abs(i - j))
+Z &lt;- rcggm(n = n, b0 = b0, X = X, B = B, Sigma = Sigma, probl = 0.05, probr = 0.05)
+out &lt;- cglasso(. ~ ., data = Z)
+out
+
+# Model 3: missglasso estimator (Stadler \emph{and other}, 2012)
+# Y ~ N(b0 + XB, Sigma)  and probability of missing-at-random values equal to 0.05
+n &lt;- 1000L
+p &lt;- 3L
+q &lt;- 2L
+b0 &lt;- runif(p)
+B &lt;- matrix(runif(q * p), nrow = q, ncol = p)
+X &lt;- matrix(rnorm(n * q), nrow = n, ncol = q)
+rho &lt;- 0.3
+Sigma &lt;- outer(1L:p, 1L:p, function(i, j) rho^abs(i - j))
+Z &lt;- rcggm(n = n, b0 = b0, X = X, B = B, Sigma = Sigma, probna = 0.05)
+out &lt;- cglasso(. ~ ., data = Z)
+out
+
+# Model 4: mixed estimator
+# Y ~ N(b0 + XB, Sigma)  and
+# 1. probability of left/right censored values equal to 0.05
+# 2. probability of missing-at-random values equal to 0.05
+n &lt;- 1000L
+p &lt;- 3L
+q &lt;- 2L
+b0 &lt;- runif(p)
+B &lt;- matrix(runif(q * p), nrow = q, ncol = p)
+X &lt;- matrix(rnorm(n * q), nrow = n, ncol = q)
+rho &lt;- 0.3
+Sigma &lt;- outer(1L:p, 1L:p, function(i, j) rho^abs(i - j))
+Z &lt;- rcggm(n = n, X = X, b0 = b0, B = B, Sigma = Sigma, probl = 0.05, probr = 0.05,
+           probna = 0.05)
+out &lt;- cglasso(. ~ ., data = Z)
+out
+</code></pre>
+
+
+</div>

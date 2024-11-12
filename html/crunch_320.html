@@ -1,0 +1,138 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>deriveArray</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Make a Categorical Array or Multiple Response variable</h2>
+
+<h3>Description</h3>
+
+<p>In most situations we recommend using <code>deriveArray</code> which leaves your
+subvariables in the dataset. <code>makeArray</code> <em>removes</em> component subvariables
+from your dataset. Array variables are composed of a set of "subvariables"
+bound together for display  in the app. For example, you might have a set of
+survey questions that ask how the respondent would rate a TV show from 1-5.
+Array variables allow you to display all of their ratings in a compact table
+rather than a set of distinct variables.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">deriveArray(subvariables, name, selections, numeric = NULL, ...)
+
+makeArray(subvariables, name, ...)
+
+makeMR(subvariables, name, selections, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>subvariables</code></td>
+<td>
+<p>a list of Variable objects to bind together, or a
+Dataset subset which contains only the Variables to bind.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p>character, the name that the new Categorical Array variable
+should have.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>selections</code></td>
+<td>
+<p>character (preferred, indicating the names of the
+categories), or numeric (indicating the IDs of the categories
+in the combined array, which may not be the same as in the original
+variables - also note that a category's ID is not the same thing
+as its <code>numeric_value</code>). Required for <code>makeMR</code>; optional for
+<code>deriveArray</code>; ignored in <code>makeArray</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>numeric</code></td>
+<td>
+<p>Logical indicating whether the array should be a numeric
+array or categorical array. <code>NULL</code> the default will guess numeric if
+all variables are known to be numeric and categorical if all are
+categorical. If any subvariables are created from expressions, then
+their type cannot be guessed and so <code>numeric</code> must be specified.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Optional additional attributes to set on the new variable.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A VariableDefinition that when added to a Dataset will create the
+categorical-array or multiple-response variable. <code>deriveArray</code> will
+make a derived array expression (or a derived multiple response expression
+if <code>selections</code> are supplied), while <code>makeArray</code> and <code>makeMR</code>
+return an expression that "binds" variables together, removing them from
+independent existence.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+# Categorical Array - Variables from list of variables
+ds$enjoy_cat2 &lt;- deriveArray(
+    list(ds$enjoy1, ds$enjoy2),
+    "Enjoy activities"
+)
+
+# Categorical Array - Variables from var catalog
+# (result is the same as `ds$enjoy_cat1` above)
+ds$enjoy_cat2 &lt;- deriveArray(
+    ds[c("enjoy1", "enjoy2")],
+    "Enjoy activities v2"
+)
+
+# Multiple Response (selections as character names)
+ds$enjoy_mr1 &lt;- deriveArray(
+    list(ds$enjoy1, ds$enjoy2),
+    "Enjoy activities very much or a little",
+    selections = c("Very much", "A little")
+)
+
+# Numeric Array
+ds$rating_numa &lt;- deriveArray(
+    list(ds$rating1, ds$rating2),
+    "Activity Rating"
+)
+
+# Using VarDef to specify metadata (and thus needing to specify type)
+ds$enjoy_mr &lt;- deriveArray(
+    list(
+        VarDef(ds$enjoy1 == "Very much", name = "enjoy brand 1"),
+        VarDef(ds$enjoy2 == "Very much", name = "enjoy brand 2")
+    ),
+    "Enjoy activities with custom names"
+)
+
+# Multiple Response (selections as ids, same as ds$enjoy_mr1)
+# Be careful `ids(categories(ds$enjoy1))` is not necessarily the same as
+# `values(categories(ds$enjoy1))`
+ds$enjoy_mr1 &lt;- deriveArray(
+    list(ds$enjoy1, ds$enjoy2),
+    "Enjoy activities very much or a little v2",
+    selections = c(1, 2)
+)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

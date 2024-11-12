@@ -1,0 +1,255 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>bCond.simpA.CKT</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Function for testing the simplifying assumption with
+data-driven box-type conditioning events</h2>
+
+<h3>Description</h3>
+
+<p>This function takes in parameter the matrix of (observations) of the
+conditioned variables and either <code>matrixInd</code>, a matrix of indicator variables
+describing which events occur for which observations
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">bCond.simpA.CKT(
+  XI,
+  XJ = NULL,
+  matrixInd = NULL,
+  minCut = 0,
+  minProb = 0.01,
+  minSize = minProb * nrow(XI),
+  nPoints_xJ = 10,
+  type.quantile = 7,
+  verbose = 2,
+  methodTree = "doSplit",
+  propTree = 0.5,
+  methodPvalue = "bootNP",
+  nBootstrap = 100
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>XI</code></td>
+<td>
+<p>matrix of size n*p of observations of the conditioned variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>XJ</code></td>
+<td>
+<p>matrix of size n*(d-p) containing observations of the conditioning vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>matrixInd</code></td>
+<td>
+<p>a matrix of indexes of size (n, N.boxes) describing
+for each observation i to which box ( = event) it belongs.
+</p>
+<p>If it is <code>NULL</code>, then a tree will be estimated to provide relevant boxes
+(by using <code>bCond.treeCKT()</code>)
+and then converting to a <code>matrixInd</code> by <code>treeCKT2matrixInd()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minCut</code></td>
+<td>
+<p>minimum difference in probabilities that is necessary to cut.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minProb</code></td>
+<td>
+<p>minimum probability of being in one of the node.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minSize</code></td>
+<td>
+<p>minimum number of observations in each node.
+This is an alternative to minProb and has priority over it.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nPoints_xJ</code></td>
+<td>
+<p>number of points in the grid that are considered
+when choosing the point for splitting the tree.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type.quantile</code></td>
+<td>
+<p>way of computing the quantiles,
+see <code>stats::quantile()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>control the text output of the procedure.
+If <code>verbose = 0</code>, suppress all output.
+If <code>verbose = 2</code>, the progress of the computation
+is printed during the computation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>methodTree</code></td>
+<td>
+<p>method for constructing the tree
+</p>
+
+<ul>
+<li> <p><code>doSplit</code> some part of the data is used for constructing the tree
+and the other part for constructing the test statistic
+using the boxes defined by the estimated tree.
+The share of the data used for construction the tree is controlled by
+the parameter <code>propTree</code>.
+</p>
+</li>
+<li> <p><code>noSplit</code> all of the data is used for
+both the tree and the test statistic on it.
+Note that p-values obtained by this method have an upward bias
+due to the lack of independence between these two steps.
+</p>
+</li>
+</ul>
+<p>Only used if <code>matrixInd</code> is not provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>propTree</code></td>
+<td>
+<p>share of observations used to build the tree
+(the rest of the observations are used for the computation of the p-value).
+Only used if <code>matrixInd</code> is not provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>methodPvalue</code></td>
+<td>
+<p>method for computing the p-value </p>
+
+<ul>
+<li> <p><code>covMatrix</code> by computation of the covariance matrix of
+the random vector <code class="reqn">(\tau_{i,k|X_J \in A_j}, 1\leq,i,k\leq p, 1\leq j \leq m)</code>.
+</p>
+</li>
+<li> <p><code>bootNP</code> by the usual non-parametric bootstrap
+</p>
+</li>
+<li> <p><code>bootInd</code> by the independent bootstrap
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nBootstrap</code></td>
+<td>
+<p>number of bootstrap replications
+(Only used if <code>methodPvalue</code> is not <code>covMatrix</code>).</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a list with the following components </p>
+
+<ul>
+<li> <p><code>p.value</code> the estimated p-value.
+</p>
+</li>
+<li> <p><code>stat</code> the test statistic.
+</p>
+</li>
+<li> <p><code>treeCKT</code> the estimated tree if <code>matrixInd</code> is not provided.
+</p>
+</li>
+<li> <p><code>vec_statB</code> the vector of bootstrapped statistics
+if <code>methodPvalue</code> is not <code>covMatrix</code>.
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Alexis Derumigny, Jean-David Fermanian and Aleksey Min
+</p>
+
+
+<h3>References</h3>
+
+<p>Derumigny, A., Fermanian, J. D., &amp; Min, A. (2022).
+Testing for equality between conditional copulas
+given discretized conditioning events.
+Canadian Journal of Statistics.
+<a href="https://doi.org/10.1002/cjs.11742">doi:10.1002/cjs.11742</a>
+</p>
+<p>Derumigny, A., &amp; Fermanian, J. D. (2022)
+Conditional empirical copula processes and generalized dependence measures
+Electronic Journal of Statistics, 16(2), 5692-5719.
+<a href="https://doi.org/10.1214/22-EJS2075">doi:10.1214/22-EJS2075</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>bCond.simpA.param</code> for a test of this simplifying assumption
+in a parametric framework.
+</p>
+<p><code>bCond.treeCKT</code> provides the binary tree that is used in this function
+(if <code>matrixInd</code> is not provided).
+</p>
+<p>Tests of the simplifying assumption for conditional copulas with a continuous
+conditioning variable:
+</p>
+
+<ul>
+<li> <p><code>simpA.NP</code> in a nonparametric setting
+</p>
+</li>
+<li> <p><code>simpA.param</code> in a (semi)parametric setting,
+where the conditional copula belongs to a parametric family,
+but the conditional margins are estimated arbitrarily through
+kernel smoothing
+</p>
+</li>
+<li> <p><code>simpA.kendallReg</code>: test based on the constancy of
+conditional Kendall's tau
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(1)
+n = 200
+XJ = MASS::mvrnorm(n = n, mu = c(3,3), Sigma = rbind(c(1, 0.2), c(0.2, 1)))
+XI = matrix(nrow = n, ncol = 2)
+high_XJ1 = which(XJ[,1] &gt; 4)
+XI[high_XJ1, ]  = MASS::mvrnorm(n = length(high_XJ1), mu = c(10,10),
+                                Sigma = rbind(c(1, 0.8), c(0.8, 1)))
+XI[-high_XJ1, ] = MASS::mvrnorm(n = n - length(high_XJ1), mu = c(8,8),
+                                Sigma = rbind(c(1, -0.2), c(-0.2, 1)))
+
+result = bCond.simpA.CKT(XI = XI, XJ = XJ, minSize = 10, verbose = 2,
+                         methodTree = "doSplit", nBootstrap = 4)
+print(result$p.value)
+result2 = bCond.simpA.CKT(XI = XI, XJ = XJ, minSize = 10, verbose = 2,
+                          methodTree = "noSplit", nBootstrap = 4)
+print(result2$p.value)
+
+
+</code></pre>
+
+
+</div>

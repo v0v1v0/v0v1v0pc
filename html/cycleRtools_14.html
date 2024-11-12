@@ -1,0 +1,125 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>interval_detect</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Detect Intervals in a Ride.</h2>
+
+<h3>Description</h3>
+
+<p>Section a ride file according to power output.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">interval_detect(data, sections, plot = FALSE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a <strong>formatted</strong> dataset produced by <code>read*()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sections</code></td>
+<td>
+<p>how many sections should be identified? Includes stoppages.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, graphically displays the resultant sections.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>graphical parameters to be passed to <code>par()</code>. Ignored if
+<code>plot = FALSE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Often a ride will contain intervals/efforts that are not in any way marked in
+the device data (e.g. as "laps"). Using changepoint analysis, it is possible
+to retrospectively identify these efforts. This is contingent on supplying
+the number of changepoints to the underlying algorithm, simplified here as a
+<code>"sections"</code> argument.
+</p>
+<p>For example, if there are two efforts amidst a
+ride, this means we are looking to identify 5 <em>sections</em> (i.e.
+neutral-effort-neutral-effort-neutral). See examples.
+</p>
+<p>Depends on the package <code>"changepoint"</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>if <code>plot = TRUE</code> nothing is returned. If <code>plot = FALSE</code>
+(default) a vector of section "levels" is returned.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(intervaldata)
+
+## "intervaldata" is a ride that includes two efforts (2 &amp; 5 minutes) and a cafe
+## stop. The efforts are marked in the lap column, which we can use as a
+## criterion.
+
+with(intervaldata, tapply(X = delta.t, INDEX = lap, sum)) / 60  # Minutes.
+
+## The above shows the efforts were laps two and four. What was the power?
+with(intervaldata, tapply(X = power.W, INDEX = lap, mean))[c(2, 4)]
+
+## And for the sake of example, some other summary metrics...
+l &lt;- split(intervaldata, intervaldata$lap)
+names(l) &lt;- paste("Lap", names(l))  # Pretty names.
+vapply(l, FUN.VALUE = numeric(3), FUN = function(x)
+  c(t.min = ride_time(x$timer.s) / 60, NP = NP(x), TSS = TSS(x)))
+
+## Could we have gotten the same information without the lap column?
+## Two efforts and a cafe stop == 7 sections.
+interval_detect(intervaldata, sections = 7, plot = TRUE)
+
+## An overzealous start to the first effort is being treated as a seperate section,
+## so let's allow for an extra section...
+interval_detect(intervaldata, sections = 8, plot = TRUE)
+
+## Looks okay, so save the output and combine the second and third sections.
+intervaldata$intv &lt;- interval_detect(intervaldata, sections = 8, plot = FALSE)
+intervaldata$intv[intervaldata$intv == 3] &lt;- 2
+
+## Are the timings as expected?
+with(intervaldata, tapply(X = delta.t, INDEX = intv, sum)) / 60  # Minutes.
+
+## Close enough!
+
+i &lt;- split(intervaldata, intervaldata$intv)
+names(i) &lt;- paste("Interval", seq_along(i))  # Pretty names.
+toplot &lt;- vapply(i, FUN.VALUE = numeric(3), FUN = function(x)
+  c(t.min = ride_time(x$timer.s) / 60, NP = NP(x), TSS = TSS(x)))
+
+print(toplot)
+
+par(mfrow = c(3, 1))
+mapply(function(r, ylab) barplot(
+  toplot[r, c(1:3, 5:7)], names.arg = seq_along(toplot[r, c(1:3, 5:7)]),
+  xlab = "Section", ylab = ylab),
+  r = 1:3, ylab = c("Ride time (minutes)", "NP", "TSS"))
+
+</code></pre>
+
+
+</div>

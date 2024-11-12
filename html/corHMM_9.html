@@ -1,0 +1,98 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>getFullMat</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Combines several rate class index matrices</h2>
+
+<h3>Description</h3>
+
+<p>Combines several index matrices which describe transitions between observed states into output a single index matrix for use in corHMM</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">getFullMat(StateMats, RateClassMat = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>StateMats</code></td>
+<td>
+<p>A list of index matrices describing transitions between observed states. Each unique number from 1 to n, will be independently estimated. Values of 0 are not estimated. Matrix entries of the same value are estimated to be the same rate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>RateClassMat</code></td>
+<td>
+<p>An optional index matrix which describes how StateMats are related to one another. This will be a matrix of size: length(StateMats) by length(StateMats). By default, all transitions between StateMats are allowed and independently estimated.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function is the final step in creating a custom hidden Markov model. It takes a list of index matrices (StateMats) which describe different ways that the observed states are related to one another and creates a single matrix to describe the model. The matrices are combined following Eq. 2 of Tarasov (2019). getFullMat is part of several functions which help the user efficiently create custom index matrices. Often, it will be more practical to begin constructing a custom model with <code>getRateMat4Dat</code>. 
+</p>
+<p>getStateMat will generate an index matrix of size n by n in which all transitions between the n states are allowed and independently estimated. That index matrix can then be manipulated by dropStateMatPars and equateStateMatPars. dropStateMatPars will drop specific rates from an index matrix. dropStateMatPars requires an index matrix and a vector of which rates should be dropped. equateStateMatPars will equates rates within an index matrix. equateStateMatPars requires an index matrix and a list of vectors each element of which should correspond to two or more rates to be equated.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns an index matrix.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>James D. Boyko</p>
+
+
+<h3>References</h3>
+
+<p>Boyko, J. D., and J. M. Beaulieu. 2021. Generalized hidden Markov models for phylogenetic comparative datasets. Methods in Ecology and Evolution 12:468-478.
+</p>
+<p>Tarasov, S. 2019. Integration of Anatomy Ontologies and Evo-Devo Using Structured Markov Models Suggests a New Framework for Modeling Discrete Phenotypic Traits. Systematic Biology, 68(5) 698-716. doi:10.1093/sysbio/syz005
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>getRateMat4Dat</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data(primates)
+phy &lt;- primates[[1]]
+phy &lt;- multi2di(phy)
+data &lt;- primates[[2]]
+# create a legend and rate mat from a multi-character dataset.
+LegendAndRateMat &lt;- getStateMat4Dat(data)
+rate.mat &lt;- LegendAndRateMat$rate.mat
+legend &lt;- LegendAndRateMat$legend
+
+# To create a hidden markov model first define your rate classes (state-dependent processes)
+# R1 will be a manually created SYM model
+R1 &lt;- equateStateMatPars(rate.mat, c(1:6))
+# R2 will only allow transitions between 1 and 2
+R2 &lt;- dropStateMatPars(rate.mat, c(3,4))
+# R1 and R2 will transtion at equal rates (i.e. the parameter process will be ER)
+P &lt;- getRateCatMat(2)
+P &lt;- equateStateMatPars(P, c(1,2))
+# combine our state-dependnet processes and parameter process
+HMM &lt;- getFullMat(list(R1, R2), P)
+
+# This can now be used in a corHMM model
+CustomModel &lt;- corHMM(phy = phy, data = data, rate.cat = 2, rate.mat = HMM, node.states = "none")
+
+</code></pre>
+
+
+</div>

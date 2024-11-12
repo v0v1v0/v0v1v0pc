@@ -1,0 +1,246 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>transfo</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Robustly fit the Box-Cox or Yeo-Johnson transformation 
+</h2>
+
+<h3>Description</h3>
+
+<p>This function uses reweighted maximum likelihood to robustly fit the 
+Box-Cox or Yeo-Johnson transformation to each variable in a dataset. 
+Note that this function first calls <code>checkDataSet</code> to ensure that the variables to be transformed are not too discrete.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">transfo(X, type = "YJ", robust = TRUE,
+        standardize = TRUE,
+        quant = 0.99, nbsteps = 2, checkPars = list())
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p> A data matrix of dimensions n x d.
+Its columns are the variables to be transformed.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p> The type of transformation to be fit. Should be one of: </p>
+
+<ul>
+<li>
+<p><code>"BC"</code>: Box-Cox power transformation. Only works
+for strictly positive variables. If this type
+is given but a variable is not strictly
+positive, the function stops with a
+message about that variable.
+</p>
+</li>
+<li>
+<p><code>"YJ"</code> Yeo-Johnson power transformation. The data
+may have positive as well as negative values.
+</p>
+</li>
+<li>
+<p><code>"bestObj"</code> for strictly positive variables both BC
+and YJ are run, and the solution with
+lowest objective is kept. On the other
+variables YJ is run.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>robust</code></td>
+<td>
+<p> if <code>TRUE</code> the Reweighted Maximum 
+Likelihood method is used, which first
+computes a robust initial estimate of the
+transformation parameter lambda. If <code>FALSE</code> the classical ML method is used.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>standardize</code></td>
+<td>
+<p> whether to standardize the variables <strong>before and after</strong> the
+power transformation. See Details below.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quant</code></td>
+<td>
+<p>quantile for determining the weights in the 
+reweighting step (ignored when <code>robust=FALSE</code>).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nbsteps</code></td>
+<td>
+<p>number of reweighting steps (ignored when 
+<code>robust=FALSE</code>).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>checkPars</code></td>
+<td>
+<p>Optional list of parameters used in the call to
+<code>checkDataSet</code>. The options are:
+</p>
+
+<ul>
+<li> <p><code>coreOnly</code> <br>
+If <code>TRUE</code>, skip the execution of checkDataset. Defaults to <code>FALSE</code>
+</p>
+</li>
+<li>
+<p><code>numDiscrete</code><br>
+A column that takes on numDiscrete or fewer values
+will be considered discrete and not retained in the cleaned data.
+Defaults to <code class="reqn">5</code>.
+
+</p>
+</li>
+<li>
+<p><code>precScale</code> <br>
+Only consider columns whose scale is larger than precScale.
+Here scale is measured by the median absolute deviation.
+Defaults to <code class="reqn">1e-12</code>.
+
+</p>
+</li>
+<li>
+<p><code>silent</code><br>
+Whether or not the function progress messages should be printed.
+Defaults to <code>FALSE</code>.
+
+</p>
+</li>
+</ul>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>In case <code>standardize = TRUE</code>, the variables is standardized before and after transformation. 
+For BC the variable is divided by its median before transformation.
+For YJ and <code>robust = TRUE</code> this subtracts its median and divides by its mad (median absolute deviation) before transformation. For YJ and <code>robust = FALSE</code> this subtracts the mean and divides by the standard deviation before transformation. For the standardization after the transformation, the classical mean and standard deviation are used in case  <code>robust = FALSE</code>. If <code>robust = TRUE</code>, the mean and standard deviation are calculated robustly on a subset of inliers.  
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with components: <br></p>
+
+<ul>
+<li>
+<p><code>lambdahats</code> <br>
+the estimated transformation parameter for each column of <code>X</code>.
+
+</p>
+</li>
+<li>
+<p><code>Y</code> <br>
+A matrix in which each column is the transformed version of the
+corresponding column of <code>X</code>.
+The transformed version includes pre- and post-standardization if <code>standardize=TRUE</code>.
+
+</p>
+</li>
+<li>
+<p><code>muhat</code> <br>
+The estimated location of each column of <code>Y</code>.
+
+</p>
+</li>
+<li>
+<p><code>sigmahat</code> <br>
+The estimated scale of each column of <code>Y</code>.
+
+</p>
+</li>
+<li>
+<p><code>weights</code> <br>
+The final weights from the reweighting.
+
+</p>
+</li>
+<li>
+<p><code>ttypes</code> <br>
+The type of transform used in each column.
+
+</p>
+</li>
+<li>
+<p><code>objective</code> <br>
+Value of the (reweighted) maximum likelihood objective function.
+
+</p>
+</li>
+<li>
+<p>values of <code>checkDataSet</code>, unless <code>coreOnly</code> is <code>TRUE</code>.
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>J. Raymaekers and P.J. Rousseeuw
+</p>
+
+
+<h3>References</h3>
+
+<p>J. Raymaekers and P.J. Rousseeuw (2021). Transforming variables to central normality. <em>Machine Learning</em>. <a href="https://doi.org/10.1007/s10994-021-05960-5">doi:10.1007/s10994-021-05960-5</a>(link to open access pdf)
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>transfo_newdata</code>, <code>transfo_transformback</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# find Box-Cox transformation parameter for lognormal data:
+set.seed(123)
+x &lt;- exp(rnorm(1000))
+transfo.out &lt;- transfo(x, type = "BC")
+# estimated parameter:
+transfo.out$lambdahat
+# value of the objective function:
+transfo.out$objective
+# the transformed variable:
+transfo.out$Y
+# the type of transformation used:
+transfo.out$ttypes
+# qqplot of the transformed variable:
+qqnorm(transfo.out$Y); abline(0,1)
+
+# For more examples, we refer to the vignette:
+## Not run: 
+vignette("transfo_examples")
+
+## End(Not run)
+</code></pre>
+
+
+</div>

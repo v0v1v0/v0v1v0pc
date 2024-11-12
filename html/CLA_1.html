@@ -1,0 +1,251 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CLA</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Critical Line Algorithm for mean-variance optimal portfolio</h2>
+
+<h3>Description</h3>
+
+<p>The Critical Line Algorithm was first proposed by Markowitz(1987) to
+solve the mean-variance optimal portfolio problem.
+</p>
+<p>We solve the problem with “box” constraints, i.e., allow to
+specify lower and upper bounds (via <code>lB</code> and <code>uB</code>) for each
+asset weight.
+</p>
+<p>Here we provide a pure <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> implementation, quite fine tuned and
+debugged compared to earlier ones.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CLA(mu, covar, lB, uB,
+    check.cov = TRUE, check.f = TRUE,
+    tol.lambda = 1e-07,
+    give.MS = TRUE, keep.names = TRUE, trace = 0)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>mu</code></td>
+<td>
+<p>numeric vector of length <code>n</code> containing the expected
+return <code class="reqn">E[R_i]</code> for <code class="reqn">1=1,2,\dots,n</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covar</code></td>
+<td>
+<p>the <code class="reqn">n \times n</code> covariance matrix of the
+returns, must be positive definite.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lB, uB</code></td>
+<td>
+<p>vectors of length <code>n</code> with lower and upper bounds
+for the asset weights.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>check.cov</code></td>
+<td>
+<p><code>logical</code> indicating if the <code>covar</code>
+matrix should be checked to be positive definite.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>check.f</code></td>
+<td>
+<p><code>logical</code> indicating if a warning should be
+produced when the algorithm cannot produce a new (smaller) lambda even
+though there are still <b>f</b>ree weights to be chosen.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol.lambda</code></td>
+<td>
+<p>the tolerance when checking for lambda changes or
+being zero.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>give.MS</code></td>
+<td>
+<p><code>logical</code> indicating if <code>MS()</code>
+should be computed (and returned) as well.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.names</code></td>
+<td>
+<p><code>logical</code> indicating if the
+<code>weights_set</code> matrix should keep the (asset) <code>names(mu)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>an integer (or <code>logical</code>) indicating if and
+how much diagnostic or progress output should be produced.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The current implementation of the CLA is based (via Norring's)
+on Bailey et al.(2013).   We have found buglets in that implementation
+which lead them to introduce their “purge” routines
+(<code>purgeNumErr</code>, <code>purgeExcess</code>),
+which are no longer necessary.
+</p>
+<p>Even though this is a pure <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> implementation, the algorithm is quite fast
+also when the number of assets <code class="reqn">n</code> is large (1000s), though that
+depends quite a bit on the exact problem.
+</p>
+
+
+<h3>Value</h3>
+
+<p>an object of <code>class</code> <code>"CLA"</code> which is a
+<code>list</code> with components
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>weights_set</code></td>
+<td>
+<p>a <code class="reqn">n \times m</code> matrix of asset weights,
+corresponding to the <code class="reqn">m</code> steps that the CLA has completed or the
+<code class="reqn">m</code> “turning points” it has computed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>free_indices</code></td>
+<td>
+<p>a <code>list</code> of length <code>m</code>, the
+<code class="reqn">k</code>-th component with the indices in <code class="reqn">{1,\dots,n}</code> of
+those assets whose weights were not at the boundary after ... </p>
+</td>
+</tr>
+</table>
+<table>
+<tr style="vertical-align: top;">
+<td><code>gammas</code></td>
+<td>
+<p>numeric vector of length <code class="reqn">m</code> of the values
+<code class="reqn">\gamma_k</code> for CLA step <code class="reqn">k</code>, <code class="reqn">k=1,\dots,n</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambdas</code></td>
+<td>
+<p>numeric vector of length <code class="reqn">m</code> of the Lagrange parameters
+<code class="reqn">\lambda_k</code> for CLA step <code class="reqn">k</code>, <code class="reqn">k=1,\dots,n</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MS_weights</code></td>
+<td>
+<p>the <code class="reqn">\mu(W)</code> and <code class="reqn">\sigma(W)</code> corresponding
+to the asset weights <code>weights_set</code>, i.e., simply the same as
+<code>MS(weights_set = weights_set, mu = mu, covar = covar)</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>The exact results of the algorithm, e.g., the assets with non-zero
+weights, may slightly depend on the (computer) platform, e.g., for the
+<abbr><span class="acronym">S&amp;P 500</span></abbr> example, differences between 64-bit or 32-bit, version
+of BLAS or Lapack libraries etc, do have an influence, see the <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> script
+‘<span class="file">tests/SP500-ex.R</span>’ 
+in the package sources.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Alexander Norring did the very first version (unpublished master
+thesis). Current implementation: Yanhao Shi and Martin Maechler
+</p>
+
+
+<h3>References</h3>
+
+<p>Markowitz, H. (1952)
+Portfolio selection, <em>The Journal of Finance</em> <b>7</b>, 77–91;
+<a href="https://doi.org/10.2307/2975974">doi:10.2307/2975974</a>.
+</p>
+<p>Markowitz, H. M. (1987, 1st ed.) and
+Markowitz, H. M. and Todd, P. G. (2000)
+<em>Mean-Variance Analysis in Portfolio Choice and Capital Markets</em>;
+chapters 7 and 13.
+</p>
+
+
+
+
+<p>Niedermayer, A. and Niedermayer, D. (2010)
+Applying Markowitz’s Critical Line Algorithm, in J. B. Guerard (ed.),
+Handbook of Portfolio Construction, Springer; chapter 12, 383–400;
+<a href="https://doi.org/10.1007/978-0-387-77439-8_12">doi:10.1007/978-0-387-77439-8_12</a>.
+</p>
+<p>Bailey, D. H. and López de Prado, M. (2013)
+An open-source implementation of the critical-line algorithm for portfolio
+optimization, <em>Algorithms</em> <b>6</b>(1), 169–196;
+<a href="https://doi.org/10.3390/a6010169">doi:10.3390/a6010169</a>,
+</p>
+<p>Yanhao Shi (2017)
+Implementation and applications of critical line algorithm for
+portfolio optimization; unpublished Master's thesis, ETH Zurich.
+
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>MS</code>;
+for plotting <code>CLA</code> results: <code>plot.CLA</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(muS.sp500)
+## Full data taking too much time for example
+set.seed(47)
+iS &lt;- sample.int(length(muS.sp500$mu), 24)
+
+CLsp.24 &lt;- CLA(muS.sp500$mu[iS], muS.sp500$covar[iS, iS], lB=0, uB=1/10)
+CLsp.24 # using the print() method for class "CLA"
+
+plot(CLsp.24)
+
+if(require(Matrix)) { ## visualize how weights change "along turning points"
+  show(image(Matrix(CLsp.24$weights_set, sparse=TRUE),
+             main = "CLA(muS.sp500 &lt;random_sample(size=24)&gt;) $ weights_set",
+             xlab = "turning point", ylab = "asset number"))
+}
+
+## A 3x3 example (from real data) where CLA()'s original version failed
+## and  'check.f = TRUE' produces a warning :
+mc3 &lt;- list(
+    mu = c(0.0408, 0.102, -0.023),
+    cv = matrix(c(0.00648, 0.00792, 0.00473,
+                  0.00792, 0.0334,  0.0121,
+                  0.00473, 0.0121, 0.0793), 3, 3,
+           dimnames = list(NULL,
+                           paste0(c("TLT", "VTI","GLD"), ".Adjusted"))))
+
+rc3 &lt;- with(mc3,  CLA(mu=mu, covar=cv, lB=0, uB=1, trace=TRUE))
+
+</code></pre>
+
+
+</div>

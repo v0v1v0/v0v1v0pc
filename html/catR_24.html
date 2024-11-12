@@ -1,0 +1,968 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>randomCAT</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Random generation of adaptive tests (dichotomous and polytomous models)</h2>
+
+<h3>Description</h3>
+
+<p>This command generates a response pattern to an adaptive test, for a given item bank (with either dichotomous or polytomous models), a true ability level, and several lists of CAT parameters (starting items, stopping rule, provisional and final ability estimators).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">randomCAT(trueTheta, itemBank, model = NULL, responses = NULL, min.length = 0, 
+ 	a.stratified = NULL, genSeed = NULL, cbControl = NULL, nAvailable = NULL, 
+ 	start = list(fixItems = NULL, seed = NULL, nrItems = 1, theta = 0, D = 1, 
+ 	randomesque = 1, random.seed = NULL, startSelect = "MFI", cb.control = FALSE, 
+ 	random.cb = NULL), test = list(method = "BM", priorDist = "norm", 
+ 	priorPar = c(0, 1), weight = "Huber", tuCo = 1, sem.type = "classic", 
+ 	sem.exact = FALSE, se.ase = 10, range = c(-4, 4), D = 1, parInt = c(-4, 4, 33), 
+ 	itemSelect = "MFI", infoType = "observed", randomesque = 1, 
+ 	random.seed = NULL, AP = 1, proRule = "length", proThr = 20, 
+ 	constantPatt = NULL), stop = list(rule = "length", thr = 20, alpha = 0.05), 
+ 	final = list(method = "BM", priorDist = "norm", priorPar = c(0, 1), 
+ 	weight = "Huber", tuCo = 1, sem.type = "classic", sem.exact = FALSE, 
+ 	range = c(-4, 4), D = 1, parInt = c(-4, 4, 33), alpha = 0.05), 
+ 	allTheta = FALSE, save.output = FALSE, output = c("path", "name", "csv"))
+## S3 method for class 'cat'
+print(x, ...)
+## S3 method for class 'cat'
+plot(x, ci = FALSE, alpha = 0.05, trueTh = TRUE, classThr = NULL, 
+ 	save.plot = FALSE, save.options = c("path", "name", "pdf"),...)
+ </code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>trueTheta</code></td>
+<td>
+<p>numeric: the value of the true ability level.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>itemBank</code></td>
+<td>
+<p>numeric: a suitable matrix of item parameters (possibly augmented by group membership for content balancing). See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>either <code>NULL</code> (default) for dichotomous models, or any suitable acronym for polytomous models. Possible values are <code>"GRM"</code>, <code>"MGRM"</code>, <code>"PCM"</code>, <code>"GPCM"</code>, <code>"RSM"</code> and <code>"NRM"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>responses</code></td>
+<td>
+<p>either <code>NULL</code> (default) or a vector of pre-specified item responses with as many components as the rows of <code>itemBank</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min.length</code></td>
+<td>
+<p>integer: the minimum number of items to administer default is zero so no minimum test length). The CAT will not stop before the number of administered items equals <code>min.length</code>, even if the stopping rule is satisfied.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>a.stratified</code></td>
+<td>
+<p>either <code>NULL</code> (default), an integer value or a vector of integer values to set up a-stratified sampling. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>genSeed</code></td>
+<td>
+<p>either a numeric value to fix the random generation of responses pattern or <code>NULL</code> (default). Ignored if <code>responses</code> is not <code>NULL</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cbControl</code></td>
+<td>
+<p>either a list of accurate format to control for content balancing, or <code>NULL</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nAvailable</code></td>
+<td>
+<p>either a boolean vector indicating which items (denoted by 1's) are available at the start of the test and which (denoted by 0's) are not, or <code>NULL</code> (default). See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start</code></td>
+<td>
+<p>a list with the options for starting the adaptive test. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test</code></td>
+<td>
+<p>a list with the options for provisional ability estimation and next item selection. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stop</code></td>
+<td>
+<p>a list with the options of the stopping rule. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>final</code></td>
+<td>
+<p>a list with the options for final ability estimation. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>allTheta</code></td>
+<td>
+<p>logical: should all provisional ability estimates and standard errors be computed and returned (including among the starting items)? Default is <code>FALSE</code>, meaning that provisional ability estimates and standard errors are computed only after the selection of the starting items. Ignored if the <code>$nrItems</code> of the <code>start</code> list is equal to zero.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save.output</code></td>
+<td>
+<p>logical: should the output be saved in an external text file? (default is <code>FALSE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output</code></td>
+<td>
+<p>character: a vector of three components. The first component is either the file path to save the output of <code>"path"</code> (default), the second component is the name of the output file, and the third component is the file type, either <code>"txt"</code> or <code>"csv"</code> (default). See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>an object of class "cat", typically an output of <code>randomCAT</code> function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ci</code></td>
+<td>
+<p>logical: should the confidence intervals be plotted for each provisional ability estimate? (default is <code>TRUE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>numeric: the significance level for provisional confidence intervals (default is 0.05). Ignored if <code>ci</code> is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trueTh</code></td>
+<td>
+<p>logical: should the true ability level be drawn by a horizontal line? (default is TRUE).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>classThr</code></td>
+<td>
+<p>either a numeric value giving the classification threshold to be displayed, or <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save.plot</code></td>
+<td>
+<p>logical: should the plot be saved in an external figure? (default is <code>FALSE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save.options</code></td>
+<td>
+<p>character: a vector of three components. The first component is either the file path or <code>"path"</code> (default), the second component is the name of the output file or ,<code>"name"</code> (default), and the third component is the file extension, either <code>"pdf"</code> (default) or <code>"jpeg"</code>. Ignored if <code>save.plot</code> is <code>FALSE</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>other generic arguments to be passed to <code>print</code> and <code>plot</code> functions.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>randomCAT</code> function generates an adaptive test using an item bank specified by arguments <code>itemBank</code> and <code>model</code>, and for a given true ability level specified by argument <code>trueTheta</code>. 
+</p>
+<p>Dichotomous IRT models are considered whenever <code>model</code> is set to <code>NULL</code> (default value). In this case, <code>itemBank</code> must be a matrix with one row per item and four columns, with the values of the discrimination, the difficulty, the pseudo-guessing and the inattention parameters (in this order). These are the parameters of the four-parameter logistic (4PL) model (Barton and Lord, 1981). 
+</p>
+<p>Polytomous IRT models are specified by their respective acronym: <code>"GRM"</code> for Graded Response Model, <code>"MGRM"</code> for Modified Graded Response Model, <code>"PCM"</code> for Partical Credit Model, <code>"GPCM"</code> for Generalized Partial Credit Model, <code>"RSM"</code> for Rating Scale Model and <code>"NRM"</code> for Nominal Response Model. The <code>itemBank</code> still holds one row per item, end the number of columns and their content depends on the model. See <code>genPolyMatrix</code> for further information and illustrative examples of suitable polytomous item banks.
+</p>
+<p>By default all item responses will be randomly drawn from parent distribution set by the item bank parameters of the <code>itemBank</code> matrix (using the <code>genPattern</code> function for instance). Moreover, the random generation of the item responses can be fixed (for e.g., replication purposes) by assigning some numeric value to the <code>genSeed</code> argument. By default this argument is equal to <code>NULL</code> so the random seed is not fixed (and two successive runs of <code>randomCAT</code> will usually lead to different response patterns).
+</p>
+<p>It is possible, however, to provide a full response pattern of previously recorded responses to each of the item bank, for instance for post-hoc simulations. This is done by providing to the <code>responses</code> argument a vector of binary entries (without missing values). By default <code>responses</code> is set to <code>NULL</code> and item responses will be drawn from the item bank parameters.
+</p>
+<p>With the aforementioned item bank structures, content balancing cannot be controled and <code>cbControl</code> must be set to <code>NULL</code> (default value). Otherwise this will most often lead to an error. In order to allow for content balancing control:
+</p>
+
+<ol>
+<li>
+<p>the <code>itemBank</code> must be updated with an additional column holding the group names;
+</p>
+</li>
+<li>
+<p>the <code>cbControl</code> argument must be set properly as a list with group names and theoretical proportions for content balancing.
+</p>
+</li>
+</ol>
+<p>See the <code>nextItem</code> function for further details on how to specify <code>cbControl</code> properly and under which conditions it is operational (see Kingsbury and Zara, 1989, for further details). Separation of the item parameters and the vector of group membership is performed internally through the <code>breakBank</code> function (and thus should not be performed prior to CAT generation).
+</p>
+<p>An alternative method to control for content balancing is to performed a-stratified sampling (Chang and Ying, 1999). This is specified by providing the <code>a.stratified</code> argument either an integer value (i.e., the number of strata) or a vector of integer values (i.e., the number of items per strata). The value to be provided corresponds to the <code>K</code> argument of the <code>aStratified</code> function. Note that this is allowed only with dichotomous IRT models and polytomous GRM, MGRM and GPCM models. By default, <code>a.stratified</code> is <code>NULL</code> and a-stratified sampling is not performed.
+</p>
+<p>The test specification is made by means of four lists of options: one list for the selection of the starting items, 
+one list with the options for provisional ability estimation, one list to define the stopping rule, and one list with
+the options for final ability estimation. These lists are specified respectively by the arguments <code>start</code>, <code>test</code>, <code>stop</code> and <code>final</code>. 
+</p>
+<p>The <code>start</code> list can contain one or several of the following arguments:
+</p>
+
+<ul>
+<li>
+<p><code>fixItems</code>: either a vector of integer values, setting the items to be administered as first items, or <code>NULL</code> (default) to let the function select the items.
+</p>
+</li>
+<li>
+<p><code>seed</code>: either a numeric value to fix the random seed for item selection, <code>NA</code> to randomly select the items withour fixing the random seed, or <code>NULL</code> (default) to select the items on the basis of their difficulty level. Ignored if <code>fixItems</code> is not <code>NULL</code>.
+</p>
+</li>
+<li>
+<p><code>nrItems</code>: numeric, the number of starting items to be randomly selected (default is 1). Can be equal to zero to avoid initial selection of items (see <b>Details</b>). Used only if <code>fixItems</code> is <code>NULL</code> and <code>seed</code> is not <code>NULL</code>.
+</p>
+</li>
+<li>
+<p><code>theta</code>: numeric, a vector of the initial ability levels for selecting the first items (default is the single value 0). Ignored if either <code>fixItems</code> or <code>seed</code> is not <code>NULL</code>. See <code>startItems</code> for further details.
+</p>
+</li>
+<li>
+<p><code>D</code>: numeric, the metric constant. Default is <code>D=1</code> (for logistic metric); <code>D=1.702</code> yields approximately the normal metric (Haley, 1952). Ignored if <code>model</code> is not <code>NULL</code> and if <code>startSelect</code> is not <code>"MFI"</code>. 
+</p>
+</li>
+<li>
+<p><code>randomesque</code>: integer, the number of 'randomesque' items to be picked up optimally for each value of <code>theta</code> vector, before random selection of a single one. Ignored if either <code>fixItems</code> or <code>seed</code> is not <code>NULL</code>. See <code>startItems</code> for further details.
+</p>
+</li>
+<li>
+<p><code>random.seed</code>: either <code>NULL</code> (default) or a numeric value to fix the random seed of randomesque selection of the items. Ignored if either <code>fixItems</code> or <code>seed</code> is not <code>NULL</code>.
+</p>
+</li>
+<li>
+<p><code>startSelect</code>: the method for selecting the first items of the test, with possible values <code>"bOpt"</code> and <code>"MFI"</code> (default). Ignored if either <code>fixItems</code> or <code>seed</code> is not <code>NULL</code>. See <code>startItems</code> for further details.
+</p>
+</li>
+<li>
+<p><code>cb.control</code>: logical value indicating whether control for content balancing should also be done when selecting the starting items. Default is <code>FALSE</code>. Ignored if argument <code>cbControl</code> is <code>NULL</code>.
+</p>
+</li>
+<li>
+<p><code>random.cb</code>: either <code>NULL</code> (default) or a numeric value to fix the selection of subgroups of items in case of content balancing control with starting items. Ignored if either <code>cbControl</code> is <code>NULL</code> or if <code>start$cb.control</code> is <code>FALSE</code>.
+</p>
+</li>
+</ul>
+<p>These arguments are passed to the function <code>startItems</code> to select the first items of the test.
+</p>
+<p>If the argument <code>nrItems</code> is set to zero, then no starting item is selected and the adaptive process starts with a provisional ability level equal to the value of argument <code>theta</code> (or its default). Moreover, the likelihood function is then set as a flat, uniform function on the whole ability range. See the <code>nextItem</code> function for further details.
+</p>
+<p>The <code>test</code> list can contain one or several of the following arguments:
+</p>
+
+<ul>
+<li>
+<p><code>method</code>: a character string to specify the method for ability estimation. Possible values are: <code>"BM"</code> (default) for Bayesian modal estimation (Birnbaum, 1969), <code>"ML"</code> for maximum likelihood estimation (Lord, 1980), <code>"EAP"</code> for expected a posteriori (EAP) estimation (Bock and Mislevy, 1982), <code>"WL"</code> for weighted likelihood estimation (Warm, 1989) and <code>"ROB"</code> for robust estimation (Schuester and Yuan, 2011).
+</p>
+</li>
+<li>
+<p><code>priorDist</code>: a character string which sets the prior distribution. Possible values are: <code>"norm"</code> (default) for normal distribution, <code>"unif"</code> for uniform distribution, and <code>"Jeffreys"</code> for Jeffreys' noninformative prior distribution (Jeffreys, 1939, 1946). Ignored if <code>method</code> is neither <code>"BM"</code> nor <code>"EAP"</code>.
+</p>
+</li>
+<li>
+<p><code>priorPar</code>: a vector of two numeric components, which sets the parameters of the prior distribution. If (<code>method="BM"</code> or <code>method=="EAP"</code>) and <code>priorDist="norm"</code>, the components of <code>priorPar</code> are respectively the mean and the standard deviation of the prior normal density. If (<code>method="BM"</code> or <code>method="EAP"</code>) and <code>priorDist="unif"</code>, the components of <code>priorPar</code> are respectively the lower and upper bound of the prior uniform density. Ignored in all other cases. By default, <code>priorPar</code> takes the parameters of the prior standard normal distribution (i.e., <code>priorPar=c(0,1)</code>). In addition, <code>priorPar</code> also provides the prior parameters for the computation of MLWI and MPWI values for next item selection (see <code>nextItem</code> for further details).
+</p>
+</li>
+<li>
+<p><code>weight</code>: the type of weight function for the robust estimator. Possible values are <code>"Huber"</code> (default) and <code>"Tukey"</code>. Ignored if <code>method</code> is not <code>"ROB"</code> or if <code>model</code> is not <code>NULL</code>.
+</p>
+</li>
+<li>
+<p><code>tuCo</code>: the value of the tuning constant for the weight function (default is 1, suitable with <code>"Huber"</code> weight). Ignored if <code>method</code> is not <code>"ROB"</code> or if <code>model</code> is not <code>NULL</code>.
+</p>
+</li>
+<li>
+<p><code>sem.type</code>: the type of ASE formula to be used, either <code>"classic"</code> (default) or <code>"new"</code>. Ignored if <code>method</code> is neither <code>"BM"</code> nor <code>"WL"</code>, or if <code>model</code> is not <code>NULL</code>.
+</p>
+</li>
+<li>
+<p><code>sem.exact</code>: a logical value indicating whether <em>exact</em> standard error should be computed instead of asymptotic standard error. (default is <code>FALSE</code>). Ignored if <code>model</code> is not <code>NULL</code>.
+</p>
+</li>
+<li>
+<p><code>se.ase</code>: an integer value specifying the maximum number of item responses that are considered for computing the exact SE values, before switching to ASE values (due to computational time constraints). Default is 10; that is, ASE values are computed from the 11-th administered item on. Ignored if <code>model</code> is not <code>NULL</code> or if <code>sem.exact</code> id <code>FALSE</code>.
+</p>
+</li>
+<li>
+<p><code>range</code>: the maximal range of ability levels, set as a vector of two numeric components. The ability estimate will always lie to this interval (set by default to [-4, 4]). Ignored if <code>method=="EAP"</code>.
+</p>
+</li>
+<li>
+<p><code>D</code>: the value of the metric constant. Default is <code>D=1</code> for logistic metric. Setting <code>D=1.702</code> yields approximately the normal metric (Haley, 1952). Ignored if <code>model</code> is not <code>NULL</code>.
+</p>
+</li>
+<li>
+<p><code>parInt</code>: a numeric vector of three components, holding respectively the values of the arguments <code>lower</code>, <code>upper</code> and <code>nqp</code> of the <code>eapEst</code>, <code>eapSem</code> and <code>MWI</code> commands. It specifies the range of quadrature points for numerical integration, and is used for computing the EAP estimate, its standard error, and the MLWI and MPWI values for next item selection. Default vector is (-4, 4, 33), thus setting the range from -4 to 4 by steps of 0.25. Ignored if <code>method</code> is not <code>"EAP"</code> and if <code>itemSelect</code> is neither <code>"MLWI"</code> nor <code>"MPWI"</code>.
+</p>
+</li>
+<li>
+<p><code>itemSelect</code>: the rule for next item selecion, with possible values <code>"MFI"</code> (default) for maximum Fisher information criterion; <code>"bOpt"</code> for optimal ability-difficulty match (or Urry's procedure) (not available if <code>model</code> is not <code>NULL</code>); <code>"thOpt"</code> for optimal theta selection (not available if <code>model</code> is not <code>NULL</code>); <code>"MLWI"</code> and <code>"MPWI"</code> for respectively maximum likelihood and posterior weighted information criterion; <code>"MEPV"</code> for minimum expected posterior variance; <code>"MEI"</code> for maximum expected information; <code>"KL"</code> and <code>"KLP"</code> for Kullback-Leibler and posterior Kullback-Leibler information methods; <code>"progressive"</code> and <code>"proportional"</code> for progressive and proportional methods; ; and <code>"random"</code> for random selection. For further details, see <code>nextItem</code>.
+</p>
+</li>
+<li>
+<p><code>infoType</code>: character: the type of information function to be used for next item selection. Possible values are <code>"observed"</code> (default) for observed information function, and <code>"Fisher"</code> for Fisher information function. Ignored if <code>itemselect</code> is not <code>"MEI"</code>.
+</p>
+</li>
+<li>
+<p><code>randomesque</code>: integer: the number of items to be chosen from the next item selection rule, among those the next item to be administered will be randomly picked up. Default value is 1 and leads to usual selection of the optimal item (Kingsbury and Zara, 1989).
+</p>
+</li>
+<li>
+<p><code>random.seed</code>: either <code>NULL</code> (default) or a numeric value to fix the random seed of randomesque selection of the items. Ignored if either <code>fixItems</code> or <code>seed</code> is not <code>NULL</code>.
+</p>
+</li>
+<li>
+<p><code>AP</code>: the acceleration parameter required for progressive and proportional methods, with default value 1. Ignored with all other selection methods.
+</p>
+</li>
+<li>
+<p><code>proRule</code>: the stopping rule considered for progressive and proportional methods, with possible values <code>"length"</code> (default), <code>"precision"</code> or both. Ignored with all other selection methods.
+</p>
+</li>
+<li>
+<p><code>proThr</code>: the stopping rule threshold considered for progressive and proportional methods. Default value is 20. Ignored with all other selection methods.
+</p>
+</li>
+<li>
+<p><code>constantPatt</code>: character: the method to estimate ability in case of constant pattern (i.e. only correct or only incorrect responses). Can be either <code>NULL</code> (default), <code>"BM"</code>, <code>"EAP"</code>, <code>"WL"</code>, <code>"fixed4"</code>, <code>"fixed7"</code> or <code>"var"</code>. <em>Currently only implemented for dichotomous IRT models</em>.
+</p>
+</li>
+</ul>
+<p>These arguments are passed to the functions <code>thetaEst</code> and <code>semTheta</code> to estimate the ability level and the standard error of this estimate. In addition, some arguments are passed to <code>nextItem</code> to select the next item appropriately.
+</p>
+<p>The <code>stop</code> list can contain one or several of the following arguments:
+</p>
+
+<ul>
+<li>
+<p><code>rule</code>: a vector of character strings specifying the stopping rules. Possible values are: <code>"length"</code> (default), to stop the test after a pre-specified number of items administered; <code>"precision"</code>, to stop the test 
+when the provisional standard error of ability becomes less than or equal to the pre-specified value; <code>"classification"</code>, for which the test ends whenever the provisional confidence interval (set by the <code>alpha</code> argument) does not hold the classification threshold anymore (this is also called the ACI rule; see e.g. Thomson, 2009); and <code>"minInfo"</code> to stop the test if the maximum item information of the available items at current ability estimate is smaller than the prespecified threshold. Can take a single value.
+</p>
+</li>
+<li>
+<p><code>thr</code>: a vector of numeric values fixing the threshold(s) of the stopping rule(s). If <code>rule="length"</code>, <code>thr</code> is the maximal number of items to be administered. If <code>rule="precision"</code>, <code>thr</code> is the precision level (i.e. the standard error) to be reached before stopping. If <code>rule="classification"</code>, <code>thr</code> corresponds to the ability level which serves as a classification rule (i.e. which must not be covered by the provisional confidence interval). Finally, If <code>rule="minInfo"</code>, <code>thr</code> corresponds to the minimum item information that can be observed in the bank of remaining available items. The <code>"classification"</code> rule is not available for the progressive and proportional item selection rules.
+</p>
+</li>
+<li>
+<p><code>alpha</code>: the significance (or <code class="reqn">\alpha</code>) level for computing the priovisional confidence interval of ability.
+Ignored if <code>rule</code> is not <code>"classification"</code>. <em>Important:</em> the <code>thr</code> value smust be sorted in the same order of appearance as the <code>rule</code> methods. 
+</p>
+</li>
+</ul>
+<p>Eventually, the <code>final</code> list can contain one or several arguments of the <code>test</code> list (with possiblly different values), as well as the additional <code>alpha</code> argument. The latter specifies the <code class="reqn">\alpha</code> level of the final confidence interval of ability, which is computed as
+</p>
+<p style="text-align: center;"><code class="reqn">[\hat{\theta}-z_{1-\alpha/2} \; se(\hat{\theta}) ; \hat{\theta}+z_{1-\alpha/2} \; se(\hat{\theta})]</code>
+</p>
+
+<p>where <code class="reqn">\hat{\theta}</code> and <code class="reqn">se(\hat{\theta})</code> are respectively the ability estimate and its standard error. Note that the argument <code>itemSelect</code> of the <code>test</code> list is not used for final estimation of the ability level, and is therefore not allowed into the <code>final</code> list.
+</p>
+<p>If some arguments of these lists are missing, they are automatically set to their default value. The contents of the lists is checked with the <code>testList</code> function, and the adaptive test is generated only if the lists are adequately defined. Otherwise, a message error is printed. Note that the <code>testList</code> function works for both dichotomous and polytomous models.
+</p>
+<p>Usually the ability estimates and related standard errors are computed right after the administration of the starting items (that is, if <em>k</em> starting items are administered, the first <em>(k-1)</em> ability levels and standard errors are missing). This can however be avoided by fixing the argument <code>allTheta</code> to <code>TRUE</code> (by default it is <code>FALSE</code>). In this case, all provisional ability estimates and standard errors are computed and returned, but in the display of th output file, the first <em>(k-1)</em> abilities and standard errors are printed in parentheses (otherwise they are returned as <code>NA</code> values). Note that <code>allTheta</code> is ignored if no starting item was selected (that is, if argument <code>nrItems</code> of the <code>start</code> list is set to zero).
+</p>
+<p>The output of <code>randomCAT</code>, as displayed by the <code>print.cat</code> function, can be stored in a text file provided that  <code>save.output</code> is set to <code>TRUE</code> (the default value <code>FALSE</code> does not execute the storage). In this case, the <code>(output</code> argument mus hold three character values: the path to where the output file must be stored, the name of  the output file, and the type of output file. If the path is not provided (i.e. left to its default value <code>"path"</code>), it will be saved in the default working directory. The default name is <code>"name"</code>, and the default type is <code>"csv"</code>. Any other value yields a text file. See the <b>Examples</b> section for an illustration. 
+</p>
+<p>The function <code>plot.cat</code> represents the set of provisional and final ability estimates througghout the test. Corresponding confidence intervals (with confidence level defined by the argument <code>alpha</code>) are also drawn if <code>ci=TRUE</code> (which is <em>not</em> the default value), except when stepsize adjustment was made for constant patterns (as the standard error cannot be estimated at this stage). The true ability level can be drawn by a horizontal solid line by specifying <code>trueTh=TRUE</code> (which is the default value); setting it to <code>FALSE</code> will undo the drawing. Finally, any classification threshold can be additionally displayed by specifying a numeric value to the argument <code>classThr</code>. The default value <code>NULL</code> does not display any threshold.
+</p>
+<p>Finally, the plot can be saved in an external file, either as PDF or JPEG format. First, the argument <code>save.plot</code> must be set to <code>TRUE</code> (default is <code>FALSE</code>). Then, the file path for figure storage, the name of the figure and its format are specified through the argument <code>save.options</code>, all as character strings. See the <code>Examples</code> section for further information and a practical example.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The function <code>randomCAT</code> returns a list of class "cat" with the following arguments:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>trueTheta</code></td>
+<td>
+<p>the value of the <code>trueTheta</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>the value of the <code>model</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>testItems</code></td>
+<td>
+<p>a vector with the items that were administered during the test.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>itemPar</code></td>
+<td>
+<p>a matrix with the parameters of the items administered during the test.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>itemNames</code></td>
+<td>
+<p>either a vector wit the names of the selected items during the CAT, or <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pattern</code></td>
+<td>
+<p>the generated response pattern (as vector of 0 and 1 entries).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thetaProv</code></td>
+<td>
+<p>a vector with the provisional ability estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seProv</code></td>
+<td>
+<p>a vector with the standard errors of the provisional ability estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ruleFinal</code></td>
+<td>
+<p>either the stopping rule(s) that was (were) satisfied to make the CAT stop, or <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thFinal</code></td>
+<td>
+<p>the final ability estimate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seFinal</code></td>
+<td>
+<p>the standard error of the final ability estimate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ciFinal</code></td>
+<td>
+<p>the confidence interval of the final ability estimate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min.length</code></td>
+<td>
+<p>the value of the <code>min.length</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>a.stratified</code></td>
+<td>
+<p>the value of the <code>a.stratified</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>genSeed</code></td>
+<td>
+<p>the value of the <code>genSeed</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>startFixItems</code></td>
+<td>
+<p>the value of the <code>start$fixItems</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>startSeed</code></td>
+<td>
+<p>the value of the <code>start$seed</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>startNrItems</code></td>
+<td>
+<p>the value of the <code>start$nrItems</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>startTheta</code></td>
+<td>
+<p>the value of the <code>start$theta</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>startD</code></td>
+<td>
+<p>the value of the <code>start$D</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>startRandomesque</code></td>
+<td>
+<p>the value of the <code>start$randomesque</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>startThStart</code></td>
+<td>
+<p>the starting ability values used for selecting the first items of the test.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>startSelect</code></td>
+<td>
+<p>the value of the <code>start$startSelect</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>startCB</code></td>
+<td>
+<p>logical value, being <code>TRUE</code> if both <code>cbControl</code> is not <code>NULL</code> and <code>start$cb.control</code> is <code>TRUE</code>, and <code>FALSE</code> otherwise.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>provMethod</code></td>
+<td>
+<p>the value of the <code>test$method</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>provDist</code></td>
+<td>
+<p>the value of the <code>test$priorDist</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>provPar</code></td>
+<td>
+<p>the value of the <code>test$priorPar</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>provWeight</code></td>
+<td>
+<p>the value of the <code>test$weight</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>provTuCo</code></td>
+<td>
+<p>the value of the <code>test$tuCo</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>provSemType</code></td>
+<td>
+<p>the value of the <code>test$sem.type</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>provSemExact</code></td>
+<td>
+<p>the value of the <code>test$sem.exact</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>se.ase</code></td>
+<td>
+<p>the value of the <code>test$se.ase</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>provRange</code></td>
+<td>
+<p>the value of the <code>test$range</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>provD</code></td>
+<td>
+<p>the value of the <code>test$D</code> argument (or its default value if missing)or <code>NA</code> if <code>model</code> is not <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>itemSelect</code></td>
+<td>
+<p>the value of the <code>test$itemSelect</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>infoType</code></td>
+<td>
+<p>the value of the <code>test$infoType</code> argument (or its default value if missing). Not returned if <code>model</code> is not <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>randomesque</code></td>
+<td>
+<p>the value of the <code>test$randomesque</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>AP</code></td>
+<td>
+<p>the value of the <code>test$AP</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>constantPattern</code></td>
+<td>
+<p>the value of the <code>test$constantPatt</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cbControl</code></td>
+<td>
+<p>the value of the <code>cbControl</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cbGroup</code></td>
+<td>
+<p>the value of the <code>itemBank$cbGroup</code> element of the item bank <code>itemBank</code> (for dichotomous IRT models), or the <code>cbGroup</code> element returned by the <code>breakBank</code> function (for polytomous IRT models), or <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stopRule</code></td>
+<td>
+<p>the value of the <code>stop$rule</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stopThr</code></td>
+<td>
+<p>the value of the <code>stop$thr</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stopAlpha</code></td>
+<td>
+<p>the value of the <code>stop$alpha</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>endWarning</code></td>
+<td>
+<p>a logical indactor indicating whether the adaptive test stopped because the stopping rule(s) was (were) satisfied, or becasue all items in the bank were administered.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>finalMethod</code></td>
+<td>
+<p>the value of the <code>final$method</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>finalDist</code></td>
+<td>
+<p>the value of the <code>final$priorDist</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>finalPar</code></td>
+<td>
+<p>the value of the <code>final$priorPar</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>finalWeight</code></td>
+<td>
+<p>the value of the <code>final$weight</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>finalTuCo</code></td>
+<td>
+<p>the value of the <code>final$tuCo</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>finalSemType</code></td>
+<td>
+<p>the value of the <code>final$sem.type</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>finalSemExact</code></td>
+<td>
+<p>the value of the <code>final$sem.exact</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>finalRange</code></td>
+<td>
+<p>the value of the <code>final$range</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>finalD</code></td>
+<td>
+<p>the value of the <code>final$D</code> argument (or its default value if missing), or <code>NA</code> if <code>model</code> is not <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>finalAlpha</code></td>
+<td>
+<p>the value of the <code>final$alpha</code> argument (or its default value if missing).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save.output</code></td>
+<td>
+<p>the value of the <code>save.output</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output</code></td>
+<td>
+<p>the value of the <code>output</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>assigned.responses</code></td>
+<td>
+<p>a logical value, being <code>TRUE</code> if <code>responses</code> was provided or <code>FALSE</code> <code>responses</code> was set to <code>NULL</code>.</p>
+</td>
+</tr>
+</table>
+<p>The function <code>print.cat</code> returns similar (but differently organized) results. 
+</p>
+
+
+<h3>Note</h3>
+
+<p>When computing the exact standard errors, the number of test items should not be larger than 10 under the 2PL model or any more complex model. This constraint does not hold under the 1PL model.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>David Magis <br>
+Department of Psychology, University of Liege, Belgium <br><a href="mailto:david.magis@uliege.be">david.magis@uliege.be</a>
+</p>
+<p>Juan Ramon Barrada <br>
+Department of Psychology and Sociology, Universidad Zaragoza, Spain <br><a href="mailto:barrada@unizar.es">barrada@unizar.es</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Barrada, J. R., Olea, J., Ponsoda, V., and Abad, F. J. (2010). A method for the comparison of item selection rules in computerized adaptive testing. <em>Applied Psychological Measurement</em>, <em>20</em>, 213-229. doi: <a href="https://doi.org/10.1177/0146621610370152">10.1177/0146621610370152</a>
+</p>
+<p>Barton, M.A., and Lord, F.M. (1981). <em>An upper asymptote for the three-parameter logistic item-response model</em>.
+Research Bulletin 81-20. Princeton, NJ: Educational Testing Service.
+</p>
+<p>Birnbaum, A. (1969). Statistical theory for logistic mental test models with a prior distribution of ability.
+<em>Journal of Mathematical Psychology, 6</em>, 258-276. doi: <a href="https://doi.org/10.1016/0022-2496(69)90005-4">10.1016/0022-2496(69)90005-4</a>
+</p>
+<p>Bock, R. D., and Mislevy, R. J. (1982). Adaptive EAP estimation of ability in a microcomputer environment. 
+<em>Applied Psychological Measurement, 6</em>, 431-444. doi: <a href="https://doi.org/10.1177/014662168200600405">10.1177/014662168200600405</a>
+</p>
+<p>Chang, H.-H., and Ying, Z. (1999). A-stratified multistage computerized adaptive testing. <em>Applied Psychological Measurement, 23</em>, 211-222. doi: <a href="https://doi.org/10.1177/01466219922031338">10.1177/01466219922031338</a>
+</p>
+<p>Haley, D.C. (1952). <em>Estimation of the dosage mortality relationship when the dose is subject to error</em>. Technical report no 15. Palo Alto, CA: Applied Mathematics and Statistics Laboratory, Stanford University. 
+</p>
+<p>Jeffreys, H. (1939). <em>Theory of probability</em>. Oxford, UK: Oxford University Press.
+</p>
+<p>Jeffreys, H. (1946). An invariant form for the prior probability in estimation problems. <em>Proceedings of the Royal Society of London. Series A, Mathematical and Physical Sciences, 186</em>, 453-461.
+</p>
+<p>Kingsbury, G. G., and Zara, A. R. (1989). Procedures for selecting items for computerized adaptive tests. <em>Applied Measurement in Education, 2</em>, 359-375. doi: <a href="https://doi.org/10.1207/s15324818ame0204_6">10.1207/s15324818ame0204_6</a>
+</p>
+<p>Lord, F. M. (1980). <em>Applications of item response theory to practical testing problems</em>. Hillsdale, NJ: Lawrence Erlbaum.
+</p>
+<p>Magis, D. and Barrada, J. R. (2017). Computerized Adaptive Testing with R: Recent Updates of the Package <em>catR</em>. <em>Journal of Statistical Software</em>, <em>Code Snippets</em>, <em>76(1)</em>, 1-18. doi: <a href="https://doi.org/10.18637/jss.v076.c01">10.18637/jss.v076.c01</a>
+</p>
+<p>Magis, D., and Raiche, G. (2012). Random Generation of Response Patterns under Computerized Adaptive Testing with the R Package <em>catR</em>. <em>Journal of Statistical Software</em>, <em>48 (8)</em>, 1-31. doi: <a href="https://doi.org/10.18637/jss.v048.i08">10.18637/jss.v048.i08</a>
+</p>
+<p>Schuester, C., and Yuan, K.-H. (2011). Robust estimation of latent ability in item response models. <em>Journal of Educational and Behavioral Statistics, 36</em>, 720)735.doi: <a href="https://doi.org/10.3102/1076998610396890">10.3102/1076998610396890</a>
+</p>
+<p>Thompson, N. A. (2009). Item selection in computerized classification testing. <em>Educational and Psychological Measurement, 69</em>, 778-793. doi: <a href="https://doi.org/10.1177/0013164408324460">10.1177/0013164408324460</a>
+</p>
+<p>Urry, V. W. (1970). <em>A Monte Carlo investigation of logistic test models.</em> Unpublished doctoral dissertation. West Lafayette, IN: Purdue University.
+</p>
+<p>van der Linden, W. J. (1998). Bayesian item selection criteria for adaptive testing. <em>Psychometrika, 63</em>, 201-216. doi: <a href="https://doi.org/10.1007/BF02294775">10.1007/BF02294775</a>
+</p>
+<p>Veerkamp, W. J. J., and Berger, M. P. F. (1997). Some new item selection criteria for adaptive testing. <em>Journal of Educational and Behavioral Statistics, 22</em>, 203-226. doi: <a href="https://doi.org/10.3102/10769986022002203">10.3102/10769986022002203</a>
+</p>
+<p>Warm, T.A. (1989). Weighted likelihood estimation of ability in item response models. <em>Psychometrika, 54</em>, 427-450. doi: <a href="https://doi.org/10.1007/BF02294627">10.1007/BF02294627</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>testList</code>, <code>startItems</code>, <code>nextItem</code>, <code>thetaEst</code>, <code>semTheta</code>, <code>eapEst</code>,
+<code>eapSem</code>, <code>MWI</code>, <code>MEI</code>, <code>KL</code>, <code>breakBank</code>, <code>genPolyMatrix</code>,
+<code>genPattern</code>, <code>aStratified</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Dichotomous models ##
+
+ # Loading the 'tcals' parameters 
+ data(tcals)
+
+ # Matrix of item parameters (with no content balancing)
+ bank &lt;- as.matrix(tcals[,1:4])
+ 
+ # Creation of a starting list: 5 items with evenly spread theta values
+ start &lt;- list(theta = -2:2)
+
+ # Creation of 'test' list: weighted likelihood estimation of provisional ability, 
+ # and MFI criterion for next item selection
+ test &lt;- list(method = "WL", itemSelect = "MFI")
+
+ # Creation of 'final' list: EAP estimation of final ability
+ final &lt;- list(method = "EAP")
+
+ # Creation of a stopping rule: precision criterion, standard error to be reached 0.3
+ stop &lt;- list(rule = "precision", thr = 0.3)
+
+ # CAT test
+ res &lt;- randomCAT(0, bank, start = start, test = test, stop = stop, final = final)
+
+## Not run: 
+ # Update of the stopping rule: by adding a length criterion, with threshold of 10 items
+ stop &lt;- list(rule = c("precision", "length"), thr = c(0.3, 10))
+
+ # CAT test
+ res &lt;- randomCAT(0, bank, start = start, test = test, stop = stop, final = final)
+
+ # Modifying 'start', 'test' and 'final' lists to compute exact SEs
+ start.exact &lt;- list(theta = c(-1, 1))
+ test.exact &lt;- list(method = "WL", itemSelect = "MFI", sem.exact = TRUE)
+ final.exact &lt;- list(method = "WL", sem.exact = TRUE)
+ res.exact &lt;- randomCAT(0, bank, start = start.exact, test = test.exact, 
+                        stop = stop, final = final.exact)
+
+ # Creation of a (purely artificial) response pattern for post-hoc simulation
+ resp &lt;- rbinom(nrow(bank), 1, 0.5)
+ res.ph &lt;- randomCAT(0, bank, start = start, test = test, stop = stop, final = final,
+        responses = resp)
+
+ # New 'test' and 'final' rules (BM and EAP estimation with Jeffreys' prior, 
+ # randomesque value 5)
+ test2 &lt;- list(method = "BM", priorDist = "Jeffreys", randomesque = 5)
+ final2 &lt;- list(method = "EAP", priorDist = "Jeffreys")
+
+ # New stopping rule: classification criterion, with classification threshold 0 and 
+ # alpha level 0.05
+ stop2 &lt;- list(rule = "classification", thr = 0, alpha = 0.05)
+
+ # CAT test with new 'test', 'stop' and 'final' rules
+ res2 &lt;- randomCAT(0, bank, start = start, test = test2, stop = stop2, final = final2)
+
+ # New stopping rule: classification criterion, with classification threshold 0.5
+ # and alpha level 0.05
+ stop3 &lt;- list(rule = "classification", thr = 0.5, alpha = 0.05)
+
+ # CAT test with new 'stop' rule
+ res3 &lt;- randomCAT(0, bank, start = start, test = test2, stop = stop3, final=final2)
+
+ # new 'test' and 'stop' rule for next item selection
+ test3 &lt;- list(method = "WL", itemSelect = "MLWI")
+ stop4 &lt;- list(rule = "length",thr = 10)
+ res4 &lt;- randomCAT(0, bank, start = start, test = test3, stop = stop4, final = final2)
+
+ # Creation of the 'cbList' list with arbitrary proportions
+ cbList &lt;- list(names = c("Audio1", "Audio2", "Written1", "Written2",
+        "Written3"), props = c(0.1, 0.2, 0.2, 0.2, 0.3))
+
+ # CAT test with 'start', 'test', 'stop4' and 'final2' lists and content balancing 
+ # using 'cbList' ('tcals' must be used now for content balancing)
+ stop4 &lt;- list(rule = "length",thr = 10)
+ res5 &lt;- randomCAT(0, tcals, start = start, test = test, stop = stop4, final = final2, 
+      cbControl = cbList)
+
+ # new 'start' list to force content balancing control at the starting step
+ start2 &lt;- list(seed = 1, nrItems = 3, cb.control = TRUE)
+ res6 &lt;- randomCAT(0, tcals, start = start2, test = test, stop = stop4, final = final2, 
+      cbControl = cbList)
+
+ # Using progressive item selection rule and requiring all ability estimates and SEs
+ test4 &lt;- list(itemSelect = "progressive")
+ res6 &lt;- randomCAT(0, tcals, start = start, test = test4, stop = stop4, final = final, 
+      cbControl = cbList, allTheta = TRUE)
+
+ # Saving the output in the external 'out' text file within folder 'Program Files' 
+ # of hard drive 'C'
+ res5 &lt;- randomCAT(0, tcals, start = start, test = test, stop = stop4, final = final2, 
+      cbControl = cbList, save.output = TRUE, 
+      output = c("c:/Program Files/", "out", "txt"))
+
+ # Plotting results
+ plot(res)
+ plot(res, ci = TRUE)
+ plot(res, ci = TRUE, trueTh = FALSE)
+ plot(res, ci = TRUE, classThr = 1)
+
+ # Saving last figure into PDF file 'figure' within folder 'C:/Program Files/'
+ plot(res, ci = TRUE, classThr = 1, save.plot = TRUE,
+      save.options = c("c:/Program Files/", "figure", "pdf"))
+
+ # With mistake
+ plot(res, ci = 0.05)
+ plot(res, classThr = TRUE)
+
+
+## Polytomous models ##
+
+ # Generation of an item bank under GRM with 100 items and at most 4 categories
+ m.GRM &lt;- genPolyMatrix(100, 4, "GRM")
+ m.GRM &lt;- as.matrix(m.GRM)
+
+ # CAT options
+ start &lt;- list(theta = c(-1, 0),startSelect = "MFI")
+ test &lt;- list(method = "BM", itemSelect = "KL")
+ stop &lt;- list(rule = "precision", thr = 0.4)
+ final &lt;- list(method = "EAP")
+
+ # CAT test
+ res &lt;- randomCAT(0, m.GRM,model = "GRM", start = start, test = test, stop = stop,
+ 	final = final)
+ res
+
+
+ # Creation of an appropriate list for content balancing
+ # Equal proprotions across subgroups of items
+ cbList &lt;- list(names = c("Group1", "Group2", "Group3", "Group4"), props = rep(1,4))
+
+ # With content balancing, all ability estimates and progressive method
+ m.GRM &lt;- genPolyMatrix(100, 4, "GRM", cbControl = cbList)
+ test &lt;- list(method = "BM", itemSelect = "progressive")
+ res &lt;- randomCAT(0, m.GRM, model = "GRM", start = start, test = test, stop = stop, 
+ 	final = final, cbControl = cbList, allTheta = TRUE)
+ res
+
+ # Loading the cat_pav data
+ data(cat_pav)
+ cat_pav &lt;- as.matrix(cat_pav)
+
+ stop &lt;- list(rule = "length", thr = 10)
+ res &lt;- randomCAT(0, cat_pav, model = "GPCM", start = start, test = test, stop = stop, 
+ 	final = final, allTheta = TRUE)
+ res
+ 
+## End(Not run)
+</code></pre>
+
+
+</div>

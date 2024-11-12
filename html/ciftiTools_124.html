@@ -1,0 +1,363 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>read_cifti</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Read a CIFTI file</h2>
+
+<h3>Description</h3>
+
+<p>Read in a CIFTI file as a <code>"xifti"</code> object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">read_cifti(
+  cifti_fname = NULL,
+  surfL_fname = NULL,
+  surfR_fname = NULL,
+  brainstructures = "all",
+  idx = NULL,
+  resamp_res = NULL,
+  resamp_method = c("barycentric", "adaptive"),
+  areaL_original_fname = NULL,
+  areaR_original_fname = NULL,
+  flat = FALSE,
+  mwall_values = c(NA, NaN),
+  verbose = FALSE,
+  ...
+)
+
+readCIfTI(
+  cifti_fname = NULL,
+  surfL_fname = NULL,
+  surfR_fname = NULL,
+  brainstructures = "all",
+  idx = NULL,
+  resamp_res = NULL,
+  resamp_method = c("barycentric", "adaptive"),
+  areaL_original_fname = NULL,
+  areaR_original_fname = NULL,
+  flat = FALSE,
+  mwall_values = c(NA, NaN),
+  verbose = FALSE,
+  ...
+)
+
+readcii(
+  cifti_fname = NULL,
+  surfL_fname = NULL,
+  surfR_fname = NULL,
+  brainstructures = "all",
+  idx = NULL,
+  resamp_res = NULL,
+  resamp_method = c("barycentric", "adaptive"),
+  areaL_original_fname = NULL,
+  areaR_original_fname = NULL,
+  flat = FALSE,
+  mwall_values = c(NA, NaN),
+  verbose = FALSE,
+  ...
+)
+
+read_xifti(
+  cifti_fname = NULL,
+  surfL_fname = NULL,
+  surfR_fname = NULL,
+  brainstructures = "all",
+  idx = NULL,
+  resamp_res = NULL,
+  resamp_method = c("barycentric", "adaptive"),
+  areaL_original_fname = NULL,
+  areaR_original_fname = NULL,
+  flat = FALSE,
+  mwall_values = c(NA, NaN),
+  verbose = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cifti_fname</code></td>
+<td>
+<p>File path to a CIFTI file (ending in ".d*.nii").</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>surfL_fname</code></td>
+<td>
+<p>(Optional) File path to a GIFTI surface geometry
+file representing the left cortex.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>surfR_fname</code></td>
+<td>
+<p>(Optional) File path to a GIFTI surface geometry
+file representing the right cortex.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>brainstructures</code></td>
+<td>
+<p>Character vector indicating which brain structure(s)
+to obtain: <code>"left"</code> (left cortex), <code>"right"</code> (right cortex)
+and/or <code>"subcortical"</code> (subcortex and cerebellum). Can also be
+<code>"all"</code> (obtain all three brain structures). Default:
+<code>"all"</code>.
+</p>
+<p>If a brain structure is indicated but does not exist in the CIFTI file, a
+warning will occur and that brain structure will be skipped.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>idx</code></td>
+<td>
+<p>Numeric vector indicating the data indices (columns) to read. If
+<code>NULL</code> (default), read in all the data. Must be a subset of the indices
+present in the file, or an error will occur.
+</p>
+<p>For high-resolution CIFTI files, reading in only a subset of the data saves
+memory, but will be slower than reading in the entire file due to the
+required intermediate steps.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resamp_res</code></td>
+<td>
+<p>Resolution to resample the cortical data and surface to.
+Default: <code>NULL</code> (do not resample). If not <code>NULL</code>, the data will
+have to be read in with <code>-cifti-separate</code>, which is slower than
+<code>-cifti-convert -to-gifti-ext</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resamp_method</code></td>
+<td>
+<p><code>"barycentric"</code> (default) or <code>"adaptive"</code>
+resampling for the metric or label data. These options correspond to the
+Workbench command options <code>"BARYCENTRIC"</code> and <code>"ADAP_BARY_AREA"</code>,
+respectively.
+</p>
+<p>While adaptive resampling is recommended for metric or label
+data, it requires that <code>area[L/R]_original_fname</code> be provided.
+</p>
+<p>Note that surfaces will resampled using barycentric resampling regardless of
+<code>resamp_method</code>, because barycentric resampling rather than adaptive
+resampling is recommended for surface data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>areaL_original_fname, areaR_original_fname</code></td>
+<td>
+<p>File paths to the surfaces
+to use for vertex area correction during adaptive resampling. (Only used if
+resampling with the adaptive method.) <code>area[L/R]_original_fname</code> should
+match the current resolution of the data.
+</p>
+<p>For resampling: the Workbench command for adaptive resampling requires the
+target surfaces for area correction too. But to make the workflow easier,
+<code>ciftiTools</code> will resample <code>area[L/R]_original_fname</code> with the
+barycentric method and use that for the target area.
+</p>
+<p>For remapping: <code>area[L/R]_target_fname</code> must be directly provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>flat</code></td>
+<td>
+<p>Should the result be flattened into a single matrix?
+</p>
+<p>If <code>FALSE</code> (default), the result will be a <code>"xifti"</code> object.
+</p>
+<p>If <code>TRUE</code>, the result will be a <code class="reqn">T \times G</code> matrix (<code class="reqn">T</code>
+measurements, <code class="reqn">G</code> grayordinates not including the medial wall if it's
+excluded from the ROI). All below arguments will be ignored because the
+brain structures cannot be identified. Surfaces will not be appended.
+Resampling is also not possible. <code>flat==TRUE</code> is the fastest way to
+read in just the CIFTI data.
+</p>
+<p>If <code>TRUE</code>, the grayordinates will be ordered by left cortex, right
+cortex, and then subcortex. Subcortical voxels will be ordered by alphabetical
+label. However, where each brainstructure (and subcortical structure) begins
+and ends cannot be determined. The medial wall locations and subcortical
+brain mask are also not included. The data matrix will be identical to that
+created by <code>-cifti-convert -to-gifti-ext</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mwall_values</code></td>
+<td>
+<p>If the medial wall locations are not indicated in the
+CIFTI, use these values to infer the medial wall mask. Default:
+<code>c(NA, NaN)</code>. If <code>NULL</code>, do not attempt to infer the medial wall.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Should occasional updates be printed? Default: <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to <code>read_cifti_convert</code> or
+<code>read_cifti_separate</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>First, metadata is obtained with <code>info_cifti</code>. Then, if no
+resampling is requested, the <code>-cifti-convert -to-gifti-ext</code> Workbench
+Command is used to "flatten" the data and save it as a metric or label GIFTI
+file, which is read in and separated by brainstructure according to the metadata
+(<code>read_cifti_convert</code>). Otherwise, if sampling is requested,
+then the CIFTI is separated into its GIFTI and NIFTI components, resampled,
+and then re-assembled (<code>read_cifti_separate</code>). The former is
+much faster for large CIFTI files, so the latter is only used when necessary
+for resampling.
+</p>
+<p>If <code>cifti_fname</code> is not provided, then only the surfaces are read in.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If <code>!flat</code>, a <code>"xifti"</code> object. Otherwise, a <code class="reqn">T \times G</code>
+matrix (<code class="reqn">T</code> measurements, <code class="reqn">G</code> grayordinates).
+</p>
+
+
+<h3>Connectome Workbench</h3>
+
+<p>This function interfaces with the <code>"-cifti-convert"</code> Workbench command if
+resampling is not needed, and the <code>"-cifti-separate"</code> Workbench command
+if resampling is needed.
+</p>
+
+
+<h3>Label Levels</h3>
+
+<p><code>xifti$meta$subcort$labels</code> is a factor with the following levels:
+</p>
+
+<ol>
+<li>
+<p>Cortex-L
+</p>
+</li>
+<li>
+<p>Cortex-R
+</p>
+</li>
+<li>
+<p>Accumbens-L
+</p>
+</li>
+<li>
+<p>Accumbens-R
+</p>
+</li>
+<li>
+<p>Amygdala-L
+</p>
+</li>
+<li>
+<p>Amygdala-R
+</p>
+</li>
+<li>
+<p>Brain Stem
+</p>
+</li>
+<li>
+<p>Caudate-L
+</p>
+</li>
+<li>
+<p>Caudate-R
+</p>
+</li>
+<li>
+<p>Cerebellum-L
+</p>
+</li>
+<li>
+<p>Cerebellum-R
+</p>
+</li>
+<li>
+<p>Diencephalon-L
+</p>
+</li>
+<li>
+<p>Diencephalon-R
+</p>
+</li>
+<li>
+<p>Hippocampus-L
+</p>
+</li>
+<li>
+<p>Hippocampus-R
+</p>
+</li>
+<li>
+<p>Pallidum-L
+</p>
+</li>
+<li>
+<p>Pallidum-R
+</p>
+</li>
+<li>
+<p>Putamen-L
+</p>
+</li>
+<li>
+<p>Putamen-R
+</p>
+</li>
+<li>
+<p>Thalamus-L
+</p>
+</li>
+<li>
+<p>Thalamus-R
+</p>
+</li>
+</ol>
+<p>These correspond to the same structures as given by
+<code>ft_read_cifti</code> in the <code>cifti-matlab</code> MATLAB toolbox. Note that
+the first two levels (left and right cortex) are not used.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other common: 
+<code>is.cifti()</code>,
+<code>resample_cifti()</code>,
+<code>smooth_cifti()</code>,
+<code>view_xifti()</code>,
+<code>write_cifti()</code>
+</p>
+<p>Other reading: 
+<code>as.xifti()</code>,
+<code>info_cifti()</code>,
+<code>load_parc()</code>,
+<code>load_surf()</code>,
+<code>read_surf()</code>,
+<code>read_xifti2()</code>
+</p>
+
+
+</div>

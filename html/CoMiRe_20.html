@@ -1,0 +1,136 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>BMD</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Benchmark dose</h2>
+
+<h3>Description</h3>
+
+<p>Benchmark dose associated to a particular risk
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">BMD(level, risk, x, alpha=0.05)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>level</code></td>
+<td>
+<p>dose level of interest.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>risk</code></td>
+<td>
+<p><code>summary.risk$mcmc.risk</code> from the output of <code>add.risk</code> function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>numeric vector for the covariate relative to the dose of exposure used in <code>comire.gibbs</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>level of the credible bands.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A dataframe containing as variables:
+</p>
+
+<ul>
+<li>
+<p><code>q</code> the dose level of interest.
+</p>
+</li>
+<li>
+<p><code>BMD</code> the benchmark dose.
+</p>
+</li>
+<li>
+<p><code>low</code> lower credible limit.
+</p>
+</li>
+<li>
+<p><code>upp</code> upper credible limit.
+</p>
+</li>
+<li>
+<p><code>BMDL</code> a more conservative benchmark dose.
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Antonio Canale
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">{
+data(CPP)
+attach(CPP)
+
+n &lt;- NROW(CPP)
+J &lt;- H &lt;- 10
+
+premature &lt;- as.numeric(gestage&lt;=37)
+
+mcmc &lt;- list(nrep=5000, nb=2000, thin=5, ndisplay=4)
+
+## too few iterations to be meaningful. see below for safer and more comprehensive results
+
+mcmc &lt;- list(nrep=10, nb=2, thin=1, ndisplay=4) 
+
+prior &lt;- list(mu.theta=mean(gestage), k.theta=10, eta=rep(1, J)/J, 
+              alpha=rep(1,H)/H, a=2, b=2, J=J, H=H)
+              
+fit.dummy &lt;- comire.gibbs(gestage, dde, family="continuous", 
+                     mcmc=mcmc, prior=prior, seed=1, max.x=180)
+                     
+risk.data &lt;- add.risk(y = gestage, x = dde, fit = fit.dummy, mcmc = mcmc, 
+    a = 37, x.grid = seq(0, max(dde), length = 100))
+bmd.data &lt;- BMD(seq(0,.20, length=50), risk.data$mcmc.risk, 
+x=seq(0,max(dde), length=100), alpha=0.05)
+bmd.plot(bmd.data)       
+                     
+
+## safer procedure with more iterations (it may take some time)
+
+mcmc &lt;- list(nrep=5000, nb=2000, thin=5, ndisplay=4)
+
+## Fit the model for continuous y 
+
+prior &lt;- list(mu.theta=mean(gestage), k.theta=10, eta=rep(1, J)/J, 
+              alpha=rep(1,H)/H, a=2, b=2, J=J, H=H)
+              
+fit &lt;- comire.gibbs(gestage, dde, family="continuous", 
+                     mcmc=mcmc, prior=prior, seed=5, max.x=180)
+
+
+risk.data &lt;- add.risk(y = gestage, x = dde, fit = fit, mcmc = mcmc,
+a = 37, x.grid = seq(0, max(dde), length = 100))
+bmd.data &lt;- BMD(seq(0,.20, length=50), risk.data$mcmc.risk, 
+x=seq(0,max(dde), length=100), alpha=0.05)
+bmd.plot(bmd.data)       
+
+
+}
+</code></pre>
+
+
+</div>

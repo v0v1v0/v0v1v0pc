@@ -1,0 +1,189 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>qi_builder</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Find quantities of interest from generalized linear models</h2>
+
+<h3>Description</h3>
+
+<p>Find quantities of interest from generalized linear models
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">qi_builder(obj, newdata, FUN, ci = 0.95, nsim = 1000, slim = FALSE,
+  large_computation = FALSE, original_order = FALSE, b_sims, mu, Sigma,
+  verbose = TRUE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>obj</code></td>
+<td>
+<p>a fitted model object from which to base coefficient simulations
+on.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdata</code></td>
+<td>
+<p>an optional data frame of fitted values with column names
+corresponding to coefficient names in <code>obj</code> or <code>mu</code>/<code>Sigma</code>.
+Note that variables not included in <code>newdata</code> will be fitted at 0. If
+<code>missing</code> then observations used to fit the model in <code>obj</code> will be
+used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FUN</code></td>
+<td>
+<p>a function for calculating how to find the quantity of interest
+from a vector of the fitted linear systematic component. It must return
+a numeric vector. If <code>missing</code> then a normal
+linear regression model is assumed and the predicted values are returned
+(i.e. the fitted linear systematic component from
+<code>linear_systematic</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ci</code></td>
+<td>
+<p>the proportion of the central interval of the simulations to
+return. Must be in (0, 1] or equivalently (0, 100]. Note: if <code>ci = 1</code>
+then the full interval (i.e. 100 percent) is assumed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsim</code></td>
+<td>
+<p>number of simulations to draw.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>slim</code></td>
+<td>
+<p>logical indicating whether to (if <code>FALSE</code>) return all
+simulations in the central interval specified by <code>ci</code> for each fitted
+scenario or (if <code>TRUE</code>) just the minimum, median, and maxium values.
+See <code>qi_slimmer</code> for more details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>large_computation</code></td>
+<td>
+<p>logical. If <code>newdata</code> is not supplied,
+whether to allow &gt; 100000 simulated quantities of interest to be found.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>original_order</code></td>
+<td>
+<p>logical whether or not to keep the original scenario
+order when <code>slim = TRUE</code>. Choosing <code>FALSE</code> can imporove computation
+time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>b_sims</code></td>
+<td>
+<p>an optional data frame created by <code>b_sim</code> of
+simulated coefficients. Only used if <code>obj</code> is not supplied.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mu</code></td>
+<td>
+<p>an optional vector giving the means of the variables. If <code>obj</code>
+or <code>b_sims</code> is supplied then <code>mu</code> is ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Sigma</code></td>
+<td>
+<p>an optional positive-definite symmetric matrix specifying the
+covariance matrix of the variables. If <code>obj</code> is supplied then
+<code>Sigma</code> is ignored. If your model includes an intercept, this should be
+given the name <code>intercept_</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>logical. Whether to include full set of messages or not.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments to passed to <code>linear_systematic</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>If <code>slimmer = FALSE</code> a data frame of fitted values supplied in
+<code>newdata</code> and associated simulated quantities of interest for all
+simulations in the central interval specified by <code>ci</code>. The quantities
+of interest are in a column named <code>qi_</code>.
+</p>
+<p>If <code>slimmer = TRUE</code> a data frame of fitted values supplied in
+<code>newdata</code> and the minimum, median, and maximum values of the central
+interval specified by <code>ci</code> for each scenario are returned in three
+columns named <code>qi_min</code>, <code>qi_median</code>, and <code>qi_max</code>,
+respectively.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(car)
+
+## Normal linear model
+m1 &lt;- lm(prestige ~ education + type, data = Prestige)
+
+# Using observed data as scenarios
+linear_qi_obs &lt;- qi_builder(m1)
+
+# Create fitted values
+fitted_df_1 &lt;- expand.grid(education = 6:16, typewc = 1)
+
+linear_qi &lt;- qi_builder(m1, newdata = fitted_df_1)
+
+# Manually supply coefficient means and covariance matrix
+coefs &lt;- coef(m1)
+vcov_matrix &lt;- vcov(m1)
+
+linear_qi_custom_mu_Sigma &lt;- qi_builder(mu = coefs, Sigma = vcov_matrix,
+                                 newdata = fitted_df_1)
+
+## Logistic regression
+# Load data
+data(Admission)
+Admission$rank &lt;- as.factor(Admission$rank)
+
+# Estimate model
+m2 &lt;- glm(admit ~ gre + gpa + rank, data = Admission, family = 'binomial')
+
+# Specify fitted values
+m2_fitted &lt;- expand.grid(gre = seq(220, 800, by = 10), gpa = c(2, 4),
+                         rank = '4')
+
+# Function to find predicted probabilities from logistic regression models
+pr_function &lt;- function(x) 1 / (1 + exp(-x))
+
+# Find quantity of interest
+logistic_qi_1 &lt;- qi_builder(m2, m2_fitted, FUN = pr_function)
+
+logistic_qi_2 &lt;- qi_builder(m2, m2_fitted, FUN = pr_function,
+                         slim = TRUE)
+
+</code></pre>
+
+
+</div>

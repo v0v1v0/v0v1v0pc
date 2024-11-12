@@ -1,0 +1,427 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>MarginalModelFit</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>MarginalModelFit</h2>
+
+<h3>Description</h3>
+
+<p>Fits marginal models, by default using maximum likelihood. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">MarginalModelFit(dat, model, ShowSummary = TRUE, MaxSteps = 1000, MaxStepSize = 1, 
+    MaxError = 1e-20, StartingPoint = "Automatic", MaxInnerSteps = 2, 
+    ShowProgress = TRUE, CoefficientDimensions="Automatic", Labels="Automatic",
+    ShowCoefficients = TRUE, ShowParameters = FALSE, ParameterCoding = "Effect",
+    ShowCorrelations = FALSE, Method = "ML", Title = "Summary of model fit")
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>dat</code></td>
+<td>
+<p>vector of frequencies or data frame</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>list specified eg as <code>list(bt,coeff,at)</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ShowSummary</code></td>
+<td>
+<p>Whether or not to execute <code>summary()</code> of the output</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MaxSteps</code></td>
+<td>
+<p>integer: maximum number of steps of the algorithm</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MaxStepSize</code></td>
+<td>
+<p>number greater than 0 and at most 1: step size</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MaxError</code></td>
+<td>
+<p>numeric: maximum error term</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>StartingPoint</code></td>
+<td>
+<p>vector of starting frequencies corresponding to all cells in the manifest table</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MaxInnerSteps</code></td>
+<td>
+<p>nonnegative integer: only used for latent variable models, indicates number of steps in M step of EM algorithms</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ShowProgress</code></td>
+<td>
+<p>boolean or integer: FALSE for no progress information, TRUE or 1 for information at every step, an integer k for information at every k-th step</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CoefficientDimensions</code></td>
+<td>
+<p>numeric vector of dimensions of the table in which the coefficient vector is to be arranged</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Labels</code></td>
+<td>
+<p>list of characters or numbers indicating labels for dimensions of table in which the coefficient vector is to be arranged</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ShowCoefficients</code></td>
+<td>
+<p>boolean, indicating whether or not the coefficients are to be displayed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ShowParameters</code></td>
+<td>
+<p>boolean, indicating whether or not the parameters (computed from the coefficients) are to be displayed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ParameterCoding</code></td>
+<td>
+<p>Coding to be used for parameters, choice of <code>"Effect"</code>, <code>"Dummy"</code> and  <code>"Polynomial"</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ShowCorrelations</code></td>
+<td>
+<p>boolean, indicating whether or not to show the correlation matrix for the estimated coefficients</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Method</code></td>
+<td>
+<p>character, choice of "ML" for maximum likelihood or "GSK" for the GSK method</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Title</code></td>
+<td>
+<p>title of computation to appear at top of screen output</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The data can be a data frame or vector of frequencies. <code>MarginalModelFit</code> converts a data frame <code>dat</code> to a vector of 
+frequencies using <code>c(t(ftable(dat)))</code>.
+</p>
+<p>The model specification is fairly flexible. We first describe the most typical way to specify the model. 
+The model itself should typically first be written in the form of a constraint vector as
+<code class="reqn">B'\theta(A'\pi) = 0</code>
+where <em>B'</em>  is a contrast matrix, <em>A'</em> is matrix, normally of zeroes and ones, such that <em>A'pi</em> gives a vector of marginal probabilities, and the function theta yields 
+a list of (marginal) <em>coefficients</em>. The model is then specified as <code>model=list(bt,coeff,at)</code> where <code>bt</code> is the matrix <em>B'</em>, <code>at</code> is the matrix <em>A'</em>, and <code>coeff</code>
+represents the vector of coefficients using the generalized exp-log notation. For most of the models in the book, <code>bt</code> can be obtained directly using <code>ConstraintMatrix</code>,  
+<code>coeff</code> can be obtained directly using <code>SpecifyCoefficient</code>, and <code>at</code> can be obtained directly using <code>MarginalMatrix</code>.
+</p>
+<p>Note that CMM does not permit the <em>C</em> and <em>X</em> matrix in the model
+<code class="reqn">C'\theta(A'\pi) = X\beta</code>
+to be specified for use in the programme. The model has to be rewritten in terms of constraints as above, which is normally straightforward to do with the use of <code>ConstraintMatrix</code>. 
+For many purposes, estimates and standard errors for a beta vector as in the equation above can still be obtained using the optional argument <code>ShowParameters=TRUE</code>.
+</p>
+<p>There are two ways to specify <code>coeff</code>. The first is using the generalized exp-log notation, in which case <code>coeff[[1]]</code> should be a list of matrices, and 
+<code>coeff[[2]]</code> should be a list of predefined functions of the same length. The second is to set <code>coeff</code> equal to a predefined function; for example, marginal loglinear models 
+are obtained by setting <code>coeff="log"</code>.
+</p>
+<p>The model can be specified in various other ways: as <code>model=list(coeff,at)</code>, <code>model=list(bt,coeff)</code>, <code>model=at</code>, or even just <code>model=coeff</code>.
+Furthermore, the model
+<code class="reqn">B'\theta(A'\pi) = d</code>
+with <em>d</em> a nonzero vector is specified in the form <code>model=list(bt,coeff,at,d)</code>.
+</p>
+<p>To specify the simultaneous model
+<code class="reqn">B'\theta(A'\pi) = 0\\ \log\pi=X\beta</code>
+the extended model specification <code>model=list(margmodel,x)</code> should be used, where <code>margmodel</code> has one of the above forms, and <code>x</code> is a design matrix,
+which can be obtained using <code>DesignMatrix</code>. Fitting is often more efficient by specifying a loglinear model for the joint distribution in this way rather than
+using constraints.
+</p>
+<p>The default on-screen output when running <code>fit=MarginalModelFit(...)</code> is given by <code>summary(fit)</code>. Important here is the distinction between coefficients and parameters, briefly 
+described above. Standard output gives the coefficients. These are that part of <code>model</code> without the <code>bt</code> matrix, eg if the model is <code>list(bt,coeff,at)</code>
+then the coefficients are <code>list(coeff,at)</code>. If other coefficients are needed, <code>ModelStatistics</code> can be used.
+</p>
+<p>Latent variable models can be specified: if the size of the table for which <code>model</code> is specified is a multiple of the the size of the
+observed frequencies specified in <code>dat</code>, it is assumed this is due to the presence of latent variables. With respect to vectorization,
+the latent variables are assumed to change their value fastest.
+</p>
+<p>Convergence may not always be achieved with <code>MaxStepSize=1</code> and a lower value may need to be used, but not too low or convergence is slow. If the step size is too large, 
+a typical error message is "system is computationally singular: reciprocal condition number = 1.35775e-19"
+</p>
+
+
+<h3>Value</h3>
+
+<p>Most of the following are included in any output. Use <code>summary()</code> to get a summary of output.
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>FittedFrequencies</code></td>
+<td>
+<p>Vector of fitted frequencies for the full table (including any latent variables).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Method</code></td>
+<td>
+<p>Fitting method used (currently maximum likelihood, GSK or minimum discrimination information)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>LoglikelihoodRatio</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ChiSquare</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>DiscriminationInformation</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>WaldStatistic</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>DegreesOfFreedom</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PValue</code></td>
+<td>
+<p>p-value based on asymptotic chi-square approximation for likelihood ratio test statistic</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SampleSize</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>BIC</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Eigenvalues</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ManifestFittedFrequencies</code></td>
+<td>
+</td>
+</tr>
+</table>
+<p>For the “coefficients” in the equation bt.coeff(at.pi)=d, the following statistics are available:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>ObservedCoefficients</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FittedCoefficients</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CoefficientStandardErrors</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CoefficientZScores</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CoefficientAdjustedResiduals</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CoefficientCovarianceMatrix</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CoefficientCorrelationMatrix</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CoefficientAdjustedResidualCovarianceMatrix</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CoefficientDimensions</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CoefficientTableVariableLabels</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CoefficientTableCategoryLabels</code></td>
+<td>
+</td>
+</tr>
+</table>
+<p>The “parameters” are certain linear combinations of the coefficients. For example, if the coefficients are log probabilities, then the parameters are the usual loglinear parameters. 
+</p>
+<table><tr style="vertical-align: top;">
+<td><code>Parameters</code></td>
+<td>
+</td>
+</tr></table>
+<p>For the i-th subset of variables, the parameters are obtained by
+</p>
+<table><tr style="vertical-align: top;">
+<td><code>Parameters[[i]]$</code></td>
+<td>
+</td>
+</tr></table>
+<p>The following statistics for the parameters belonging to each subset of variable are available.
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>Parameters[[i]]$ObservedCoefficients</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Parameters[[i]]$FittedCoefficients</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Parameters[[i]]$CoefficientStandardErrors</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Parameters[[i]]$CoefficientZScores</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Parameters[[i]]$CoefficientAdjustedResiduals</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Parameters[[i]]$CoefficientCovarianceMatrix</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Parameters[[i]]$CoefficientCorrelationMatrix</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Parameters[[i]]$CoefficientAdjustedResidualCovarianceMatrix</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Parameters[[i]]$CoefficientDimensions</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Parameters[[i]]$CoefficientTableVariableLabels</code></td>
+<td>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Parameters[[i]]$CoefficientTableCategoryLabels</code></td>
+<td>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>W. P. Bergsma <a href="mailto:w.p.bergsma@lse.ac.uk">w.p.bergsma@lse.ac.uk</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Bergsma, W. P. (1997).
+<em>Marginal models for categorical data</em>.
+Tilburg, The Netherlands: Tilburg University Press.
+<a href="http://stats.lse.ac.uk/bergsma/pdf/bergsma_phdthesis.pdf">http://stats.lse.ac.uk/bergsma/pdf/bergsma_phdthesis.pdf</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>SampleStatistics</code>, <code>ModelStatistics</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># see also the built-in data sets
+
+data(NKPS)
+
+# Fit the model asserting Goodman and Kruskal's gamma is zero for
+# Child's attitude toward sex role's (NKPS[,3], three categories) and
+# parent's attitude toward sex role's (NKPS[,4], three categories).
+
+coeff = SpecifyCoefficient("GoodmanKruskalGamma",c(3,3))
+fit = MarginalModelFit(NKPS[,c(3,4)], coeff )
+
+
+# Marginal homogeneity (MH) in a 3x3 table AB
+# Note that MH is equivalent to independence in the 2x3 table of marginals IR, in which 
+# the row with I=1 gives the A marginal, and the row with I=2 gives the B marginal 
+n &lt;- c(1,2,3,4,5,6,7,8,9)
+at &lt;- MarginalMatrix(c("A","B"),list(c("A"),c("B")),c(3,3))
+bt &lt;- ConstraintMatrix(c("I","R"),list(c("I"),c("R")),c(2,3))
+model &lt;- list( bt, "log", at)
+fit &lt;- MarginalModelFit(n,model)
+
+#Output can be tidied up:
+fit &lt;- MarginalModelFit(n,model,CoefficientDimensions=c(2,3))
+</code></pre>
+
+
+</div>

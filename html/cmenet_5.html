@@ -1,0 +1,99 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>predictcme</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Predict using a fitted <code>cmenet</code> object
+</h2>
+
+<h3>Description</h3>
+
+<p><code>predictcme</code> performs prediction at new ME settings <code>newx</code>, given fitted <code>cmenet</code> object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">  predictcme(fit.cme,newx)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>fit.cme</code></td>
+<td>
+<p>Fitted object from <code>cmenet</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newx</code></td>
+<td>
+<p>An <code class="reqn">m</code> x <code class="reqn">p</code> binary matrix for prediction (<code class="reqn">m</code> new ME settings, <code class="reqn">p</code> binary MEs).</p>
+</td>
+</tr>
+</table>
+<h3>Examples</h3>
+
+<pre><code class="language-R">  ## Not run: 
+
+library(MASS)
+library(cmenet)
+n &lt;- 50 #number of observations
+p &lt;- 50 #number of main effects
+
+## Simulate model matrix for MEs and CMEs
+set.seed(1)
+rho &lt;- 0 #correlation
+ones &lt;- matrix(1,p,p)
+covmtx &lt;- rho*ones+(1-rho)*diag(p)
+latmtx &lt;- mvrnorm(n,p,mu=rep(0,p),Sigma=covmtx) #equicorrelated cov. matrix
+memtx &lt;- (latmtx&gt;=0)-(latmtx&lt;0) #simulate model matrix for MEs
+model.mtx &lt;- full.model.mtx(memtx)$model.mtx #generate model matrix for MEs and CMEs
+
+## Set true model and generate response
+num.act &lt;- 2 # two siblings active
+num.grp &lt;- 4 # ... within four active groups
+ind &lt;- c()
+for (ii in 1:num.grp){
+  eff &lt;- sample(seq(2*(p-1)),num.act)
+  ind &lt;- c(ind, p + eff + (ii-1)*(2*(p-1)))
+}
+colnames(model.mtx)[ind] # active CMEs
+
+des.mtx &lt;- model.mtx[,ind]
+inter &lt;- 12 #intercept
+xbtrue &lt;- inter + rowSums(des.mtx)
+y &lt;- xbtrue + rnorm(n,sd=1) #response
+xme &lt;- model.mtx[,1:p]
+xcme &lt;- model.mtx[,(p+1):ncol(model.mtx)]
+
+## Run cv.cmenet
+cv.cme &lt;- cv.cmenet(xme, xcme, y, var.names=colnames(model.mtx))
+fit.cme &lt;- cv.cme$cme.fit
+sel.cme &lt;- cv.cme$select.idx
+colnames(model.mtx)[ind] #true model
+colnames(model.mtx)[sel.cme] #selected effects from cmenet
+colnames(model.mtx)[setdiff(sel.cme,ind)] #selected effects not in true model
+colnames(model.mtx)[setdiff(ind,sel.cme)] #true effects not in selected model
+
+## Prediction
+set.seed(1000)
+ntst &lt;- 20
+latmtx &lt;- mvrnorm(ntst,p,mu=rep(0,p),Sigma=covmtx)
+memtx &lt;- (latmtx&gt;=0)-(latmtx&lt;0)
+tst.mtx &lt;- full.model.mtx(memtx)$model.mtx
+xbtst &lt;- inter + rowSums(tst.mtx[,ind])
+ytst &lt;- xbtst + rnorm(ntst,sd=1)
+pred.cme &lt;- predictcme(fit.cme,newx=tst.mtx)[,which(cv.cme$lambda.sib==cv.cme$params[1]),
+            which(cv.cme$lambda.cou==cv.cme$params[2])]
+
+  
+## End(Not run)
+</code></pre>
+
+
+</div>

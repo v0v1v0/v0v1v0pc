@@ -1,0 +1,564 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>simulateRespondents</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simulation of multiple examinees of adaptive tests</h2>
+
+<h3>Description</h3>
+
+<p>This command runs a set of adaptive tests, for a given item bank, a set of ability levels, a possible matrix of item responses, and several lists of CAT parameters (starting items, stopping rule, provisional and final ability estimators).</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">simulateRespondents(thetas, itemBank, responsesMatrix = NULL, model = NULL, 
+  	genSeed = NULL, cbControl = NULL, rmax = 1, Mrmax = "restricted", 
+  	start = list(fixItems = NULL, seed = NULL, nrItems = 1, theta = 0, 
+  	D = 1, randomesque = 1, random.seed = NULL, startSelect = "MFI", 
+  	cb.control = FALSE, random.cb = NULL), test = list(method = "BM", 
+  	priorDist = "norm", priorPar = c(0,1), weight = "Huber", tuCo = 1, 
+  	sem.type = "classic", sem.exact = FALSE, se.ase = 10, range = c(-4, 4), 
+  	D = 1, parInt = c(-4, 4, 33), itemSelect = "MFI", infoType = "observed", 
+  	randomesque = 1, random.seed = NULL, AP = 1, proRule = "length", 
+  	proThr = 20, constantPatt = NULL), stop = list(rule = "length", 
+  	thr = 20, alpha = 0.05), final = list(method = "BM", priorDist = "norm", 
+  	priorPar = c(0,1), weight = "Huber", tuCo = 1, sem.type = "classic", 
+  	sem.exact = FALSE, range = c(-4, 4), D = 1, parInt = c(-4, 4, 33), 
+  	alpha = 0.05), save.output = FALSE, output = c("", "catR", "csv"))
+## S3 method for class 'catResult'
+print(x, ...)
+## S3 method for class 'catResult'
+plot(x, type = "all", deciles = "theta", save.plot = FALSE, 
+  	save.options = c("", "plot", "pdf"), res = 300, ...)
+ </code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>thetas</code></td>
+<td>
+<p>numeric: a vector of true ability values for which a CAT must be generated for each component.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>itemBank</code></td>
+<td>
+<p>numeric: a suitable matrix of item parameters (possibly augmented by group membership for content balancing). See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>responsesMatrix</code></td>
+<td>
+<p>numeric: either <code>NULL</code> (default) or a suitable matrix of item responses. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>either <code>NULL</code> (default) for dichotomous models, or any suitable acronym for polytomous models. Possible values are <code>"GRM"</code>, <code>"MGRM"</code>, <code>"PCM"</code>, <code>"GPCM"</code>, <code>"RSM"</code> and <code>"NRM"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>genSeed</code></td>
+<td>
+<p>either a vector of numeric values to fix the random seed of each generated pattern, or <code>NULL</code> (default). Ignored if <code>responsesMatrix</code> is not <code>NULL</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cbControl</code></td>
+<td>
+<p>either a list of accurate format to control for content balancing, or <code>NULL</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rmax</code></td>
+<td>
+<p>numeric: the maximum exposure rate (default is 1).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Mrmax</code></td>
+<td>
+<p>character: the method for controlling maximum exposure rate. Possible values are <code>"restricted"</code>(default) or <code>"IE"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start</code></td>
+<td>
+<p>a list with the options for starting the adaptive test. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test</code></td>
+<td>
+<p>a list with the options for provisional ability estimation and next item selection. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stop</code></td>
+<td>
+<p>a list with the options of the stopping rule. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>final</code></td>
+<td>
+<p>a list with the options for final ability estimation. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save.output</code></td>
+<td>
+<p>logical: should the output be saved in an external text file? (default is <code>FALSE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output</code></td>
+<td>
+<p>character: a vector of three components. The first component is either the file path to save the output or <code>""</code> (default), the second component is either the initial part of the name of the output file or <code>"catR"</code>, and the third component is the file type, either <code>"txt"</code> or <code>"csv"</code> (default). See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>an object of class "cat", typically an output of <code>simulateRespondents</code> function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>character: the type of plot to display. Possible values are <code>"all"</code> (default), <code>"trueEst"</code>, <code>"expRate"</code>, <code>"cumExpRate"</code>,
+<code>"cumNumberItems"</code>, <code>"expRatePara"</code>, <code>"condBias"</code>, <code>"condRMSE"</code>, <code>"numberItems"</code>, <code>"sError"</code> and <code>="condThr"</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deciles</code></td>
+<td>
+<p>whether the deciles number (<code>"deciles"</code>) or the mean ability level per decile (<code>"theta"</code>) will be used in the axis of the plots.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save.plot</code></td>
+<td>
+<p>logical: should the plot be saved in an external figure? (default is <code>FALSE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save.options</code></td>
+<td>
+<p>character: a vector of three components. The first component is either the file path or <code>""</code> (default), the second component is the name of the output file or ,<code>"plot"</code> (default), and the third component is the file extension, either <code>"pdf"</code> (default) or <code>"jpeg"</code>. Ignored if <code>save.plot</code> is <code>FALSE</code>. See <b>Details</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>res</code></td>
+<td>
+<p>numeric: the resolution for JPEG figures (default value is 300).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>other generic arguments to be passed to <code>print</code> and <code>plot</code> functions.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>simulateRespondents</code> function permits to generate several adaptive tests to a set of respondents defined by their ability levels. It makes a repeated call to an adaptive test using an item bank specified by arguments <code>itemBank</code> <code>model</code>, and with the same <code>start</code>, <code>test</code>, <code>stop</code> and <code>final</code> lists. Content balancing can also be controlled for each respondent with the <code>cbControl</code> argument. All arguments of <code>simulateRespondents</code> are used in exactly the same manner as in <code>randomCAT</code> (so refer to this function for further information), except the following four.
+</p>
+<p>First, <code>thetas</code> is now a vector of ability levels, and a CAT will be generated for each component of <code>thetas</code>. If <code>responsesMatrix</code> is <code>NULL</code>, item responses are generated from the IRT model, item bank parameters, and the ability levels. In this case, <code>thetas</code> can be considered as real ability levels. Otherwise, <code>responsesMatrix</code> must be provided as a matrix with as many rows as the length of <code>thetas</code> and as many columns as the number of items in <code>itemBank</code>. Each row contains the response pattern of one examinee whose ability level is given by the value of the corresponding component of <code>thetas</code>. Note that only allowable item responses can be included in <code>responsesMatrix</code> and missing values are not accepted. Fixing the random seed can also be done with the <code>genSeed</code> argument. The latter must hold as many components as the vector <code>thetas</code>, otherwise an error message is returned. Each component of <code>genSeed</code> is used to fix the seed for ach pattern generation.
+</p>
+<p>The option of providing a response matrix through <code>responsesMatrix</code> is considered for two possible uses: 
+</p>
+
+<ol>
+<li>
+<p><em>post-hoc simulations</em>: examinees provided responses to the full item bank and one wants to test the performance of a CAT with those responses,
+</p>
+</li>
+<li>
+<p>simulations considering <em>item parameter estimation errors</em>: responses to the full bank are generated with the real parameters and the CAT is run is the estimated parameters and the responses from the correct model.
+</p>
+</li>
+</ol>
+<p>Note that if <code>thetas</code> holds a single value, then the function simply calls <code>randomCAT</code> and returns its output instead.
+</p>
+<p>Second, <code>rmax</code> fixes the desired maximum exposure rate for all items. Default value is 1, allowing thus items to be administered to all respondents without restrictions.
+</p>
+<p>Third, the <code>Mrmax</code> argument fixes the method to constraint exposure rates to be smaller than the maximum allowed rate. Possible methods are the restricted method (<code>"restricted"</code>; Revuelta and Ponsoda, 1998) and the item-eligibility method (<code>"IE"</code>; van der Linden and Veldkamp, 2004). A description of both methods can be found in Barrada, Abad and Veldkamp (2009)
+</p>
+<p>Fourth, if the length of <code>thetas</code> is greater than 1, <code>save.output</code> for <code>randomCAT</code> is fixed to <code>"FALSE"</code>. Otherwise, the same file would be overwritten for each new respondent.
+</p>
+<p>The output of <code>simulateRespondents</code>, as displayed by the <code>print.catResult</code> function, proposes summary statistics related to overall accuracy (bias, RMSE, etc), conditional accuracy per decile, and item exposure control (minimum and maximum exposure rates, test overlap rate, etc) among all generated CATs. This output can be saved when <code>save.output</code> is set to <code>TRUE</code>, and if so, three outpout files are returned: (1) one with the main summary statistics, with overall results and conditional on decile results; (2) the file with respondents' patterns, items administered and provisional ability estimates; and (3) a table with true and estimated ability levels, final standard errors and numbers of items administered per respondent. Specific information provided and saved depends on the <code>rule</code> used in <code>stop</code>.
+</p>
+<p>This output can also be graphically displayed with the <code>plot.catResult</code> function. In addition to the output of the function and the item bank, it takes the argument <code>type</code> to determine which plot should be returned. Ten different single plots can be displayed:
+</p>
+
+<ol>
+<li>
+<p><code>"trueEst"</code>: the scatterplot of true vs. estimated ability levels.
+</p>
+</li>
+<li>
+<p><code>"expRate"</code>: the exposure rates of the items, having ranked them according to these exposure rates.
+</p>
+</li>
+<li>
+<p><code>"cumExpRate"</code>: the cumulative exposure rates of the items, having ranked them according to these exposure rates.
+</p>
+</li>
+<li>
+<p><code>"cumNumberItems"</code>: the test length as a function of cumulative percent of examinees. This plot is not available when <code>rule</code> is 'length'.
+</p>
+</li>
+<li>
+<p><code>"expRatePara"</code>: the scatterplot of item exposure rates vs. item discrimination parameters. This plot is not available when <code>model</code> is 'PCM' or 'NRM', as in those IRT models there are no discrimination parameters.
+</p>
+</li>
+<li>
+<p><code>"condBias"</code>: the conditional bias of ability estimation as a function of the deciles of the true ability levels.
+</p>
+</li>
+<li>
+<p><code>"condRMSE"</code>: the conditional RMSE of ability estimation as a function of the deciles of the true ability levels.
+</p>
+</li>
+<li>
+<p><code>"numberItems"</code>: the conditional test length as a function of the deciles of the true ability levels. This plot is not available when <code>rule</code> is 'length'.
+</p>
+</li>
+<li>
+<p><code>"sError"</code>: the conditional standard error of ability estimation as a function of the deciles of the true ability levels.
+</p>
+</li>
+<li>
+<p><code>"condThr"</code>: the conditional proportions of CATs satisfying the 'precision' or 'classification' stopping rule, as a function of the deciles of the true ability levels. This plot is not available when <code>rule</code> is 'length'.
+</p>
+</li>
+</ol>
+<p>In addition, the value <code>"all"</code> (default value) displays several available plots in a single panel. Displayed plots depend on the <code>rule</code> used in <code>stop</code>: (a) with 'length', <code>"trueEst"</code>, <code>"condBias"</code>, <code>"condRMSE"</code>, <code>"expRate"</code>, <code>"cumExpRate"</code>, <code>"expRatePara"</code>; (b) with 'precision' and 'classification', all the plots but <code>"cumExpRate"</code>.
+</p>
+<p>These plots can be saved as external PDF or JPEG files, by setting <code>save.plot</code> to <code>TRUE</code> and defining the arguments of <code>save.options</code> accurately (see <code>randomCAT</code> for further explanations and the <b>Examples</b> section below).
+</p>
+
+
+<h3>Value</h3>
+
+<p>The function <code>simulateRespondents</code> returns a list of class "catResult" with the following arguments:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>thetas</code></td>
+<td>
+<p>the value of the <code>thetas</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>itemBank</code></td>
+<td>
+<p>the value of the <code>itemBank</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>responsesMatrix</code></td>
+<td>
+<p>the value of the <code>responsesMatrix</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>the value of the <code>model</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>genSeed</code></td>
+<td>
+<p>the value of the <code>genSeed</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cbControl</code></td>
+<td>
+<p>the value of the <code>cbControl</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rmax</code></td>
+<td>
+<p>the value of the <code>rmax</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Mrmax</code></td>
+<td>
+<p>the value of the <code>Mrmax</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start</code></td>
+<td>
+<p>the value of the <code>start</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test</code></td>
+<td>
+<p>the value of the <code>test</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stop</code></td>
+<td>
+<p>the value of the <code>stop</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>final</code></td>
+<td>
+<p>the value of the <code>final</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save.output</code></td>
+<td>
+<p>the value of the <code>save.output</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output</code></td>
+<td>
+<p>the value of the <code>output</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estimatedThetas</code></td>
+<td>
+<p>a vector with (final) estimated ability levels.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>correlation</code></td>
+<td>
+<p>the correlation between the <code>thetas</code> vector and estimated ability levels.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bias</code></td>
+<td>
+<p>the value of the bias between true and estimated ability levels.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>RMSE</code></td>
+<td>
+<p>the value of the RMSE between true and estimated ability levels.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thrOK</code></td>
+<td>
+<p>a vector indicating whether the respondents finished the test satisfying (1) or not (0) the stop criteria.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>exposureRates</code></td>
+<td>
+<p>a vector with empirical exposure rates of all item in the bank.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>testLength</code></td>
+<td>
+<p>the mean test length.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>overlap</code></td>
+<td>
+<p>the item overlap rate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>numberItems</code></td>
+<td>
+<p>a vector with the lengths of each adaptive test (i.e. the number of items administered).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>condTheta</code></td>
+<td>
+<p>a vector with the mean ability level per decile.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>condBias</code></td>
+<td>
+<p>a vector with conditional mean bias per decile.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>condRMSE</code></td>
+<td>
+<p>a vector with conditional RMSE per decile.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>condnItems</code></td>
+<td>
+<p>a vector with conditional mean test length per decile.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>condSE</code></td>
+<td>
+<p>a vector with conditional mean standard error per decile.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>condthrOK</code></td>
+<td>
+<p>a vector with conditional proportion of respondents that finish the test satisfying the stop criteria per decile.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ndecile</code></td>
+<td>
+<p>a vector with the number of respondents per decile.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>final.values.df</code></td>
+<td>
+<p>a data frame with true ability levels, final ability estimates and standard errors, and test lengths.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>responses.df</code></td>
+<td>
+<p>a data frame with all items administered, all item responses and all provisional ability estimates. -99 is displayed when the actual test length is smaller than the maximum test length for those item positions where no item was administered as the stop criterion was already reached.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start.time</code></td>
+<td>
+<p>the CPU time at the start of the CAT generation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>finish.time</code></td>
+<td>
+<p>the CPU time at the end of all CAT generations.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Juan Ramon Barrada <br>
+Department of Psychology and Sociology, Universidad Zaragoza, Spain <br><a href="mailto:barrada@unizar.es">barrada@unizar.es</a>
+</p>
+<p>David Magis <br>
+Department of Psychology, University of Liege, Belgium <br><a href="mailto:david.magis@uliege.be">david.magis@uliege.be</a>
+</p>
+<p>Guido Corradi <br>
+Department of Psychology and Sociology, Universidad Zaragoza, Spain <br><a href="mailto:guidocor@gmail.com">guidocor@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Barrada, J. R., Abad, F. J., and Veldkamp, B. P. (2009). Comparison of methods for controlling maximum exposure rates in computerized adaptive testing. <em>Psicothema</em>, <em>21</em>, 313-320.
+</p>
+<p>Magis, D. and Barrada, J. R. (2017). Computerized Adaptive Testing with R: Recent Updates of the Package <em>catR</em>. <em>Journal of Statistical Software</em>, <em>Code Snippets</em>, <em>76(1)</em>, 1-18. doi: <a href="https://doi.org/10.18637/jss.v076.c01">10.18637/jss.v076.c01</a>
+</p>
+<p>Magis, D., and Raiche, G. (2012). Random Generation of Response Patterns under Computerized Adaptive Testing with the R Package <em>catR</em>. <em>Journal of Statistical Software</em>, <em>48 (8)</em>, 1-31. doi: <a href="https://doi.org/10.18637/jss.v048.i08">10.18637/jss.v048.i08</a>
+</p>
+<p>Revuelta, J., and Ponsoda, V. (1998). A comparison of item exposure control methods in computerized adaptive testing. <em>Journal of Educational Measurement, 35</em>, 311-327. doi: <a href="https://doi.org/10.1111/j.1745-3984.1998.tb00541.x">10.1111/j.1745-3984.1998.tb00541.x</a>
+</p>
+<p>van der Linden, W.J., and Veldkamp, B.P. (2004). Constraining item exposure in computerized adaptive testing with shadow tests. <em>Journal of Educational and Behavioral Statistics, 29</em>, 273-291. doi: <a href="https://doi.org/10.3102/10769986029003273">10.3102/10769986029003273</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>randomCAT</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Dichotomous IRT model ##
+
+ # Loading the 'tcals' parameters 
+ data(tcals)
+ bank &lt;- as.matrix(tcals[,1:4])
+ 
+ # Creation of a starting list with three theta values
+ start &lt;- list(theta = -1:1, randomesque = 5)
+
+ # Creation of 'test' list: maximum likelihood estimation and
+ # progressive method
+ test &lt;- list(method = "ML", itemSelect = "progressive")
+
+ # Creation of a stopping rule: precision criterion, standard
+ # error to be reached 0.3
+ stop &lt;- list(rule = "precision", thr = 0.3)
+
+ # Creation of 'final' list: ML estimation of final ability
+ final &lt;- list(method = "ML")
+
+ # Generation of ten respondents
+ set.seed(1)
+ thetas &lt;- rnorm(10)
+
+ # Default CAT generations, output not saved
+ res &lt;- simulateRespondents(thetas, bank, start = start, test = test, stop = stop, 
+  final = final)
+
+ # Maximum exposure restricted to 0.8
+ res2 &lt;- simulateRespondents(thetas, bank, start = start, test = test, stop = stop, 
+  final = final, rmax = 0.8)
+
+## Not run: 
+
+ # Output saved
+ res3 &lt;- simulateRespondents(thetas, bank, start = start, test = test, stop = stop, 
+  final = final, save.output = TRUE, output = c("C:/Program Files/", "out", "txt"))
+
+## End(Not run)
+
+ # With content balancing #
+
+ # Creation of an appropriate list for content balancing
+ # Equal proportions across subgroups of items
+ cbList &lt;- list(names = c("Audio1", "Audio2", "Written1", "Written2", "Written3"), 
+        props = c(0.1, 0.2, 0.2, 0.2, 0.3))
+
+ # CAT test (same options as above)
+ res4 &lt;- simulateRespondents(thetas, tcals, start = start, test = test, stop = stop, 
+  final = final, cbControl = cbList)
+
+ # Plotting and saving output #
+
+ # Plotting all possible panels
+ plot(res)
+ plot(res, deciles = "deciles")
+
+## Not run: 
+
+ # Saving the plot in the "fig" pdf file in "c:/Program Files/"
+ plot(res, save.plot = TRUE, save.options = c("c:/Program Files/", "fig", "pdf"))
+
+## End(Not run)
+
+ # Plotting the 'trueEst' type of plot
+ plot(res, type = "trueEst")
+ </code></pre>
+
+
+</div>

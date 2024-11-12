@@ -1,0 +1,128 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>get_nn_conn_comps</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Relationship Between Nearest Neighbors and Connected Components</h2>
+
+<h3>Description</h3>
+
+<p>One of the steps in the clustering pipeline is building a
+k-nearest neighbor graph on a reduced-space embedding. This method assesses
+the relationship between different number of nearest
+neighbors and the connectivity of the graph. In the context of graph clustering,
+the number of connected components can be used as a
+lower bound for the number of clusters. The calculations are performed multiple
+times by changing the seed at each repetition.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">get_nn_conn_comps(
+  object,
+  n_neigh_sequence,
+  config_name = "",
+  n_repetitions = 100,
+  seed_sequence = NULL,
+  graph_reduction_type = "UMAP",
+  transpose = (graph_reduction_type == "PCA"),
+  ncores = 1,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>A data matrix. If the graph reduction type is PCA, the object
+should be an expression matrix, with features on rows and observations on columns;
+in the case of UMAP, the user could also provide a matrix associated to a PCA embedding.
+See also the transpose argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_neigh_sequence</code></td>
+<td>
+<p>A sequence of the number of nearest neighbors.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>config_name</code></td>
+<td>
+<p>User specified string that uniquely describes the embedding characteristics.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_repetitions</code></td>
+<td>
+<p>The number of repetitions of applying the pipeline with different seeds; ignored if seed_sequence is provided by the user.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed_sequence</code></td>
+<td>
+<p>A custom seed sequence; if the value is NULL, the sequence will be built starting from 1 with a step of 100.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>graph_reduction_type</code></td>
+<td>
+<p>The graph reduction type, denoting if the graph should be built on either the PCA or the UMAP embedding.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>transpose</code></td>
+<td>
+<p>Logical: whether the input object will be transposed or not.
+Set to FALSE if the input is an observations X features matrix, and set to TRUE
+if the input is a features X observations matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncores</code></td>
+<td>
+<p>The number of parallel R instances that will run the code. If the value is set to 1, the code will be run sequentially.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments passed to the 'irlba::irlba' or the 'uwot::umap' method, depending on the value of graph_reduction_type.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list having one field associated with a number of nearest neighbors.
+Each value contains an array of the number of connected components
+obtained on the specified number of repetitions.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(2021)
+# create an artificial expression matrix
+expr_matrix = matrix(c(runif(50*10), runif(50*10, min = 1, max = 2)), nrow = 100, byrow = TRUE)
+rownames(expr_matrix) = as.character(1:100)
+
+# the graph reduction type is PCA, so we can provide the expression matrix as argument
+nn_conn_comps_obj = get_nn_conn_comps(object = expr_matrix,
+    n_neigh_sequence = c(2,3,5),
+    config_name = "example_config",
+    n_repetitions = 10,
+    graph_reduction_type = "PCA",
+    transpose = FALSE,
+    # the following parameter is used by the irlba function and is not mandatory
+    nv = 3)
+plot_connected_comps_evolution(nn_conn_comps_obj)
+</code></pre>
+
+
+</div>

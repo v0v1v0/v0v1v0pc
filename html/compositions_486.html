@@ -1,0 +1,175 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>outlierclassifier</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Detect and classify compositional outliers.</h2>
+
+<h3>Description</h3>
+
+<p>Detects outliers and classifies them according to different possible
+explanations.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">OutlierClassifier1(X,...)
+## S3 method for class 'acomp'
+OutlierClassifier1(X,...,alpha=0.05,
+           type=c("best","all","type","outlier","grade"),goodOnly=NULL,
+           corrected=TRUE,RedCorrected=FALSE,robust=TRUE) 
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>the dataset as an <code>acomp</code> object</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>further arguments to MahalanobisDist/gsi.mahOutlier</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>The confidence level for identifying outliers.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p> What type of classification should be used: best: Which
+single component would best explain the outlier. all: Give a binary coding
+specifying all components, which could explain the outlier. type: Is
+it a a normal observation <code>"ok"</code>, a single componentn outlier <code>"1"</code> or can it not
+be explained by a single wrong component "?". outlier: All outliers 
+are marked as <code>"outlier"</code>, others are marked as
+<code>"ok"</code>. <code>"grade"</code>: Proven Outliers are marked as "outlier"s,
+suspected outliers, detected without correction of the p-value are
+reported as "extreme", the rest is reported as "ok".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>goodOnly</code></td>
+<td>
+<p>an integer vector. Only the specified index of the
+dataset should be used
+for estimation of the outlier criteria. This parameter if only a small
+portion of the dataset is reliable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>corrected</code></td>
+<td>
+<p>logical. Literatur often proposed to compare the
+Mahalanobis distances with Chisq-Approximations of there
+distributions. However this does not correct for multiple
+testing. If corrected is true a correction for multiple testing is
+used. In any case we do not use the chisq-approximation, but a
+simulation based procedure to compute confidence bounds. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>RedCorrected</code></td>
+<td>
+<p>logical. If an outlier is detected we can try to
+find out wether a single component would be sufficient to drop the
+outlier under the outlier detection limit. Since in this second case
+we only check a few outliers no second correction step applies as long
+as the number of outliers is not very high.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>robust</code></td>
+<td>
+<p>A robustness description as define in
+<code>var.acomp</code></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>See outliersInCompositions for a comprehensive introduction into the outlier
+treatment in compositions.
+</p>
+<p>See <code>ClusterFinder1</code> for an alternative method to classify
+observations in the context of outliers.  
+</p>
+
+
+<h3>Value</h3>
+
+<p>A factor classifying the observations in the dataset as "ok" or some
+type of outlier. 
+</p>
+
+
+<h3>Note</h3>
+
+<p>The package <span class="pkg">robustbase</span> is required for using the
+robust estimations.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>K.Gerald v.d. Boogaart <a href="http://www.stat.boogaart.de">http://www.stat.boogaart.de</a></p>
+
+
+<h3>See Also</h3>
+
+<p><code>outlierplot</code>, <code>ClusterFinder1</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+tmp&lt;-set.seed(1400)
+A &lt;- matrix(c(0.1,0.2,0.3,0.1),nrow=2)
+Mvar &lt;- 0.1*ilrvar2clr(A%*%t(A))
+Mcenter &lt;- acomp(c(1,2,1))
+data(SimulatedAmounts)
+datas &lt;- list(data1=sa.outliers1,data2=sa.outliers2,data3=sa.outliers3,
+              data4=sa.outliers4,data5=sa.outliers5,data6=sa.outliers6)
+opar&lt;-par(mfrow=c(2,3),pch=19,mar=c(3,2,2,1))  
+tmp&lt;-mapply(function(x,y) {
+outlierplot(x,type="scatter",class.type="grade");
+  title(y)
+},datas,names(datas))
+
+
+par(mfrow=c(2,3),pch=19,mar=c(3,2,2,1))  
+tmp&lt;-mapply(function(x,y) {
+  myCls2 &lt;- OutlierClassifier1(x,alpha=0.05,type="all",corrected=TRUE)
+  outlierplot(x,type="scatter",classifier=OutlierClassifier1,class.type="best",
+  Legend=legend(1,1,levels(myCls),xjust=1,col=colcode,pch=pchcode),
+  pch=as.numeric(myCls2));
+  legend(0,1,legend=levels(myCls2),pch=1:length(levels(myCls2)))
+  title(y)
+},datas,names(datas))
+
+par(mfrow=c(2,3),pch=19,mar=c(3,2,2,1))  
+for( i in 1:length(datas) ) 
+  outlierplot(datas[[i]],type="ecdf",main=names(datas)[i])
+par(mfrow=c(2,3),pch=19,mar=c(3,2,2,1))  
+for( i in 1:length(datas) ) 
+  outlierplot(datas[[i]],type="portion",main=names(datas)[i])
+par(mfrow=c(2,3),pch=19,mar=c(3,2,2,1))  
+for( i in 1:length(datas) ) 
+  outlierplot(datas[[i]],type="nout",main=names(datas)[i])
+par(opar)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

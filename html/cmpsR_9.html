@@ -1,0 +1,202 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>extract_feature_cmps</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Computes the CMPS score of a comparison between two bullet profiles/signatures</h2>
+
+<h3>Description</h3>
+
+<p>Compute the Congruent Matching Profile Segments (CMPS) score based on two bullet profiles/signatures.
+The reference profile will be divided into consecutive, non-overlapping, basis segments of the same length.
+Then the number of segments that are congruent matching will be found as the CMPS score.
+By default, <code>extract_feature_cmps</code> implements the algorithm with multi-peak inspection at three
+different segment scale levels. By setting <code>npeaks_set</code> as a single-length vector, users can switch to the algorithm
+with multi-peak inspection at the basis scale level only.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">extract_feature_cmps(
+  x,
+  y,
+  seg_length = 50,
+  Tx = 25,
+  npeaks_set = c(5, 3, 1),
+  include = NULL,
+  outlength = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a numeric vector, vector of the reference bullet signature/profile that will be divided into basis segments</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>a numeric vector, vector of the comparison bullet signature/profile</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seg_length</code></td>
+<td>
+<p>a positive integer, the length of a basis segment</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Tx</code></td>
+<td>
+<p>a positive integer, the tolerance zone is <code style="white-space: pre;">⁠+/- Tx⁠</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>npeaks_set</code></td>
+<td>
+<p>a numeric vector, specify the number of peaks to be found at each segment scale level
+</p>
+
+<ul>
+<li>
+<p> If <code>length(npeaks_set) == 1</code>, the algorithm uses multi-peak inspection only at the basis scale level;
+</p>
+</li>
+<li>
+<p> If <code>length(npeaks_set) &gt; 1</code>, the algorithm uses multi-peak inspection at
+different segment scale levels.
+</p>
+</li>
+<li>
+<p> By default, <code>npeaks_set = c(5,3,1)</code>. Including more segment scale levels will reduce the number of false positive results
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include</code></td>
+<td>
+<p><code>NULL</code> or a vector of character strings indicating what additional information should be included in
+the output of <code>extract_feature_cmps</code>. All possible options are: "nseg", "congruent_pos", "congruent_seg",
+"congruent_seg_idx", "pos_df", "ccp_list","segments", and "parameters". If one wants to include them all, one can use
+<code>include = "full_result"</code>. By default, <code>include = NULL</code> and only the CMPS score is returned</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outlength</code></td>
+<td>
+<p><code>NULL</code> or a numeric vector, specify the segment length of each level of the basis segment when the
+multi-segment lengths strategy is being used. If <code>outlength = NULL</code>, then the length of a basis segment will be doubled
+at each segment level</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a numeric value or a list
+</p>
+
+<ul>
+<li>
+<p> if <code>include = NULL</code>, returns the CMPS score (a numeric value) only
+</p>
+</li>
+<li>
+<p> if <code style="white-space: pre;">⁠include = ⁠</code> one or a vector of strings listed above:
+</p>
+
+<ul>
+<li> <p><code>nseg</code>: number of basis segments
+</p>
+</li>
+<li> <p><code>congruent_seg</code>: a vector of boolean values. <code>TRUE</code> means this basis segment is a congruent matching profile segment (CMPS)
+</p>
+</li>
+<li> <p><code>congruent_seg_idx</code>: the indices of all CMPS
+</p>
+</li>
+<li> <p><code>pos_df</code>: a dataframe that includes positions of correlation peaks and the CMPS score of these positions
+</p>
+</li>
+<li> <p><code>ccp_list</code>: a list of consistent correlation peaks of each basis segment.
+</p>
+</li>
+<li> <p><code>segments</code>: a list of all basis segments
+</p>
+</li>
+<li> <p><code>parameters</code>: a list that stores all parameters used in the function call
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3>References</h3>
+
+<p>Chen, Zhe, Wei Chu, Johannes A Soons, Robert M Thompson, John Song,
+and Xuezeng Zhao. 2019. “Fired Bullet Signature Correlation Using the
+Congruent Matching Profile Segments (CMPS) Method.” Forensic Science
+International, December, #109964. https://doi.org/10.1016/j.forsciint.2019.109964.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(tidyverse)
+library(cmpsR)
+
+data("bullets")
+land2_3 &lt;- bullets$sigs[bullets$bulletland == "2-3"][[1]]
+land1_2 &lt;- bullets$sigs[bullets$bulletland == "1-2"][[1]]
+
+# compute cmps
+
+# algorithm with multi-peak insepction at three different segment scale levels
+cmps_with_multi_scale &lt;- extract_feature_cmps(land2_3$sig, land1_2$sig, include = "full_result" )
+
+# algorithm with multi-peak inspection at the basis scale level only
+cmps_without_multi_scale &lt;- extract_feature_cmps(land2_3$sig, land1_2$sig, 
+                                                 npeaks_set = 5, include = "full_result" )
+
+# Another example
+library(tidyverse)
+
+data("bullets")
+
+lands &lt;- unique(bullets$bulletland)
+
+comparisons &lt;- data.frame(expand.grid(land1 = lands[1:6], land2 = lands[7:12]),
+                          stringsAsFactors = FALSE)
+
+comparisons &lt;- comparisons %&gt;%
+  left_join(bullets %&gt;% select(bulletland, sig1=sigs),
+            by = c("land1" = "bulletland")) %&gt;%
+  left_join(bullets %&gt;% select(bulletland, sig2=sigs),
+            by = c("land2" = "bulletland"))
+
+comparisons &lt;- comparisons %&gt;% mutate(
+  cmps = purrr::map2(sig1, sig2, .f = function(x, y) {
+    extract_feature_cmps(x$sig, y$sig, include = "full_result")
+  })
+)
+
+comparisons &lt;- comparisons %&gt;%
+  mutate(
+    cmps_score = sapply(comparisons$cmps, function(x) x$CMPS_score),
+    cmps_nseg = sapply(comparisons$cmps, function(x) x$nseg)
+  )
+  
+cp1 &lt;- comparisons %&gt;% select(land1, land2, cmps_score, cmps_nseg)
+cp1  
+
+</code></pre>
+
+
+</div>

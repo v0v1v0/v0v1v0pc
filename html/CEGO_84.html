@@ -1,0 +1,81 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>mutationSelfAdapt</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Self-adaptive mutation operator</h2>
+
+<h3>Description</h3>
+
+<p>This mutation function selects an operator and mutationRate (provided in parameters$mutationFunctions)
+based on self-adaptive parameters chosen for each individual separately.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">mutationSelfAdapt(population, parameters)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>population</code></td>
+<td>
+<p>List of permutations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parameters</code></td>
+<td>
+<p>list, contains the available single mutation functions (<code>mutationFunctions</code>), 
+and a data.frame that collects the chosen function and mutation rate for each individual (<code>selfAdapt</code>).</p>
+</td>
+</tr>
+</table>
+<h3>See Also</h3>
+
+<p><code>optimEA</code>, <code>recombinationSelfAdapt</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">seed=0
+N=5
+require(ParamHelpers)
+#distance
+dF &lt;- distancePermutationHamming
+#mutation
+mFs &lt;- c(mutationPermutationSwap,mutationPermutationInterchange,
+mutationPermutationInsert,mutationPermutationReversal)
+rFs &lt;- c(recombinationPermutationCycleCrossover,recombinationPermutationOrderCrossover1,
+recombinationPermutationPositionBased,recombinationPermutationAlternatingPosition)
+mF &lt;- mutationSelfAdapt
+selfAdaptiveParameters &lt;- makeParamSet(
+	makeNumericParam("mutationRate", lower=1/N,upper=1, default=1/N),
+	makeDiscreteParam("mutationOperator", values=1:4, default=expression(sample(4,1))), 
+#1: swap, 2: interchange, 3: insert, 4: reversal mutation
+makeDiscreteParam("recombinationOperator", values=1:4, default=expression(sample(4,1))) 
+#1: CycleX, 2: OrderX, 3: PositionX, 4: AlternatingPosition
+)
+#recombination
+rF &lt;-  recombinationSelfAdapt	 
+#creation
+cF &lt;- function()sample(N)
+#objective function
+lF &lt;- landscapeGeneratorUNI(1:N,dF)
+#start optimization
+set.seed(seed)
+res &lt;- optimEA(,lF,list(parameters=list(mutationFunctions=mFs,recombinationFunctions=rFs),
+	creationFunction=cF,mutationFunction=mF,recombinationFunction=rF,
+	popsize=15,budget=100,targetY=0,verbosity=1,selfAdaption=selfAdaptiveParameters,
+	vectorized=TRUE)) ##target function is "vectorized", expects list as input
+res$xbest 
+</code></pre>
+
+
+</div>

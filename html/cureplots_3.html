@@ -1,0 +1,97 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>resample_residuals</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Resample residuals</h2>
+
+<h3>Description</h3>
+
+<p>Resample residuals to compute several cumulative residual curves. Receives
+the covariate values, residuals and number of samples and shuffles (i.e.,
+samples without replacement a vector of the same size) the residuals, and
+returns a stacked data frame.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">resample_residuals(covariate_values, residuals, n_resamples)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>covariate_values</code></td>
+<td>
+<p>Covariate values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>residuals</code></td>
+<td>
+<p>Residuals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_resamples</code></td>
+<td>
+<p>Number of times to sample the residuals.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Data frame of stacked
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(cureplots)
+library(ggplot2)
+## basic example
+set.seed(2000)
+## Define parameters.
+beta &lt;- c(-1, 0.3, 3)
+## Simulate independent variables
+n &lt;- 900
+AADT &lt;- c(runif(n, min = 2000, max = 150000))
+nlanes &lt;- sample(x = c(2, 3, 4), size = n, replace = TRUE)
+LNAADT &lt;- log(AADT)
+## Simulate dependent variable
+theta &lt;- exp(beta[1] + beta[2] * LNAADT + beta[3] * nlanes)
+y &lt;- rpois(n, theta)
+## Fit model
+mod &lt;- glm(y ~ LNAADT + nlanes, family = poisson)
+## Calculate residuals
+res &lt;- residuals(mod, type = "working")
+## Calculate CURE plot data
+cure_df &lt;- calculate_cure_dataframe(AADT, res)
+resampled_residuals_tbl &lt;- resample_residuals(AADT, res, n_resamples = 3)
+ggplot(data = cure_df) +
+  aes(AADT, cumres) +
+  geom_line(
+    data = resampled_residuals_tbl,
+    aes(group = sample),
+    col = "grey"
+  ) +
+  geom_line(color = "darkgreen", linewidth = 0.8) +
+  geom_line(
+    aes(y = lower),
+    color = "magenta",
+    linetype = "dashed",
+    linewidth = 0.8) +
+  geom_line(
+    aes(y = upper),
+    color = "blue",
+    linetype = "dashed",
+    linewidth = 0.8) +
+  theme_bw()
+</code></pre>
+
+
+</div>

@@ -1,0 +1,185 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>plot_covid</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Grafica los casos de COVID-19</h2>
+
+<h3>Description</h3>
+
+<p><code>plot_covid</code> Intenta graficar automaticamente la base de datos de covid generados por <code>casos()</code>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">plot_covid(
+  datos_covid,
+  df_name = "casos",
+  df_date_index = stringr::str_subset(colnames(datos_covid[df_name][[1]]),
+    "FECHA|fecha|Fecha"),
+  df_variable = NULL,
+  df_covariates = c(),
+  facet_scale = "free_y",
+  facet_ncol = 4,
+  date_break_format = "2 months",
+  date_labels_format = "%B-%y",
+  type = c("point", "line", "spline", "area"),
+  plot_theme = ggplot2::theme(panel.background = ggplot2::element_rect(fill = "white"),
+    plot.background = ggplot2::element_rect(fill = "white"), axis.text.x =
+    ggplot2::element_text(angle = 90, hjust = 1), axis.line.x =
+    ggplot2::element_line(color = "black"), legend.position = "none"),
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>datos_covid</code></td>
+<td>
+<p>(<strong>obligatorio</strong>) Lista de <code>tibble</code>s resultante de <code>casos()</code>, <code>cfr()</code>,
+<code>chr()</code>, <code>positividad()</code> o <code>rt()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df_name</code></td>
+<td>
+<p>(<strong>opcional</strong>) Nombre de la base de datos dentro de la lista <code>datos_covid</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df_date_index</code></td>
+<td>
+<p>(<strong>opcional</strong>) Nombre de la variable que contiene la fecha</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df_variable</code></td>
+<td>
+<p>(<strong>opcional</strong>) Nombre de la variable que se va a graficar en el eje y</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df_covariates</code></td>
+<td>
+<p>(<strong>opcional</strong>) Covariables para el <code>facet_wrap</code> (maximo 2)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>facet_scale</code></td>
+<td>
+<p>(<strong>opcional</strong>) Escala para el <code>ggplot2::facet_wrap()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>facet_ncol</code></td>
+<td>
+<p>(<strong>opcional</strong>)  Numero de columnas para el <code>ggplot2::facet_wrap()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>date_break_format</code></td>
+<td>
+<p>(<strong>opcional</strong>) Breaks para el eje x <code>ggplot2::scale_x_date()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>date_labels_format</code></td>
+<td>
+<p>(<strong>opcional</strong>) Formato de fecha para el eje x <code>ggplot2::scale_x_date()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>(<strong>opcional</strong>) Tipo de grafica (<code>line</code>, <code>area</code>, <code>spline</code> o <code>point</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot_theme</code></td>
+<td>
+<p>(<strong>opcional</strong>) Tema para el <code>ggplot2</code> (ejemplo <code>ggplot2::theme_classic()</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>(<strong>opcional</strong>) Parametros adicionales para <code>ggformula::geom_spline()</code> en caso de elegir
+<code>type="spline"</code></p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Un <code>ggplot2</code> con la imagen graficada.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>casos()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Para el ejemplo usaremos los datos precargados (datosabiertos) pero tu puedes
+# correr el ejemplo descargando informacion mas reciente:
+datos_covid &lt;- datosabiertos
+
+# Aqui muchos aparecen en cero si usas el default de datosabiertos
+# porque la base de datosabiertos tiene muy pocos casos
+datos_covid |&gt;
+  casos(list_name = "casos_for_plot", group_by_entidad = FALSE) |&gt;
+  plot_covid(df_name = "casos_for_plot")
+
+# Grafica de casos nacional
+
+datos_covid |&gt;
+  casos(group_by_entidad = FALSE, list_name = "plot_nal") |&gt;
+  plot_covid(df_name = "plot_nal")
+
+# Ajuste mediante splines
+datos_covid |&gt;
+  casos(group_by_entidad = FALSE, list_name = "spline_nacional") |&gt;
+  plot_covid(df_name = "spline_nacional", type = "spline", spar = 0.5)
+
+# Graficacion por covariables
+# el objeto devuelto es un objeto de ggplot2 al que se le puede dar formato
+if (!requireNamespace("ggplot2", quietly = TRUE)) {
+  datos_covid |&gt;
+    chr(
+      group_by_entidad = TRUE, list_name = "plot_nal", .grouping_vars = c("SEXO"),
+      entidades = c("BAJA CALIFORNIA", "BAJA CALIFORNIA SUR")
+    ) |&gt;
+    plot_covid(
+      df_name = "plot_nal",
+      date_break_format = "1 week",
+      date_labels_format = "%d/%B/%Y",
+      df_covariates = c("SEXO", "ENTIDAD_FEDERATIVA"),
+      type = "area"
+    ) +
+    ggplot2::ggtitle("Plot nacional")
+}
+
+# Puedes tambien primero editar el tibble que usaras por ejemplo poniendo
+# los nombres de los sexos
+datos_covid &lt;- datos_covid |&gt;
+  chr(
+    group_by_entidad = TRUE, list_name = "plot_nal", .grouping_vars = c("SEXO"),
+    entidades = c("BAJA CALIFORNIA", "BAJA CALIFORNIA SUR")
+  )
+
+
+# Finalmente desconectamos
+datos_covid$disconnect()
+
+</code></pre>
+
+
+</div>

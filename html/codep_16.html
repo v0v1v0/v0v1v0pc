@@ -1,0 +1,196 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>geodesics</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculation of Geodesic Distances</h2>
+
+<h3>Description</h3>
+
+<p>Function <code>geodesics</code> carries out the calculation of pairwise geodesic
+distances within a set of coordinates or between two sets thereof, using one
+of two calculation approaches.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">geodesics(
+  x,
+  y,
+  method = c("haversine", "Vincenty"),
+  radius = 6371000,
+  sma = 6378137,
+  flat = 1/298.257223563,
+  maxiter = 1024L,
+  tol = .Machine$double.eps^0.75
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A set of geographic coordinates in the form of a two-column
+<code>matrix</code> or <code>data.frame</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>An other two-column <code>matrix</code> or <code>data.frame</code>
+containing an optional second set of coordinates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>The calculation method used to obtain the distances (default:
+haversine method; see details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>radius</code></td>
+<td>
+<p>Radius of the planetary body (when assuming a sphere; default:
+6371000 m).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sma</code></td>
+<td>
+<p>Length of the semi-major axis of the planetary body (when assuming
+a revolution ellipsoid; default: 6378137 m).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>flat</code></td>
+<td>
+<p>Flattening of the ellipsoid (default: 1/298.257223563).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxiter</code></td>
+<td>
+<p>Maximum number of iterations, whenever iterative calculation
+is involved (default: 1024).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol</code></td>
+<td>
+<p>Tolerance used when iterative calculation is involved (default:
+<code>.Machine$double.eps^0.75</code>; a machine dependent value).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>When only one set of coordinates is given to the function (i.e.,
+when argument <code>y</code> is omitted), the function returns the pairwise
+distances in the form of a 'dist-class' object representing a
+lower-triangle matrix. When the second coordinate set is given, the function
+calculates the distances between each coordinate of argument <code>x</code> and
+each coordinate of argument <code>y</code>.
+</p>
+<p>Two calculation methods are implemented. The first is the haversine formula,
+which assume the planetary body to be a sphere. The radius of that sphere is
+given to the function as its argument <code>radius</code>, with the default value
+being the mean radius of planet earth. Of the two methods implemented, the
+haversine formula is fastest but its precision depend on how well the
+planetary body match the sphericity assumption. The second method implemented
+is Vincenty's inverse formula, which assumes the the planetary body is a
+revolution ellipsoid, which is expected for rotating semi-fluid such as
+planet earth. Argument <code>sma</code>, the length of the semi-major axis,
+corresponds to the radius of the circle obtained when the revolution
+ellipsoid at the equator, whereas argument <code>flat</code> correspond to the
+compression of the sphere, along the diameter joining the poles, to form the
+ellipsoid of revolution. Their default values corresponds to parameters for
+planet Earth according to WGS84. These values, along with arguments
+<code>maxiter</code> and <code>tol</code>, are ignored when using the haversine formula,
+whereas the value of argument <code>radius</code> is ignored when using Vincenty's
+inverse formula.
+</p>
+<p>Vincenty's inverse formula is more precise on planet Earth (on the order of
+0.5mm) than the haversine formula, but it involves more computation time and
+may sometimes fail to converge. This is more likely for pairs of locations
+that are nearly antipodal or both (numerically) very close to the equator.
+The results returned by the function when using Vincenty's inverse formula
+are given a <code>niter</code> attribute that gives the number of iterations that
+were necessary to achieve convergence. Numbers greater than argument
+<code>maxiter</code> are indicative of failed convergence; a warning is issued in
+such a circumstance.
+</p>
+<p>Geodesic distance matrices are non metric.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A 'dist-class' object or, whenever argument <code>y</code> is
+provided, a <code>matrix</code> with as many rows as the number of rows in
+argument <code>x</code> and as many columns as the number of rows in argument
+<code>y</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Guillaume Guénard [aut, cre] (ORCID:
+    &lt;https://orcid.org/0000-0003-0761-3072&gt;),
+  Pierre Legendre [ctb] (ORCID: &lt;https://orcid.org/0000-0002-3838-3305&gt;),
+  Bertrand Pages [ctb]
+Maintainer: Guillaume Guénard &lt;guillaume.guenard@umontreal.ca&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Vincenty, T. 1975. Direct and Inverse Solutions of Geodesics on the Ellipsoid 
+with application of nested equations. Survey Review XXIII (176): 88-93
+doi:10.1179/sre.1975.23.176.88
+</p>
+<p>Inman, J. 1835. Navigation and Nautical Astronomy: For the Use of British
+Seamen (3 ed.). London, UK: W. Woodward, C. &amp; J. Rivington
+</p>
+
+
+<h3>See Also</h3>
+
+<p>The <code>dist-class</code> and associated methods.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">##
+### First example: locations spread throughout the world
+##
+coords &lt;- cbind(c(43,22,9,12,-40,72,-86,-22),
+                c(-135,22,0,1,-45,12,27,-139))
+res_hav &lt;- geodesics(coords)  ## Default: the haversine formula
+res_hav
+res_vif &lt;- geodesics(coords, method = "Vincenty")
+res_vif
+attr(res_vif,"niter") ## The numbers of iterations
+res_vif-res_hav       ## Absolute difference
+200*(res_vif-res_hav)/(res_vif+res_hav) ## Large relative difference
+##
+### Second example: locations nearer from one another
+##
+coords &lt;- cbind(c(45.01,44.82,45.23,44.74),
+                c(72.03,72.34,71.89,72.45))
+res_hav &lt;- geodesics(coords)
+res_vif &lt;- geodesics(coords, method = "Vincenty")
+res_vif-res_hav       ## Absolute difference
+200*(res_vif-res_hav)/(res_vif+res_hav) ## Relative difference are smaller
+##
+
+</code></pre>
+
+
+</div>

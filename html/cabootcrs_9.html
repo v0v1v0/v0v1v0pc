@@ -1,0 +1,194 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>convert</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Converting a data matrix from one format into another</h2>
+
+<h3>Description</h3>
+
+<p><code>convert</code> recodes a data matrix from one format, used by versions of correspondence analysis,
+into another (n objects by p variables, counts for distinct combinations of p variables, indicator matrix, contingency table).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">convert(
+  Xinput,
+  input = "nbyp",
+  output = "indicator",
+  Jk = NULL,
+  maxcat = NULL,
+  varandcat = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Xinput</code></td>
+<td>
+<p>A data matrix, in the form of a data frame or similar</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>input</code></td>
+<td>
+<p>The format of the input matrix:
+</p>
+
+<dl>
+<dt>"nbyp"</dt>
+<dd>
+<p>An n individuals/objects/data points by p categorical variables matrix,
+where each row is a different data point and each column contains the category
+for that data point on that variable, where these categories can be numbers, strings or factors</p>
+</dd>
+<dt>"nbypcounts"</dt>
+<dd>
+<p>Similar to the above, but each row represents all of the data points taking
+the same combination of categories, and the first column contains the count for this combination
+(hence the name used here is a bit of a misnomer, but it emphasises the similarities to an n by p)</p>
+</dd>
+<dt>"indicator"</dt>
+<dd>
+<p>An indicator matrix, similar to the n by p matrix except that a variable with J_k categories
+is represented by J_k columns and a data point taking the i-th category has 1 in the i-th
+of these columns and a zero in the others</p>
+</dd>
+<dt>"CT"</dt>
+<dd>
+<p>A contingency table of counts</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output</code></td>
+<td>
+<p>The format of the output matrix:
+</p>
+
+<dl>
+<dt>"nbyp"</dt>
+<dd>
+<p>As above</p>
+</dd>
+<dt>"nbypcounts"</dt>
+<dd>
+<p>As above</p>
+</dd>
+<dt>"indicator"</dt>
+<dd>
+<p>As above</p>
+</dd>
+<dt>"doubled"</dt>
+<dd>
+<p>Similar to indicator but each variable is now represented by 2 columns, and a data point
+taking the i-th category for a variable with J_k categories is given the values
+J_k-i in the first (low) column and i-1 in the second (high) column</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Jk</code></td>
+<td>
+<p>A list containing the number of distinct categories for each variable.<br>
+Either Jk or maxcat must be specified if input is "indicator"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxcat</code></td>
+<td>
+<p>The maximum category value, for use when all variables are Likert on a scale of 1 to maxcat.<br>
+Either Jk or maxcat must be specified if input is "indicator"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>varandcat</code></td>
+<td>
+<p>Flag for how to construct column names in an indicator matrix:
+</p>
+
+<dl>
+<dt>TRUE</dt>
+<dd>
+<p>if many variables have the same categories, e.g. Likert, column names will be varname:catname</p>
+</dd>
+<dt>FALSE</dt>
+<dd>
+<p>when variables have distinct categories, column names will just be category names</p>
+</dd>
+</dl>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list containing:
+</p>
+
+<dl>
+<dt>result</dt>
+<dd>
+<p>the output data matrix formatted according to the output argument</p>
+</dd>
+<dt>varnames</dt>
+<dd>
+<p>a list of length p containing the names of each variable</p>
+</dd>
+<dt>catnames</dt>
+<dd>
+<p>a list/array (of length p) containing the lists (of length Jk[i]) of category names for each variable</p>
+</dd>
+<dt>Jk</dt>
+<dd>
+<p>a list of length p containing the number of distinct categories for each variable</p>
+</dd>
+<dt>p</dt>
+<dd>
+<p>the number of variables</p>
+</dd>
+</dl>
+<h3>See Also</h3>
+
+<p><code>getBurt</code> to obtain a Burt matrix or a subset of an existing one<br><code>getCT</code> to obtain a contingency table (only if p=2)<br><code>getindicator</code> to obtain an indicator matrix<br><code>getdoubled</code> to obtain a doubled matrix if all variables are ordered categorical with numbered categories
+</p>
+<p>Other conversion functions: 
+<code>getBurt()</code>,
+<code>getCT()</code>,
+<code>getdoubled()</code>,
+<code>getindicator()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">dreamdataCT &lt;- DreamData
+dreamdatanbyplist &lt;- convert(dreamdataCT,input="CT",output="nbyp")
+dreamdatanbyp &lt;- dreamdatanbyplist$result
+
+## Not run: 
+
+dreamdataCTb &lt;- table(dreamdatanbyp)
+dreamdatanbypcounts &lt;- convert(dreamdatanbyp,input="nbyp",output="nbypcounts")$result
+dreamdataindicatorlist &lt;- convert(dreamdatanbypcounts,input="nbypcounts",output="indicator")
+dreamdatanbypb &lt;- convert(dreamdataindicatorlist$result,input="indicator",
+                          output="nbyp",Jk=dreamdataindicatorlist$Jk)$result
+
+nishdatanbyp &lt;- NishData
+nishdataindicator &lt;- convert(nishdatanbyp)$result
+nishdataBurt &lt;- t(nishdataindicator)%*%nishdataindicator
+
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

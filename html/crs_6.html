@@ -1,0 +1,814 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>crs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Categorical Regression Splines</h2>
+
+<h3>Description</h3>
+
+ <p><code>crs</code> computes a regression spline estimate of a
+one (1) dimensional dependent variable on an <code>r</code>-dimensional
+vector of continuous and categorical
+(<code>factor</code>/<code>ordered</code>) predictors (Ma and
+Racine (2013), Ma, Racine and Yang (2015)).</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">crs(...)
+## Default S3 method:
+crs(xz,
+    y,
+    degree = NULL,
+    segments = NULL,
+    include = NULL,
+    kernel = TRUE,
+    lambda = NULL,
+    complexity = c("degree-knots","degree","knots"),
+    knots = c("quantiles","uniform","auto"),
+    basis = c("auto","additive","tensor","glp"),
+    deriv = 0,
+    data.return = FALSE,
+    prune = FALSE,
+    model.return = FALSE,
+    tau = NULL,
+    weights = NULL,
+    ...)
+
+## S3 method for class 'formula'
+crs(formula,
+    data = list(),
+    degree = NULL,
+    segments = NULL,
+    include = NULL,
+    degree.max = 10, 
+    segments.max = 10, 
+    degree.min = 0, 
+    segments.min = 1, 
+    cv.df.min = 1,
+    cv = c("nomad","exhaustive","none"),
+    cv.threshold = 1000,
+    cv.func = c("cv.ls","cv.gcv","cv.aic"),
+    kernel = TRUE,
+    lambda = NULL,
+    lambda.discrete = FALSE,
+    lambda.discrete.num = 100,
+    complexity = c("degree-knots","degree","knots"),
+    knots = c("quantiles","uniform","auto"),
+    basis = c("auto","additive","tensor","glp"),
+    deriv = 0,
+    data.return = FALSE,
+    prune = FALSE,
+    model.return = FALSE,
+    restarts = 0,
+    random.seed = 42,
+    max.bb.eval = 10000,
+    initial.mesh.size.real = "r1.0e-01",
+    initial.mesh.size.integer = "1",
+    min.mesh.size.real = paste(sqrt(.Machine$double.eps)),
+    min.mesh.size.integer = 1, 
+    min.poll.size.real = 1,
+    min.poll.size.integer = 1, 
+    opts=list(),
+    nmulti = 5,
+    tau = NULL,
+    weights = NULL,
+    singular.ok = FALSE,
+    ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>xz</code></td>
+<td>
+<p> numeric (<code>x</code>) and or nominal/ordinal
+(<code>factor</code>/<code>ordered</code>) predictors (<code>z</code>) </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p> a numeric vector of responses. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>degree</code></td>
+<td>
+<p> integer/vector specifying the polynomial degree of the
+B-spline basis for each dimension of the continuous <code>x</code>
+(default <code>degree=3</code>, i.e. cubic spline)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>segments</code></td>
+<td>
+<p> integer/vector specifying the number of segments of the
+B-spline basis for each dimension of the continuous <code>x</code>
+(i.e. number of knots minus one) (default <code>segments=1</code>, i.e. Bezier
+curve)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include</code></td>
+<td>
+<p> integer/vector specifying whether each of the
+nominal/ordinal (<code>factor</code>/<code>ordered</code>) predictors
+in <code>x</code> are included or omitted from the resulting estimate </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p> a vector of bandwidths for each dimension of the
+categorical <code>z</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.discrete</code></td>
+<td>
+<p> if <code>lambda.discrete=TRUE</code>, the bandwidth
+will be discretized into <code>lambda.discrete.num+1</code> points and
+<code>lambda</code> will be chosen from these points</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.discrete.num</code></td>
+<td>
+<p>a positive integer indicating the number of
+discrete values that lambda can assume - this parameter will only be
+used when <code>lambda.discrete=TRUE</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p> a symbolic description of the model to be fit </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p> an optional data frame containing the variables in the
+model </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cv</code></td>
+<td>
+<p> a character string (default <code>cv="nomad"</code>) indicating
+whether to use nonsmooth mesh adaptive direct search, exhaustive
+search, or no search (i.e. use user supplied values for <code>degree</code>,
+<code>segments</code>, and <code>lambda</code>) </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cv.threshold</code></td>
+<td>
+<p> an integer (default <code>cv.threshold=1000</code>) for
+simple problems with no categorical predictors
+(i.e. <code>kernel=FALSE</code> otherwise
+<code>optim</code>/<code>snomadr</code> search is necessary) such
+that, if the number of combinations of <code>degree</code>/<code>segments</code>
+is less than the threshold and <code>cv="nomad"</code>, instead use
+exhaustive search (<code>cv="exhaustive"</code>) </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cv.func</code></td>
+<td>
+<p>a character string (default <code>cv.func="cv.ls"</code>)
+indicating which method to use to select smoothing
+parameters. <code>cv.gcv</code> specifies generalized cross-validation
+(Craven and Wahba (1979)), <code>cv.aic</code> specifies expected
+Kullback-Leibler cross-validation (Hurvich, Simonoff, and Tsai
+(1998)), and <code>cv.ls</code> specifies least-squares
+cross-validation </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kernel</code></td>
+<td>
+<p> a logical value (default <code>kernel=TRUE</code>)
+indicating whether to use kernel smoothing or not </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>degree.max</code></td>
+<td>
+<p> the maximum degree of the B-spline basis for
+each of the continuous predictors (default <code>degree.max=10</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>segments.max</code></td>
+<td>
+<p> the maximum segments of the B-spline basis for
+each of the continuous predictors (default <code>segments.max=10</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>degree.min</code></td>
+<td>
+<p> the minimum degree of the B-spline basis for
+each of the continuous predictors (default <code>degree.min=0</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>segments.min</code></td>
+<td>
+<p> the minimum segments of the B-spline basis for
+each of the continuous predictors (default <code>segments.min=1</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cv.df.min</code></td>
+<td>
+<p> the minimum degrees of freedom to allow when
+conducting NOMAD-based cross-validation (default
+<code>cv.df.min=1</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>complexity</code></td>
+<td>
+<p>a character string (default
+<code>complexity="degree-knots"</code>) indicating whether model
+‘complexity’ is determined by the degree of the spline or by the
+number of segments (i.e. number of knots minus one). This option
+allows the user to use cross-validation to select either the spline
+degree (number of knots held fixed) or the number of knots (spline
+degree held fixed) or both the spline degree and number of knots
+</p>
+<p>For the continuous predictors the regression spline model employs
+either the additive or tensor product B-spline basis matrix for a
+multivariate polynomial spline via the B-spline routines in the GNU
+Scientific Library (<a href="https://www.gnu.org/software/gsl/">https://www.gnu.org/software/gsl/</a>) and the
+<code>tensor.prod.model.matrix</code> function </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>knots</code></td>
+<td>
+<p> a character string (default <code>knots="quantiles"</code>)
+specifying where knots are to be placed. ‘quantiles’ specifies
+knots placed at equally spaced quantiles (equal number of observations
+lie in each segment) and ‘uniform’ specifies knots placed at
+equally spaced intervals. If <code>knots="auto"</code>, the knot type will
+be automatically determined by cross-validation </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>basis</code></td>
+<td>
+<p> a character string (default <code>basis="auto"</code>)
+indicating whether the additive or tensor product B-spline basis
+matrix for a multivariate polynomial spline or generalized B-spline
+polynomial basis should be used. Note this can be automatically
+determined by cross-validation if <code>cv="nomad"</code> or
+<code>cv="exhaustive"</code> and <code>basis="auto"</code>, and is an
+‘all or none’ proposition (i.e. interaction terms for all
+predictors or for no predictors given the nature of ‘tensor
+products’). Note also that if there is only one predictor this
+defaults to <code>basis="additive"</code> to avoid unnecessary computation
+as the spline bases are equivalent in this case </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deriv</code></td>
+<td>
+<p> an integer <code>l</code> (default <code>deriv=0</code>) specifying
+whether to compute the univariate <code>l</code>th partial derivative for
+each continuous predictor (and difference in levels for each
+categorical predictor) or not and if so what order. Note that if
+<code>deriv</code> is higher than the spline degree of the associated
+continuous predictor then the derivative will be zero and a warning
+issued to this effect </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data.return</code></td>
+<td>
+<p> a logical value indicating whether to return
+<code>x,z,y</code> or not (default <code>data.return=FALSE</code>) </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prune</code></td>
+<td>
+<p> a logical value (default <code>prune=FALSE</code>) specifying
+whether the (final) model is to be ‘pruned’ using a stepwise
+cross-validation criterion based upon a modified version of
+<code>stepAIC</code> (see below for details) </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model.return</code></td>
+<td>
+<p> a logical value indicating whether to return the
+list of <code>lm</code> models or not when <code>kernel=TRUE</code>
+(default <code>model.return=FALSE</code>) </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>restarts</code></td>
+<td>
+<p> integer specifying the number of times to restart the
+process of finding extrema of the cross-validation function (for the
+bandwidths only) from different (random) initial points </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>random.seed</code></td>
+<td>
+<p> when it is not missing and not equal to 0, the
+initial points will be generated using this seed when using
+<code>frscvNOMAD</code> or <code>krscvNOMAD</code> and
+<code>nmulti &gt; 0</code> </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.bb.eval</code></td>
+<td>
+
+<p>argument passed to the NOMAD solver (see <code>snomadr</code> for
+further details)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>initial.mesh.size.real</code></td>
+<td>
+
+<p>argument passed to the NOMAD solver (see <code>snomadr</code> for
+further details)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>initial.mesh.size.integer</code></td>
+<td>
+
+<p>argument passed to the NOMAD solver (see <code>snomadr</code> for
+further details)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min.mesh.size.real</code></td>
+<td>
+
+<p>argument passed to the NOMAD solver (see <code>snomadr</code> for
+further details)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min.mesh.size.integer</code></td>
+<td>
+
+<p>arguments passed to the NOMAD solver (see <code>snomadr</code> for
+further details)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min.poll.size.real</code></td>
+<td>
+
+<p>arguments passed to the NOMAD solver (see <code>snomadr</code> for
+further details)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min.poll.size.integer</code></td>
+<td>
+
+<p>arguments passed to the NOMAD solver (see <code>snomadr</code> for
+further details)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>opts</code></td>
+<td>
+<p> list of optional arguments to be passed to
+<code>snomadr</code> </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nmulti</code></td>
+<td>
+
+<p>integer number of times to restart the process of finding extrema of
+the cross-validation function from different (random) initial
+points (default <code>nmulti=5</code>)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau</code></td>
+<td>
+
+<p>if non-null a number in (0,1) denoting the quantile for which a quantile
+regression spline is to be estimated rather than estimating the
+conditional mean (default <code>tau=NULL</code>). Criterion function set
+by <code>cv.func=</code> are modified accordingly to admit quantile regression.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+
+<p>an optional vector of weights to be used in the fitting process.
+Should be ‘NULL’ or a numeric vector.  If non-NULL, weighted least
+squares is used with weights ‘weights’ (that is, minimizing
+‘sum(w*e^2)’); otherwise ordinary least squares is used.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>singular.ok</code></td>
+<td>
+
+<p>a logical value (default <code>singular.ok=FALSE</code>) that, when
+<code>FALSE</code>, discards singular bases during cross-validation (a check
+for ill-conditioned bases is performed).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p> optional arguments </p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Typical usages are (see below for a  list of options and also
+the examples at the end of this help file)
+</p>
+<pre>
+    ## Estimate the model and let the basis type be determined by
+    ## cross-validation (i.e. cross-validation will determine whether to
+    ## use the additive, generalized, or tensor product basis)
+    
+    model &lt;- crs(y~x1+x2)
+    
+    ## Estimate the model for a specified degree/segment/bandwidth
+    ## combination and do not run cross-validation (will use the
+    ## additive basis by default)
+    
+    model &lt;- crs(y~x1+factor(x2),cv="none",degree=3,segments=1,lambda=.1)
+    
+    ## Plot the mean and (asymptotic) error bounds
+
+    plot(model,mean=TRUE,ci=TRUE)
+
+    ## Plot the first partial derivative and (asymptotic) error bounds
+
+    plot(model,deriv=1,ci=TRUE)    
+    </pre>
+<p><code>crs</code> computes a regression spline estimate of a one (1)
+dimensional dependent variable on an <code>r</code>-dimensional vector of
+continuous and categorical
+(<code>factor</code>/<code>ordered</code>) predictors.
+</p>
+<p>The regression spline model employs the tensor product B-spline basis
+matrix for a multivariate polynomial spline via the B-spline routines
+in the GNU Scientific Library (<a href="https://www.gnu.org/software/gsl/">https://www.gnu.org/software/gsl/</a>)
+and the <code>tensor.prod.model.matrix</code> function.
+</p>
+<p>When <code>basis="additive"</code> the model becomes additive in nature
+(i.e. no interaction/tensor terms thus semiparametric not fully
+nonparametric).
+</p>
+<p>When <code>basis="tensor"</code> the model uses the multivariate tensor
+product basis.
+</p>
+<p>When <code>kernel=FALSE</code> the model uses indicator basis functions for
+the nominal/ordinal (<code>factor</code>/<code>ordered</code>)
+predictors rather than kernel weighting.
+</p>
+<p>When <code>kernel=TRUE</code> the product kernel function for the discrete
+predictors is of the ‘Li-Racine’ type (see Li and Racine (2007)
+for details).
+</p>
+<p>When <code>cv="nomad"</code>, numerical search is undertaken using Nonsmooth
+Optimization by Mesh Adaptive Direct Search (Abramson, Audet, Couture,
+Dennis, Jr., and Le Digabel (2011)).
+</p>
+<p>When <code>kernel=TRUE</code> and <code>cv="exhaustive"</code>, numerical search
+is undertaken using <code>optim</code> and the box-constrained
+<code>L-BFGS-B</code> method (see <code>optim</code> for details). The user
+may restart the algorithm as many times as desired via the
+<code>restarts</code> argument (default <code>restarts=0</code>). The approach
+ascends from <code>degree=0</code> (or <code>segments=0</code>) through
+<code>degree.max</code> and for each value of <code>degree</code> (or
+<code>segments</code>) searches for the optimal bandwidths. After the most
+complex model has been searched then the optimal
+<code>degree</code>/<code>segments</code>/<code>lambda</code> combination is
+selected. If any element of the optimal <code>degree</code> (or
+<code>segments</code>) vector coincides with <code>degree.max</code> (or <code>segments.max</code>) a warning
+is produced and the user ought to restart their search with a larger
+value of <code>degree.max</code> (or <code>segments.max</code>).
+</p>
+<p>Note that the default <code>plot</code> method for a <code>crs</code> object
+provides some diagnostic measures, in particular, a) residuals versus
+fitted values (useful for checking the assumption that
+<code>E(u|x)=0</code>), b) a normal quantile-quantile plot which allows
+residuals to be assessed for normality (<code>qqnorm</code>), c) a
+scale-location plot that is useful for checking the assumption that
+the errors are iid and, in particular, that the variance is
+homogeneous, and d) ‘Cook's distance’ which computes the
+single-case influence function. See below for other arguments for the
+plot function for a <code>crs</code> object.
+</p>
+<p>Note that setting <code>prune=TRUE</code> produces a final ‘pruning’
+of the model via a stepwise cross-validation criterion achieved by
+modifying <code>stepAIC</code> and replacing <code>extractAIC</code>
+with <code>extractCV</code> throughout the function. This option may be
+enabled to remove potentially superfluous bases thereby improving the
+finite-sample efficiency of the resulting model.  Note that if the
+cross-validation score for the pruned model is no better than that for
+the original model then the original model is returned with a warning
+to this effect. Note also that this option can only be used when
+<code>kernel=FALSE</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>crs</code> returns a <code>crs</code> object.  The generic functions
+<code>fitted</code> and <code>residuals</code> extract (or
+generate) estimated values and residuals. Furthermore, the functions
+<code>summary</code>, <code>predict</code>, and <code>plot</code>
+(options <code>mean=FALSE</code>, <code>deriv=i</code> where <code class="reqn">i</code> is an
+integer, <code>ci=FALSE</code>, <code>persp.rgl=FALSE</code>,
+<code>plot.behavior=c("plot","plot-data","data")</code>,
+<code>xtrim=0.0</code>,<code>xq=0.5</code>) support objects of this type. The
+returned object has the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>fitted.values</code></td>
+<td>
+<p> estimates of the regression function
+(conditional mean) at the sample points or evaluation points </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lwr,upr</code></td>
+<td>
+<p> lower/upper bound for a 95% confidence interval for
+the <code>fitted.values</code> (conditional mean) obtained from
+<code>predict.lm</code> via the argument
+<code>interval="confidence"</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>residuals</code></td>
+<td>
+<p> residuals computed at the sample points or
+evaluation points </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>degree</code></td>
+<td>
+<p> integer/vector specifying the degree of the B-spline
+basis for each dimension of the continuous <code>x</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>segments</code></td>
+<td>
+<p> integer/vector specifying the number of segments of
+the B-spline basis for each dimension of the continuous <code>x</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include</code></td>
+<td>
+<p> integer/vector specifying whether each of the
+nominal/ordinal (<code>factor</code>/<code>ordered</code>)
+predictors <code>z</code> are included or omitted from the resulting
+estimate if <code>kernel=FALSE</code> (see below)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kernel</code></td>
+<td>
+<p> a logical value indicating whether kernel smoothing was
+used (<code>kernel=TRUE</code>) or not </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p> vector of bandwidths used if <code>kernel=TRUE</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p> a symbolic description of the model  </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>r.squared</code></td>
+<td>
+<p> coefficient of determination (Doksum and Samarov
+(1995)) </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model.lm</code></td>
+<td>
+<p> an object of ‘<code>class</code>’
+‘<code>lm</code>’ if <code>kernel=FALSE</code> or a list of objects
+of ‘<code>class</code>’ ‘<code>lm</code>’ if
+<code>kernel=TRUE</code> (accessed by <code>model.lm[[1]]</code>,
+<code>model.lm[[2]]</code>,...,. By way of example, if <code>foo</code> is a
+<code>crs</code> object and <code>kernel=FALSE</code>, then <code>foo$model.lm</code>
+is an object of ‘<code>class</code>’
+‘<code>lm</code>’, while objects of
+‘<code>class</code>’ ‘<code>lm</code>’ return the
+<code>model.frame</code> in <code>model.lm$model</code> which can be
+accessed via <code>foo$model.lm$model</code> where <code>foo</code> is the
+<code>crs</code> object (the model frame <code>foo$model.lm$model</code>
+contains the B-spline bases underlying the estimate which might be of
+interest). Again by way of example, when <code>kernel=TRUE</code> then
+<code>foo$model.lm[[1]]$model</code> contains the model frame for the first
+unique combination of categorical predictors,
+<code>foo$model.lm[[2]]$model</code> the second and so forth (the weights
+will potentially differ for each model depending on the value(s) of
+<code>lambda</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deriv.mat</code></td>
+<td>
+<p> a matrix of derivatives (or differences in levels
+for the categorical <code>z</code>) whose order is determined by
+<code>deriv=</code> in the <code>crs</code> call </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deriv.mat.lwr</code></td>
+<td>
+<p> a matrix of 95% coverage lower bounds for
+<code>deriv.mat</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deriv.mat.upr</code></td>
+<td>
+<p> a matrix of 95% coverage upper bounds for
+<code>deriv.mat</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hatvalues</code></td>
+<td>
+<p> the <code>hatvalues</code> for the estimated model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>P.hat</code></td>
+<td>
+<p> the kernel probability estimates corresponding to the
+categorical predictors in the estimated model </p>
+</td>
+</tr>
+</table>
+<h3>Usage Issues</h3>
+
+<p>Note that when <code>kernel=FALSE</code> <code>summary</code> supports the
+option <code>sigtest=TRUE</code> that conducts an F-test for significance
+for each predictor.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jeffrey S. Racine <a href="mailto:racinej@mcmaster.ca">racinej@mcmaster.ca</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Abramson, M.A. and C. Audet and G. Couture and J.E. Dennis Jr. and and
+S. Le Digabel (2011), “The NOMAD project”. Software available
+at https://www.gerad.ca/nomad.
+</p>
+<p>Craven, P. and G. Wahba (1979), “Smoothing Noisy Data With
+Spline Functions,” Numerische Mathematik, 13, 377-403.
+</p>
+<p>Doksum, K. and A. Samarov (1995), “Nonparametric Estimation of
+Global Functionals and a Measure of the Explanatory Power of
+Covariates in Regression,” The Annals of Statistics, 23 1443-1473.
+</p>
+<p>Hurvich, C.M. and J.S. Simonoff and C.L. Tsai (1998),
+“Smoothing Parameter Selection in Nonparametric Regression
+Using an Improved Akaike Information Criterion,” Journal of the
+Royal Statistical Society B, 60, 271-293.
+</p>
+<p>Le Digabel, S. (2011), “Algorithm 909: NOMAD: Nonlinear
+Optimization With The MADS Algorithm”. ACM Transactions on
+Mathematical Software, 37(4):44:1-44:15.
+</p>
+<p>Li, Q. and J.S. Racine (2007), <em>Nonparametric Econometrics:
+Theory and Practice,</em> Princeton University Press.
+</p>
+<p>Ma, S. and J.S. Racine and L. Yang (2015), “Spline
+Regression in the Presence of Categorical Predictors,” Journal of
+Applied Econometrics, Volume 30, 705-717.
+</p>
+<p>Ma, S. and J.S. Racine (2013), “Additive Regression
+Splines with Irrelevant Categorical and Continuous Regressors,”
+Statistica Sinica, Volume 23, 515-541.
+</p>
+<p>Racine, J.S. (2011), “Cross-Validated Quantile Regression
+Splines,” manuscript.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>smooth.spline</code>, <code>loess</code>, <code>npreg</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(42)
+## Example - simulated data
+n &lt;- 1000
+num.eval &lt;- 50
+x1 &lt;- runif(n)
+x2 &lt;- runif(n)
+z &lt;- rbinom(n,1,.5)
+dgp &lt;- cos(2*pi*x1)+sin(2*pi*x2)+z
+z &lt;- factor(z)
+y &lt;- dgp + rnorm(n,sd=.5)
+
+## Estimate a model with specified degree, segments, and bandwidth
+model &lt;- crs(y~x1+x2+z,degree=c(5,5),
+                       segments=c(1,1),
+                       lambda=0.1,
+                       cv="none",
+                       kernel=TRUE)
+summary(model)
+
+## Perspective plot
+x1.seq &lt;- seq(min(x1),max(x1),length=num.eval)
+x2.seq &lt;- seq(min(x2),max(x2),length=num.eval)
+x.grid &lt;- expand.grid(x1.seq,x2.seq)
+newdata &lt;- data.frame(x1=x.grid[,1],x2=x.grid[,2],
+                      z=factor(rep(0,num.eval**2),levels=c(0,1)))
+z0 &lt;- matrix(predict(model,newdata=newdata),num.eval,num.eval)
+newdata &lt;- data.frame(x1=x.grid[,1],x2=x.grid[,2],
+                      z=factor(rep(1,num.eval),levels=c(0,1)))
+z1 &lt;- matrix(predict(model,newdata=newdata),num.eval,num.eval)
+zlim=c(min(z0,z1),max(z0,z1))
+persp(x=x1.seq,y=x2.seq,z=z0,
+      xlab="x1",ylab="x2",zlab="y",zlim=zlim,
+      ticktype="detailed",      
+      border="red",
+      theta=45,phi=45)
+par(new=TRUE)
+persp(x=x1.seq,y=x2.seq,z=z1,
+      xlab="x1",ylab="x2",zlab="y",zlim=zlim,
+      theta=45,phi=45,
+      ticktype="detailed",
+      border="blue")
+
+## Partial regression surface plot
+plot(model,mean=TRUE,ci=TRUE)
+## Not run: 
+## A plot example where we extract the partial surfaces, confidence
+## intervals etc. automatically generated by plot(mean=TRUE,...) but do
+## not plot, rather save for separate use.
+pdat &lt;- plot(model,mean=TRUE,ci=TRUE,plot.behavior="data")
+
+## Column 1 is the (evaluation) predictor ([,1]), 2-4 ([,-1]) the mean,
+## lwr, and upr (note the returned value is a 'list' hence pdat[[1]] is
+## data for the first predictor, pdat[[2]] the second etc). Note that
+## matplot() can plot this nicely.
+matplot(pdat[[1]][,1],pdat[[1]][,-1],
+        xlab=names(pdat[[1]][1]),ylab=names(pdat[[1]][2]),
+        lty=c(1,2,2),col=c(1,2,2),type="l")
+
+## End(Not run)
+</code></pre>
+
+
+</div>

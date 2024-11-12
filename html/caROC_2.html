@@ -1,0 +1,210 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>caROC_CB</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Get confidence band for covariate-adjusted ROC curve.
+</h2>
+
+<h3>Description</h3>
+
+<p>Use this function to compute the confidence band for covariate-adjusted ROC curve, with or without monotonicity respecting methods.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">caROC_CB(diseaseData, controlData, userFormula,
+mono_resp_method, global_ROC_controlled_by = "sensitivity",
+CB_alpha = 0.95, logit_CB = FALSE, nbootstrap = 100,
+nbin = 100, verbose = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>diseaseData</code></td>
+<td>
+
+<p>Data from patients including dependent (biomarker) and independent (covariates) variables.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>controlData</code></td>
+<td>
+
+<p>Data from controls including dependent (biomarker) and independent (covariates) variables.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>userFormula</code></td>
+<td>
+
+<p>A character string to represent the function for covariate adjustment. For example, let Y denote biomarker, Z1 and Z2 denote two covariates. Then userFormula = "Y ~ Z1 + Z2".
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mono_resp_method</code></td>
+<td>
+
+<p>The method used to restore monotonicity of the ROC curve or computed sensitivity/specificity value. It should one from the following: "none", "ROC". "none" is not applying any monotonicity respecting method. "ROC" is to apply ROC-based monotonicity respecting approach. Default value is "ROC".
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>global_ROC_controlled_by</code></td>
+<td>
+
+<p>Whether sensitivity/specificity is used to control when computing global ROC. It should one from the following: "sensitivity", "specificity". Default is "sensitivity".
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CB_alpha</code></td>
+<td>
+
+<p>Percentage of confidence band. Default is 0.95.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logit_CB</code></td>
+<td>
+
+<p>Whether to use logit-transformed (then transform back) confidence band. Default is FALSE.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nbootstrap</code></td>
+<td>
+
+<p>Number of boostrap iterations. Default is 100.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nbin</code></td>
+<td>
+
+<p>Number of bins used for constructing confidence band. Default is 100.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+
+<p>Whether to print out messages during bootstrap. Default value is FALSE.
+</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>If global ROC is controlled by sensitivity, a list will be output including the following
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>Sensitivity</code></td>
+<td>
+<p>Vector of sensitivities;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Specificity_upper</code></td>
+<td>
+<p>Upper confidence band for specificity estimations;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Specificity_lower</code></td>
+<td>
+<p>Lower confidence band for specificity estimations;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>global_ROC_controlled_by</code></td>
+<td>
+<p>"sensitivity".</p>
+</td>
+</tr>
+</table>
+<p>If global ROC is controlled by Specificity, a list will be output including the following
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>Specificity</code></td>
+<td>
+<p>Vector of specificity;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Sensitivity_upper</code></td>
+<td>
+<p>Upper confidence band for sensitivity estimations;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Sensitivity_lower</code></td>
+<td>
+<p>Lower confidence band for sensitivity estimations;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>global_ROC_controlled_by</code></td>
+<td>
+<p>"specificity".</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Ziyi.li &lt;ziyi.li@emory.edu&gt;
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">n1 = n0 = 500
+
+## generate data
+Z_D &lt;- rbinom(n1, size = 1, prob = 0.3)
+Z_C &lt;- rbinom(n0, size = 1, prob = 0.7)
+
+Y_C_Z0 &lt;- rnorm(n0, 0.1, 1)
+Y_D_Z0 &lt;- rnorm(n1, 1.1, 1)
+Y_C_Z1 &lt;- rnorm(n0, 0.2, 1)
+Y_D_Z1 &lt;- rnorm(n1, 0.9, 1)
+
+M0 &lt;- Y_C_Z0 * (Z_C == 0) + Y_C_Z1 * (Z_C == 1)
+M1 &lt;- Y_D_Z0 * (Z_D == 0) + Y_D_Z1 * (Z_D == 1)
+
+diseaseData &lt;- data.frame(M = M1, Z = Z_D)
+controlData &lt;- data.frame(M = M0, Z = Z_C)
+userFormula = "M~Z"
+
+### calculate confidence band by controlling sensitivity
+### using different monotonicity respecting methods
+
+
+ROC_CB1 &lt;- caROC_CB(diseaseData,controlData,userFormula,
+                      mono_resp_method = "none",
+                      CB_alpha = 0.95,
+                      nbin = 100,verbose = FALSE)
+ROC_CB2 &lt;- caROC_CB(diseaseData,controlData,userFormula,
+                      mono_resp_method = "ROC",
+                      CB_alpha = 0.95,
+                      nbin = 100,verbose = FALSE)
+
+</code></pre>
+
+
+</div>

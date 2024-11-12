@@ -1,0 +1,171 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cfr_time_varying</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate a severity measure that varies over time</h2>
+
+<h3>Description</h3>
+
+<p>Calculates how the severity of a disease changes over time
+while optionally correcting for reporting delays using an epidemiological
+delay distribution of the time between symptom onset and outcome
+(e.g. onset-to-death for the fatality risk).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cfr_time_varying(
+  data,
+  delay_density = NULL,
+  burn_in = 7,
+  smoothing_window = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A <code style="white-space: pre;">⁠&lt;data.frame&gt;⁠</code> containing the outbreak data. A daily time
+series with dates or some other absolute indicator of time (e.g. epiday or
+epiweek) and the numbers of new cases and new deaths at each time point.
+Note that the required columns are "date" (for the date), "cases" (for the
+number of reported cases), and "deaths" (for the number of reported deaths)
+on each day of the outbreak.
+</p>
+<p>Note that the <code style="white-space: pre;">⁠&lt;data.frame&gt;⁠</code> is required to have an unbroken sequence of
+dates with no missing dates in between. The "date" column must be of class
+<code>Date</code> (see <code>as.Date()</code>).
+</p>
+<p>Note also that the total number of cases must be greater than the total
+number of reported deaths.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delay_density</code></td>
+<td>
+<p>An optional argument that controls whether delay
+correction is applied in the severity estimation.
+May be <code>NULL</code>, for no delay correction, or a function that returns the
+density function of a distribution to evaluate
+density at user-specified values, e.g.
+<code>function(x) stats::dgamma(x = x, shape = 5, scale = 1)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>burn_in</code></td>
+<td>
+<p>A single integer-like value for the number of time-points
+(typically days) to disregard at the start of the time-series, if a burn-in
+period is desired.
+</p>
+<p>Defaults to 7, which is a sensible default value that disregards the first
+week of cases and deaths, assuming daily data.
+</p>
+<p>To consider all case data including the start of the time-series, set this
+argument to 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smoothing_window</code></td>
+<td>
+<p>An <em>odd</em> number determining the smoothing window size
+to use when smoothing the case and death time-series, using a rolling median
+procedure (as the <code>k</code> argument to <code>stats::runmed()</code>) before calculating the
+time-varying severity.
+</p>
+<p>The default behaviour is to apply no smoothing. The minimum value of this
+argument is 1.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A <code style="white-space: pre;">⁠&lt;data.frame&gt;⁠</code> with the date, maximum likelihood estimate and 95%
+confidence interval of the daily severity estimates, named
+"severity_estimate", "severity_low", and "severity_high", with one row for
+each day in the original data.frame.
+</p>
+
+
+<h3>Details: Adjusting for delays between two time series</h3>
+
+<p>This function estimates the number of cases which have a known outcome over
+time, following Nishiura et al. (2009).
+The function calculates a quantity <code class="reqn">k_t</code> for each day within the input
+data, which represents the number of cases estimated to have a known outcome,
+on day <code class="reqn">t</code>. <code class="reqn">k_t</code> is calculated in the following way:
+</p>
+<p style="text-align: center;"><code class="reqn">k_t = \sum_{j = 0}^t c_t f_{j - t}</code>
+</p>
+
+<p>We then assume that the severity measure, for example CFR, of interest is
+binomially distributed, in the following way:
+</p>
+<p style="text-align: center;"><code class="reqn">d_t \sim {\sf Binomial}(k_t, \theta_t)</code>
+</p>
+
+<p>We use maximum likelihood estimation to determine the value of <code class="reqn">\theta_t</code>
+for each <code class="reqn">t</code>, where <code class="reqn">\theta</code> represents the severity measure of
+interest.
+</p>
+<p>The epidemiological delay distribution passed to <code>delay_density</code> is used to
+obtain a probability mass function parameterised by time; i.e. <code class="reqn">f(t)</code>
+which gives the probability of the binary outcome of a case (survival or
+death) being known by time <code class="reqn">t</code>. The delay distribution is parameterised
+with disease-specific parameters before it is supplied here.
+</p>
+<p><strong>Note</strong> that the function arguments <code>burn_in</code> and <code>smoothing_window</code> are not
+explicitly used in this calculation. <code>burn_in</code> controls how many estimates at
+the beginning of the outbreak are replaced with <code>NA</code>s — the calculation
+above is not applied to the first <code>burn_in</code> data points.
+The calculation is applied to the smoothed data, if a <code>smoothing_window</code>
+is specified.
+</p>
+
+
+<h3>References</h3>
+
+<p>Nishiura, H., Klinkenberg, D., Roberts, M., &amp; Heesterbeek, J. A. P. (2009).
+Early Epidemiological Assessment of the Virulence of Emerging Infectious
+Diseases: A Case Study of an Influenza Pandemic. PLOS ONE, 4(8), e6852.
+<a href="https://doi.org/10.1371/journal.pone.0006852">doi:10.1371/journal.pone.0006852</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># get data pre-loaded with the package
+data("covid_data")
+df_covid_uk &lt;- covid_data[covid_data$country == "United Kingdom" &amp;
+covid_data$date &lt;= as.Date("2020-09-01"), ]
+
+# estimate time varying severity without correcting for delays
+cfr_time_varying &lt;- cfr_time_varying(
+  data = df_covid_uk,
+  burn_in = 7L
+)
+# View
+tail(cfr_time_varying)
+
+# estimate time varying severity while correcting for delays
+# obtain onset-to-death delay distribution parameters from Linton et al. 2020
+# J. Clinical Medicine: &lt;https://doi.org/10.3390/jcm9020538&gt;
+# view only the first values
+cfr_time_varying &lt;- cfr_time_varying(
+  data = df_covid_uk,
+  delay_density = function(x) dlnorm(x, meanlog = 2.577, sdlog = 0.440),
+  burn_in = 7L
+)
+tail(cfr_time_varying)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,116 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>opower</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Outer Power Transformation of Archimedean Copulas</h2>
+
+<h3>Description</h3>
+
+<p>Build a new Archimedean copula by applying the outer power
+transformation to a given Archimedean copula.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">opower(copbase, thetabase)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>copbase</code></td>
+<td>
+<p>a "base" copula, that is, a copula of class
+<code>acopula</code>.  Must be one of the predefined families.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thetabase</code></td>
+<td>
+<p>the univariate parameter <code class="reqn">\theta</code> for the
+generator of the base copula <code>copbase</code>.  Hence, the copula which
+is transformed is fixed, that is, does not depend on a parameter.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a new <code>acopula</code> object, namely the outer power copula
+based on the provided copula family <code>copbase</code> with fixed
+parameter <code>thetabase</code>.  The transform introduces a parameter
+<code>theta</code>, so one obtains a parametric Archimedean family object as
+return value.
+</p>
+<p>The <code>environment</code> of all function slots contains objects
+<code>cOP</code> (which is the outer power copula itself), <code>copbase</code>,
+and <code>thetabase</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Hofert, M. (2010),
+<em>Sampling Nested Archimedean Copulas with Applications to CDO Pricing</em>,
+Suedwestdeutscher Verlag fuer Hochschulschriften AG &amp; Co. KG.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>The class <code>acopula</code> and our predefined "acopula"
+family objects in <code>acopula-families</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Construct an outer power Clayton copula with parameter thetabase such
+## that Kendall's tau equals 0.2
+thetabase &lt;- copClayton@iTau(0.2)
+opC &lt;- opower(copClayton, thetabase) # "acopula" obj. (unspecified theta)
+
+## Construct a 3d nested Archimedean copula based on opC, that is, a nested
+## outer power Clayton copula.  The parameters theta are chosen such that
+## Kendall's tau equals 0.4 and 0.6 for the outer and inner sector,
+## respectively.
+theta0 &lt;- opC@iTau(0.4)
+theta1 &lt;- opC@iTau(0.6)
+opC3d &lt;- onacopulaL(opC, list(theta0, 1, list(list(theta1, 2:3))))
+## or opC3d &lt;- onacopula(opC, C(theta0, 1, C(theta1, c(2,3))))
+
+## Compute the corresponding lower and upper tail-dependence coefficients
+rbind(theta0 = c(
+      lambdaL = opC@lambdaL(theta0),
+      lambdaU = opC@lambdaU(theta0) # =&gt; opC3d has upper tail dependence
+      ),
+      theta1 = c(
+      lambdaL = opC@lambdaL(theta1),
+      lambdaU = opC@lambdaU(theta1) # =&gt; opC3d has upper tail dependence
+      ))
+
+## Sample opC3d
+n &lt;- 1000
+U &lt;- rnacopula(n, opC3d)
+
+## Plot the generated vectors of random variates of the nested outer
+## power Clayton copula.
+splom2(U)
+
+## Construct such random variates "by hand"
+## (1) draw V0 and V01
+V0  &lt;- opC@ V0(n, theta0)
+V01 &lt;- opC@V01(V0, theta0, theta1)
+## (2) build U
+U &lt;- cbind(
+opC@psi(rexp(n)/V0,  theta0),
+opC@psi(rexp(n)/V01, theta1),
+opC@psi(rexp(n)/V01, theta1))
+</code></pre>
+
+
+</div>

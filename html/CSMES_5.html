@@ -1,0 +1,163 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CSMES.predict</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>CSMES scoring: generate predictions for the optimal ensemble classifier according to CSMES in function of cost information.</h2>
+
+<h3>Description</h3>
+
+<p>This function generates predictions for a new data set (containing candidate member library predictions) using a CSMES model. Using Pareto-optimal ensemble definitions
+generated through <code>CSMES.ensSel</code> and the ensemble nomination front generated using <code>CSMES.EnsNomCurve</code>, final ensemble predictions are generated in function of
+cost information known to the user at the time of model scoring. The model allows for three scenarios: (1) the candidate ensemble is nominated in function of a specific cost
+ratio, (2) the ensemble is nominated in function of partial AUCC (or a distribution over operating points) and (3) the candidate ensemble that is
+optimal over the entire cost space in function of area under the cost or brier curve is chosen.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CSMES.predict(
+  ensSelModel,
+  ensNomCurve,
+  newdata,
+  criterion = c("minEMC", "minAUCC", "minPartAUCC"),
+  costRatio = 5,
+  partAUCC_mu = 0.5,
+  partAUCC_sd = 0.1
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>ensSelModel</code></td>
+<td>
+<p>ensemble selection model (output of <code>CSMES.ensSel</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ensNomCurve</code></td>
+<td>
+<p>ensemble nomination curve object (output of <code>CSMES.ensNomCurve</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdata</code></td>
+<td>
+<p>matrix containing ensemble library member model predictions for new data set</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>criterion</code></td>
+<td>
+<p>This argument specifies which criterion determines the selection of the ensemble candidate that delivers predictions. Can be one of three options: "minEMC", "minAUCC" or "minPartAUCC".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>costRatio</code></td>
+<td>
+<p>Specifies the cost ratio used to determine expected misclassification cost. Only relvant when <code>criterion</code> is "minEMC".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>partAUCC_mu</code></td>
+<td>
+<p>Desired mean operating condition when <code>criterion</code> is "minPartAUCC" (partial area under the cost/brier curve).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>partAUCC_sd</code></td>
+<td>
+<p>Desired standard deviation when <code>criterion</code> is "minPartAUCC" (partial area under the cost/brier curve).</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An list with the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>pred</code></td>
+<td>
+<p>A matrix with model predictions. Both class and probability predictions are delivered.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>criterion</code></td>
+<td>
+<p>The criterion specified to determine the selection of the ensemble candidate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>costRatio</code></td>
+<td>
+<p>The cost ratio in function of which the <code>criterion</code> "minEMC" has selected the optimal candidate ensemble that delivered predictions</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Koen W. De Bock, <a href="mailto:kdebock@audencia.com">kdebock@audencia.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>De Bock, K.W., Lessmann, S. And Coussement, K., Cost-sensitive business failure prediction
+when misclassification costs are uncertain: A heterogeneous ensemble selection approach,
+European Journal of Operational Research (2020), doi: 10.1016/j.ejor.2020.01.052.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>CSMES.ensSel</code>, <code>CSMES.predictPareto</code>, <code>CSMES.ensNomCurve</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">##load data
+library(rpart)
+library(zoo)
+library(ROCR)
+library(mco)
+data(BFP)
+##generate random order vector
+BFP_r&lt;-BFP[sample(nrow(BFP),nrow(BFP)),]
+size&lt;-nrow(BFP_r)
+##size&lt;-300
+train&lt;-BFP_r[1:floor(size/3),]
+val&lt;-BFP_r[ceiling(size/3):floor(2*size/3),]
+test&lt;-BFP_r[ceiling(2*size/3):size,]
+##generate a list containing model specifications for 100 CART decisions trees varying in the cp
+##and minsplit parameters, and trained on bootstrap samples (bagging)
+rpartSpecs&lt;-list()
+for (i in 1:100){
+  data&lt;-train[sample(1:ncol(train),size=ncol(train),replace=TRUE),]
+  str&lt;-paste("rpartSpecs$rpart",i,"=rpart(as.formula(Class~.),data,method=\"class\",
+  control=rpart.control(minsplit=",round(runif(1, min = 1, max = 20)),",cp=",runif(1,
+  min = 0.05, max = 0.4),"))",sep="")
+  eval(parse(text=str))
+}
+##generate predictions for these models
+hillclimb&lt;-mat.or.vec(nrow(val),100)
+for (i in 1:100){
+  str&lt;-paste("hillclimb[,",i,"]=predict(rpartSpecs[[i]],newdata=val)[,2]",sep="")
+  eval(parse(text=str))
+}
+##score the validation set used for ensemble selection, to be used for ensemble selection
+ESmodel&lt;-CSMES.ensSel(hillclimb,val$Class,obj1="FNR",obj2="FPR",selType="selection",
+generations=10,popsize=12,plot=TRUE)
+## Create Ensemble nomination curve
+enc&lt;-CSMES.ensNomCurve(ESmodel,hillclimb,val$Class,curveType="costCurve",method="classPreds",
+plot=FALSE)
+</code></pre>
+
+
+</div>

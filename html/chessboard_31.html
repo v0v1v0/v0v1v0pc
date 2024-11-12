@@ -1,0 +1,89 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>spatial_weights_matrix</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create a spatial weights matrix</h2>
+
+<h3>Description</h3>
+
+<p>Creates a spatial weights matrix by multiplying an adjacency (connectivity)
+matrix (see <code>connectivity_matrix()</code>) and an edges weights matrix (see
+<code>edges_weights_matrix()</code>). Resulting spatial weights equal to 0 will be
+replaced by <code style="white-space: pre;">⁠4 x max(w)⁠</code>, where <code>max(w)</code> is the maximal weight in the
+matrix.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">spatial_weights_matrix(x, y)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>an adjacency <code>matrix</code> of dimensions <code style="white-space: pre;">⁠n x n⁠</code>, where <code>n</code> is the
+number of nodes (sites). The output of <code>connectivity_matrix()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>an edges weight <code>matrix</code> of dimensions <code style="white-space: pre;">⁠n x n⁠</code>, where <code>n</code> is the
+number of nodes (sites). The output of <code>edges_weights_matrix()</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A spatial weights <code>matrix</code> of dimensions <code style="white-space: pre;">⁠n x n⁠</code>, where <code>n</code> is the
+number of nodes (sites).
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Import Adour sites ----
+path_to_file &lt;- system.file("extdata", "adour_survey_sampling.csv", 
+                            package = "chessboard")
+adour_sites &lt;- read.csv(path_to_file)
+
+# Select the 15 first sites ----
+adour_sites &lt;- adour_sites[1:15, ]
+
+# Create node labels ----
+adour_sites &lt;- create_node_labels(adour_sites, 
+                                  location = "location", 
+                                  transect = "transect", 
+                                  quadrat  = "quadrat")
+
+# Create edges based on the pawn move (directed network) ----
+adour_edges &lt;- create_edge_list(adour_sites, method = "pawn", 
+                                directed = TRUE)
+
+# Get connectivity matrix ----
+adour_adjacency &lt;- connectivity_matrix(adour_edges)
+
+# Convert sites to sf object (POINTS) ----
+adour_sites_sf &lt;- sf::st_as_sf(adour_sites, 
+                               coords = c("longitude", "latitude"),
+                               crs = "epsg:2154")
+
+# Compute distances between pairs of sites along the Adour river ----
+adour_dists &lt;- distance_euclidean(adour_sites_sf)
+
+# Create Edges weights matrix ----
+adour_weights &lt;- edges_weights_matrix(adour_dists)
+
+# Create Spatial weights matrix ----
+spatial_weights_matrix(adour_adjacency, adour_weights)
+</code></pre>
+
+
+</div>

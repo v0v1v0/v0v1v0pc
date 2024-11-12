@@ -1,0 +1,160 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cequre</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Censored quantile regression of Huang (2010)</h2>
+
+<h3>Description</h3>
+
+<p>Implementation of censored quantile regression of Huang (2010),
+with incorporation of an upper bound related to the identification limit on
+probability scale as described in Huang (2013).</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cequre(x,dlt,z,epsi=0.05,taus=numeric(0),res=0,
+  resam.dist=FALSE,nbps=3*length(x))</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>follow-up time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dlt</code></td>
+<td>
+<p>censoring indicator: 1 - event, 0 - censored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>matrix of covariates (intercept not included): each column
+corresponds to a covariate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>epsi</code></td>
+<td>
+<p>parameter for the upper bound related to the identification
+limit on probability scale.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>taus</code></td>
+<td>
+<p>(increasing) tau values at which quantile coefficient is
+of interest.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>res</code></td>
+<td>
+<p>number of resampling iterations for variance estimation:
+res=200 is typically sufficient for variance estimation, but res needs
+to be much larger for confidence band construction.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resam.dist</code></td>
+<td>
+<p>resampling distribution to be reported or not.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nbps</code></td>
+<td>
+<p>maximum storage size for quantile coefficient: 3*length(x
+is typically sufficient.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>curve</code></td>
+<td>
+<p>estimated (piecewise-constant) quantile coefficient: each
+column corresponds to a jump point (the intercept is followed by slope
+coefficients, and final element is tau, the probability index.)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau.bnd</code></td>
+<td>
+<p>upper bound of tau such that determinant of the at-risk
+matrix (for uncensored observations) is at least
+epsi^# regression coefficients times the initial value,
+subject to provided storage limit (nbps).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bt</code></td>
+<td>
+<p>estimated quantile coefficient at taus, only available if taus
+is specified.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>va</code></td>
+<td>
+<p>variance estimate associated with bt, only available if taus
+is specified and res&gt;0. As is resampling based, the variance estimate can be
+slightly different over multiple runs unless seed for the random number
+generator is reset each time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist</code></td>
+<td>
+<p>resampling distribution with res resampled curves: dist[ , ,1]
+through dist[ , ,res], only available if res&gt;0 and resam.dist=TRUE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist.lgth</code></td>
+<td>
+<p>lengths of resampled curves, only available if res&gt;0 and
+resam.dist=TRUE.</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Huang, Y. (2010) Quantile calculus and censored
+regression, <em>The Annals of Statistics</em> 38, 1607–1637.
+</p>
+<p>Huang, Y. (2013) Fast censored linear regression. <em>Scandinavian Journal
+of Statistics</em> 40, 789–806.</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## simulate a dataset following Scenario 1 of Table 1 in Huang (2010)
+num &lt;- 200
+beta &lt;- c(.5, .5)
+
+cvt.1 &lt;- as.numeric(runif(num)&lt;0.5)
+cvt.2 &lt;- runif(num)
+resid &lt;- rexp(num)
+tres &lt;- 1-exp(-resid)
+event.t &lt;- log(resid)+beta[1]*cvt.1*ifelse(tres&lt;.4,tres/.4,1)+beta[2]*cvt.2
+censr.t &lt;- log(runif(num, 0, 5))
+x &lt;- pmin(event.t, censr.t)
+dlt &lt;- as.numeric(event.t&lt;=censr.t)
+
+## run censored quantile regression
+fit &lt;- cequre(x,dlt,cbind(cvt.1,cvt.2),taus=.1*seq(1,7,2),res=200)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,138 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>inneropt</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Inner Optimization Functions</h2>
+
+<h3>Description</h3>
+
+<p>Estmates coefficients given parameters.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">inneropt(data,times,pars,coefs,lik,proc,in.meth='nlminb',control.in=list())
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>  Matrix of observed data values. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>times</code></td>
+<td>
+<p> Vector observation times for the data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pars</code></td>
+<td>
+<p> Initial values of parameters to be estimated processes. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coefs</code></td>
+<td>
+<p> Vector giving the current estimate of the coefficients in the spline. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lik</code></td>
+<td>
+ <p><code>lik</code> object defining the observation process. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>proc</code></td>
+<td>
+ <p><code>proc</code> object defining the state process. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>in.meth</code></td>
+<td>
+<p> Inner optimization function currently one of 'nlminb', 'maxNR', 'optim', 'trust' or 'SplineEst'.
+The last calls <code>SplineEst.NewtRaph</code>. This is fast but has poor convergence.  </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control.in</code></td>
+<td>
+<p> Control object for inner optimization function. </p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This minimizes the objective function defined by the addition of the <code>lik</code>
+and <code>proc</code> objectives with respect to the coefficients. A number of generic
+optimization routines can be used and some experimentation is recommended. </p>
+
+
+<h3>Value</h3>
+
+<p>A list with elements
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>coefs</code></td>
+<td>
+<p>A matrix giving he optimized coefficients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>res</code></td>
+<td>
+<p>The results of the inner optimization function.</p>
+</td>
+</tr>
+</table>
+<h3>See Also</h3>
+
+<p><code>outeropt</code>, <code>Smooth.LS</code>,<code>LS.setup</code>, <code>multinorm.setup</code>, <code>SplineCoefsErr</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+# FitzHugh-Nagumo Equations
+
+data(FhNdata)   # Some data
+
+knots = seq(0,20,0.2)         # Create a basis
+norder = 3
+nbasis = length(knots) + norder - 2
+range = c(0,20)
+
+bbasis = create.bspline.basis(range=range(FhNtimes),nbasis=nbasis,
+                                    norder=norder,breaks=knots)
+
+lambda = 10000               # Penalty value
+
+DEfd = smooth.basis(FhNtimes,FhNdata,fdPar(bbasis,1,0.5))   # Smooth to estimate
+                                                            # coefficients first
+coefs = DEfd$fd$coefs
+colnames(coefs) = FhNvarnames
+
+profile.obj = LS.setup(pars=FhNpars,coefs=coefs,fn=make.fhn(),
+                        basisvals=bbasis,lambda=lambda,times=FhNtimes)
+
+lik = profile.obj$lik
+proc= profile.obj$proc
+
+res = inneropt(FhNdata,times=FhNtimes,FhNpars,coefs,lik,proc,in.meth='nlminb')
+
+plot(fd(res$coefs,bbasis))
+
+## End(Not run)</code></pre>
+
+
+</div>

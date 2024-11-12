@@ -1,0 +1,264 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>bcplm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Bayesian Compound Poisson Linear Models
+</h2>
+
+<h3>Description</h3>
+
+<p>This function fits Tweedie compound Poisson linear models using Markov Chain Monte Carlo methods.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">
+bcplm(formula, link = "log", data, inits = NULL,
+  weights, offset, subset, na.action, contrasts = NULL, 
+  n.chains = 3, n.iter = 2000, n.burnin = floor(n.iter / 2),
+  n.thin = max(1, floor(n.chains * (n.iter - n.burnin) / n.sims)),
+  n.sims = 1000, n.report = 2, prior.beta.mean = NULL, 
+  prior.beta.var = NULL, bound.phi = 100, bound.p = c(1.01, 1.99), 
+  tune.iter = 5000, n.tune = floor(tune.iter/100),  
+  basisGenerators = c("tp", "bsp", "sp2d"), doFit = TRUE, ...)  
+    
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>an object of class <code>formula</code>. See <code>glm</code> and <code>cpglmm</code> for details.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link</code></td>
+<td>
+<p>a specification for the model link function. This can be either a literal character string or a numeric number. If it is a character string, it must be one of "log", "identity", "sqrt" or "inverse". If it is numeric, it is the same as the <code>link.power</code> argument in the <code>tweedie</code> function. The default is <code>link = "log"</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inits</code></td>
+<td>
+<p>a list of initial values to be used for each chain. It must be of length <code>n.chains</code>. Each element is a named list with the following components: 'beta' (fixed effects), 'phi' (dispersion), and 'p' (index parameter). If the formula indicates a mixed model, it must also contain two additional members 'u' (random effects) and 'Sigma' (variance components). 'Sigma' must be a list of the same format as the <code>ST</code> slot in <code>cpglmm</code>. If not supplied, the function will generate initial values automatically.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data, subset, weights, na.action, offset, contrasts</code></td>
+<td>
+<p>further model specification arguments as in <code>cpglm</code>; see there for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.chains</code></td>
+<td>
+<p>an integer indicating the number of Markov chains (default: <code>3</code>).  
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.iter</code></td>
+<td>
+
+<p>the number of total iterations per chain (including burn in; default: <code>2000</code>)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.burnin</code></td>
+<td>
+
+<p>the length of burn in, i.e. number of iterations to discard at the beginning. Default
+is <code>n.iter/2</code>, that is, discarding the first half of the simulations.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.thin</code></td>
+<td>
+
+<p>thinning rate. Must be a positive integer. Set <code>n.thin &gt; 1</code> to save memory and
+computation time if <code>n.iter</code> is large. Default is <code>max(1, floor(n.chains * (n.iter - n.burnin) / 1000))</code> which will only thin if there are at
+least <code>2000</code> simulations.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.sims</code></td>
+<td>
+
+<p>The approximate number of simulations to keep after thinning (all chains combined).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.report</code></td>
+<td>
+<p>if greater than zero, fitting information will be printed out  <code>n.report</code> times for each chain. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.beta.mean</code></td>
+<td>
+<p>a vector of prior means for the fixed effects. Default is a vector of zeros. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.beta.var</code></td>
+<td>
+
+<p>a vector of prior variances for the fixed effects. Default is a vector of <code>10000</code>'s.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bound.phi</code></td>
+<td>
+<p>a numeric value indicating the upper bound of the uniform prior for the dispersion parameter. The default is <code>100</code>. The lower bound is set to be <code>0</code> in the function.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bound.p</code></td>
+<td>
+<p>a vector of lower and upper bounds for the index parameter <code class="reqn">p</code>. The default is <code>c(1.01, 1.99)</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tune.iter</code></td>
+<td>
+<p>the number of iterations used for tuning the proposal variances used in the Metropolis-Hastings updates. These iterations will not be included in the final output. Default is <code>5000</code>. Set it to be zero if the tuning process is not desired.  
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.tune</code></td>
+<td>
+<p>a positive integer (default: <code>20</code>). The <code>tune.iter</code> iterations is divided into <code>n.tune</code> loops. Proposal variances are updated at the end of each loop if acceptance rates are outside the desired interval.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>basisGenerators</code></td>
+<td>
+
+<p>a character vector of names of functions that generate spline bases. See <code>tp</code> for details. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>doFit</code></td>
+<td>
+
+<p>if <code>FALSE</code>, the constructed <code>"bcplm_input"</code> object is returned before the model is fitted. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p> not used.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function provides Markov chain Monte Carlo [MCMC] methods for fitting Tweedie compound Poisson linear models within the Bayesian framework. Both  generalized linear models and mixed models can be handled. In computing the posterior distribution, the series evaluation method (see, e.g., <code>dtweedie</code>) is employed to evaluate the compound Poisson density.    
+</p>
+<p>In the Bayesian model, prior distributions have to be specified for all parameters in the model. Here, Normal distributions are used for the fixed effects (<code class="reqn">\beta</code>), a Uniform distribution for the  dispersion parameter (<code class="reqn">\phi</code>),  a Uniform distribution for the index parameter (<code class="reqn">p</code>). If a mixed model is specified,  prior distributions must be specified for the  variance component. If there is one random effect in a group, the inverse Gamma (scale = <code>0.001</code>, shape = <code>0.001</code>) is specified as the prior. If there is more than one random effects in a group, the inverse Wishart (identity matrix as the scale and the dimension of the covariance matrix as the shape)  is specified as the prior.
+</p>
+<p>Prior means and variances of the fixed effects can be supplied using the argument <code>prior.beta.mean</code> and <code>prior.beta.var</code>, respectively. The prior distribution of <code class="reqn">\phi</code> is uniform on (0, <code>bound.phi</code>). And the bounds of the Uniform for <code class="reqn">p</code> can be specified in the argument <code>bound.p</code>. See details in section 'Arguments'. 
+</p>
+<p>In implementing the MCMC, a Gibbs sampler is constructed in which parameters are updated one at a time given the current values of all the other parameters. Specifically, we use the random-walk Metropolis-Hastings algorithm in updating each parameter except for the variance components, which can be simulated directly due to conjugacy.
+</p>
+<p>Before the MCMC, there is a tuning process where the proposal variances of the (truncated) Normal proposal distributions are updated according to the sample variances computed from the simulations in each tuning loop. The goal is to make the acceptance rate roughly between 40% and 60% for univariate M-H updates. The argument <code>tune.iter</code> determines how many iterations are used for the tuning process, and <code>n.tune</code> determines how many loops these iterations should be divided into. These iterations will not be used in the final output. 
+</p>
+<p>The simulated values of all model parameters are stored in the  <code>sims.list</code> slot of the returned <code>bcplm</code> object. It is a list of <code>n.chains</code> matrices and each matrix has approximately <code>n.sims</code> rows. The <code>sims.list</code> slot is further coerced to be of class <code>"mcmc.list"</code> so that various methods from the  <code>coda</code> package can be directly applied  to get Markov chain diagnostics, posterior summary and plots. See <code>coda</code> for available methods.    
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>bcplm</code> returns an object of class <code>"bcplm"</code>. See <code>bcplm-class</code> for details of the return values as well as various methods available for this class.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Yanwei (Wayne) Zhang <a href="mailto:actuary_zhang@hotmail.com">actuary_zhang@hotmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p><cite> Zhang, Y (2013). Likelihood-based and Bayesian Methods for Tweedie Compound Poisson Linear Mixed Models, <em>Statistics and Computing</em>, 23, 743-757.
+</cite>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>The users are recommended to see the documentation for <code>bcplm-class</code>, <code>cpglm</code>, <code>cpglmm</code>, <code>mcmc</code>, and <code>tweedie</code> for related information.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Not run: 
+
+# fit the FineRoot data with Bayesian models
+# Bayesian cpglm
+set.seed(10)
+fit1 &lt;- bcplm(RLD ~ factor(Zone) * factor(Stock), 
+            data = FineRoot, tune.iter = 2000, 
+            n.iter = 6000, n.burnin = 1000, n.thin = 5)
+
+gelman.diag(fit1$sims.list)
+# diagnostic plots                             
+acfplot(fit1$sims.list, lag.max = 20)
+xyplot(fit1$sims.list)                              
+densityplot(fit1$sims.list)               
+summary(fit1)
+plot(fit1)
+                          
+
+# now fit the Bayesian model to an insurance loss triangle 
+# (see Peters et al. 2009)
+fit2 &lt;- bcplm(increLoss ~ factor(year) + factor(lag), 
+            data = ClaimTriangle, n.iter = 12000, 
+            n.burnin = 2000, n.thin = 10, bound.p = c(1.1, 1.95))
+gelman.diag(fit2$sims.list)                   
+summary(fit2)
+
+# mixed models 
+set.seed(10)
+fit3 &lt;- bcplm(RLD ~ Stock * Zone + (1|Plant), 
+            data = FineRoot, n.iter = 15000, 
+            n.burnin = 5000, n.thin = 10)
+gelman.diag(fit3$sims.list)                   
+summary(fit3)
+
+
+
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

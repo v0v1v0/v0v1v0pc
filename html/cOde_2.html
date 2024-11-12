@@ -1,0 +1,162 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>bvptwpC</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Interface to bvptwp()</h2>
+
+<h3>Description</h3>
+
+<p>Interface to bvptwp()
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">bvptwpC(
+  yini = NULL,
+  x,
+  func,
+  yend = NULL,
+  parms,
+  xguess = NULL,
+  yguess = NULL,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>yini</code></td>
+<td>
+<p>named vector of type numeric. Initial values to be overwritten.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>vector of type numeric. Integration times</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>func</code></td>
+<td>
+<p>return value from funC() with a boundary argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>yend</code></td>
+<td>
+<p>named vector of type numeric. End values to be overwritten.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parms</code></td>
+<td>
+<p>named vector of type numeric. The dynamic parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xguess</code></td>
+<td>
+<p>vector of type numeric, the x values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>yguess</code></td>
+<td>
+<p>matrix with as many rows as variables and columns as x values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>further arguments going to <code>bvptwp()</code></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>See bvpSolve-package for a full description of possible arguments
+</p>
+
+
+<h3>Value</h3>
+
+<p>matrix with times and states
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+
+######################################################################
+## Boundary value problem: Ozon formation with fixed ozon/oxygen ratio
+## at final time point
+######################################################################
+
+library(bvpSolve)
+
+# O2 + O &lt;-&gt; O3
+# diff = O2 - O3
+# build_O3 = const.
+f &lt;- c(
+  O3 = " build_O3 * O2 * O - decay_O3 * O3",
+  O2 = "-build_O3 * O2 * O + decay_O3 * O3",
+  O  = "-build_O3 * O2 * O + decay_O3 * O3",
+  diff = "-2 * build_O3 * O2 * O + 2 * decay_O3 * O3", 
+  build_O3 = "0"
+)
+
+bound &lt;- data.frame(
+    name = names(f),
+    yini = c(0, 3, 2, 3, NA),
+    yend = c(NA, NA, NA, 0, NA)
+)
+
+# Generate ODE function
+func &lt;- funC(f, jacobian="full", boundary = bound, modelname = "example4")
+
+# Initialize times, states, parameters and forcings
+times &lt;- seq(0, 15, by = .1)
+pars &lt;- c(decay_O3 = .1)
+xguess &lt;- times
+yguess &lt;- matrix(c(1, 1, 1, 1, 1), ncol=length(times), 
+                 nrow = length(f))
+
+# Solve BVP
+out &lt;- bvptwpC(x = times, func = func, parms = pars, 
+               xguess = xguess, yguess = yguess)
+
+# Solve BVP for different ini values, end values and parameters
+yini &lt;- c(O3 = 2)
+yend &lt;- c(diff = 0.2)
+pars &lt;- c(decay_O3 = .01)
+out &lt;- bvptwpC(yini = yini, yend = yend, x = times, func = func, 
+	       parms = pars, xguess = xguess, yguess = yguess)
+
+# Plot solution
+par(mfcol=c(1,2))
+t &lt;- out[,1]
+M1 &lt;- out[,2:5]
+M2 &lt;- cbind(out[,6], pars)
+
+matplot(t, M1, type="l", lty=1, col=1:4, 
+        xlab="time", ylab="value", main="states")
+legend("topright", legend = c("O3", "O2", "O", "O2 - O3"), 
+       lty=1, col=1:4)
+matplot(t, M2, type="l", lty=1, col=1:2, 
+        xlab="time", ylab="value", main="parameters")
+legend("right", legend = c("build_O3", "decay_O3"), lty=1, col=1:2)
+
+
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,182 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cvrsolver</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Canonical Variate Regression.</h2>
+
+<h3>Description</h3>
+
+<p>Perform canonical variate regression with a set of fixed tuning parameters.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cvrsolver(Y, Xlist, rank, eta, Lam, family, Wini, penalty, opts)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Y</code></td>
+<td>
+<p>A response matrix. The response can be continuous, binary or Poisson.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Xlist</code></td>
+<td>
+<p>A list of covariate matrices. Cannot contain missing values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rank</code></td>
+<td>
+<p>Number of pairs of canonical variates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eta</code></td>
+<td>
+<p>Weight parameter between 0 and 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Lam</code></td>
+<td>
+<p>A vector of penalty parameters <code class="reqn">\lambda</code> for regularizing the loading matrices 
+corresponding to the covariate matrices in <code>Xlist</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>Type of response. <code>"gaussian"</code> if Y is continuous, <code>"binomial"</code> if Y is binary, and <code>"poisson"</code> if Y is Poisson.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Wini</code></td>
+<td>
+<p>A list of initial loading matrices W's. It must be provided. See <code>cvr</code> and <code>scca</code> for using sCCA solution as the default.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>penalty</code></td>
+<td>
+<p>Type of penalty on W's. "GL1" for rowwise sparsity and 
+"L1" for entrywise sparsity.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>opts</code></td>
+<td>
+<p>A list of options for controlling the algorithm. Some of the options are: 
+</p>
+<p><code>standardization</code>:  need to standardize the data? Default is TRUE.
+</p>
+<p><code>maxIters</code>:         maximum number of iterations allowed in the algorithm. The default is 300. 
+</p>
+<p><code>tol</code>:              convergence criterion. Stop iteration if the relative change in the objective is less than <code>tol</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>CVR is used for extracting canonical variates and also predicting the response 
+for multiple sets of covariates (Xlist = list(X1, X2)) and response (Y). 
+The covariates can be, for instance, gene expression, SNPs or DNA methylation data. 
+The response can be, for instance, quantitative measurement or binary phenotype.            
+The criterion minimizes the objective function 
+</p>
+<p style="text-align: center;"><code class="reqn">(\eta/2)\sum_{k &lt; j} ||X_kW_k - X_jW_j||_F^2 + (1-\eta)\sum_{k} l_k(\alpha, \beta, Y,X_kW_k)
+  + \sum_k \rho_k(\lambda_k, W_k),</code>
+</p>
+
+<p>s.t. <code class="reqn">W_k'X_k'X_kW_k = I_r,</code>    for  <code class="reqn">k = 1, 2, \ldots, K</code>. 
+<code class="reqn">l_k()</code> are general loss functions with intercept <code class="reqn">\alpha</code> and coefficients <code class="reqn">\beta</code>. <code class="reqn">\eta</code> is the weight parameter and 
+<code class="reqn">\lambda_k</code> are the regularization parameters. <code class="reqn">r</code> is the rank, i.e. the number of canonical pairs.          
+By adjusting <code class="reqn">\eta</code>, one can change the weight of the first correlation term and the second prediction term. 
+<code class="reqn">\eta=0</code> is reduced rank regression and <code class="reqn">\eta=1</code> is sparse CCA (with orthogonal constrained W's). By choosing appropriate <code class="reqn">\lambda_k</code> 
+one can induce sparsity of <code class="reqn">W_k</code>'s to select useful variables for predicting Y.                       
+<code class="reqn">W_k</code>'s with <code class="reqn">B_k</code>'s and (<code class="reqn">\alpha, \beta</code>) are iterated using an ADMM algorithm. See the reference for details.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object containing the following components
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>iter</code></td>
+<td>
+<p>The number of iterations the algorithm takes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>W</code></td>
+<td>
+<p>A list of fitted loading matrices.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p>A list of fitted <code class="reqn">B_k</code>'s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Z</code></td>
+<td>
+<p>A list of fitted <code class="reqn">B_kW_k</code>'s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>Fitted intercept term in the general loss term.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta</code></td>
+<td>
+<p>Fitted regression coefficients in the general loss term.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>objvals</code></td>
+<td>
+<p>A sequence of the objective values.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Chongliang Luo, Kun Chen.
+</p>
+
+
+<h3>References</h3>
+
+<p>Chongliang Luo, Jin Liu, Dipak D. Dey and Kun Chen (2016) Canonical variate regression. 
+Biostatistics, doi: 10.1093/biostatistics/kxw001.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>SimulateCVR</code>, <code>CVR</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## see  SimulateCVR for simulation examples, see CVR for parameter tuning.
+</code></pre>
+
+
+</div>

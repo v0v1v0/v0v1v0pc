@@ -1,0 +1,126 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>mergeDivergent</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Merge divergent units</h2>
+
+<h3>Description</h3>
+
+<p>Merges divergent units according the algorithm proposed by von Lyncker and Thoennessen (2017)
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">mergeDivergent(clubs, time_trim, estar = -1.65)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>clubs</code></td>
+<td>
+<p>an object of class <code>convergence.clubs</code> (created by <code>findClub</code>
+or <code>mergeClubs</code> function)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_trim</code></td>
+<td>
+<p>a numeric value between 0 and 1, representing the portion of
+time periods to trim when running log t regression model; if omitted, the same
+value used for <code>clubs</code> is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estar</code></td>
+<td>
+<p>a numeric value indicating the threshold <code class="reqn">e^*</code> to test
+if divergent units may be included in one of the new convergence clubs.
+To be used only if <code>mergeDivergent=TRUE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>von Lyncker and Thoennessen (2017) claim that units identified as divergent
+by the basic clustering procedure by Phillips and Sul might not necessarily still
+diverge in the case of new convergence clubs detected with the club merging algorithm.
+To test if divergent units may be included in one of the new convergence clubs,
+they propose the following algorithm:
+</p>
+
+<ol>
+<li>
+<p> Run a log t-test for all diverging units, and if <code class="reqn">t_k &gt; -1.65</code>
+all these units form a convergence club (This step is implicitly included
+in Phillips and Sul basic algorithm);
+</p>
+</li>
+<li>
+<p> Run a log t-test for each diverging units and each club, creating a
+matrix of t-values with dimensions <code class="reqn">d \times p</code>, where each row d represents
+a divergent region and each column p a convergence club;
+</p>
+</li>
+<li>
+<p> Take the highest <code class="reqn">t &gt; e^*</code>
+and add the respective region to the respective club and restart from the step 1.
+the authors suggest to use <code class="reqn">e^* = t = -1.65 </code>;
+</p>
+</li>
+<li>
+<p> The algorithm stops when no t-value &gt; e* is found in step 3,
+and as a consequence all remaining units are considered divergent.
+</p>
+</li>
+</ol>
+<h3>Value</h3>
+
+<p>A list of Convergence Clubs, for each club a list is return with the
+following objects: <code>id</code>, a vector containing the row indices
+of the units in the club; <code>model</code>, a list containing information
+about the model used to run the t-test on the units in the club;
+<code>unit_names</code>, a vector containing the names of the units of the club (optional,
+only included if it is present in the <code>clubs</code> object given in input).
+</p>
+
+
+<h3>References</h3>
+
+<p>Phillips, P. C.; Sul, D., 2007. Transition modeling and econometric convergence tests. Econometrica 75 (6), 1771-1855.
+</p>
+<p>Phillips, P. C.; Sul, D., 2009. Economic transition and growth. Journal of Applied Econometrics 24 (7), 1153-1185.
+</p>
+<p>von Lyncker, K.; Thoennessen, R., 2017. Regional club convergence in the EU: evidence from a panel data analysis.
+Empirical Economics 52 (2),  525-553
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>mergeClubs</code>, Merges a list of clubs created by <code>findClubs</code>;
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data("filteredGDP")
+
+#Cluster Countries using GDP from year 1970 to year 2003
+clubs &lt;- findClubs(filteredGDP, dataCols=2:35, unit_names = 1, refCol=35,
+                   time_trim = 1/3, cstar = 0, HACmethod = "FQSB")
+summary(clubs)
+
+# Merge clusters and divergent units
+mclubs &lt;- mergeClubs(clubs, mergeDivergent=TRUE)
+summary(mclubs)
+
+</code></pre>
+
+
+</div>

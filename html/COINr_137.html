@@ -1,0 +1,253 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Treat.coin</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Treat a data set in a coin for outliers</h2>
+
+<h3>Description</h3>
+
+<p>Operates a two-stage data treatment process on the data set specified by <code>dset</code>, based on two data treatment functions, and a pass/fail
+function which detects outliers. The method of data treatment can be either specified by the <code>global_specs</code> argument (which applies
+the same specifications to all indicators in the specified data set), or else (additionally) by the <code>indiv_specs</code> argument which allows different
+methods to be applied for each indicator. See details. For a simpler function for data treatment, see the wrapper function <code>qTreat()</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'coin'
+Treat(
+  x,
+  dset,
+  global_specs = NULL,
+  indiv_specs = NULL,
+  combine_treat = FALSE,
+  out2 = "coin",
+  write_to = NULL,
+  write2log = TRUE,
+  disable = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A coin</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dset</code></td>
+<td>
+<p>A named data set available in <code>.$Data</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>global_specs</code></td>
+<td>
+<p>A list specifying the treatment to apply to all columns. This will be applied to all columns, except any
+that are specified in the <code>indiv_specs</code> argument. Alternatively, set to <code>"none"</code> to apply no treatment. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>indiv_specs</code></td>
+<td>
+<p>A list specifying any individual treatment to apply to specific columns, overriding <code>global_specs</code>
+for those columns. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>combine_treat</code></td>
+<td>
+<p>By default, if <code>f1</code> fails to pass <code>f_pass</code>, then <code>f2</code> is applied to the original <code>x</code>,
+rather than the treated output of <code>f1</code>. If <code>combine_treat = TRUE</code>, <code>f2</code> will instead be applied to the output
+of <code>f1</code>, so the two treatments will be combined.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>out2</code></td>
+<td>
+<p>The type of function output: either <code>"coin"</code> to return an updated coin, or <code>"list"</code> to return a
+list with treated data and treatment details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>write_to</code></td>
+<td>
+<p>If specified, writes the aggregated data to <code>.$Data[[write_to]]</code>. Default <code>write_to = "Treated"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>write2log</code></td>
+<td>
+<p>Logical: if <code>FALSE</code>, the arguments of this function are not written to the coin log, so this
+function will not be invoked when regenerating. Recommend to keep <code>TRUE</code> unless you have a good reason to do otherwise.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>disable</code></td>
+<td>
+<p>Logical: if <code>TRUE</code> will disable data treatment completely and write the unaltered data set. This option is mainly useful
+in sensitivity and uncertainty analysis (to test the effect of turning imputation on/off).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments passed to or from other methods.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An updated coin with a new data set <code>.Data$Treated</code> added, plus analysis information in
+<code>.$Analysis$Treated</code>.
+</p>
+
+
+<h3>Global specifications</h3>
+
+<p>If the same method of data treatment should be applied to all indicators, use the <code>global_specs</code> argument. This argument takes a structured
+list which looks like this:
+</p>
+<div class="sourceCode"><pre>global_specs = list(f1 = .,
+                    f1_para = list(.),
+                    f2 = .,
+                    f2_para = list(.),
+                    f_pass = .,
+                    f_pass_para = list()
+                    )
+</pre></div>
+<p>The entries in this list correspond to arguments in <code>Treat.numeric()</code>, and the meanings of each are also described in more detail here
+below. In brief, <code>f1</code> is the name of a function to apply at the first round of data treatment, <code>f1_para</code> is a list of any additional
+parameters to pass to <code>f1</code>, <code>f2</code> and <code>f2_para</code> are equivalently the function name and parameters of the second round of data treatment, and
+<code>f_pass</code> and <code>f_pass_para</code> are the function and additional arguments to check for the existence of outliers.
+</p>
+<p>The default values for <code>global_specs</code> are as follows:
+</p>
+<div class="sourceCode"><pre>global_specs = list(f1 = "winsorise",
+                     f1_para = list(na.rm = TRUE,
+                                    winmax = 5,
+                                    skew_thresh = 2,
+                                    kurt_thresh = 3.5,
+                                    force_win = FALSE),
+                     f2 = "log_CT",
+                     f2_para = list(na.rm = TRUE),
+                     f_pass = "check_SkewKurt",
+                     f_pass_para = list(na.rm = TRUE,
+                                        skew_thresh = 2,
+                                        kurt_thresh = 3.5))
+</pre></div>
+<p>This shows that by default (i.e. if <code>global_specs</code> is not specified), each indicator is checked for outliers by the <code>check_SkewKurt()</code> function, which
+uses skew and kurtosis thresholds as its parameters. Then, if outliers exist, the first function <code>winsorise()</code> is applied, which also
+uses skew and kurtosis parameters, as well as a maximum number of winsorised points. If the Winsorisation function does not satisfy
+<code>f_pass</code>, the <code>log_CT()</code> function is invoked.
+</p>
+<p>To change the global specifications, you don't have to supply the whole list. If, for example, you are happy with all the defaults but
+want to simply change the maximum number of Winsorised points, you could specify e.g. <code>global_specs = list(f1_para = list(winmax = 3))</code>.
+In other words, a subset of the list can be specified, as long as the structure of the list is correct.
+</p>
+
+
+<h3>Individual specifications</h3>
+
+<p>The <code>indiv_specs</code> argument allows different specifications for each indicator. This is done by wrapping multiple lists of the format of the
+list described in <code>global_specs</code> into one single list, named according to the column names of <code>x</code>. For example, if the date set has indicators with codes
+"x1", "x2" and "x3", we could specify individual treatment as follows:
+</p>
+<div class="sourceCode"><pre>indiv_specs = list(x1 = list(.),
+                   x2 = list(.)
+                   x3 = list(.))
+</pre></div>
+<p>where each <code>list(.)</code> is a specifications list of the same format as <code>global_specs</code>. Any indicators that are <em>not</em> named in <code>indiv_specs</code> are
+treated using the specifications from <code>global_specs</code> (which will be the defaults if it is not specified). As with <code>global_specs</code>,
+a subset of the <code>global_specs</code> list may be specified for
+each entry. Additionally, as a special case, specifying a list entry as e.g. <code>x1 = "none"</code> will apply no data treatment to the indicator "x1". See
+<code>vignette("treat")</code> for examples of individual treatment.
+</p>
+
+
+<h3>Function methodology</h3>
+
+<p>This function is set up to allow any functions to be passed as the
+data treatment functions (<code>f1</code> and <code>f2</code>), as well as any function to be passed as the outlier detection
+function <code>f_pass</code>, as specified in the <code>global_specs</code> and <code>indiv_specs</code> arguments.
+</p>
+<p>The arrangement of this function is inspired by a fairly standard data treatment process applied to
+indicators, which consists of checking skew and kurtosis, then if the criteria are not met, applying
+Winsorisation up to a specified limit. Then if Winsorisation still does not bring skew and kurtosis
+within limits, applying a nonlinear transformation such as log or Box-Cox.
+</p>
+<p>This function generalises this process by using the following general steps:
+</p>
+
+<ol>
+<li>
+<p> Check if variable passes or fails using <code>f_pass</code>
+</p>
+</li>
+<li>
+<p> If <code>f_pass</code> returns <code>FALSE</code>, apply <code>f1</code>, else return <code>x</code> unmodified
+</p>
+</li>
+<li>
+<p> Check again using *<code>f_pass</code>
+</p>
+</li>
+<li>
+<p> If <code>f_pass</code> still returns <code>FALSE</code>, apply <code>f2</code>
+</p>
+</li>
+<li>
+<p> Return the modified <code>x</code> as well as other information.
+</p>
+</li>
+</ol>
+<p>For the "typical" case described above <code>f1</code> is a Winsorisation function, <code>f2</code> is a nonlinear transformation
+and <code>f_pass</code> is a skew and kurtosis check. Parameters can be passed to each of these three functions in
+a named list, for example to specify a maximum number of points to Winsorise, or Box-Cox parameters, or anything
+else. The constraints are that:
+</p>
+
+<ul>
+<li>
+<p> All of <code>f1</code>, <code>f2</code> and <code>f_pass</code> must follow the format <code style="white-space: pre;">⁠function(x, f_para)⁠</code>, where <code>x</code> is a
+numerical vector, and <code>f_para</code> is a list of other function parameters to be passed to the function, which
+is specified by <code>f1_para</code> for <code>f1</code> and similarly for the other functions. If the function has no parameters
+other than <code>x</code>, then <code>f_para</code> can be omitted.
+</p>
+</li>
+<li> <p><code>f1</code> and <code>f2</code> should return either a list with <code>.$x</code> as the modified numerical vector, and any other information
+to be attached to the list, OR, simply <code>x</code> as the only output.
+</p>
+</li>
+<li> <p><code>f_pass</code> must return a logical value, where <code>TRUE</code> indicates that the <code>x</code> passes the criteria (and
+therefore doesn't need any (more) treatment), and <code>FALSE</code> means that it fails to meet the criteria.
+</p>
+</li>
+</ul>
+<p>See also <code>vignette("treat")</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># build example coin
+coin &lt;- build_example_coin(up_to = "new_coin")
+
+# treat raw data set
+coin &lt;- Treat(coin, dset = "Raw")
+
+# summary of treatment for each indicator
+head(coin$Analysis$Treated$Dets_Table)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,83 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>func.obs.prop</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Latent Response Transformation for Proportional Data</h2>
+
+<h3>Description</h3>
+
+<p><code>func.obs.prop</code> transforms a vector of latent responses into the corresponding observed ones under the spatial Tobit model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">func.obs.prop(vec.ylat, alpha)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>vec.ylat</code></td>
+<td>
+<p>a vector of latent responses for all N sites.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>a cutoff point controlling the probability of latent reponse being one.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>func.obs.prop</code> returns a vector of observed responses.
+</p>
+
+
+<h3>References</h3>
+
+<p>Feng, Xiaoping, Zhu, Jun, Lin, Pei-Sheng, and Steen-Adams, Michelle M. (2014) Composite likelihood Estimation for Models of Spatial Ordinal Data and Spatial Proportional Data with Zero/One values. <em>Environmetrics</em> 25(8): 571–583.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# A simple example for observation generation
+a &lt;- sample(c(0,1), 50, replace=TRUE)
+b &lt;- sample(runif(1000,0,10), 100, replace=TRUE)
+alpha &lt;- 4
+vec.yobs &lt;- func.obs.prop(vec.ylat=c(a, b), alpha=alpha)
+
+# A complex example
+# True parameter
+alpha &lt;- 4; vec.beta &lt;- c(1, 2, 1, 0, -1); sigmasq &lt;- 0.8; rho &lt;- 0.6; radius &lt;- 5
+vec.par &lt;- c(alpha, vec.beta, sigmasq, rho)
+
+# Coordinate matrix
+n.lati &lt;- 30; n.long &lt;- 30
+n.site &lt;- n.lati * n.long
+mat.lattice &lt;- cbind(rep(1:n.lati, n.long), rep(1:n.long, each=n.lati))
+mat.dist &lt;- as.matrix(dist(mat.lattice, upper=TRUE, diag=TRUE))
+mat.cov &lt;- sigmasq * rho^mat.dist
+
+set.seed(1228)
+
+# Generate regression (design) matrix with intercept
+mat.X &lt;- cbind(rep(1, n.site),scale(matrix(rnorm(n.site*(length(vec.beta)-1)),nrow=n.site)))
+vec.Z &lt;- t(chol(mat.cov)) %*% rnorm(n.site) + mat.X %*% vec.beta
+vec.epsilon &lt;- diag(sqrt(1-sigmasq), n.site) %*% rnorm(n.site)
+vec.ylat &lt;- as.numeric(vec.Z + vec.epsilon)
+
+# Convert to the vector of observation
+vec.yobs &lt;- func.obs.prop(vec.ylat, alpha=alpha)
+</code></pre>
+
+
+</div>

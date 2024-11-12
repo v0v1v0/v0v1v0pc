@@ -1,0 +1,134 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>MongeElkan</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Monge-Elkan Token Comparator</h2>
+
+<h3>Description</h3>
+
+<p>Compares a pair of token sets <code class="reqn">x</code> and <code class="reqn">y</code> by computing similarity
+scores between all pairs of tokens using an internal string comparator,
+then taking the mean of the maximum scores for each token in <code class="reqn">x</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">MongeElkan(
+  inner_comparator = Levenshtein(similarity = TRUE, normalize = TRUE),
+  agg_function = base::mean,
+  symmetrize = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>inner_comparator</code></td>
+<td>
+<p>internal string comparator of class
+<code>StringComparator</code>. Defaults to <code>Levenshtein</code> similarity.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>agg_function</code></td>
+<td>
+<p>aggregation function to use when aggregating internal
+similarities/distances between tokens. Defaults to <code>mean</code>,
+however <code>hmean</code> may be a better choice when the comparator returns
+normalized similarity scores.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>symmetrize</code></td>
+<td>
+<p>logical indicating whether to use a symmetrized version
+of the Monge-Elkan comparator. Defaults to FALSE.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>A token set is an unordered enumeration of tokens, which may include
+duplicates.
+Given two token sets <code class="reqn">x</code> and <code class="reqn">y</code>, the Monge-Elkan comparator is
+defined as:
+</p>
+<p style="text-align: center;"><code class="reqn">\mathrm{ME}(x, y) = \frac{1}{|x|} \sum_{i = 1}^{|x|} \max_j \mathrm{sim}(x_i, y_j)</code>
+</p>
+
+<p>where <code class="reqn">x_i</code> is the i-th token in <code class="reqn">x</code>, <code class="reqn">|x|</code> is the
+number of tokens in <code class="reqn">x</code> and <code class="reqn">\mathrm{sim}</code> is an internal
+string similarity comparator.
+</p>
+<p>A generalization of the original Monge-Elkan comparator is implemented here,
+which allows for distance comparators in place of similarity comparators,
+and/or more general aggregation functions in place of the arithmetic mean.
+The generalized Monge-Elkan comparator is defined as:
+</p>
+<p style="text-align: center;"><code class="reqn">\mathrm{ME}(x, y) = \mathrm{agg}(\mathrm{opt}_j \ \mathrm{inner}(x_i, y_j))</code>
+</p>
+
+<p>where <code class="reqn">\mathrm{inner}</code> is an internal distance or similarity
+comparator, <code class="reqn">\mathrm{opt}</code> is <code class="reqn">\max</code> if
+<code class="reqn">\mathrm{inner}</code> is a similarity comparator or <code class="reqn">\min</code> if
+it is a distance comparator, and <code class="reqn">\mathrm{agg}</code> is an aggregation
+function which takes a vector of scores for each token in <code class="reqn">x</code> and
+returns a scalar.
+</p>
+<p>By default, the Monge-Elkan comparator is asymmetric in its arguments <code class="reqn">x</code>
+and <code class="reqn">y</code>. If <code>symmetrize = TRUE</code>, a symmetric version of the comparator
+is obtained as follows
+</p>
+<p style="text-align: center;"><code class="reqn">\mathrm{ME}_{sym}(x, y) = \mathrm{opt} \ \{\mathrm{ME}(x, y), \mathrm{ME}(y, x)\}</code>
+</p>
+
+<p>where <code class="reqn">\mathrm{opt}</code> is defined above.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>MongeElkan</code> instance is returned, which is an S4 class inheriting from
+<code>StringComparator</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Monge, A. E., &amp; Elkan, C. (1996), "The Field Matching
+Problem: Algorithms and Applications", In <em>Proceedings of the Second
+International Conference on Knowledge Discovery and Data Mining (KDD'96)</em>,
+pp. 267-270.
+</p>
+<p>Jimenez, S., Becerra, C., Gelbukh, A., &amp; Gonzalez, F. (2009), "Generalized
+Monge-Elkan Method for Approximate Text String Comparison", In
+<em>Computational Linguistics and Intelligent Text Processing</em>,
+pp. 559-570.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Compare names with heterogenous representations
+x &lt;- "The University of California - San Diego"
+y &lt;- "Univ. Calif. San Diego"
+# Tokenize strings on white space
+x &lt;- strsplit(x, '\\s+')
+y &lt;- strsplit(y, '\\s+')
+MongeElkan()(x, y)
+
+## The symmetrized variant is arguably more appropriate for this example
+MongeElkan(symmetrize = TRUE)(x, y) 
+
+## Using a different internal comparator changes the result
+MongeElkan(inner_comparator = BinaryComp(), symmetrize=TRUE)(x, y)
+
+</code></pre>
+
+
+</div>

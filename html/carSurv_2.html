@@ -1,0 +1,151 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>carSurvScore</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate Correlation-Adjusted Regression Survival (CARS) Scores</h2>
+
+<h3>Description</h3>
+
+<p>Estimates CARS scores. CARS scores measure the relative importance of each 
+variable with respect to the survival times adjusted by IPC weighting.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">carSurvScore(obsTime, obsEvent, X, maxIPCweight = 10, denom = "1/n")
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>obsTime</code></td>
+<td>
+<p>Observed time points of a right censored survival process
+(numeric vector).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>obsEvent</code></td>
+<td>
+<p>Observed event indicator of right censored survival process
+(numeric vector) 0=no event, 1=event</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>Data of design variables (numeric matrix). Must be already encoded.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxIPCweight</code></td>
+<td>
+<p>Specifies the maximum possible weight, 
+to ensure numerical stability.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>denom</code></td>
+<td>
+<p>Specifies the denominator of the weighted sums. Two options are available: 
+The default value "1/n" uses the sample size as denominator. Option "sum_w" uses the sum of all IPC weights in the denominator.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>CARS scores are defined as theta=P_X^(-1/2) P_(X, log(T)). 
+The term P_X^(-1/2) is the inverse square root of the correlation matrix between 
+covariates X. P_(X, log(T)) is the correlation vector between covariates and 
+the logarithmic survival time adjusted for censoring by IPC weighting.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Estimated CAR survival score of each variable (numeric vector).
+</p>
+
+
+<h3>Note</h3>
+
+<p>It is recommended to use default setting "denom=1/n" because in this case 
+CARS scores are consistent. Furthermore the simulation results of "1/n" show lower 
+root mean squared error of CARS scores with respect to the true parameter.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Thomas Welchowski
+</p>
+
+
+<h3>References</h3>
+
+<p>Welchowski, T. and Zuber, V. and Schmid, M., (2018), Correlation-Adjusted Regression Survival Scores for High-Dimensional Variable Selection, &lt;arXiv:1802.08178&gt;
+</p>
+<p>Zuber, V. and Strimmer, K., (2011), High-Dimensional Regression and Variable 
+Selection Using CAR Scores, Statistical Applications in Genetics and Molecular Biology
+</p>
+<p>Schaefer, J. and Strimmer, K., (2005), A Shrinkage Approach to Large-Scale Covariance Matrix Estimation and Implications for Functional Genomics,
+Statistical Applications in Genetics and Molecular Biology
+</p>
+<p>Van der Laan, M. J. and Robins, J. M., (2003), Unified Methods for Censored Longitudinal Data and Causality, Springer Series in Statistics
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>carVarSelect</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">##########################################
+# Simulate accelerated, failure time model
+
+# Generate multivariate normal distributed covariates
+noObs &lt;- 100
+noCovar &lt;- 10
+library(mvtnorm)
+set.seed(190)
+X &lt;- rmvnorm(noObs, mean=rep(0, noCovar), sigma=diag(noCovar))
+
+# Generate gamma distributed survival times
+# Only the first 5 variables have an influence
+eta &lt;- 1 - 2 * X[,1] - X[,2] + X[,3] +
+0.5 * X[,4] + 1.5 * X[,5]
+
+# Function to generate survival times
+genSurv &lt;- function(x) {
+set.seed(x)
+rgamma(1, shape=2, scale=exp(eta[x]))
+}
+
+# Generate survival times
+survT &lt;- sapply(1:length(eta), genSurv)
+
+# Generate exponential distributed censoring times
+censT &lt;- rexp(noObs, rate=1)
+
+# Calculate event indicator
+eventInd &lt;- ifelse(survT &lt;= censT, 1, 0)
+
+# Calculate observed times
+obsTime &lt;- survT
+obsTime[survT &gt; censT] &lt;- censT [survT &gt; censT]
+
+# Estimate CAR scores
+carScores &lt;- carSurvScore(obsTime=obsTime, obsEvent=eventInd, X=X)
+carScores
+</code></pre>
+
+
+</div>

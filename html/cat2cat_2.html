@@ -1,0 +1,136 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cat2cat_agg</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Manual mapping for an aggregated panel dataset</h2>
+
+<h3>Description</h3>
+
+<p>Manual mapping of an inconsistently coded categorical variable
+according to the user provided mappings (equations).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cat2cat_agg(
+  data = list(old = NULL, new = NULL, cat_var_old = NULL, cat_var_new = NULL, time_var =
+    NULL, freq_var = NULL),
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>list with 5 named fields
+'old', 'new', 'cat_var', 'time_var', 'freq_var'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>mapping equations where direction is set with any of,
+'&gt;', '&lt;', '%&gt;%', '%&lt;%'.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>data argument - list with fields
+</p>
+
+<dl>
+<dt>"old"</dt>
+<dd>
+<p> data.frame older time point in the panel</p>
+</dd>
+<dt>"new"</dt>
+<dd>
+<p> data.frame more recent time point in the panel</p>
+</dd>
+<dt>"cat_var"</dt>
+<dd>
+<p>character - deprecated - name of the categorical variable
+</p>
+</dd>
+<dt>"cat_var_old"</dt>
+<dd>
+<p>character name of the categorical variable in the old period
+</p>
+</dd>
+<dt>"cat_var_new"</dt>
+<dd>
+<p>character name of the categorical variable in the new period
+</p>
+</dd>
+<dt>"time_var"</dt>
+<dd>
+<p> character name of time variable</p>
+</dd>
+<dt>"freq_var"</dt>
+<dd>
+<p> character name of frequency variable</p>
+</dd>
+</dl>
+<h3>Value</h3>
+
+<p>'named list' with 2 fields old and new - 2 data.frames.
+There will be added additional columns to each.
+The new columns are added instead of the additional metadata as
+we are working with new datasets
+where observations could be replicated.
+For the transparency the probability and number of replications are part of
+each observation in the 'data.frame'.
+</p>
+
+
+<h3>Note</h3>
+
+<p>All mapping equations have to be valid ones.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data("verticals", package = "cat2cat")
+agg_old &lt;- verticals[verticals$v_date == "2020-04-01", ]
+agg_new &lt;- verticals[verticals$v_date == "2020-05-01", ]
+
+# cat2cat_agg - can map in both directions at once
+# although usually we want to have the old or the new representation
+
+agg &lt;- cat2cat_agg(
+  data = list(
+    old = agg_old,
+    new = agg_new,
+    cat_var_old = "vertical",
+    cat_var_new = "vertical",
+    time_var = "v_date",
+    freq_var = "counts"
+  ),
+  Automotive %&lt;% c(Automotive1, Automotive2),
+  c(Kids1, Kids2) %&gt;% c(Kids),
+  Home %&gt;% c(Home, Supermarket)
+)
+
+## possible processing
+library("dplyr")
+agg %&gt;%
+  bind_rows() %&gt;%
+  group_by(v_date, vertical) %&gt;%
+  summarise(
+    sales = sum(sales * prop_c2c),
+    counts = sum(counts * prop_c2c),
+    v_date = first(v_date)
+  )
+</code></pre>
+
+
+</div>

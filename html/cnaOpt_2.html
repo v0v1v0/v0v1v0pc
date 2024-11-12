@@ -1,0 +1,184 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>conCovOpt</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Find consistency and coverage optima for configurational data
+</h2>
+
+<h3>Description</h3>
+
+<p><code>conCovOpt</code> issues pairs of optimal consistency and coverage scores that atomic solution formulas (asf) of an outcome inferred from configurational data can possibly reach (cf. Baumgartner and Ambuehl 2021).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">conCovOpt(x, outcome = NULL, ..., rm.dup.factors = FALSE, rm.const.factors = FALSE,
+          maxCombs = 1e+07, approx = FALSE, allConCov)
+## S3 method for class 'conCovOpt'
+print(x, ...)
+## S3 method for class 'conCovOpt'
+plot(x, con = 1, cov = 1, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+
+<p>In <code>conCovOpt</code>: a <code>data.frame</code> or <code>configTable</code>. In the <code>print</code>- and <code>plot</code>-method: an output of <code>conCovOpt</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outcome</code></td>
+<td>
+
+<p>A character vector of one or several factor values in <code>x</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+
+<p>In <code>conCovOpt</code>: arguments passed to <code>configTable</code>, e.g. <code>case.cutoff</code>. 
+The ‘<code>...</code>’ are currently not used in <code>plot.conCovOpt</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rm.dup.factors</code></td>
+<td>
+<p>Logical; defaults to <code>FALSE</code> (which is different from <code>configTable</code>). If <code>TRUE</code>, all but the first of a set of factors with identical values in <code>x</code> are removed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rm.const.factors</code></td>
+<td>
+<p>Logical;  defaults to <code>FALSE</code> (which is different from <code>configTable</code>). If <code>TRUE</code>, factors with constant values in <code>x</code> are removed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxCombs</code></td>
+<td>
+
+<p>Maximal number of combinations that will be tested for optimality. If the number of necessary iterations exceeds <code>maxCombs</code>, <code>conCovOpt</code> will stop executing and return an error message stating the necessary number of iterations. Early termination can then be avoided by increasing <code>maxCombs</code> accordingly.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>approx</code></td>
+<td>
+
+<p>Logical; if TRUE, an exhaustive search is only approximated; if FALSE, an exhaustive search is conducted. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>allConCov</code></td>
+<td>
+
+<p>Defunct argument (as of package version 0.5.0). See the remark in <code>?multipleMax</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>con, cov</code></td>
+<td>
+<p>Numeric scalars between 0 and 1 indicating consistency and coverage thresholds marking the area of "good" models in a square drawn in the plot. Points within the square correspond to models reaching these thresholds.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>conCovOpt</code> implements a procedure introduced in Baumgartner and Ambuehl (2021). It  calculates consistency and coverage optima for models (i.e. atomic solution formulas, asf) of an <code>outcome</code> inferred from data <code>x</code> prior to actual CNA or QCA analyses.
+</p>
+<p>An ordered pair (con, cov) of consistency and coverage scores is a <strong>con-cov optimum</strong> for outcome Y=k in data <code>x</code> iff it is not excluded (based e.g. on the data structure) for an asf of Y=k inferred from <code>x</code> to reach (con, cov) but excluded to score better on one element of the pair and at least as well on the other.
+</p>
+<p><code>conCovOpt</code> calculates con-cov optima by executing the following steps:</p>
+<ol>
+<li>
+<p> if <code>x</code> is a data frame, aggregate <code>x</code> in a <code>configTable</code>, </p>
+</li>
+<li>
+<p> build exo-groups with constant values in all factors other than the <code>outcome</code>, </p>
+</li>
+<li>
+<p> assign output values to each exo-group that reproduce the behavior of <code>outcome</code> as closely as possible, </p>
+</li>
+<li>
+<p>  calculate con-cov scores for each assignment resulting in step 3, </p>
+</li>
+<li>
+<p> eliminate all non-optimal scores.</p>
+</li>
+</ol>
+<p>The implementation of step 4 calculates con-cov scores of about 10 million output value assignments in reasonable time, but step 3 may result in considerably more assignments. In such cases, the argument <code>approx</code> may be set to its non-default value <code>"TRUE"</code>, which determines that step 4 is only executed for those assignments closest to the <code>outcome</code>'s median value. This is an efficient approach for finding many, but possibly not all, con-cov optima.
+</p>
+<p>In case of crisp-set and multi-value data, at least one actual model (asf) inferrable from <code>x</code> and reaching an optimum's consistency and coverage scores is guaranteed to exist for every con-cov optimum. The function <code>DNFbuild</code> can be used to build these optimal models. The same does not hold for fuzzy-set data. In fuzzy-set data it merely holds that the existence of a model reaching an optimum's consistency and coverage scores cannot be excluded prior to an actual application of <code>cna</code>. 
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class 'conCovOpt'. The exo-groups resulting from step 2 are stored as attribute <code>"exoGroups"</code>, the lists of output values resulting from step 3 are stored as attribute <code>"reprodList"</code> (reproduction list).
+</p>
+
+
+<h3>References</h3>
+
+<p>Baumgartner, Michael and Mathias Ambuehl. 2021. “Optimizing Consistency and Coverage in Configurational Causal Modeling.” <em>Sociological Methods &amp; Research</em>.<br> doi:10.1177/0049124121995554. 
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>configTable</code>, <code>selectMax</code>, <code>DNFbuild</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">(cco.irrigate &lt;- conCovOpt(d.irrigate))
+conCovOpt(d.irrigate, outcome = c("R","W"))
+# Plot method.
+plot(cco.irrigate)
+plot(cco.irrigate, con = .8, cov = .8)
+
+dat1 &lt;- d.autonomy[15:30, c("EM","SP","CO","AU")]
+(cco1 &lt;- conCovOpt(dat1, outcome = "AU"))
+
+print(cco1, digits = 3, row.names = TRUE)
+plot(cco1)
+
+# Exo-groups (configurations with constant values in all factors other than the outcome).
+attr(cco1$A, "exoGroups")
+
+# Rep-list (list of values optimally reproducing the outcome).
+attr(cco1$A, "reprodList")
+
+dat2 &lt;- d.pacts
+# Maximal number of combinations exceeds maxCombs.
+(cco2 &lt;- conCovOpt(dat2, outcome = "PACT")) # Generates a warning
+# Increase maxCombs.
+(cco2_full &lt;- try(conCovOpt(dat2, outcome = "PACT", 
+  maxCombs=1e+08))) # Takes a long time to terminate
+# Approximate an exhaustive search.
+(cco2_approx1 &lt;- conCovOpt(dat2, outcome = "PACT", approx = TRUE))
+selectMax(cco2_approx1)
+# The search space can also be reduced by means of a case cutoff.
+(cco2_approx2 &lt;- conCovOpt(dat2, outcome = "PACT", case.cutoff=2))
+selectMax(cco2_approx2)
+
+</code></pre>
+
+
+</div>

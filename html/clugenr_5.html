@@ -1,0 +1,299 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>clugen</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate multidimensional clusters</h2>
+
+<h3>Description</h3>
+
+<script id="MathJax-script" async src="../../mathjaxr/doc/mathjax/es5/tex-chtml-full.js"></script><p>This is the main function of <strong>clugenr</strong>, and possibly the only function most
+users will need.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">clugen(
+  num_dims,
+  num_clusters,
+  num_points,
+  direction,
+  angle_disp,
+  cluster_sep,
+  llength,
+  llength_disp,
+  lateral_disp,
+  allow_empty = FALSE,
+  cluster_offset = NA,
+  proj_dist_fn = "norm",
+  point_dist_fn = "n-1",
+  clusizes_fn = clusizes,
+  clucenters_fn = clucenters,
+  llengths_fn = llengths,
+  angle_deltas_fn = angle_deltas,
+  seed = NA
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>num_dims</code></td>
+<td>
+<p>Number of dimensions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>num_clusters</code></td>
+<td>
+<p>Number of clusters to generate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>num_points</code></td>
+<td>
+<p>Total number of points to generate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>direction</code></td>
+<td>
+<p>Average direction of the cluster-supporting lines. Can be
+a vector of length <code>num_dims</code> (same direction for all clusters) or a
+matrix of size <code>num_clusters</code> x <code>num_dims</code> (one direction per cluster).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>angle_disp</code></td>
+<td>
+<p>Angle dispersion of cluster-supporting lines (radians).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cluster_sep</code></td>
+<td>
+<p>Average cluster separation in each dimension (vector of
+length <code>num_dims</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>llength</code></td>
+<td>
+<p>Average length of cluster-supporting lines.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>llength_disp</code></td>
+<td>
+<p>Length dispersion of cluster-supporting lines.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lateral_disp</code></td>
+<td>
+<p>Cluster lateral dispersion, i.e., dispersion of points
+from their projection on the cluster-supporting line.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>allow_empty</code></td>
+<td>
+<p>Allow empty clusters? <code>FALSE</code> by default.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cluster_offset</code></td>
+<td>
+<p>Offset to add to all cluster centers (vector of length
+<code>num_dims</code>). By default there will be no offset.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>proj_dist_fn</code></td>
+<td>
+<p>Distribution of point projections along
+cluster-supporting lines, with three possible values:
+</p>
+
+<ul>
+<li> <p><code>"norm"</code> (default): Distribute point projections along lines using a normal
+distribution (\(\mu=\) <em>line_center</em>,
+\(\sigma=\) <code>llength/6</code> ).
+</p>
+</li>
+<li> <p><code>"unif"</code>: Distribute points uniformly along the line.
+</p>
+</li>
+<li>
+<p> User-defined function, which accepts two parameters, line length (<code>double</code>)
+and number of points (<code>integer</code>), and returns a vector containing the
+distance of each point projection to the center of the line. For example,
+the <code>"norm"</code> option roughly corresponds to
+<code>function(l, n) stats::rnorm(n, sd = l / 6)</code>.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>point_dist_fn</code></td>
+<td>
+<p>Controls how the final points are created from their
+projections on the cluster-supporting lines, with three possible values:
+</p>
+
+<ul>
+<li> <p><code>"n-1"</code> (default): Final points are placed on a hyperplane orthogonal to
+the cluster-supporting line, centered at each point's projection, using the
+normal distribution (\(\mu=0\),
+\(\sigma=\) <code>lateral_disp</code> ). This is done by the clupoints_n_1
+function.
+</p>
+</li>
+<li> <p><code>"n"</code>: Final points are placed around their projection on the
+cluster-supporting line using the normal distribution (\(\mu=0\),
+\(\sigma=\) <code>lateral_disp</code> ). This is done by the clupoints_n
+function.
+</p>
+</li>
+<li>
+<p> User-defined function: The user can specify a custom point placement
+strategy by passing a function with the same signature as clupoints_n_1
+and clupoints_n.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clusizes_fn</code></td>
+<td>
+<p>Distribution of cluster sizes. By default, cluster sizes
+are determined by the clusizes function, which uses the normal distribution
+(\(\mu=\) <code>num_points</code>/<code>num_clusters</code>, \(\sigma=\mu/3\)),
+and assures that the final cluster sizes add up to <code>num_points</code>. This
+parameter allows the user to specify a custom function for this purpose,
+which must follow clusizes signature. Note that custom functions are not
+required to strictly obey the <code>num_points</code> parameter. Alternatively, the user
+can specify a vector of cluster sizes directly.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clucenters_fn</code></td>
+<td>
+<p>Distribution of cluster centers. By default, cluster
+centers are determined by the clucenters function, which uses the uniform
+distribution, and takes into account the <code>num_clusters</code> and <code>cluster_sep</code>
+parameters for generating well-distributed cluster centers. This parameter
+allows the user to specify a custom function for this purpose, which must
+follow clucenters signature. Alternatively, the user can specify a matrix
+of size <code>num_clusters</code> x <code>num_dims</code> with the exact cluster centers.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>llengths_fn</code></td>
+<td>
+<p>Distribution of line lengths. By default, the lengths of
+cluster-supporting lines are determined by the llengths function, which
+uses the folded normal distribution (\(\mu=\) <code>llength</code>,
+\(\sigma=\) <code>llength_disp</code> ). This parameter allows the user to
+specify a custom function for this purpose, which must follow llengths
+signature. Alternatively, the user can specify a vector of line lengths
+directly.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>angle_deltas_fn</code></td>
+<td>
+<p>Distribution of line angle differences with respect to
+<code>direction</code>. By default, the angles between the main <code>direction</code> of each
+cluster and the final directions of their cluster-supporting lines are
+determined by the angle_deltas function, which uses the wrapped normal
+distribution (\(\mu=0\), \(\sigma=\) <code>angle_disp</code> ) with
+support in the interval \(\left[-\pi/2,\pi/2\right]\). This
+parameter allows the user to specify a custom function for this purpose,
+which must follow angle_deltas signature. Alternatively, the user can
+specify a vector of angle deltas directly.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>An integer used to initialize the PRNG, allowing for reproducible
+results. If specified, <code>seed</code> is simply passed to set.seed.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If a custom function was given in the <code>clusizes_fn</code> parameter, it is
+possible that <code>num_points</code> may have a different value than what was
+specified in the <code>num_points</code> parameter.
+</p>
+<p>The terms "average" and "dispersion" refer to measures of central
+tendency and statistical dispersion, respectively. Their exact meaning
+depends on the optional arguments.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A named list with the following elements:
+</p>
+
+<ul>
+<li> <p><code>points</code>: A <code>num_points</code> x <code>num_dims</code> matrix with the generated points for
+all clusters.
+</p>
+</li>
+<li> <p><code>clusters</code>: A <code>num_points</code> factor vector indicating which cluster
+each point in <code>points</code> belongs to.
+</p>
+</li>
+<li> <p><code>projections</code>: A <code>num_points</code> x <code>num_dims</code> matrix with the point
+projections on the cluster-supporting lines.
+</p>
+</li>
+<li> <p><code>sizes</code>: A <code>num_clusters</code> x 1 vector with the number of points in
+each cluster.
+</p>
+</li>
+<li> <p><code>centers</code>: A <code>num_clusters</code> x <code>num_dims</code> matrix with the
+coordinates of the cluster centers.
+</p>
+</li>
+<li> <p><code>directions</code>: A <code>num_clusters</code> x <code>num_dims</code> matrix with the final
+direction of each cluster-supporting line.
+</p>
+</li>
+<li> <p><code>angles</code>: A <code>num_clusters</code> x 1 vector with the angles between the
+cluster-supporting lines and the main direction.
+</p>
+</li>
+<li> <p><code>lengths</code>: A <code>num_clusters</code> x 1 vector with the lengths of the
+cluster-supporting lines.
+</p>
+</li>
+</ul>
+<h3>Note</h3>
+
+<p>This function is stochastic. For reproducibility set a PRNG seed with
+set.seed.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># 2D example
+x &lt;- clugen(2, 5, 1000, c(1, 3), 0.5, c(10, 10), 8, 1.5, 2)
+graphics::plot(x$points, col = x$clusters, xlab = "x", ylab = "y", asp = 1)
+# 3D example
+x &lt;- clugen(3, 5, 1000, c(2, 3, 4), 0.5, c(15, 13, 14), 7, 1, 2)
+</code></pre>
+
+
+</div>

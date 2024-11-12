@@ -1,0 +1,275 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>gformula</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Parametric g-formula for continuous multiple time point interventions
+</h2>
+
+<h3>Description</h3>
+
+<p>Estimation of counterfactual outcomes for multiple values of continuous interventions at different time points using the g-formula. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">gformula(X, Anodes, Ynodes, Lnodes = NULL, Cnodes = NULL,
+         abar = NULL, cbar = "uncensored",
+         survivalY = FALSE, 
+         Yform = "GLM", Lform = "GLM", Aform = "GLM", Cform = "GLM",
+         calc.support = FALSE, B = 0, ret = FALSE, ncores = 1, 
+         verbose = TRUE, seed = NULL, prog = NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+
+<p>A data frame, following the time-ordering of the nodes. Categorical variables with k categories should be a factor, with levels 0,...,k-1. Binary variables should be coded 0/1. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Anodes</code></td>
+<td>
+
+<p>A character string of column names in <code>X</code> of the intervention variable(s).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Ynodes</code></td>
+<td>
+
+<p>A character string of column names in <code>X</code> of  the outcome variable(s).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Lnodes</code></td>
+<td>
+
+<p>A character string of column names in <code>X</code> of  the time-dependent (post first treatment) variable(s).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Cnodes</code></td>
+<td>
+
+<p>A character string of column names in <code>X</code> of  the censoring variable(s).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>abar</code></td>
+<td>
+
+<p>Numeric vector or matrix of intervention values, or the string "natural". See Details.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cbar</code></td>
+<td>
+
+<p>Typically either the string "uncensored" or "natural", but a numeric vector or matrix of censoring values is not forbidden. See Details.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>survivalY</code></td>
+<td>
+
+<p>Logical. If TRUE, then Y nodes are indicators of an event, and if Y at some time point is 1, then all following should be 1.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Yform</code></td>
+<td>
+
+<p>A string of either "GLM", "GAM" or of length 'number of Ynodes' with model formulas. See Details. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Lform</code></td>
+<td>
+
+<p>A string of either "GLM", "GAM" or of length 'number of Lnodes' with model formulas. See Details. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Aform</code></td>
+<td>
+
+<p>A string of either "GLM", "GAM" or of length 'number of Anodes' with model formulas. See Details. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Cform</code></td>
+<td>
+
+<p>A string of either "GLM", "GAM" or of length 'number of Cnodes' with model formulas. See Details. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>calc.support</code></td>
+<td>
+
+<p>Logical. If <code>TRUE</code>, both crude and conditional support is estimated.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+
+<p>An integer specifying the number of bootstrap samples to be used, if any. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ret</code></td>
+<td>
+
+<p>Logical. If <code>TRUE</code>, the simulated post-intervention data is returned.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncores</code></td>
+<td>
+
+<p>An integer for the number of threads/cores to be used. If &gt;1, parallelization will be utilized.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+
+<p>Logical. If <code>TRUE</code>, notes and warnings are printed.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+
+<p>An integer specifying the seed to be used to create reproducable results for parallel computing (i.e. when ncores&gt;1).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prog</code></td>
+<td>
+
+<p>A character specifying a path where progress should be saved (typically, when <code>ncores</code>&gt;1)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+
+<p>Further arguments to be passed on.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>By default, expected counterfactual outcomes (specified under <code>Ynodes</code>) under the intervention <code>abar</code> are calculated. Other estimands can be specified via <code>custom.measure</code>.
+</p>
+<p>If <code>abar</code> is a vector, then each vector component is used as the intervention value at each time point; that is, interventions which are constant over time are defined. If <code>abar</code> is a matrix (of size 'number interventions' x 'time points'), then each row of the length of <code>Anodes</code> refers to a particular time-varying intervention strategy. The natural intervention can be picked by setting <code>abar='natural'</code>.
+</p>
+<p>The fitted outcome and confounder models are based on generalized additive models (GAMs) as implemented in the <code>mgcv</code> package. Model families are picked automatically and reported in the output if <code>verbose=TRUE</code> (see manual for modifications, though they hardly ever make sense). The model formulas are standard GLMs or GAMs (with penalized splines for continuous covariates), conditional on the past, unless specific formulae are given. It is recommended to use customized formulae to reduce the risk of model mis-specification and to ensure that the models make sense (e.g., not too many splines are used when this is computationally not meaningful). This can be best facilitated by using objects generated through <code>make.model.formulas</code>, followed by <code>model.formulas.update</code> and/or <code>model.update</code> (see examples for those functions). 
+</p>
+<p>For survival settings, it is required that i) <code>survivalY=TRUE</code>, ii) the data are in a format where a Ynode stays 1, after it jumps to 1 and ii) after a Cnode/Ynode is 1, every variable thereafter is set to <code>NA</code> (except a Ynode which is already 1). See manual for an example. By default, the package intervenes on Cnodes, i.e. calculates counterfactual outcomes under no censoring. 
+</p>
+<p>If <code>calc.support=TRUE</code>, conditional and crude support measures (i.e., diagnostics) are calculated as described in Section 3.3.2 of Schomaker et al. (2023). Another useful diagnostic for multiple time points is the natural course scenario, which can be evaluated under <code>abar='natural'</code> and <code>cbar='natural'</code>.
+</p>
+<p>To parallelize computations automatically, it is sufficient to set <code>ncores&gt;1</code>, as appropriate. No further customization or setup is needed, everything will be done by the package. To make estimates under parallelization reproducible, use the <code>seed</code> argument. To watch the progress of parallelized computations, set a path in the <code>prog</code> argument: then, a text file reports on the progress, which is particularly useful if lengthy bootstrapping computations are required.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns an object of of <code>class</code> ‘gformula’:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>results</code></td>
+<td>
+<p>matrix of results</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>diagnostics</code></td>
+<td>
+<p>list of diagnostics and weights based on the estimated support (if <code>calc.support=TRUE</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>simulated.data</code></td>
+<td>
+<p>list of counterfactual data sets related to the interventions defined through option <code>abar</code> (and <code>cbar</code>). Will be <code>NULL</code> is <code>ret=FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>observed.data</code></td>
+<td>
+<p>list of observed data (and bootstrapped observed data). Will be <code>NULL</code> is <code>ret=FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>setup</code></td>
+<td>
+<p>list of chosen setup parameters</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Michael Schomaker
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>plot.gformula</code> for plotting results as (causal) dose response curves, <code>custom.measure</code> for evaluating custom estimands and <code>mi.boot</code> for using <code>gformula</code> on multiply imputed data.</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data(EFV)
+est &lt;- gformula(X=EFV,
+                      Lnodes  = c("adherence.1","weight.1",
+                                  "adherence.2","weight.2",
+                                  "adherence.3","weight.3",
+                                  "adherence.4","weight.4"
+                        ),
+                        Ynodes  = c("VL.0","VL.1","VL.2","VL.3","VL.4"),
+                        Anodes  = c("efv.0","efv.1","efv.2","efv.3","efv.4"),
+                        abar=seq(0,10,1)
+)
+est
+
+
+</code></pre>
+
+
+</div>

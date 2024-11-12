@@ -1,0 +1,255 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>capReg</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2> Covariate Assisted Principal Regression for Covariance Matrix Outcomes
+</h2>
+
+<h3>Description</h3>
+
+<p> This function identifies the first <code class="reqn">k</code> projection directions that satisfies the log-linear model assumption.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">capReg(Y, X, nD = 1, method = c("CAP", "CAP-C"), CAP.OC = FALSE, 
+  max.itr = 1000, tol = 1e-04, trace = FALSE, score.return = TRUE, 
+  gamma0.mat = NULL, ninitial = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Y</code></td>
+<td>
+<p> a data list of length <code class="reqn">n</code>. Each list element is a <code class="reqn">T\times p</code> matrix, the data matrix of <code class="reqn">T</code> observations from <code class="reqn">p</code> features.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p> a <code class="reqn">n\times q</code> data matrix, the covariate matrix of <code class="reqn">n</code> subjects with <code class="reqn">q-1</code> predictors. The first column is all ones.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nD</code></td>
+<td>
+<p> an integer, the number of directions to be identified. Default is 1.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p> a character of optimization method. <code>method = "CAP"</code> considers a weighted L2-norm on the <code class="reqn">\gamma</code> vector and solve for the optimizer by block coordinated descent; <code>method = "CAP-C"</code> assumes the complete common principal component assumption which identifies the common principal component first and then searches for the optimal PC.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CAP.OC</code></td>
+<td>
+<p> a logic variable. Whether the orthogonal constraint is imposed when identifying higher-order PCs. When <code>method = "CAP-C"</code>, this is ignored. Default is <code>FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.itr</code></td>
+<td>
+<p> an integer, the maximum number of iterations.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol</code></td>
+<td>
+<p> a numeric value of convergence tolerance.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p> a logic variable. Whether the solution path is reported. Default is <code>FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>score.return</code></td>
+<td>
+<p> a logic variable. Whether the log-variance in the transformed space is reported. Default is <code>TRUE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gamma0.mat</code></td>
+<td>
+<p> a data matrix, the initial value of <code class="reqn">\gamma</code>. Default is <code>NULL</code>, and initial value is randomly chosen.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ninitial</code></td>
+<td>
+<p> an integer, the number of different initial value is tested. When it is greater than 1, multiple initial values will be tested, and the one yields the minimum objective function will be reported. Default is <code>NULL</code>.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p> Considering <code class="reqn">y_{it}</code> are <code class="reqn">p</code>-dimensional independent and identically distributed random samples from a multivariate normal distribution with mean zero and covariance matrix <code class="reqn">\Sigma_{i}</code>. We assume there exits a <code class="reqn">p</code>-dimensional vector <code class="reqn">\gamma</code> such that <code class="reqn">z_{it}:=\gamma'y_{it}</code> satisfies the multiplicative heteroscedasticity:
+</p>
+<p style="text-align: center;"><code class="reqn">\log(\mathrm{Var}(z_{it}))=\log(\gamma'\Sigma_{i}\gamma)=\beta_{0}+x_{i}'\beta_{1}</code>
+</p>
+<p>,
+where <code class="reqn">x_{i}</code> contains explanatory variables of subject <code class="reqn">i</code>, and <code class="reqn">\beta_{0}</code> and <code class="reqn">\beta_{1}</code> are model coefficients.
+</p>
+<p>Parameters <code class="reqn">\gamma</code> and <code class="reqn">\beta=(\beta_{0},\beta_{1}')'</code> are study of interest, and we propose to estimate them by maximizing the likelihood function,
+</p>
+<p style="text-align: center;"><code class="reqn">\ell(\beta,\gamma)=-\frac{1}{2}\sum_{i=1}^{n}T_{i}(x_{i}'\beta)-\frac{1}{2}\sum_{i=1}^{n}\exp(-x_{i}'\beta)\gamma'S_{i}\gamma,</code>
+</p>
+
+<p>where <code class="reqn">S_{i}=\sum_{t=1}^{T_{i}}y_{it}y_{it}'</code>. To estimate <code class="reqn">\gamma</code>, we impose the following constraint
+</p>
+<p style="text-align: center;"><code class="reqn">\gamma' H\gamma=1,</code>
+</p>
+
+<p>where <code class="reqn">H</code> is a positive definite matrix. In this study, we consider the choice that
+</p>
+<p style="text-align: center;"><code class="reqn">H=\bar{\Sigma}, \quad \bar{\Sigma}=\frac{1}{n}\sum_{i=1}^{n}\frac{1}{T_{i}}S_{i}.</code>
+</p>
+
+<p>For higher order projecting directions, an orthogonal constraint is imposed as well.
+</p>
+
+
+<h3>Value</h3>
+
+<p> When <code>method = "CAP"</code>,
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>gamma</code></td>
+<td>
+<p>the estimate of <code class="reqn">\gamma</code> vectors, which is a <code class="reqn">p\times nD</code> matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta</code></td>
+<td>
+<p>the estimate of <code class="reqn">\beta</code> for each projecting direction, which is a <code class="reqn">q\times nD</code> matrix, where <code class="reqn">q-1</code> is the number of explanatory variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>orthogonality</code></td>
+<td>
+<p>an ad hoc checking of the orthogonality between <code class="reqn">\gamma</code> vectors.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>DfD</code></td>
+<td>
+<p>output of both average (geometric mean) and individual level of “deviation from diagonality”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>score</code></td>
+<td>
+<p>an output when <code>score.return = TRUE</code>. A <code class="reqn">n\times nD</code> matrix of <code class="reqn">\log(\hat{\gamma}'S_{i}\hat{\gamma})</code> value.</p>
+</td>
+</tr>
+</table>
+<p>When <code>method = "CAP-C"</code>,
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>gamma</code></td>
+<td>
+<p>the estimate of <code class="reqn">\gamma</code> vectors, which is a <code class="reqn">p\times nD</code> matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta</code></td>
+<td>
+<p>the estimate of <code class="reqn">\beta</code> for each projecting direction, which is a <code class="reqn">q\times nD</code> matrix, where <code class="reqn">q-1</code> is the number of explanatory variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>orthogonality</code></td>
+<td>
+<p>an ad hoc checking of the orthogonality between <code class="reqn">\gamma</code> vectors.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PC.idx</code></td>
+<td>
+<p>a vector of length <code>nD</code>, the order index of identified <code class="reqn">\gamma</code> vectors among all the common principal components.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aPC.idx</code></td>
+<td>
+<p>the order index of all the principal components that satisfy the log-linear model and the eigenvalue condition.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minmax</code></td>
+<td>
+<p>a logic output, whether the identified <code class="reqn">\gamma</code> vectors are estimated from the minmax approach. If <code>FALSE</code>, indicating the eigenvalue condition is not satisfied for any principal component.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>score</code></td>
+<td>
+<p>an output when <code>score.return = TRUE</code>. A <code class="reqn">n\times nD</code> matrix of <code class="reqn">\log(\hat{\gamma}'S_{i}\hat{\gamma})</code> value.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Yi Zhao, Johns Hopkins University, &lt;zhaoyi1026@gmail.com&gt; 
+</p>
+<p>Bingkai Wang, Johns Hopkins University, &lt;bwang51@jhmi.edu&gt; 
+</p>
+<p>Stewart Mostofsky, Johns Hopkins University, &lt;mostofsky@kennedykrieger.org&gt;
+</p>
+<p>Brian Caffo, Johns Hopkins University, &lt;bcaffo@gmail.com&gt; 
+</p>
+<p>Xi Luo, Brown University, &lt;xi.rossi.luo@gmail.com&gt; 
+</p>
+
+
+<h3>References</h3>
+
+<p>Zhao et al. (2018) <em>Covariate Assisted Principal Regression for Covariance Matrix Outcomes</em> &lt;doi:10.1101/425033&gt;
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+#############################################
+data(env.example)
+X&lt;-get("X",env.example)
+Y&lt;-get("Y",env.example)
+
+# method = "CAP"
+# without orthogonal constraint
+re1&lt;-capReg(Y,X,nD=2,method=c("CAP"),CAP.OC=FALSE)
+# with orthogonal constraint
+re2&lt;-capReg(Y,X,nD=2,method=c("CAP"),CAP.OC=TRUE)
+
+# method = "CAP-C"
+re3&lt;-capReg(Y,X,nD=2,method=c("CAP-C"))
+#############################################
+</code></pre>
+
+
+</div>

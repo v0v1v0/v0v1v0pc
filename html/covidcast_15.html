@@ -1,0 +1,344 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>covidcast_signal</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Obtain a data frame for one COVIDcast signal</h2>
+
+<h3>Description</h3>
+
+<p>Obtains data for selected date ranges for all geographic regions of the
+United States. Available data sources and signals are documented in the
+COVIDcast signal documentation.
+Most (but not all) data sources are available at the county level, but the
+API can also return data aggregated to metropolitan statistical areas,
+hospital referral regions, or states, as desired, by using the <code>geo_type</code>
+argument.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">covidcast_signal(
+  data_source,
+  signal,
+  start_day = NULL,
+  end_day = NULL,
+  geo_type = c("county", "hrr", "msa", "dma", "state", "hhs", "nation"),
+  geo_values = "*",
+  as_of = NULL,
+  issues = NULL,
+  lag = NULL,
+  time_type = c("day", "week")
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data_source</code></td>
+<td>
+<p>String identifying the data source to query. See
+<a href="https://cmu-delphi.github.io/delphi-epidata/api/covidcast_signals.html">https://cmu-delphi.github.io/delphi-epidata/api/covidcast_signals.html</a>
+for a list of available data sources.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>signal</code></td>
+<td>
+<p>String identifying the signal from that source to query. Again,
+see <a href="https://cmu-delphi.github.io/delphi-epidata/api/covidcast_signals.html">https://cmu-delphi.github.io/delphi-epidata/api/covidcast_signals.html</a>
+for a list of available signals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start_day</code></td>
+<td>
+<p>Query data beginning on this date. Date object, or string in
+the form "YYYY-MM-DD". If <code>start_day</code> is <code>NULL</code>, defaults to first day data
+is available for this signal.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>end_day</code></td>
+<td>
+<p>Query data up to this date, inclusive. Date object or string
+in the form "YYYY-MM-DD". If <code>end_day</code> is <code>NULL</code>, defaults to the most
+recent day data is available for this signal.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>geo_type</code></td>
+<td>
+<p>The geography type for which to request this data, such as
+"county" or "state". Defaults to "county". See
+<a href="https://cmu-delphi.github.io/delphi-epidata/api/covidcast_geography.html">https://cmu-delphi.github.io/delphi-epidata/api/covidcast_geography.html</a>
+for details on which types are available.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>geo_values</code></td>
+<td>
+<p>Which geographies to return. The default, "*", fetches all
+geographies. To fetch specific geographies, specify their IDs as a vector
+or list of strings. See
+<a href="https://cmu-delphi.github.io/delphi-epidata/api/covidcast_geography.html">https://cmu-delphi.github.io/delphi-epidata/api/covidcast_geography.html</a>
+for details on how to specify these IDs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>as_of</code></td>
+<td>
+<p>Fetch only data that was available on or before this date,
+provided as a <code>Date</code> object or string in the form "YYYY-MM-DD". If <code>NULL</code>,
+the default, return the most recent available data. Note that only one of
+<code>as_of</code>, <code>issues</code>, and <code>lag</code> should be provided; it does not make sense to
+specify more than one. For more on data revisions, see
+"Issue dates and revisions" below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>issues</code></td>
+<td>
+<p>Fetch only data that was published or updated ("issued") on
+these dates. Provided as either a single <code>Date</code> object (or string in the
+form "YYYY-MM-DD"), indicating a single date to fetch data issued on, or a
+vector specifying two dates, start and end. In this case, return all data
+issued in this range. There may be multiple rows for each observation,
+indicating several updates to its value. If <code>NULL</code>, the default, return the
+most recently issued data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lag</code></td>
+<td>
+<p>Integer. If, for example, <code>lag = 3</code>, then we fetch only data that
+was published or updated exactly 3 days after the date. For example, a row
+with <code>time_value</code> of June 3 will only be included in the results if its
+data was issued or updated on June 6. If <code>NULL</code>, the default, return the
+most recently issued data regardless of its lag.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_type</code></td>
+<td>
+<p>The temporal resolution to request this data. Most signals
+are available at the "day" resolution (the default); some are only
+available at the "week" resolution, representing an MMWR week ("epiweek").</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For data on counties, metropolitan statistical areas, and states, this
+package provides the <code>county_census</code>, <code>msa_census</code>, and <code>state_census</code>
+datasets. These include each area's unique identifier, used in the
+<code>geo_values</code> argument to select specific areas, and basic information on
+population and other Census data.
+</p>
+<p>Downloading large amounts of data may be slow, so this function prints
+messages for each chunk of data it downloads. To suppress these, use
+<code>base::suppressMessages()</code>, as in
+<code>suppressMessages(covidcast_signal("fb-survey", ...))</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>covidcast_signal</code> object with matching data. The object is a data
+frame with additional metadata attached. Each row is one observation of one
+signal on one day in one geographic location. Contains the following
+columns:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>data_source</code></td>
+<td>
+<p>Data source from which this observation was obtained.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>signal</code></td>
+<td>
+<p>Signal from which this observation was obtained.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>geo_value</code></td>
+<td>
+<p>String identifying the location, such as a state name or
+county FIPS code.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_value</code></td>
+<td>
+<p>Date object identifying the date of this observation. For
+data with <code>time_type = "week"</code>, this is the first day of the corresponding
+epiweek.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>issue</code></td>
+<td>
+<p>Date object identifying the date this estimate was issued.
+For example, an estimate with a <code>time_value</code> of June 3 might have been
+issued on June 5, after the data for June 3rd was collected and ingested
+into the API.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lag</code></td>
+<td>
+<p>Integer giving the difference between <code>issue</code> and <code>time_value</code>,
+in days.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>value</code></td>
+<td>
+<p>Signal value being requested. For example, in a query for the
+"confirmed_cumulative_num" signal from the "usa-facts" source, this would
+be the cumulative number of confirmed cases in the area, as of the given
+<code>time_value</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stderr</code></td>
+<td>
+<p>Associated standard error of the signal value, if available.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sample_size</code></td>
+<td>
+<p>Integer indicating the sample size available in that
+geography on that day; sample size may not be available for all signals,
+due to privacy or other constraints, in which case it will be <code>NA</code>.</p>
+</td>
+</tr>
+</table>
+<p>Consult the signal documentation for more details on how values and
+standard errors are calculated for specific signals.
+</p>
+<p>The returned data frame has a <code>metadata</code> attribute containing metadata
+about the signal contained within; see "Metadata" below for details.
+</p>
+
+
+<h3>Metadata</h3>
+
+<p>The returned object has a <code>metadata</code> attribute attached containing basic
+information about the signal. Use <code>attributes(x)$metadata</code> to access this
+metadata. The metadata is stored as a data frame of one row, and contains the
+same information that <code>covidcast_meta()</code> would return for a given signal.
+</p>
+<p>Note that not all <code>covidcast_signal</code> objects may have all fields of metadata
+attached; for example, an object created with <code>as.covidcast_signal()</code> using
+data from another source may only contain the <code>geo_type</code> variable, along with
+<code>data_source</code> and <code>signal</code>. Before using the metadata of a <code>covidcast_signal</code>
+object, always check for the presence of the attributes you need.
+</p>
+
+
+<h3>Issue dates and revisions</h3>
+
+<p>The COVIDcast API tracks updates and changes to its underlying data, and
+records the first date each observation became available. For example, a data
+source may report its estimate for a specific state on June 3rd on June 5th,
+once records become available. This data is considered "issued" on June 5th.
+Later, the data source may update its estimate for June 3rd based on revised
+data, creating a new issue on June 8th. By default, <code>covidcast_signal()</code>
+returns the most recent issue available for every observation. The <code>as_of</code>,
+<code>issues</code>, and <code>lag</code> parameters allow the user to select specific issues
+instead, or to see all updates to observations. These options are mutually
+exclusive, and you should only specify one; if you specify more than one, you
+may get an error or confusing results.
+</p>
+<p>Note that the API only tracks the initial value of an estimate and <em>changes</em>
+to that value. If a value was first issued on June 5th and never updated,
+asking for data issued on June 6th (using <code>issues</code> or <code>lag</code>) would <em>not</em>
+return that value, though asking for data <code>as_of</code> June 6th would. See
+<code>vignette("covidcast")</code> for examples.
+</p>
+<p>Note also that the API enforces a maximum result row limit; results beyond
+the maximum limit are truncated. This limit is sufficient to fetch
+observations in all counties in the United States on one day. This client
+automatically splits queries for multiple days across multiple API calls.
+However, if data for one day has been issued many times, using the <code>issues</code>
+argument may return more results than the query limit. A warning will be
+issued in this case. To see all results, split your query across multiple
+calls with different <code>issues</code> arguments.
+</p>
+
+
+<h3>API keys</h3>
+
+<p>By default, <code>covidcast_signal()</code> submits queries to the API anonymously. All
+the examples in the package documentation are compatible with anonymous use
+of the API, but <a href="https://cmu-delphi.github.io/delphi-epidata/api/api_keys.html">there are some limits on anonymous queries</a>,
+including a rate limit. If you regularly query large amounts of data, please
+consider <a href="https://api.delphi.cmu.edu/epidata/admin/registration_form">registering for a free API key</a>, which lifts
+these limits. Even if your usage falls within the anonymous usage limits,
+registration helps us understand who and how others are using the Delphi
+Epidata API, which may in turn inform future research, data partnerships, and
+funding.
+</p>
+<p>If you have an API key, you can use it by setting the <code>covidcast.auth</code>
+option once before calling <code>covidcast_signal()</code> or <code>covidcast_signals()</code>:
+</p>
+<div class="sourceCode"><pre>options(covidcast.auth = "your_api_key")
+
+cli &lt;- covidcast_signal(data_source = "fb-survey", signal = "smoothed_cli",
+                        start_day = "2020-05-01", end_day = "2020-05-07",
+                        geo_type = "state")
+</pre></div>
+
+
+<h3>References</h3>
+
+<p>COVIDcast API documentation:
+<a href="https://cmu-delphi.github.io/delphi-epidata/api/covidcast.html">https://cmu-delphi.github.io/delphi-epidata/api/covidcast.html</a>
+</p>
+<p>Documentation of all COVIDcast sources and signals:
+<a href="https://cmu-delphi.github.io/delphi-epidata/api/covidcast_signals.html">https://cmu-delphi.github.io/delphi-epidata/api/covidcast_signals.html</a>
+</p>
+<p>COVIDcast public dashboard: <a href="https://delphi.cmu.edu/covidcast/">https://delphi.cmu.edu/covidcast/</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>plot.covidcast_signal()</code>, <code>covidcast_signals()</code>,
+<code>as.covidcast_signal()</code>, <code>county_census</code>, <code>msa_census</code>,
+<code>state_census</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+## Fetch all counties from 2020-05-10 to the most recent available data
+covidcast_signal("fb-survey", "smoothed_cli", start_day = "2020-05-10")
+## Fetch all counties on just 2020-05-10 and no other days
+covidcast_signal("fb-survey", "smoothed_cli", start_day = "2020-05-10",
+                 end_day = "2020-05-10")
+## Fetch all states on 2020-05-10, 2020-05-11, 2020-05-12
+covidcast_signal("fb-survey", "smoothed_cli", start_day = "2020-05-10",
+                 end_day = "2020-05-12", geo_type = "state")
+## Fetch all available data for just Pennsylvania and New Jersey
+covidcast_signal("fb-survey", "smoothed_cli", geo_type = "state",
+                 geo_values = c("pa", "nj"))
+## Fetch all available data in the Pittsburgh metropolitan area
+covidcast_signal("fb-survey", "smoothed_cli", geo_type = "msa",
+                 geo_values = name_to_cbsa("Pittsburgh"))
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

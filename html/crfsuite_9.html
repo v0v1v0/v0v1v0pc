@@ -1,0 +1,116 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>merge.chunkrange</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>CRF Training data construction: add chunk entity category to a tokenised dataset</h2>
+
+<h3>Description</h3>
+
+<p>Chunks annotated with the shiny app in this R package indicate for a chunk of text of a document
+the entity that it belongs to. As text chunks can contains several words, we need to have a way in
+order to add this chunk category to each word of a tokenised dataset. That's what this function is doing.<br>
+If you have a tokenised data.frame with one row per token/document which indicates the start and end position
+where the token is found in the text of the document, this function allows to assign the chunk label to each token 
+of the document.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'chunkrange'
+merge(x, y, by.x = "doc_id", by.y = "doc_id", default_entity = "O", ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>an object of class <code>chunkrange</code>. A <code>chunkrange</code> is just a data.frame which contains 
+one row per chunk/doc_id. It should have the columns doc_id, text, chunk_id, chunk_entity, start and end.<br>
+The fields <code>start</code> and <code>end</code> indicate in the original <code>text</code> where the chunks of words starts and where it ends. 
+The <code>chunk_entity</code> is a label you have assigned to the chunk (e.g. ORGANISATION / LOCATION / MONEY / LABELXYZ / ...).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>a tokenised data.frame containing one row per doc_id/token It should have the columns <code>doc_id</code>, <code>start</code> and <code>end</code> where
+the fields <code>start</code> and <code>end</code> indicate the positions in the original text of the <code>doc_id</code> where the token starts and where it ends. 
+See the examples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by.x</code></td>
+<td>
+<p>a character string of a column of <code>x</code> which is an identifier which defines the sequence. Defaults to 'doc_id'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by.y</code></td>
+<td>
+<p>a character string of a column of <code>y</code> which is an identifier which defines the sequence. Defaults to 'doc_id'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>default_entity</code></td>
+<td>
+<p>character string with the default <code>chunk_entity</code> to be assigned to the token if the token is not part of any chunk range.
+Defaults to 'O'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>not used</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>the data.frame <code>y</code> where 2 columns are added, namely:
+</p>
+
+<ul>
+<li>
+<p>chunk_entity: The chunk entity of the token if the token is inside the chunk defined in <code>x</code>. If the token is not part of any chunk, the chunk category will be set to the <code>default</code> value.
+</p>
+</li>
+<li>
+<p>chunk_id: The chunk identifier of the chunk for which the token is inside the chunk.
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+library(udpipe)
+udmodel &lt;- udpipe_download_model("dutch-lassysmall")
+if(packageVersion("udpipe") &gt;= "0.7"){
+  data(airbnb_chunks, package = "crfsuite")
+  airbnb_chunks &lt;- head(airbnb_chunks, 20)
+  airbnb_tokens &lt;- unique(airbnb_chunks[, c("doc_id", "text")])
+
+  airbnb_tokens &lt;- udpipe(airbnb_tokens, object = udmodel)
+  head(airbnb_tokens)
+  head(airbnb_chunks)
+
+  ## Add the entity of the chunk to the tokenised dataset
+  x &lt;- merge(airbnb_chunks, airbnb_tokens)
+  x[, c("doc_id", "token", "chunk_entity")]
+  table(x$chunk_entity)
+}
+
+## cleanup for CRAN
+file.remove(udmodel$file_model)
+
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,116 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>predict.cv.ProxGrad</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Predictions for cv.ProxGrad Object</h2>
+
+<h3>Description</h3>
+
+<p><code>predict.cv.ProxGrad</code> returns the predictions for a ProxGrad object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'cv.ProxGrad'
+predict(object, newx, type = c("prob", "class")[1], ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>An object of class cv.ProxGrad.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newx</code></td>
+<td>
+<p>New data for predictions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>The type of predictions for binary response. Options are "prob" (default) and "class".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments for compatibility.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The predictions for the cv.ProxGrad object.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Anthony-Alexander Christidis, <a href="mailto:anthony.christidis@stat.ubc.ca">anthony.christidis@stat.ubc.ca</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cv.ProxGrad</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Data simulation
+set.seed(1)
+n &lt;- 50
+N &lt;- 2000
+p &lt;- 1000
+beta.active &lt;- c(abs(runif(p, 0, 1/2))*(-1)^rbinom(p, 1, 0.3))
+# Parameters
+p.active &lt;- 100
+beta &lt;- c(beta.active[1:p.active], rep(0, p-p.active))
+Sigma &lt;- matrix(0, p, p)
+Sigma[1:p.active, 1:p.active] &lt;- 0.5
+diag(Sigma) &lt;- 1
+
+# Train data
+x.train &lt;- mvnfast::rmvn(n, mu = rep(0, p), sigma = Sigma) 
+prob.train &lt;- exp(x.train %*% beta)/
+              (1+exp(x.train %*% beta))
+y.train &lt;- rbinom(n, 1, prob.train)
+# Test data
+x.test &lt;- mvnfast::rmvn(N, mu = rep(0, p), sigma = Sigma)
+prob.test &lt;- exp(x.test %*% beta)/
+             (1+exp(x.test %*% beta))
+y.test &lt;- rbinom(N, 1, prob.test)
+
+# CV ProxGrad - Single Group
+proxgrad.out &lt;- cv.ProxGrad(x.train, y.train,
+                            glm_type = "Logistic",
+                            include_intercept = TRUE,
+                            alpha_s = 3/4,
+                            n_lambda_sparsity = 100, 
+                            tolerance = 1e-5, max_iter = 1e5)
+
+# Predictions
+proxgrad.prob &lt;- predict(proxgrad.out, newx = x.test, type = "prob")
+proxgrad.class &lt;- predict(proxgrad.out, newx = x.test, type = "class")
+plot(prob.test, proxgrad.prob, pch = 20)
+abline(h = 0.5,v = 0.5)
+mean((prob.test-proxgrad.prob)^2)
+mean(abs(y.test-proxgrad.class))
+
+
+
+</code></pre>
+
+
+</div>

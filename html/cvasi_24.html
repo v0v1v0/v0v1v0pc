@@ -1,0 +1,375 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>DEBtox</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>DEBtox model</h2>
+
+<h3>Description</h3>
+
+<p>Creates a  <em>DEBtox</em> scenario as described by Jager (2020). It
+represents a simplified <em>DEBtox</em> model based on <em>DEBkiss</em>. In the <em>BYOM</em>
+application [<a href="https://www.debtox.info/byom.html">link</a>], this model is
+referred to as <em>DEBtox 2019</em>, version 4.7.
+It supports an optional feature of the <em>ERA special</em> model variant, which
+can consider a reference <em>Lm</em> parameter to compare results of multiple
+datasets.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">DEBtox()
+
+DEB_Daphnia()
+</code></pre>
+
+
+<h3>Details</h3>
+
+
+
+<h4>State variables</h4>
+
+<p>The following list describes the names and units of the
+model's state variables:
+</p>
+
+<ul>
+<li> <p><code>D</code>, scaled damage ([C])
+</p>
+</li>
+<li> <p><code>L</code>, body length (mm)
+</p>
+</li>
+<li> <p><code>R</code>, cumulative reproduction (-)
+</p>
+</li>
+<li> <p><code>S</code>, survival probability (-)
+</p>
+</li>
+</ul>
+<p>State variables <code>D</code>, <code>L</code>, and <code>R</code> are initialized with zero. Variable <code>S</code>
+is initialized with one (<code>1.0</code>). See <code>set_init()</code> on how to set
+the initial state manually.
+</p>
+
+
+
+<h4>Parameters</h4>
+
+<p>The following parameters are required:
+</p>
+
+<ul>
+<li>
+<p> General
+</p>
+
+<ul>
+<li> <p><code>L0</code>, body length at start (mm)
+</p>
+</li>
+<li> <p><code>Lp</code>, body length at puberty (mm)
+</p>
+</li>
+<li> <p><code>Lm</code>, maximum body length (mm)
+</p>
+</li>
+<li> <p><code>rB</code>, von Bertalanffy growth rate constant (1/d)
+</p>
+</li>
+<li> <p><code>Rm</code>, maximum reproduction rate (#/d)
+</p>
+</li>
+<li> <p><code>f</code>, scaled functional response (-)
+</p>
+</li>
+<li> <p><code>hb</code>, background hazard rate (d-1)
+</p>
+</li>
+<li> <p><code>a</code>, Weibull background hazard coefficient (-). Set to <code>1</code> to disable.
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p> Extra parameters
+</p>
+
+<ul>
+<li> <p><code>Lf</code>, body length at half-saturation feeding (mm)
+</p>
+</li>
+<li> <p><code>Lj</code>, body length at which acceleration stops (mm)
+</p>
+</li>
+<li> <p><code>Tlag</code>, lag time for start development (d)
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p> TK/TD parameters
+</p>
+
+<ul>
+<li> <p><code>kd</code>, dominant rate constant (d-1)
+</p>
+</li>
+<li> <p><code>zb</code>, effect threshold energy budget ([C])
+</p>
+</li>
+<li> <p><code>bb</code>, effect strength energy-budget effects (1/[C])
+</p>
+</li>
+<li> <p><code>zs</code>, effect threshold survival ([C])
+</p>
+</li>
+<li> <p><code>bs</code>, effect strength survival (1/([C] d))
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p> Other parameters (formerly globals in <em>BYOM</em>)
+</p>
+
+<ul>
+<li> <p><code>FBV</code>, dry weight egg as fraction of structural body weight (-)
+</p>
+</li>
+<li> <p><code>KRV</code>, part. coeff. repro buffer and structure (kg/kg) (for losses with reproduction)
+</p>
+</li>
+<li> <p><code>kap</code>, approximation for kappa (for starvation response)
+</p>
+</li>
+<li> <p><code>yP</code>, product of yVA and yAV (for starvation response)
+</p>
+</li>
+<li> <p><code>Lm_ref</code>, optional reference max length for scaling rate constants (mm).
+Set to zero to disable the reference length. Disabled by default.
+</p>
+</li>
+<li> <p><code>len</code>, a switch to control body length dynamics: <code>1</code> organism can shrink,
+<code>2</code> organism cannot shrink. Default value is <code>1</code>.
+</p>
+</li>
+<li> <p><code>Tbp</code>, optional brood-pouch delay (d). Set to <code>NA</code> or zero to disable.
+Default value is <code>0</code>.
+</p>
+</li>
+<li> <p><code>MoA</code>, mode of action switches (-). Default value is <code>0</code>.
+</p>
+</li>
+<li> <p><code>FB</code>, feedback on damage dynamics switches (-). Default value is <code>0</code>.
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>A reference <code>Lm_ref</code> is needed to properly compare different data sets,
+or when calibrating on more than one data set. If <code>Lm</code> differs, one would not
+want to have different rate constants at the same length.
+</p>
+
+
+<h5>Mode of Action</h5>
+
+<p>Any combination of the following mode of actions (<em>MoA</em>) can be considered by
+the model:
+</p>
+
+<ul>
+<li> <p><code>MoA = 1</code>: assimilation/feeding
+</p>
+</li>
+<li> <p><code>MoA = 2</code>: costs for maintenance
+</p>
+</li>
+<li> <p><code>MoA = 4</code>: costs for growth and reproduction
+</p>
+</li>
+<li> <p><code>MoA = 8</code>: costs for reproduction
+</p>
+</li>
+<li> <p><code>MoA = 16</code>: hazard for reproduction
+</p>
+</li>
+</ul>
+<p>To activate more than one mode of action, simply add up the corresponding
+codes and set parameter <code>MoA</code> to the desired value. To disable all mode of
+actions, set parameter <code>MoA</code> to zero. See also <code>set_moa()</code>.
+</p>
+<p>As an example, to consider effects on feeding and maintenance, set the
+mode of action to three (<code>3</code>):
+</p>
+<p><code>DEBtox() %&gt;% set_param(c(MoA=3))</code>
+</p>
+
+
+
+<h5>Feedbacks</h5>
+
+<p>Any combination of the following damage feedbacks can be considered by
+the model:
+</p>
+
+<ul>
+<li> <p><code>1</code>: surf:vol scaling uptake rate
+</p>
+</li>
+<li> <p><code>2</code>: surf:vol scaling elimination rate
+</p>
+</li>
+<li> <p><code>4</code>: growth dilution
+</p>
+</li>
+<li> <p><code>8</code>: losses with reproduction
+</p>
+</li>
+</ul>
+<p>To activate more than one feedback, simply add up the corresponding
+codes. To disable all feedbacks, set the parameter to zero.
+</p>
+
+
+
+
+<h4>Effects</h4>
+
+<p>The state variables <em>L</em> (body length), <em>R</em> (cumulative reproduction), and
+<em>S</em> (survival probability) are set as effect endpoints by default. All state
+variables are available as potential endpoints. The list of considered
+endpoints can be modified by using <code>set_endpoints()</code>.
+</p>
+<p>To calculate effects, each <em>DEBtox</em> scenario is simulated twice: One simulation
+which considers exposure to a toxicant and one simulation without exposure, i.e.
+a control. See also <code>effect()</code>.
+</p>
+
+
+
+<h4>Output variables</h4>
+
+<p>The following intermediary model variables can be added to the model
+output on demand. Simply set the optional parameter <code>nout</code> to the
+required output level and pass it to <code>simulate()</code>.
+</p>
+
+<ul>
+<li> <p><code>nout &gt;= 1</code>: <code>f</code>, actual scaled response
+</p>
+</li>
+<li> <p><code>nout &gt;= 2</code>: <code>fR</code>, actual f considering starvation
+</p>
+</li>
+<li> <p><code>nout &gt;= 3</code>: <code>kd</code>, actual kd
+</p>
+</li>
+<li> <p><code>nout &gt;= 4</code>: <code>s</code>, stress level
+</p>
+</li>
+<li> <p><code>nout &gt;= 5</code>: <code>h</code>, hazard rate
+</p>
+</li>
+<li> <p><code>nout &gt;= 6</code>: <code>sA</code>, stress factor on assimilation/feeding
+</p>
+</li>
+<li> <p><code>nout &gt;= 7</code>: <code>sM</code>, stress factor on maintenance
+</p>
+</li>
+<li> <p><code>nout &gt;= 8</code>: <code>sG</code>, stress factor on growth costs
+</p>
+</li>
+<li> <p><code>nout &gt;= 9</code>: <code>sR</code>, stress factor on reproduction costs
+</p>
+</li>
+<li> <p><code>nout &gt;= 10</code>: <code>sH</code>, stress factor on hazard to reproduction
+</p>
+</li>
+<li> <p><code>nout &gt;= 11</code>: <code>xu</code>, damage feedback factor for surf:vol scaling uptake rate
+</p>
+</li>
+<li> <p><code>nout &gt;= 12</code>: <code>xe</code>, damage feedback factor for surf:vol scaling elimination rate
+</p>
+</li>
+<li> <p><code>nout &gt;= 13</code>: <code>xG</code>, damage feedback factor for growth dilution
+</p>
+</li>
+<li> <p><code>nout &gt;= 14</code>: <code>xR</code>, damage feedback factor for losses with repro
+</p>
+</li>
+</ul>
+<h4>Model history and changes</h4>
+
+
+<ul>
+<li>
+<p> cvasi v1.0.0
+</p>
+
+<ul><li>
+<p> The <code>DEB_Daphnia()</code> model implemented BYOM's <em>DEBtox 2019</em>
+model version 4.5
+</p>
+</li></ul>
+</li>
+<li>
+<p> cvasi v1.2.0
+</p>
+
+<ul>
+<li>
+<p> The model equations were updated to conform with BYOM's <em>DEBtox 2019</em>
+version 4.7. This introduced a new model parameter <code>a</code>, the Weibull
+background hazard coefficient, and limited the maximum hazard rate to
+99% per hour.
+</p>
+</li>
+<li>
+<p> The scenario constructor was renamed to <code>DEBtox()</code>.
+</p>
+</li>
+<li>
+<p> Additional intermediary model variables available as optional simulation
+output
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p>an S4 object of type DebTox
+</p>
+
+
+<h3>Functions</h3>
+
+
+<ul><li> <p><code>DEB_Daphnia()</code>: Deprecated model variant of <code>DEBtox()</code>
+</p>
+</li></ul>
+<h3>References</h3>
+
+<p>Jager T, 2020: Revisiting simplified DEBtox models for analysing
+ecotoxicity data. Ecol Model 416. <a href="https://doi.org/10.1016/j.ecolmodel.2019.108904">doi:10.1016/j.ecolmodel.2019.108904</a>
+</p>
+<p>Romoli et al., 2024: Environmental risk assessment with energy budget
+models: a comparison between two models of different complexity.
+Environ Toxicol Chem 43(2):440-449. <a href="https://doi.org/10.1002/etc.5795">doi:10.1002/etc.5795</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other DEB models: 
+<code>DEB-models</code>,
+<code>DEB_abj()</code>
+</p>
+
+
+</div>

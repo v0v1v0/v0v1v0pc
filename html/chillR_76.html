@@ -1,0 +1,195 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>PhenoFlex</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>PhenoFlex</h2>
+
+<h3>Description</h3>
+
+<p>Combined model of the dynamic model for chill accumulation and the GDH model
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">PhenoFlex(
+  temp,
+  times,
+  A0 = 6319.5,
+  A1 = 5.939917e+13,
+  E0 = 3372.8,
+  E1 = 9900.3,
+  slope = 1.6,
+  Tf = 4,
+  s1 = 0.5,
+  Tu = 25,
+  Tb = 4,
+  Tc = 36,
+  yc = 40,
+  Delta = 4,
+  Imodel = 0L,
+  zc = 190,
+  stopatzc = TRUE,
+  deg_celsius = TRUE,
+  basic_output = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>temp</code></td>
+<td>
+<p>Vector of temperatures.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>times</code></td>
+<td>
+<p>numeric vector. Optional times at which the temperatures where measured,
+if not given, hourly temperatures will be assumed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>A0</code></td>
+<td>
+<p>numeric. Parameter <code class="reqn">A_0</code> of the dynamic model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>A1</code></td>
+<td>
+<p>numeric. Parameter <code class="reqn">A_1</code> of the dynamic model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>E0</code></td>
+<td>
+<p>numeric. Parameter <code class="reqn">E_0</code> of the dynamic model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>E1</code></td>
+<td>
+<p>numeric. Parameter <code class="reqn">E_1</code> of the dynamic model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>slope</code></td>
+<td>
+<p>numeric. Slope parameter for sigmoidal function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Tf</code></td>
+<td>
+<p>numeric. Transition temperature (in degree Kelvin) for the
+sigmoidal function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>s1</code></td>
+<td>
+<p>numeric. Slope of transition from chill to heat accumulation</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Tu</code></td>
+<td>
+<p>numeric. GDH optimal temperature</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Tb</code></td>
+<td>
+<p>numeric. GDH base temperature (lower threshold)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Tc</code></td>
+<td>
+<p>numeric. GDH upper temperature (upper threshold)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>yc</code></td>
+<td>
+<p>numeric. Critical value defining end of chill accumulation</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Delta</code></td>
+<td>
+<p>numeric. Width of Gaussian heat accumulation model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Imodel</code></td>
+<td>
+<p>integer. Heat accumulation model: 0 for GDH and 1 for Gaussian</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>zc</code></td>
+<td>
+<p>numeric. Critical value of z determining the end of heat accumulation</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stopatzc</code></td>
+<td>
+<p>boolean. If 'TRUE', the PhenoFlex is applied until the end of the temperature series. Default is to stop once the value zc has been reached.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deg_celsius</code></td>
+<td>
+<p>boolean. whether or not the temperature vector
+and the model temperature parameters are
+in degree Celsius (Kelvin otherwise)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>basic_output</code></td>
+<td>
+<p>boolean. If 'TRUE', only the bloomindex is returned as a named element of the return list.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list is returned with named element 'bloomindex', which is the index at which blooming occurs. When 'basic_output=FALSE' also 'x', 'y', 'z' and 'xs' are
+returned as named element of this list, which are numeric vectors of the same length as the input vector 'temp' containing the hourly temperatures.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Carsten Urbach &lt;urbach@hiskp.uni-bonn.de&gt;
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(KA_weather)
+hourtemps &lt;- stack_hourly_temps(KA_weather, latitude=50.4)
+iSeason &lt;- genSeason(hourtemps, years=c(2009))
+zc &lt;- 190
+yc &lt;- 40
+x &lt;- PhenoFlex(temp=hourtemps$hourtemps$Temp[iSeason[[1]]],
+               times=c(1: length(hourtemps$hourtemps$Temp[iSeason[[1]]])),
+               zc=zc, stopatzc=TRUE, yc=yc, basic_output=FALSE)
+DBreakDay &lt;- x$bloomindex
+ii &lt;- c(1:DBreakDay)
+plot(x=ii, y=x$z[ii], xlab="Hour Index", ylab="z", col="red", type="l")
+abline(h=zc, lty=2)
+plot(x=ii, y=x$y[ii], xlab="Hour Index", ylab="y", col="red", type="l")
+abline(h=yc, lty=2)
+</code></pre>
+
+
+</div>

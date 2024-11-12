@@ -1,0 +1,168 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CoxICPen.XZ</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>CoxICPen with two sets of covariates</h2>
+
+<h3>Description</h3>
+
+<p>Perform variable selection for Cox regression model with two sets of covariates by using the method in Wu et al. (2020). Variable selection is performed on the possibly high-dimensional covariates x with linear effects. Covariates z with possibly nonlinear effects are always kept in the model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CoxICPen.XZ(LR = LR,
+            x = x,
+            z = z,
+            lamb = log(nrow(x))/2-2,
+            beta.initial = rep(0,ncol(x)),
+            pen = "BAR",
+            nfold = 5,
+            BernD = 3,
+            subj.wt = rep(1,nrow(x)))
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>LR</code></td>
+<td>
+<p>An n by 2 matrix that contains interval-censored failure times (L, R]. Please set time point R to "Inf" if a subject is right-censored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>An n by p covariate matrix. Variable selection will be performed on x. Linear covariates effects are assumed. Both p&gt;n and p&lt;n are allowed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>An n by q covariate matrix. Variable selection will NOT be performed on z. Non-linear covariates effects are assumed. Only q&lt;n is allowed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lamb</code></td>
+<td>
+<p>The value of the tuning parameter of the penalty term. Can either be a single value or a vector. Cross-validation will be employed to select the optimal lambda if a vector is provided. Default is log(n)/2-2.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta.initial</code></td>
+<td>
+<p>The initial values for the regression coefficients in the Cox's model. Default is 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pen</code></td>
+<td>
+<p>The penalty function. Choices include "RIDGE", "BAR", "LASSO", "ALASSO", "SCAD", "MCP", "SICA", "SELO". Default is "BAR".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nfold</code></td>
+<td>
+<p>Number of folds for cross-validation. Will be ignored if a single lambda value is provided. Default is 5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>BernD</code></td>
+<td>
+<p>The degree of Bernstein polynomials for both cumulative baseline hazard and covariate effects of z. Default is 3.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subj.wt</code></td>
+<td>
+<p>Weight for each subject in the likelihood function. Can be used to incorporate case-cohort design. Default is 1 for each subject.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>beta: Penalized estimates of the regression coefficients in the Cox's model.
+</p>
+<p>phi: Estimates of the coefficients in Bernstein Polynomials.
+</p>
+<p>logL: Log likelihood function based on current parameter estimates and lambda value.
+</p>
+<p>Lamb0: Estimate of the cumulative baseline hazard function at each observation time point.
+</p>
+<p>cv.out: Cross-validation outcome for each lambda. Will be NULL if cross-validation is not performed.
+</p>
+<p>f.est.all: A matrix that contains the values of covariates z and the corresponding estimated effects.
+</p>
+
+
+<h3>References</h3>
+
+<p>Wu, Q., Zhao, H., Zhu, L., Sun, J. (2020). Variable Selection for High-dimensional Partly Linear Additive Cox Model with Application to Alzheimer's disease. Statistics in Medicines.39(23):3120-3134.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Generate an example data
+
+require(foreach)
+
+n &lt;- 300  # Sample size
+p &lt;- 20   # Number of covariates
+
+bet0 &lt;- c(1, -1, 1, -1, rep(0,p-4))  # True values of regression coefficients
+f1 &lt;- function(z) sin(2*pi*z)  # True effects of z1
+f2 &lt;- function(z) cos(2*pi*z)  # True effects of z2
+set.seed(1)
+x.example &lt;- matrix(rnorm(n*p,0,1),n,p)  # Generate x covariates matrix
+z.example &lt;- cbind(runif(n,0,1),runif(n,0,1))  # Generate z covariates matrix
+
+T.example &lt;- c()
+for (i in 1:n){
+  T.example[i] &lt;- rexp(1,exp(x.example%*%bet0+
+    f1(z.example[,1])+f2(z.example[,2]))[i])  # Generate true failure times
+}
+
+timep &lt;- seq(0,3,,10)
+LR.example &lt;- c()
+for (i in 1:n){
+  obsT &lt;- timep*rbinom(10,1,0.5)
+  if (max(obsT) &lt; T.example[i]) {LR.example &lt;- rbind(LR.example,c(max(obsT), Inf))} else {
+    LR.example &lt;- rbind(LR.example,c(max(obsT[obsT&lt;T.example[i]]), min(obsT[obsT&gt;=T.example[i]])))
+  }
+}  # Generate interval-censored failure times
+
+
+# Fit Cox's model with penalized estimation
+
+model1 &lt;- CoxICPen.XZ(LR = LR.example, x = x.example, z = z.example, lamb = 100, pen = "RIDGE")
+beta.initial &lt;- model1$beta
+
+model2 &lt;- CoxICPen.XZ(LR = LR.example, x = x.example, z = z.example, 
+                      beta.initial = beta.initial, pen = "BAR")
+model2$beta
+
+# Plots of covariate effects of z
+
+par(mfrow=c(1,2))
+
+plot(model2$f.est.all$z1, model2$f.est.all$f1, type="l", ylim=c(-1,2),
+     xlab="z1", ylab="f1")
+lines(model2$f.est.all$z1, f1(model2$f.est.all$z1), col="blue")
+legend("topright", col=c("black","blue"), lty=rep(1,2), c("Estimate", "True"))
+
+plot(model2$f.est.all$z2, model2$f.est.all$f2, type="l", ylim=c(-1,2),
+     xlab="z2", ylab="f2")
+lines(model2$f.est.all$z2, f2(model2$f.est.all$z2), col="blue")
+legend("topright", col=c("black","blue"), lty=rep(1,2), c("Estimate", "True"))
+
+</code></pre>
+
+
+</div>

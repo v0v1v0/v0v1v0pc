@@ -1,0 +1,224 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>blocks_to_rowrecs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Map data records from block records to row records.</h2>
+
+<h3>Description</h3>
+
+<p>Map data records from block records (which each record may be more than one row) to
+row records (where each record is a single row).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">blocks_to_rowrecs(
+  tallTable,
+  keyColumns,
+  controlTable,
+  ...,
+  columnsToCopy = NULL,
+  checkNames = TRUE,
+  checkKeys = TRUE,
+  strict = FALSE,
+  controlTableKeys = colnames(controlTable)[[1]],
+  tmp_name_source = wrapr::mk_tmp_name_source("bltrr"),
+  temporary = TRUE,
+  allow_rqdatatable = FALSE
+)
+
+## Default S3 method:
+blocks_to_rowrecs(
+  tallTable,
+  keyColumns,
+  controlTable,
+  ...,
+  columnsToCopy = NULL,
+  checkNames = TRUE,
+  checkKeys = FALSE,
+  strict = FALSE,
+  controlTableKeys = colnames(controlTable)[[1]],
+  tmp_name_source = wrapr::mk_tmp_name_source("btrd"),
+  temporary = TRUE,
+  allow_rqdatatable = FALSE
+)
+
+## S3 method for class 'relop'
+blocks_to_rowrecs(
+  tallTable,
+  keyColumns,
+  controlTable,
+  ...,
+  columnsToCopy = NULL,
+  checkNames = TRUE,
+  checkKeys = FALSE,
+  strict = FALSE,
+  controlTableKeys = colnames(controlTable)[[1]],
+  tmp_name_source = wrapr::mk_tmp_name_source("bltrr"),
+  temporary = TRUE,
+  allow_rqdatatable = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>tallTable</code></td>
+<td>
+<p>data.frame containing data to be mapped (in-memory data.frame).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keyColumns</code></td>
+<td>
+<p>character vector of column defining row groups</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>controlTable</code></td>
+<td>
+<p>table specifying mapping (local data frame)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>force later arguments to be by name.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>columnsToCopy</code></td>
+<td>
+<p>character, extra columns to copy.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>checkNames</code></td>
+<td>
+<p>logical, if TRUE check names.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>checkKeys</code></td>
+<td>
+<p>logical, if TRUE check keyColumns uniquely identify blocks (required).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>strict</code></td>
+<td>
+<p>logical, if TRUE check control table name forms</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>controlTableKeys</code></td>
+<td>
+<p>character, which column names of the control table are considered to be keys.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tmp_name_source</code></td>
+<td>
+<p>a tempNameGenerator from cdata::mk_tmp_name_source()</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>temporary</code></td>
+<td>
+<p>logical, if TRUE use temporary tables</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>allow_rqdatatable</code></td>
+<td>
+<p>logical, if TRUE allow rqdatatable shortcutting on simple conversions.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The controlTable defines the names of each data element in the two notations:
+the notation of the tall table (which is row oriented)
+and the notation of the wide table (which is column oriented).
+controlTable[ , 1] (the group label) cross colnames(controlTable)
+(the column labels) are names of data cells in the long form.
+controlTable[ , 2:ncol(controlTable)] (column labels)
+are names of data cells in the wide form.
+To get behavior similar to tidyr::gather/spread one builds the control table
+by running an appropriate query over the data.
+</p>
+<p>Some discussion and examples can be found here:
+<a href="https://winvector.github.io/FluidData/FluidData.html">https://winvector.github.io/FluidData/FluidData.html</a> and
+here <a href="https://github.com/WinVector/cdata">https://github.com/WinVector/cdata</a>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>wide table built by mapping key-grouped tallTable rows to one row per group
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>build_pivot_control</code>, <code>rowrecs_to_blocks</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+  # pivot example
+  d &lt;- data.frame(meas = c('AUC', 'R2'),
+                  val = c(0.6, 0.2))
+
+  cT &lt;- build_pivot_control(d,
+                            columnToTakeKeysFrom= 'meas',
+                            columnToTakeValuesFrom= 'val')
+  blocks_to_rowrecs(d,
+                    keyColumns = NULL,
+                    controlTable = cT)
+
+
+d &lt;- data.frame(meas = c('AUC', 'R2'),
+                val = c(0.6, 0.2))
+cT &lt;- build_pivot_control(
+  d,
+  columnToTakeKeysFrom= 'meas',
+  columnToTakeValuesFrom= 'val')
+
+ops &lt;- rquery::local_td(d) %.&gt;%
+  blocks_to_rowrecs(.,
+                    keyColumns = NULL,
+                    controlTable = cT)
+cat(format(ops))
+
+if(requireNamespace("rqdatatable", quietly = TRUE)) {
+  library("rqdatatable")
+  d %.&gt;%
+    ops %.&gt;%
+    print(.)
+}
+
+if(requireNamespace("RSQLite", quietly = TRUE)) {
+  db &lt;- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  DBI::dbWriteTable(db,
+                    'd',
+                    d,
+                    overwrite = TRUE,
+                    temporary = TRUE)
+  db %.&gt;%
+    ops %.&gt;%
+    print(.)
+  DBI::dbDisconnect(db)
+}
+
+</code></pre>
+
+
+</div>

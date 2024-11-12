@@ -1,0 +1,174 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cmenet</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Bi-level selection of conditional main effects (fixed parameters)
+</h2>
+
+<h3>Description</h3>
+
+<p><code>cmenet</code> performs variable selection of conditional main effects (CMEs) via a bi-level penalization framework, given fixed penalty parameters.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cmenet(xme, xcme, y,
+          lambda.sib=exp(seq(from=log(max.lambda),to=log(max.lambda*1e-6),length=20)),
+          lambda.cou=exp(seq(from=log(max.lambda),to=log(max.lambda*1e-6),length=20)),
+          max.lambda=lambda0.cme(cbind(xme,xcme),y),
+          gamma=1/(0.5-tau)+0.001, tau=0.01,
+          act.vec=rep(1,ncol(xme)+ncol(xcme)),
+          beta0=rep(0,ncol(xme)+ncol(xcme)),
+          it.max=250, lambda.flg=T)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>xme</code></td>
+<td>
+<p>An <code class="reqn">n</code> x <code class="reqn">p</code> binary model matrix for MEs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xcme</code></td>
+<td>
+<p>An <code class="reqn">n</code> x (4*choose(<code class="reqn">p</code>,2)) model matrix for CMEs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>An <code class="reqn">n</code>-length response vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.sib</code></td>
+<td>
+<p>Penalty vector for sibling CMEs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.cou</code></td>
+<td>
+<p>Penalty vector for cousin CMEs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.lambda</code></td>
+<td>
+<p>Maximum penalty value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gamma</code></td>
+<td>
+<p>Bridge parameter in MC+ penalty.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau</code></td>
+<td>
+<p>Coupling parameter for CMEs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>act.vec</code></td>
+<td>
+<p>A (<code class="reqn">p</code>+4*choose(<code class="reqn">p</code>,2))-length binary vector for setting which variables are always active in optimization.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta0</code></td>
+<td>
+<p>Initial regression coefficients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>it.max</code></td>
+<td>
+<p>Number of optimization iterations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.flg</code></td>
+<td>
+<p>Use the default option TRUE (unless within <code>cv.cmenet</code>).</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>coefficients</code></td>
+<td>
+<p>Array of regression coefficients (over different <code>lambda.sib</code> and <code>lambda.cou</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>residuals</code></td>
+<td>
+<p>Array of regression residuals (over different <code>lambda.sib</code> and <code>lambda.cou</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inter</code></td>
+<td>
+<p>Matrix of intercept estimates (over different <code>lambda.sib</code> and <code>lambda.cou</code>).</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Mak and Wu (2018). cmenet: a new method for bi-level variable selection of conditional main effects. <em>Journal of the American Statistical Association</em>, to appear.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+    library(MASS)
+n &lt;- 50 #number of observations
+p &lt;- 50 #number of main effects
+
+## Simulate model matrix for MEs and CMEs
+set.seed(1)
+rho &lt;- 0 #correlation
+ones &lt;- matrix(1,p,p)
+covmtx &lt;- rho*ones+(1-rho)*diag(p)
+latmtx &lt;- mvrnorm(n,p,mu=rep(0,p),Sigma=covmtx) #equicorrelated cov. matrix
+memtx &lt;- (latmtx&gt;=0)-(latmtx&lt;0) #simulate model matrix for MEs
+model.mtx &lt;- full.model.mtx(memtx)$model.mtx #generate model matrix for MEs and CMEs
+
+## Set true model and generate response
+num.act &lt;- 2 # two siblings active
+num.grp &lt;- 4 # ... within four active groups
+ind &lt;- c()
+for (ii in 1:num.grp){
+  eff &lt;- sample(seq(2*(p-1)),num.act)
+  ind &lt;- c(ind, p + eff + (ii-1)*(2*(p-1)))
+}
+colnames(model.mtx)[ind] # active CMEs
+
+des.mtx &lt;- model.mtx[,ind]
+inter &lt;- 12 #intercept
+xbtrue &lt;- inter + rowSums(des.mtx)
+y &lt;- xbtrue + rnorm(n,sd=1) #response
+xme &lt;- model.mtx[,1:p]
+xcme &lt;- model.mtx[,(p+1):ncol(model.mtx)]
+
+## Run cmenet
+cv.cme &lt;- cv.cmenet(xme, xcme, y, var.names=colnames(model.mtx))
+
+## End(Not run)
+</code></pre>
+
+
+</div>

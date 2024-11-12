@@ -1,0 +1,218 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>as_discrete</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Turn continuous data into discrete bins</h2>
+
+<h3>Description</h3>
+
+<p>This is a cheapr version of <code>cut.numeric()</code> which is more efficient and
+prioritises pretty-looking breaks by default through
+the use of <code>get_breaks()</code>.
+Out-of-bounds values can be included naturally through the
+<code>include_oob</code> argument. Left-closed (right-open) intervals are
+returned by default in contrast to cut's default right-closed intervals.
+Furthermore there is flexibility in formatting the interval bins,
+allowing the user to specify formatting functions and symbols for
+the interval close and open symbols.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">as_discrete(x, ...)
+
+## S3 method for class 'numeric'
+as_discrete(
+  x,
+  breaks = get_breaks(x, expand_max = TRUE),
+  left_closed = TRUE,
+  include_endpoint = FALSE,
+  include_oob = FALSE,
+  ordered = FALSE,
+  intv_start_fun = prettyNum,
+  intv_end_fun = prettyNum,
+  intv_closers = c("[", "]"),
+  intv_openers = c("(", ")"),
+  intv_sep = ",",
+  inf_label = NULL,
+  ...
+)
+
+## S3 method for class 'integer64'
+as_discrete(x, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A numeric vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Extra arguments passed onto methods.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>breaks</code></td>
+<td>
+<p>Break-points.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>left_closed</code></td>
+<td>
+<p>Left-closed intervals or right-closed intervals?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include_endpoint</code></td>
+<td>
+<p>Include endpoint? Default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include_oob</code></td>
+<td>
+<p>Include out-of-bounds values? Default is <code>FALSE</code>.
+This is equivalent to <code>breaks = c(breaks, Inf)</code> or
+<code>breaks = c(-Inf, breaks)</code> when <code>left_closed = FALSE</code>.
+If <code>include_endpoint = TRUE</code>, the endpoint interval is prioritised before
+the out-of-bounds interval.
+This behaviour cannot be replicated easily with <code>cut()</code>.
+For example, these 2 expressions are not equivalent: <br></p>
+<pre>cut(10, c(9, 10, Inf), right = F, include.lowest = T) !=
+as_discrete(10, c(9, 10), include_endpoint = T, include_oob = T)</pre>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ordered</code></td>
+<td>
+<p>Should result be an ordered factor? Default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>intv_start_fun</code></td>
+<td>
+<p>Function used to format interval start points.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>intv_end_fun</code></td>
+<td>
+<p>Function used to format interval end points.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>intv_closers</code></td>
+<td>
+<p>A length 2 character vector denoting the symbol
+to use for closing either left or right closed intervals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>intv_openers</code></td>
+<td>
+<p>A length 2 character vector denoting the symbol to
+use for opening either left or right closed intervals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>intv_sep</code></td>
+<td>
+<p>A length 1 character vector used to separate the start and
+end points.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inf_label</code></td>
+<td>
+<p>Label to use for intervals that include infinity.
+If left <code>NULL</code> the Unicode infinity symbol is used.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A factor of discrete bins (intervals of start/end pairs).
+</p>
+
+
+<h3>See Also</h3>
+
+<p>bin get_breaks
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(cheapr)
+
+# `as_discrete()` is very similar to `cut()`
+# but more flexible as it allows you to supply
+# formatting functions and symbols for the discrete bins
+
+# Here is an example of how to use the formatting functions to
+# categorise age groups nicely
+
+ages &lt;- 1:100
+
+age_group &lt;- function(x, breaks){
+  age_groups &lt;- as_discrete(
+    x,
+    breaks = breaks,
+    intv_sep = "-",
+    intv_end_fun = function(x) x - 1,
+    intv_openers = c("", ""),
+    intv_closers = c("", ""),
+    include_oob = TRUE,
+    ordered = TRUE
+  )
+
+  # Below is just renaming the last age group
+
+  lvls &lt;- levels(age_groups)
+  n_lvls &lt;- length(lvls)
+  max_ages &lt;- paste0(max(breaks), "+")
+  attr(age_groups, "levels") &lt;- c(lvls[-n_lvls], max_ages)
+  age_groups
+}
+
+age_group(ages, seq(0, 80, 20))
+age_group(ages, seq(0, 25, 5))
+age_group(ages, 5)
+
+# To closely replicate `cut()` with `as_discrete()` we can use the following
+
+cheapr_cut &lt;- function(x, breaks, right = TRUE,
+                       include.lowest = FALSE,
+                       ordered.result = FALSE){
+  if (length(breaks) == 1){
+    breaks &lt;- get_breaks(x, breaks, pretty = FALSE)
+    adj &lt;- diff(range(breaks)) * 0.001
+    breaks[1] &lt;- breaks[1] - adj
+    breaks[length(breaks)] &lt;- breaks[length(breaks)] + adj
+  }
+  as_discrete(x, breaks, left_closed = !right,
+              include_endpoint = include.lowest,
+              ordered = ordered.result,
+              intv_start_fun = function(x) formatC(x, digits = 3, width = 1),
+              intv_end_fun = function(x) formatC(x, digits = 3, width = 1))
+}
+
+x &lt;- rnorm(100)
+cheapr_cut(x, 10)
+identical(cut(x, 10), cheapr_cut(x, 10))
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,222 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>blm_star_exact</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Monte Carlo sampler for STAR linear regression with a g-prior</h2>
+
+<h3>Description</h3>
+
+<p>Compute direct Monte Carlo samples from the posterior and predictive
+distributions of a STAR linear regression model with a g-prior.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">blm_star_exact(
+  y,
+  X,
+  X_test = X,
+  transformation = "np",
+  y_max = Inf,
+  psi = NULL,
+  method_sigma = "mle",
+  approx_Fz = FALSE,
+  approx_Fy = FALSE,
+  nsave = 5000,
+  compute_marg = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p><code>n x 1</code> vector of observed counts</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p><code>n x p</code> matrix of predictors</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X_test</code></td>
+<td>
+<p><code>n0 x p</code> matrix of predictors for test data</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>transformation</code></td>
+<td>
+<p>transformation to use for the latent data; must be one of
+</p>
+
+<ul>
+<li>
+<p> "identity" (identity transformation)
+</p>
+</li>
+<li>
+<p> "log" (log transformation)
+</p>
+</li>
+<li>
+<p> "sqrt" (square root transformation)
+</p>
+</li>
+<li>
+<p> "bnp" (Bayesian nonparametric transformation using the Bayesian bootstrap)
+</p>
+</li>
+<li>
+<p> "np" (nonparametric transformation estimated from empirical CDF)
+</p>
+</li>
+<li>
+<p> "pois" (transformation for moment-matched marginal Poisson CDF)
+</p>
+</li>
+<li>
+<p> "neg-bin" (transformation for moment-matched marginal Negative Binomial CDF)
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y_max</code></td>
+<td>
+<p>a fixed and known upper bound for all observations; default is <code>Inf</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>psi</code></td>
+<td>
+<p>prior variance (g-prior)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method_sigma</code></td>
+<td>
+<p>method to estimate the latent data standard deviation; must be one of
+</p>
+
+<ul>
+<li>
+<p> "mle" use the MLE from the STAR EM algorithm
+</p>
+</li>
+<li>
+<p> "mmle" use the marginal MLE (Note: slower!)
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>approx_Fz</code></td>
+<td>
+<p>logical; in BNP transformation, apply a (fast and stable)
+normal approximation for the marginal CDF of the latent data</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>approx_Fy</code></td>
+<td>
+<p>logical; in BNP transformation, approximate
+the marginal CDF of <code>y</code> using the empirical CDF</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsave</code></td>
+<td>
+<p>number of Monte Carlo simulations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>compute_marg</code></td>
+<td>
+<p>logical; if TRUE, compute and return the
+marginal likelihood</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>STAR defines a count-valued probability model by
+(1) specifying a Gaussian model for continuous *latent* data and
+(2) connecting the latent data to the observed data via a
+*transformation and rounding* operation. Here, the continuous
+latent data model is a linear regression.
+</p>
+<p>There are several options for the transformation. First, the transformation
+can belong to the *Box-Cox* family, which includes the known transformations
+'identity', 'log', and 'sqrt'. Second, the transformation
+can be estimated (before model fitting) using the empirical distribution of the
+data <code>y</code>. Options in this case include the empirical cumulative
+distribution function (CDF), which is fully nonparametric ('np'), or the parametric
+alternatives based on Poisson ('pois') or Negative-Binomial ('neg-bin')
+distributions. For the parametric distributions, the parameters of the distribution
+are estimated using moments (means and variances) of <code>y</code>. The distribution-based
+transformations approximately preserve the mean and variance of the count data <code>y</code>
+on the latent data scale, which lends interpretability to the model parameters.
+Lastly, the transformation can be modeled using the Bayesian bootstrap ('bnp'),
+which is a Bayesian nonparametric model and incorporates the uncertainty
+about the transformation into posterior and predictive inference.
+</p>
+<p>The Monte Carlo sampler produces direct, discrete, and joint draws
+from the posterior distribution and the posterior predictive distribution
+of the linear regression model with a g-prior.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a list with the following elements:
+</p>
+
+<ul>
+<li> <p><code>coefficients</code> the posterior mean of the regression coefficients
+</p>
+</li>
+<li> <p><code>post.beta</code>: <code>nsave x p</code> samples from the posterior distribution
+of the regression coefficients
+</p>
+</li>
+<li> <p><code>post.pred</code>: draws from the posterior predictive distribution of <code>y</code>
+</p>
+</li>
+<li> <p><code>post.pred.test</code>: <code>nsave x n0</code> samples
+from the posterior predictive distribution at test points <code>X_test</code>
+(if given, otherwise NULL)
+</p>
+</li>
+<li> <p><code>sigma</code>: The estimated latent data standard deviation
+</p>
+</li>
+<li> <p><code>post.g</code>: <code>nsave</code> posterior samples of the transformation
+evaluated at the unique <code>y</code> values (only applies for 'bnp' transformations)
+</p>
+</li>
+<li> <p><code>marg.like</code>: the marginal likelihood (if requested; otherwise NULL)
+</p>
+</li>
+</ul>
+<h3>Note</h3>
+
+<p>The 'bnp' transformation (without the <code>Fy</code> approximation) is
+slower than the other transformations because of the way
+the <code>TruncatedNormal</code> sampler must be updated as the lower and upper
+limits change (due to the sampling of <code>g</code>). Thus, computational
+improvements are likely available.
+</p>
+
+
+</div>

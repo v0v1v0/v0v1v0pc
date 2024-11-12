@@ -1,0 +1,209 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>filterRecordTable</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Filter species record table for temporal independence</h2>
+
+<h3>Description</h3>
+
+<p>Filter species record table for temporal independence
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">filterRecordTable(
+  recordTable,
+  minDeltaTime = 0,
+  deltaTimeComparedTo,
+  speciesCol = "Species",
+  stationCol,
+  cameraCol,
+  camerasIndependent,
+  recordDateTimeCol = "DateTimeOriginal",
+  recordDateTimeFormat = "ymd HMS",
+  removeDuplicateRecords = TRUE,
+  exclude,
+  timeZone,
+  writecsv = FALSE,
+  outDir,
+  eventSummaryColumn,
+  eventSummaryFunction,
+  quiet = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>recordTable</code></td>
+<td>
+<p>data frame as created by <code>recordTable</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minDeltaTime</code></td>
+<td>
+<p>integer. Time difference between records of the same
+species at the same station to be considered independent (in minutes)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deltaTimeComparedTo</code></td>
+<td>
+<p>character. For two records to be considered
+independent, must the second one be at least <code>minDeltaTime</code> minutes
+after the last independent record of the same species
+(<code>"lastIndependentRecord"</code>), or <code>minDeltaTime</code> minutes after the
+last record (<code>"lastRecord"</code>)?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>speciesCol</code></td>
+<td>
+<p>character. name of the column specifying species in 
+<code>recordTable</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stationCol</code></td>
+<td>
+<p>character. Name of the camera trap station column.
+Assuming "Station" if undefined.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cameraCol</code></td>
+<td>
+<p>character. Name of the column specifying cameras in 
+<code>recordTable</code> (optional).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>camerasIndependent</code></td>
+<td>
+<p>logical. If <code>TRUE</code>, species records are
+considered to be independent between cameras at a station.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>recordDateTimeCol</code></td>
+<td>
+<p>character. Name of the column specifying date and 
+time in <code>recordTable</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>recordDateTimeFormat</code></td>
+<td>
+<p>character. Format of column 
+<code>recordDateTimeCol</code> in <code>recordTable</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>removeDuplicateRecords</code></td>
+<td>
+<p>logical. If there are several records of the
+same species at the same station (also same camera if cameraID is defined)
+at exactly the same time, show only one?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>exclude</code></td>
+<td>
+<p>character. Vector of species names to be excluded from the
+record table</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>timeZone</code></td>
+<td>
+<p>character. Must be a value returned by
+<code>OlsonNames</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>writecsv</code></td>
+<td>
+<p>logical. Should the record table be saved as a .csv?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outDir</code></td>
+<td>
+<p>character. Directory to save csv to. If NULL and
+<code>writecsv = TRUE</code>, recordTable will be written to <code>inDir</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eventSummaryColumn</code></td>
+<td>
+<p>character. A column in the record table (e.g. from
+a metadata tag) by to summarise non-independent records (those within
+<code>minDeltaTime</code> of a given record) with a user-defined function
+(<code>eventSummaryFunction</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eventSummaryFunction</code></td>
+<td>
+<p>character. The function by which to summarise
+<code>eventSummaryColumn</code> of non-independent records, e.g. "sum", "max"
+(optional)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quiet</code></td>
+<td>
+<p>logical. If TRUE, suppress printing of progress.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A data frame containing species records and additional information
+about stations, date, time, filtered for temporal independence.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Juergen Niedballa
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+if (Sys.which("exiftool") != ""){        # only run example if ExifTool is available
+
+# set directory with camera trap images in station directories
+wd_images_ID_species &lt;- system.file("pictures/sample_images_species_dir", 
+                                    package = "camtrapR")
+                                    
+# create record table without temporal filtering
+rec_table &lt;- recordTable(inDir                  = wd_images_ID_species,
+                        IDfrom                 = "directory",
+                        minDeltaTime           = 0,
+                        exclude                = "UNID",
+                        timeZone               = "Asia/Kuala_Lumpur",
+                        removeDuplicateRecords = TRUE
+                        )
+                        
+# filter for 60 minutes temporal independence
+rec_table_filt &lt;- filterRecordTable(recordTable         = rec_table, 
+                                    minDeltaTime        = 60, 
+                                    stationCol          = "Station",
+                                    deltaTimeComparedTo = "lastIndependentRecord")
+ nrow(rec_table)
+ nrow(rec_table_filt)
+ 
+ }
+</code></pre>
+
+
+</div>

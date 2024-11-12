@@ -1,0 +1,157 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>sset</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Cheaper subset</h2>
+
+<h3>Description</h3>
+
+<p>Cheaper alternative to <code>[</code> that consistently subsets data frame
+rows, always returning a data frame. There are explicit methods for
+enhanced data frames like tibbles, data.tables and sf.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">sset(x, ...)
+
+## S3 method for class 'Date'
+sset(x, i, ...)
+
+## S3 method for class 'POSIXct'
+sset(x, i, ...)
+
+## S3 method for class 'factor'
+sset(x, i, ...)
+
+## S3 method for class 'data.frame'
+sset(x, i, j, ...)
+
+## S3 method for class 'tbl_df'
+sset(x, i, j, ...)
+
+## S3 method for class 'POSIXlt'
+sset(x, i, j, ...)
+
+## S3 method for class 'data.table'
+sset(x, i, j, ...)
+
+## S3 method for class 'sf'
+sset(x, i, j, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Vector or data frame.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further parameters passed to <code>[</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>i</code></td>
+<td>
+<p>A logical or vector of indices. <br></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>j</code></td>
+<td>
+<p>Column indices, names or logical vector.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>sset</code> is an S3 generic.
+You can either write methods for <code>sset</code> or <code>[</code>. <br><code>sset</code> will fall back on using <code>[</code> when no suitable method is found.
+</p>
+<p>To get into more detail, using <code>sset()</code> on a data frame, a new
+list is always allocated through <code>new_list()</code>.
+</p>
+
+
+<h4>Difference to base R</h4>
+
+<p>When <code>i</code> is a logical vector, it is passed directly to <code>which_()</code>. <br>
+This means that <code>NA</code> values are ignored and this also means that <code>i</code>
+is not recycled, so it is good practice to make sure the logical vector
+matches the length of x. To return <code>NA</code> values, use <code>sset(x, NA_integer_)</code>.
+</p>
+
+
+
+<h4>ALTREP range subsetting</h4>
+
+<p>When <code>i</code> is an ALTREP compact sequence which can be commonly created
+using e.g. <code>1:10</code> or using <code>seq_len</code>, <code>seq_along</code> and <code>seq.int</code>,
+<code>sset</code> internally uses a range-based subsetting method which is faster and doesn't
+allocate <code>i</code> into memory.
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>A new vector, data frame, list, matrix or other R object.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(cheapr)
+library(bench)
+
+# Selecting columns
+sset(airquality, j = "Temp")
+sset(airquality, j = 1:2)
+
+# Selecting rows
+sset(iris, 1:5)
+
+# Rows and columns
+sset(iris, 1:5, 1:5)
+sset(iris, iris$Sepal.Length &gt; 7, c("Species", "Sepal.Length"))
+
+# Comparison against base
+x &lt;- rnorm(10^4)
+
+mark(x[1:10^3], sset(x, 1:10^3))
+mark(x[x &gt; 0], sset(x, x &gt; 0))
+
+df &lt;- data.frame(x = x)
+
+mark(df[df$x &gt; 0, , drop = FALSE],
+     sset(df, df$x &gt; 0),
+     check = FALSE) # Row names are different
+
+
+## EXTRA: An easy way to incorporate cheapr into dplyr's filter()
+# cheapr_filter &lt;- function(.data, ..., .by = NULL, .preserve = FALSE){
+#   filter_df &lt;- .data |&gt;
+#     dplyr::mutate(..., .by = {{ .by }}, .keep = "none")
+#   groups &lt;- dplyr::group_vars(filter_df)
+#   filter_df &lt;- cheapr::sset(filter_df, j = setdiff(names(filter_df), groups))
+#   n_filters &lt;- ncol(filter_df)
+#   if (n_filters &lt; 1){
+#     .data
+#   } else {
+#     dplyr::dplyr_row_slice(.data, cheapr::which_(Reduce(`&amp;`, filter_df)),
+#                            preserve = .preserve)
+#   }
+# }
+</code></pre>
+
+
+</div>

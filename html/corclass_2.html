@@ -1,0 +1,148 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cca</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Main function for CCA.
+</h2>
+
+<h3>Description</h3>
+
+<p>Perform a correlational class analysis of the data, resulting in a partition of the data into separate modules.  This consists of four steps:
+</p>
+
+<ol>
+<li>
+<p> Create a matrix G of absolute row correlations. This is the network adjacency matrix.
+</p>
+</li>
+<li>
+<p> Set statistically insignificant correlations to 0 to reduce noise. 
+</p>
+</li>
+<li>
+<p> Use igraph's leading.eigenvector.community to partition this network into modules.
+</p>
+</li>
+<li>
+<p> Return an object describing the resulting class assignments (as well as the separate data frames describing the individual modules.)
+</p>
+</li>
+</ol>
+<h3>Usage</h3>
+
+<pre><code class="language-R">cca(dtf, filter.significance = TRUE, filter.value = 0.01, 
+    zero.action = c("drop", "ownclass"), verbose = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>dtf</code></td>
+<td>
+
+<p>The data frame containing the variables of interest.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>filter.significance</code></td>
+<td>
+
+<p>Significance filtering sets "insignificant" ties to 0 to decrease noise and increase stability.  Simulation results show that this greatly increases accuracy in many settings. Set filter.significance = FALSE to disable this.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>filter.value</code></td>
+<td>
+
+<p>Minimum significance cutoff.  Absolute row correlations below this value will be set to 0. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>zero.action</code></td>
+<td>
+
+<p>What to do with 0-variance rows before partitioning the graph. 
+If zero.action is "drop", CCA drop rows with 0 variance from the analyses (default).  If zero.action is "ownclass", the correlations between 0-variance rows and all other rows
+is set to 0, and the correlations between all pairs of 0-var rows are set to 1. This effectively creates a "zero class".
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+
+<p>Whether to print details of what CCA is doing to the screen.
+</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>membership</code></td>
+<td>
+<p>The class assignments produced by CCA.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cormat</code></td>
+<td>
+<p>The row correlation matrix that was partitioned by CCA.  It has a "dtf" attribute which holds the dataframe.  Note that, if 0-variance were dropped, they will be excluded from the dataframe as well as the correlation matrix. The "zeros" attribute which holds the indexes of the dropped rows.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modules</code></td>
+<td>
+<p>For convenience, the dataframe is separated into the modules found by the algorithm. A separate dataframe for each module i can be found in modules[[i]]$dtf.  The matrix of column correlations are in modules[[i]]$cormat.  modules[[i]]$degenerate indicates whether this module contains undefined.  Note that these modules can be plotted via the S3 plot method.  See example below.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Andrei Boutyline, <a href="mailto:aboutyl@umich.edu">aboutyl@umich.edu</a>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Boutyline, Andrei. 2017. "Improving the Measurement of Shared Cultural Schemas with Correlational Class Analysis: Theory and Method." Sociological Science 4:353-93. https://www.sociologicalscience.com/articles-v4-15-353/
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>plot.cca</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">    data(cca.example)
+    res1 &lt;- cca(cca.example) # with igraph 0.7, this should find 3 classes of sizes 218 391 144.  
+    plot(res1, 1) # plot them 
+    plot(res1, 2)
+    plot(res1, 3)
+
+    print (round(res1$modules[[1]]$cormat, 2)) # examine the correlation matrix for the 1st module
+    print (summary(res1$modules[[1]]$dtf)) # look at its variable ranges
+    plot(res1, 1, bw = TRUE) # Plot it again in a more journal-friendly format.
+    
+    # now let's try setting the filter value too high
+    res2 &lt;- cca(cca.example, filter.value = 0.001) 
+    # With igraph 0.7, the above now finds 17 classes 
+    #    of sizes 216 1 1 371 1 1 1 1 1 1 1 1 11 141 1 1 2 
+    # The small isolate classes can either be dropped manually, or by increasing filter.value 
+
+</code></pre>
+
+
+</div>

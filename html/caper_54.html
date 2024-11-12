@@ -1,0 +1,156 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>crunch</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Comparative analysis using the crunch algorithm.</h2>
+
+<h3>Description</h3>
+
+<p>Calculate a linear model using the crunch algorithm.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">crunch(formula, data, phy, names.col, stand.contr = TRUE, robust=Inf,
+	   ref.var=NULL, node.depth=NULL, polytomy.brlen=0, equal.branch.length=FALSE, 
+	   factor.action="abort")
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>A model formula.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>An 'comparative.data' object. Alternatively, a data frame.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>phy</code></td>
+<td>
+<p>An object of class 'phylo', required when data is not a 'comparative.data' object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>names.col</code></td>
+<td>
+<p>A name specifying the column in 'data' that matches rows to tips in 'phy', required when data is not a 'comparative.data' object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stand.contr</code></td>
+<td>
+<p>A logical flag indicating whether or not to standardize contrasts</p>
+</td>
+</tr>
+</table>
+<p>.
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>robust</code></td>
+<td>
+<p>A threshold value of studentized residuals to exclude from the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ref.var</code></td>
+<td>
+<p>A reference variable present in the model that is used to specify the direction of calculation of contrasts. If null, this is assumed to be the first explanatory variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>node.depth</code></td>
+<td>
+<p>A positive integer greater than 1 used to restrict the model to contrasts with a node depth less than or equal to the specified depth. Tips have a depth of 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>polytomy.brlen</code></td>
+<td>
+<p>The internal branch length used for calculating contrasts at a polytomy, following Pagel's (1992) method. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>equal.branch.length</code></td>
+<td>
+<p>If set to 'TRUE' then all branch lengths are set to 2.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>factor.action</code></td>
+<td>
+<p>One of "abort", "warn" or "allow", describing whether to stop if the formula contains a factor ("abort"), or continue after converting the factor to a numeric variable, either with ("warn") or without ("allow") a warning.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function implements the 'crunch' algorithm for modelling the relationship between variables that are phylogenetically non-independent. The method was first described by Felsenstein (1985) and subsequently extended to permit the use of phylogenies with polytomies by Pagel (1992). This method was previously implemented in the Mac Classic computer programs CAIC, written by Andy Purvis, Andy Rambaut (Purvis and Rambaut, 1995) and updated by Nick Isaac and Paul-Michael Agapow.
+</p>
+<p>The user provides a comparative dataset. The formula specifies the model to be fitted and contrasts are calculated in those variables. The specified reference variable is used to ensure that contrasts for multivariate models are calculated in a consistent direction at each node. The function <code>crunch()</code> acts as a data preparation wrapper for the function <code>contrCalc()</code>, which is not intended to be directly called by users. Missing data can be present in the explanatory variables: the algorithm makes use of the complete data available at each node as was the case with CAIC.
+</p>
+<p>The resulting table of contrasts is then used to fit the specified model - note that the intercept is automatically dropped from the model if present, following REF HERE. 
+</p>
+<p>Contrasts at polytomies are calculated following Pagel (1992). The descendants from the node are split into two groups based on whether they are above or below the group mean in the reference variable. If there is no variation in the reference variable, then a 1:(N-1) split is used. Weighted means in the variables are then calculated for each subgroup and a contrast is calculated between these values using an arbitrary internal branch length.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A object of class 'caic'.
+</p>
+
+
+<h3>Warning</h3>
+
+<p>At a polytomy, subtracting the internal branch length from the real branch lengths can lead to negative branch lengths. CAIC used a hard-coded internal branch length of 1 for calculating crunch contrasts at polytomies. From version 2.6.9, CAIC issued a warning if this lead to negative branch lengths but allowed contrast calculation to continue. In contrast, the implementation in <code>crunch()</code> uses a default internal branch length (<code>polytomy.brlen</code>) of 0 and also treats a negative branch length in a polytomy calculation as an error. In either case, contrast calculation on negative branch lengths is not a desirable outcome. Duplication of CAIC results therefore requires <code>polytomy.brlen</code> to be set to 1 and an analyis <em>cannot</em> be duplicated precisely if the phylogeny contains polytomies with descending branches shorter than 1. The method used by <code>pic.lm</code> to handle polytomies avoids such problems.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>David Orme</p>
+
+
+<h3>References</h3>
+
+<p>Felsenstein, J.  (1985).  Phylogenies and the comparative method.  Am. Nat.  125, 1-15
+</p>
+<p>Pagel, M. D. (1992). A method for the analysis of comparative data.  J. theor. Biol. 156, 431-442.
+</p>
+<p>Purvis, A. and Rambaut, A. (1995) Comparative analysis by independent contrasts (CAIC): an Apple Macintosh application for analysing comparative data.  Computer Appl. Biosciences 11, 247-251.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>caic-class</code> for 'caic' object structure and methods.</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(shorebird)
+shorebird &lt;- comparative.data(shorebird.tree, shorebird.data, Species)
+crunchMod &lt;- crunch(Egg.Mass ~ F.Mass + M.Mass, data=shorebird)
+summary(crunchMod)
+# plot the contrasts
+crunchTab &lt;- caic.table(crunchMod)
+plot(Egg.Mass ~ F.Mass, crunchTab)
+# for the actual model diagnostics
+par(mfrow=c(3,2))
+caic.diagnostics(crunchMod)
+</code></pre>
+
+
+</div>

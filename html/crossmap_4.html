@@ -1,0 +1,187 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cross_fit</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Cross map a model across multiple formulas, subsets, and weights</h2>
+
+<h3>Description</h3>
+
+<p>Applies a modeling function to every combination of a set of formulas and a
+set of data subsets.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cross_fit(
+  data,
+  formulas,
+  cols = NULL,
+  weights = NULL,
+  clusters = NULL,
+  families = NULL,
+  fn = lm,
+  fn_args = list(),
+  tidy = tidy_glance,
+  tidy_args = list(),
+  errors = c("stop", "warn")
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data frame</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formulas</code></td>
+<td>
+<p>A list of formulas to apply to each subset of the data.
+If named, these names will be used in the <code>model</code> column of the output.
+Otherwise, the formulas will be converted to strings in the <code>model</code> column.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cols</code></td>
+<td>
+<p>Columns to subset the data.
+Can be any expression supported by
+&lt;<code>tidy-select</code>&gt;.
+If <code>NULL</code>, the data is not subset into columns.
+Defaults to <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>A list of columns passed to <code>weights</code> in <code>fn</code>.
+If one of the elements is <code>NULL</code> or <code>NA</code>, that model will not
+be weighted.
+Defaults to <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clusters</code></td>
+<td>
+<p>A list of columns passed to <code>clusters</code> if supported by <code>fn</code>.
+If one of the elements is <code>NULL</code> or <code>NA</code>, that model will not
+be clustered.
+Defaults to <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>families</code></td>
+<td>
+<p>A list of glm model families passed to <code>family</code> if
+supported by <code>fn</code>.
+Defaults to <code>gaussian("identity")</code>, the equivalent of <code>lm()</code>.
+See family for examples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fn</code></td>
+<td>
+<p>The modeling function.
+Either an unquoted function name or a purrr-style lambda
+function with two arguments.
+To use multiple modeling functions, see <code>cross_fit_glm()</code>.
+Defaults to lm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fn_args</code></td>
+<td>
+<p>A list of additional arguments to <code>fn</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tidy</code></td>
+<td>
+<p>A logical or function to use to tidy model output into
+data.frame columns.
+If <code>TRUE</code>, uses the default tidying function: <code>tidy_glance()</code>.
+If <code>FALSE</code>, <code>NA</code>, or <code>NULL</code>, the untidied model output will be returned in
+a list column named <code>fit</code>.
+An alternative function can be specified with an unquoted function name or
+a purrr-style lambda function with one argument (see usage
+with broom::tidy(conf.int = TRUE) in examples).
+Defaults to tidy_glance.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tidy_args</code></td>
+<td>
+<p>A list of additional arguments to the <code>tidy</code> function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>errors</code></td>
+<td>
+<p>If <code>"stop"</code>, the default, the function will stop and return an
+error if any subset produces an error.
+If <code>"warn"</code>, the function will produce a warning for subsets that produce
+an error and return results for all subsets that do not.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A tibble with a column for the model formula,
+columns for subsets,
+columns for the model family and type (if applicable),
+columns for the weights and clusters (if applicable),
+and columns of tidy model output or a list column of models
+(if <code>tidy = FALSE</code>)
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cross_fit_glm()</code> to map a model across multiple model types.
+</p>
+<p><code>cross_fit_robust()</code> to map robust linear models.
+</p>
+<p><code>xmap()</code> to apply any function to combinations of inputs.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">cross_fit(mtcars, mpg ~ wt, cyl)
+cross_fit(mtcars, list(mpg ~ wt, mpg ~ hp), cyl)
+cross_fit(mtcars, list(wt = mpg ~ wt, hp = mpg ~ hp), cyl)
+
+cross_fit(mtcars, list(mpg ~ wt, mpg ~ hp), c(cyl, vs))
+cross_fit(mtcars, list(mpg ~ wt, mpg ~ hp), dplyr::starts_with("c"))
+
+cross_fit(mtcars, list(hp = mpg ~ hp), cyl, weights = wt)
+cross_fit(mtcars, list(hp = mpg ~ hp), cyl, weights = c(wt, NA))
+
+cross_fit(
+  mtcars, list(vs ~ cyl, vs ~ hp), am,
+  fn = glm, fn_args = list(family = binomial(link = logit))
+)
+cross_fit(
+  mtcars, list(vs ~ cyl, vs ~ hp), am,
+  fn = ~ glm(.x, .y, family = binomial(link = logit))
+)
+
+cross_fit(mtcars, list(mpg ~ wt, mpg ~ hp), cyl, tidy = FALSE)
+cross_fit(mtcars, list(mpg ~ wt, mpg ~ hp), cyl, tidy_args = c(conf.int = TRUE))
+
+cross_fit(mtcars, list(mpg ~ wt, mpg ~ hp), cyl, tidy = broom::tidy)
+cross_fit(
+  mtcars, list(mpg ~ wt, mpg ~ hp), cyl,
+  tidy = ~ broom::tidy(., conf.int = TRUE)
+)
+</code></pre>
+
+
+</div>

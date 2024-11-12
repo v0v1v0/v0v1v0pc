@@ -1,0 +1,457 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>run_experiment</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Run a full experiment for comparing multiple algorithms using multiple
+instances</h2>
+
+<h3>Description</h3>
+
+<p>Design and run a full experiment - calculate the required number of
+instances, run the algorithms on each problem instance using the iterative
+approach based on optimal sample size ratios, and return the results of the
+experiment. This routine builds upon <code>calc_instances()</code> and <code>calc_nreps()</code>,
+so refer to the documentation of these two functions for details.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">run_experiment(
+  instances,
+  algorithms,
+  d,
+  se.max,
+  power = 0.8,
+  sig.level = 0.05,
+  power.target = "mean",
+  dif = "simple",
+  comparisons = "all.vs.all",
+  alternative = "two.sided",
+  test = "t.test",
+  method = "param",
+  nstart = 20,
+  nmax = 100 * length(algorithms),
+  force.balanced = FALSE,
+  ncpus = 2,
+  boot.R = 499,
+  seed = NULL,
+  save.partial.results = NA,
+  load.partial.results = NA,
+  save.final.result = NA
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>instances</code></td>
+<td>
+<p>list object containing the definitions of the
+<em>available</em> instances. This list may (or may not) be exhausted in the
+experiment. To estimate the number of required instances,
+see <code>calc_instances()</code>. For more details, see Section <code style="white-space: pre;">⁠Instance List⁠</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>algorithms</code></td>
+<td>
+<p>a list object containing the definitions of all algorithms.
+See Section <code>Algorithms</code> for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+<p>minimally relevant effect size (MRES), expressed as a standardized
+effect size, i.e., "deviation from H0" / "standard deviation".
+See <code>calc_instances()</code> for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>se.max</code></td>
+<td>
+<p>desired upper limit for the standard error of the estimated
+difference between pairs of algorithms. See Section
+<code style="white-space: pre;">⁠Pairwise Differences⁠</code> for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>power</code></td>
+<td>
+<p>(desired) test power. See <code>calc_instances()</code> for details.
+Any value equal to or greater than one will force the method to use all
+available instances in <code>Instance.list</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sig.level</code></td>
+<td>
+<p>family-wise significance level (alpha) for the experiment.
+See <code>calc_instances()</code> for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>power.target</code></td>
+<td>
+<p>which comparison should have the desired <code>power</code>?
+Accepts "mean", "median", or "worst.case" (this last one
+is equivalent to the Bonferroni correction).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dif</code></td>
+<td>
+<p>type of difference to be used. Accepts "perc" (for percent
+differences) or "simple" (for simple differences)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>comparisons</code></td>
+<td>
+<p>type of comparisons being performed. Accepts "all.vs.first"
+(in which cases the first object in <code>algorithms</code> is considered to be
+the reference algorithm) or "all.vs.all" (if there is no reference
+and all pairwise comparisons are desired).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alternative</code></td>
+<td>
+<p>type of alternative hypothesis ("two.sided" or
+"less" or "greater"). See <code>calc_instances()</code> for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test</code></td>
+<td>
+<p>type of test to be used
+("t.test", "wilcoxon" or "binomial")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>method to use for estimating the standard errors. Accepts
+"param" (for parametric) or "boot" (for bootstrap)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nstart</code></td>
+<td>
+<p>initial number of algorithm runs for each algorithm.
+See Section <code style="white-space: pre;">⁠Initial Number of Observations⁠</code> for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nmax</code></td>
+<td>
+<p>maximum number of runs to execute on each instance (see
+<code>calc_nreps()</code>). Loaded results (see <code>load.partial.results</code>
+below) do not count towards this maximum.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>force.balanced</code></td>
+<td>
+<p>logical flag to force the use of balanced sampling for
+the algorithms on each instance</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncpus</code></td>
+<td>
+<p>number of cores to use</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>boot.R</code></td>
+<td>
+<p>number of bootstrap resamples to use (if <code>method == "boot"</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>seed for the random number generator</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save.partial.results</code></td>
+<td>
+<p>should partial results be saved to files? Can be
+either <code>NA</code> (do not save) or a character string
+pointing to a folder. File names are generated
+based on the instance aliases. <strong>Existing files with
+matching names will be overwritten.</strong>
+<code>run_experiment()</code> uses <strong>.RDS</strong> files for saving
+and loading.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>load.partial.results</code></td>
+<td>
+<p>should partial results be loaded from files? Can
+be either <code>NA</code> (do not save) or a character
+string pointing to a folder containing the
+file(s) to be loaded. <code>run_experiment()</code> will
+use .RDS file(s) with a name(s) matching instance
+<code>alias</code>es. <code>run_experiment()</code> uses <strong>.RDS</strong> files
+for saving and loading.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>save.final.result</code></td>
+<td>
+<p>should the final results be saved to file? Can be
+either <code>NA</code> (do not save) or a character string
+pointing to a folder where the results will be
+saved on a <strong>.RDS</strong> file starting with
+<code>CAISEr_results_</code> and ending with 12-digit
+datetime tag in the format <code>YYYYMMDDhhmmss</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a list object containing the following fields:
+</p>
+
+<ul>
+<li> <p><code>Configuration</code> - the full input configuration (for reproducibility)
+</p>
+</li>
+<li> <p><code>data.raw</code> - data frame containing all observations generated
+</p>
+</li>
+<li> <p><code>data.summary</code> - data frame summarizing the experiment.
+</p>
+</li>
+<li> <p><code>N</code> - number of instances sampled
+</p>
+</li>
+<li> <p><code>N.star</code> - number of instances required
+</p>
+</li>
+<li> <p><code>total.runs</code> - total number of algorithm runs performed
+</p>
+</li>
+<li> <p><code>instances.sampled</code> - names of the instances sampled
+</p>
+</li>
+<li> <p><code>Underpowered</code> - flag: TRUE if N &lt; N.star
+</p>
+</li>
+</ul>
+<h3>Instance List</h3>
+
+<p>Parameter <code>instances</code> must contain a list of instance objects, where
+each field is itself a list, as defined in the documentation of function
+<code>calc_nreps()</code>. In short, each element of <code>instances</code> is an <code>instance</code>, i.e.,
+a named list containing all relevant parameters that define the problem
+instance. This list must contain at least the field <code>instance$FUN</code>, with the
+name of the problem instance function, that is, a routine that calculates
+y = f(x). If the instance requires additional parameters, these must also be
+provided as named fields.
+An additional field, "instance$alias", can be used to provide the instance
+with a unique identifier (e.g., when using an instance generator).
+</p>
+
+
+<h3>Algorithm List</h3>
+
+<p>Object <code>algorithms</code> is a list in which each component is a named
+list containing all relevant parameters that define an algorithm to be
+applied for solving the problem instance. In what follows <code>algorithms[[k]]</code>
+refers to any algorithm specified in the <code>algorithms</code> list.
+</p>
+<p><code>algorithms[[k]]</code> must contain an <code>algorithms[[k]]$FUN</code> field, which is a
+character object with the name of the function that calls the algorithm; as
+well as any other elements/parameters that <code>algorithms[[k]]$FUN</code> requires
+(e.g., stop criteria, operator names and parameters, etc.).
+</p>
+<p>The function defined by the routine <code>algorithms[[k]]$FUN</code> must have the
+following structure: supposing that the list in <code>algorithms[[k]]</code> has
+fields <code>algorithm[[k]]$FUN = "myalgo"</code>, <code>algorithms[[k]]$par1 = "a"</code> and
+<code>algorithms[[k]]$par2 = 5</code>, then:
+</p>
+<pre>
+         myalgo &lt;- function(par1, par2, instance, ...){
+               #
+               # &lt;do stuff&gt;
+               #
+               return(results)
+         }
+   </pre>
+<p>That is, it must be able to run if called as:
+</p>
+<pre>
+         # remove '$FUN' and '$alias' field from list of arguments
+         # and include the problem definition as field 'instance'
+         myargs          &lt;- algorithm[names(algorithm) != "FUN"]
+         myargs          &lt;- myargs[names(myargs) != "alias"]
+         myargs$instance &lt;- instance
+
+         # call function
+         do.call(algorithm$FUN,
+                 args = myargs)
+   </pre>
+<p>The <code>algorithm$FUN</code> routine must return a list containing (at
+least) the performance value of the final solution obtained, in a field named
+<code>value</code> (e.g., <code>result$value</code>) after a given run. In general it is easier to
+write a small wrapper function around existing implementations.
+</p>
+
+
+<h3>Initial Number of Observations</h3>
+
+<p>In the <em>general case</em> the initial number of observations / algorithm /
+instance (<code>nstart</code>) should be relatively high. For the parametric case
+we recommend 10~15 if outliers are not expected, and 30~40 (at least) if that
+assumption cannot be made. For the bootstrap approach we recommend using at
+least 15 or 20. However, if some distributional assumptions can be
+made - particularly low skewness of the population of algorithm results on
+the test instances), then <code>nstart</code> can in principle be as small as 5 (if the
+output of the algorithm were known to be normal, it could be 1).
+</p>
+<p>In general, higher sample sizes are the price to pay for abandoning
+distributional assumptions. Use lower values of <code>nstart</code> with caution.
+</p>
+
+
+<h3>Pairwise Differences</h3>
+
+<p>Parameter <code>dif</code> informs the type of difference in performance to be used
+for the estimation (<code class="reqn">\mu_a</code> and <code class="reqn">\mu_b</code> represent the mean
+performance of any two algorithms on the test instance, and <code class="reqn">mu</code>
+represents the grand mean of all algorithms given in <code>algorithms</code>):
+</p>
+
+<ul>
+<li>
+<p> If <code>dif == "perc"</code> and <code>comparisons == "all.vs.first"</code>, the estimated
+quantity is:
+<code class="reqn">\phi_{1b} = (\mu_1 - \mu_b) / \mu_1 = 1 - (\mu_b / \mu_1)</code>.
+</p>
+</li>
+<li>
+<p> If <code>dif == "perc"</code> and <code>comparisons == "all.vs.all"</code>, the estimated
+quantity is:
+<code class="reqn">\phi_{ab} = (\mu_a - \mu_b) / \mu</code>.
+</p>
+</li>
+<li>
+<p> If <code>dif == "simple"</code> it estimates <code class="reqn">\mu_a - \mu_b</code>.
+</p>
+</li>
+</ul>
+<h3>Sample Sizes for Nonparametric Methods</h3>
+
+<p>If the parameter “ is set to either <code>Wilcoxon</code> or 'Binomial', this
+routine approximates the number of instances using the ARE of these tests
+in relation to the paired t.test:
+</p>
+
+<ul>
+<li> <p><code>n.wilcox = n.ttest / 0.86 = 1.163 * n.ttest</code>
+</p>
+</li>
+<li> <p><code>n.binom = n.ttest / 0.637 = 1.570 * n.ttest</code>
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Felipe Campelo (<a href="mailto:fcampelo@ufmg.br">fcampelo@ufmg.br</a>,
+<a href="mailto:f.campelo@aston.ac.uk">f.campelo@aston.ac.uk</a>)
+</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li>
+<p> F. Campelo, F. Takahashi:
+Sample size estimation for power and accuracy in the experimental
+comparison of algorithms. Journal of Heuristics 25(2):305-338, 2019.
+</p>
+</li>
+<li>
+<p> P. Mathews.
+Sample size calculations: Practical methods for engineers and scientists.
+Mathews Malnar and Bailey, 2010.
+</p>
+</li>
+<li>
+<p> A.C. Davison, D.V. Hinkley:
+Bootstrap methods and their application. Cambridge University Press (1997)
+</p>
+</li>
+<li>
+<p> E.C. Fieller:
+Some problems in interval estimation. Journal of the Royal Statistical
+Society. Series B (Methodological) 16(2), 175–185 (1954)
+</p>
+</li>
+<li>
+<p> V. Franz:
+Ratios: A short guide to confidence limits and proper use (2007).
+https://arxiv.org/pdf/0710.2024v1.pdf
+</p>
+</li>
+<li>
+<p> D.C. Montgomery, C.G. Runger:
+Applied Statistics and Probability for Engineers, 6th ed. Wiley (2013)
+</p>
+</li>
+<li>
+<p> D.J. Sheskin:
+Handbook of Parametric and Nonparametric Statistical Procedures,
+4th ed., Chapman &amp; Hall/CRC, 1996.
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Example using four dummy algorithms and 100 dummy instances.
+# See [dummyalgo()] and [dummyinstance()] for details.
+# Generating 4 dummy algorithms here, with means 15, 10, 30, 15 and standard
+# deviations 2, 4, 6, 8.
+algorithms &lt;- mapply(FUN = function(i, m, s){
+  list(FUN   = "dummyalgo",
+       alias = paste0("algo", i),
+       distribution.fun  = "rnorm",
+       distribution.pars = list(mean = m, sd = s))},
+  i = c(alg1 = 1, alg2 = 2, alg3 = 3, alg4 = 4),
+  m = c(15, 10, 30, 15),
+  s = c(2, 4, 6, 8),
+  SIMPLIFY = FALSE)
+
+# Generate 100 dummy instances with centered exponential distributions
+instances &lt;- lapply(1:100,
+                    function(i) {rate &lt;- runif(1, 1, 10)
+                                 list(FUN   = "dummyinstance",
+                                      alias = paste0("Inst.", i),
+                                      distr = "rexp", rate = rate,
+                                      bias  = -1 / rate)})
+
+my.results &lt;- run_experiment(instances, algorithms,
+                             d = .5, se.max = .1,
+                             power = .9, sig.level = .05,
+                             power.target = "mean",
+                             dif = "perc", comparisons = "all.vs.all",
+                             ncpus = 1, seed = 1234)
+
+# Take a look at the results
+summary(my.results)
+plot(my.results)
+
+</code></pre>
+
+
+</div>

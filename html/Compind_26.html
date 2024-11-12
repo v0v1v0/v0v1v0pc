@@ -1,0 +1,199 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ci_smaa_constr</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Constrained stochastic multi-objective acceptability analysis (C-SMAA)</h2>
+
+<h3>Description</h3>
+
+<p>Stochastic multiobjective acceptability analysis (SMAA) is a multicriteria decision support technique for multiple decision makers based on exploring the weight space. Inaccurate or uncertain input data can be represented as probability distributions. In SMAA the decision makers need not express their preferences explicitly or implicitly; instead the technique analyses what kind of valuations would make each alternative the preferred one. The method produces for each alternative an acceptability index measuring the variety of different valuations that support that alternative, a central weight vector representing the typical valuations resulting in that decision, and a confidence factor measuring whether the input data is accurate enough for making an informed decision. (R Lahdelma, J. Hokkanen and P. Salminen, 1998); this function, in particular, allows to restricts the range of allowable weights within the SMAA analysis.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ci_smaa_constr(x,indic_col,rep, label, low_w=NULL)</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A data.frame containing simple indicators.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>indic_col</code></td>
+<td>
+<p>A numeric list indicating the positions of the simple indicators.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rep</code></td>
+<td>
+<p>Number of samples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>label</code></td>
+<td>
+<p>A factor column useful to identify units.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>low_w</code></td>
+<td>
+<p>Importance weights lower bound vector; default is NULL (for standard SMAA)</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Author thanks Giuliano Resce and Raffaele Lagravinese for their help and for making available the original code of the SMAA function.\
+The lower bound vector must be set as a vector of the same size as the number of simple indicators; for example - in the presence of two indicators - if you want to constrain only one indicator, you must write: <code>low_w = c (0,0.2)</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class "CI". This is a list containing the following elements:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>ci_smaa_constr_rank_freq</code></td>
+<td>
+<p>Frequence of the SMAA ranks based on the sampled alternatives' values. The rows represent the analysis units while the first column represents the number of times the unit was in first rank, the second one in second rank and so on.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ci_smaa_constr_average_rank</code></td>
+<td>
+<p>The average rank.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ci_smaa_constr_values</code></td>
+<td>
+<p>The alternative values based on a set of samples from the criteria values distribution and the samples set from the feasible weight space.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ci_method</code></td>
+<td>
+<p>Method used; for this function ci_method="smaa_const".</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Vidoli F.</p>
+
+
+<h3>References</h3>
+
+<p>R. Lahdelma, P. Salminen (2001) "<em>SMAA-2: Stochastic multicriteria acceptability analysis for group decision making</em>", Operations Research, 49(3), pp. 444-454
+</p>
+<p>S. Greco, A. Ishizaka, B. Matarazzo and G. Torrisi (2017) "<em>Stochastic multi-attribute acceptability analysis (SMAA): an application to the ranking of Italian regions</em>", Regional Studies
+</p>
+<p>R. Lagravinese, P. Liberati and G. Resce (2017) "<em>Exploring health outcomes by stochastic multi-objective acceptability analysis: an application to Italian regions</em>", Working Papers. Collection B: Regional and sectoral economics, 1703, Universidade de Vigo, GEN - Governance and Economics research Network.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code>ci_bod</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+# ----- Define a function for plotting a matrix ----- #
+myImagePlot &lt;- function(x, ...){
+     min &lt;- min(x)
+     max &lt;- max(x)
+     yLabels &lt;- rownames(x)
+     xLabels &lt;- colnames(x)
+     title &lt;-c()
+  # check for additional function arguments
+  if( length(list(...)) ){
+    Lst &lt;- list(...)
+    if( !is.null(Lst$zlim) ){
+       min &lt;- Lst$zlim[1]
+       max &lt;- Lst$zlim[2]
+    }
+    if( !is.null(Lst$yLabels) ){
+       yLabels &lt;- c(Lst$yLabels)
+    }
+    if( !is.null(Lst$xLabels) ){
+       xLabels &lt;- c(Lst$xLabels)
+    }
+    if( !is.null(Lst$title) ){
+       title &lt;- Lst$title
+    }
+  }
+# check for null values
+if( is.null(xLabels) ){
+   xLabels &lt;- c(1:ncol(x))
+}
+if( is.null(yLabels) ){
+   yLabels &lt;- c(1:nrow(x))
+}
+
+layout(matrix(data=c(1,2), nrow=1, ncol=2), widths=c(4,1), heights=c(1,1))
+
+ # Red and green range from 0 to 1 while Blue ranges from 1 to 0
+ ColorRamp &lt;- rgb( seq(0,1,length=256),  # Red
+                   seq(0,1,length=256),  # Green
+                   seq(1,0,length=256))  # Blue
+ ColorLevels &lt;- seq(min, max, length=length(ColorRamp))
+
+ # Reverse Y axis
+ reverse &lt;- nrow(x) : 1
+ yLabels &lt;- yLabels[reverse]
+ x &lt;- x[reverse,]
+
+ # Data Map
+ par(mar = c(3,5,2.5,2))
+ image(1:length(xLabels), 1:length(yLabels), t(x), col=ColorRamp, xlab="",
+ ylab="", axes=FALSE, zlim=c(min,max))
+ if( !is.null(title) ){
+    title(main=title)
+ }
+axis(BELOW&lt;-1, at=1:length(xLabels), labels=xLabels, cex.axis=0.7)
+ axis(LEFT &lt;-2, at=1:length(yLabels), labels=yLabels, las= HORIZONTAL&lt;-1,
+ cex.axis=0.7)
+
+ # Color Scale
+ par(mar = c(3,2.5,2.5,2))
+ image(1, ColorLevels,
+      matrix(data=ColorLevels, ncol=length(ColorLevels),nrow=1),
+      col=ColorRamp,
+      xlab="",ylab="",
+      xaxt="n")
+
+ layout(1)
+}
+# ----- END plot function ----- #
+
+
+data(EU_NUTS1)
+
+# Standard SMAA 
+test &lt;- ci_smaa_constr(EU_NUTS1,c(2,3), rep=200, label = EU_NUTS1[,1])
+# source("http://www.phaget4.org/R/myImagePlot.R") 
+# myImagePlot(test$ci_smaa_constr_rank_freq)
+test$ci_smaa_constr_average_rank
+
+# Constrained SMAA 
+test2 &lt;- ci_smaa_constr(EU_NUTS1,c(2,3), rep=200, label = EU_NUTS1[,1], low_w=c(0.2,0.2) )
+# myImagePlot(test2$ci_smaa_constr_rank_freq)
+test2$ci_smaa_constr_average_rank
+
+</code></pre>
+
+
+</div>

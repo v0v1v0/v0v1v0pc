@@ -1,0 +1,142 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>auto_merge</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simplified merging supporting different country nomenclatures and date formats</h2>
+
+<h3>Description</h3>
+
+<p>The aim of this function is to simplify country data merging for quick analyses. Compared to a normal merge function <code>auto_merge()</code>:
+</p>
+
+<ul>
+<li>
+<p> Is able to perform the merging of multiple data tables at once.
+</p>
+</li>
+<li>
+<p> Supports automatic detection of columns to merge.
+</p>
+</li>
+<li>
+<p> It is able to handle different country naming conventions and date formats. For example, it will be able to recognise that "Italy" and "ITA" refer to the same country and will merge the two entries across tables.
+</p>
+</li>
+<li>
+<p> It detects if data is in a wide format with country names or years in the column names and will automatically pivot the data.
+</p>
+</li>
+</ul>
+<h3>Usage</h3>
+
+<pre><code class="language-R">auto_merge(
+  ...,
+  by = NULL,
+  country_to = "ISO3",
+  inner_join = FALSE,
+  merging_info = FALSE,
+  verbose = TRUE,
+  auto_melt = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Data to be merged. Inputs need to be data frames or coercible to data frame. Tables can also be provided into a single list e.g. <code>tab1, tab2, tab3</code> or <code>list(tab1, tab2, tab3)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by</code></td>
+<td>
+<p>A list or a vector indicating the columns to be used for merging the data. <em>If not provided, the function will try to automatically detect columns to be merged</em>. For more information, refer to the details sections.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>country_to</code></td>
+<td>
+<p>Nomenclature to which country names should be converted to in the output. Default is <code>ISO3</code>. For a description of possible options, refer to the table in the vignette <a href="https://fbellelli.github.io/countries/articles/dealing_with_names.html">Dealing with country names</a>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inner_join</code></td>
+<td>
+<p>Logical value indicating whether to perform an inner join. The default is <code>FALSE</code>, which results in a full join of the provided tables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>merging_info</code></td>
+<td>
+<p>Logical value. If <code>TRUE</code>, the function will output a list containing the merged data and information generated during the merging process, such as information on columns that have been merged or the conversion table used for country names. The default is <code>FALSE</code>, which results into a single merged table being returned.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Logical value indicating whether to print status messages on the console. Default is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>auto_melt</code></td>
+<td>
+<p>Logical value indicating whether to automatically pivot country names or years present in the column names. Default is <code>TRUE</code>. When at least 3 country names or years are found in the column names, the function will automatically transform the table from a wide to a long format by pivoting the country/year columns.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><strong>Automatic detection of columns to merge</strong>.
+The automatic detection process starts by first identifying the key of each table, i.e. a set of variables identifying the entries in the table. This process is optimised for common formats of country data.
+The function will then try to match key columns across tables based on their values.
+Columns containing country names and time information are identified and are processed to take into account different nomenclatures and time formats.
+This automatic process works for the most common dataset structures, but it is not foolproof. Therefore, we always advise to check the columns that are being merged by setting <code>verbose = TRUE</code> and reading the printout.
+Moreover, users should be aware that this automatic detection process can increase the overall merging time considerably. This can be especially long for tables containing many columns or when a large number of tables is being merged.
+</p>
+<p><strong>Formatting of <code>by</code> argument</strong>
+If an argument is provided to <code>by</code>, it needs to be either 1) a list of column names, or 2) a vector of regular expressions. The format requirements are the following:
+</p>
+
+<ol>
+<li>
+<p> In case a <strong>list</strong> is passed, each element of the list must be a vector of length equal to the number of tables being merged (i.e., if 3 tables are being merged, the list needs to contain all vectors of length 3). The vectors should contain the names of columns to be merged in each table, <code>NA</code> can be inserted for tables that do not contain the variable, and names should be ordered in the same order of the tables that are being merged (i.e. the first column name should be present in the first table being merged). The name of the merged columns can be modified by assigning a name to the elements of the list. For example, <code>list("countries"=c("Nation",NA,"COUNTRY"), "sector"=c("Industry","industry",NA))</code> is requesting to merge the columns <code>tab1$Nation</code> and <code>tab3$COUNTRY</code>, and the columns <code>tab1$Industry</code> and <code>tab2$industry</code>. These two merged columns will be named <code>"countries"</code> and <code>"sector"</code> in the output, as requested by the user.
+</p>
+</li>
+<li>
+<p> In case a <strong>vector</strong> is passed, each element is interpreted as a regular expression to be used for matching the columns to be merged. For example, the same order provided in the list example could be written as <code>c("countries"="Nation|COUNTRY", "sector"="[Ii]ndustry")</code>. This will merge the first column in each table whose name matches the pattern described by the regular expression and will name the two resulting columns as <code>"countries"</code> and <code>"sector"</code> respectively.
+</p>
+</li>
+</ol>
+<h3>Value</h3>
+
+<p>If <code>merging_info = FALSE</code> a single merged table is returned. If <code>merging_info = TRUE</code>, a list object is returned, containing the merged table (<code>merged_table</code>), a table summarising which columns have been merged (<code>info_merged_columns</code>), a table summarising the conversion of country names (<code>info_country_names</code>), a table summarising the conversion of time columns to a common format (<code>info_time_formats</code>), a list of all the columns that have been pivoted when wide tables with country or years in column names were detected (<code>pivoted_columns</code>), a list recapitulating the inputs passed to the function (<code>call</code>).
+</p>
+
+
+<h3>See Also</h3>
+
+<p>country_name, find_keycol
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># sample data
+tab1 &lt;- data.frame(Industry = c(1, 1, 2, 2), Nation = c("ITA", "FRA", "ITA", "FRA"), tot = runif(4))
+tab2 &lt;- data.frame(industry = 1:4, rate = runif(1:4))
+tab3 &lt;- data.frame(COUNTRY = c("United States", "France", "India"), national_avg = runif(3))
+
+# examples of merging orders
+auto_merge(tab1, tab2, tab3)
+auto_merge(list(tab1, tab2, tab3))
+auto_merge(tab1, tab2, tab3, by = c("countries"="Nation|COUNTRY", "sector"="[Ii]ndustry"))
+auto_merge(tab1, tab2, tab3, country_to = "UN_fr")
+</code></pre>
+
+
+</div>

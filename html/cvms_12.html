@@ -1,0 +1,411 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>confusion_matrix</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create a confusion matrix</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt="[Experimental]"></a>
+</p>
+<p>Creates a confusion matrix from targets and predictions.
+Calculates associated metrics.
+</p>
+<p>Multiclass results are based on one-vs-all evaluations.
+Both regular averaging and weighted averaging are available. Also calculates the <code>Overall Accuracy</code>.
+</p>
+<p><strong>Note</strong>: In most cases you should use <code>evaluate()</code> instead. It has additional metrics and
+works in <code>magrittr</code> pipes (e.g. <code>%&gt;%</code>) and with <code>dplyr::group_by()</code>.
+<code>confusion_matrix()</code> is more lightweight and may be preferred in programming when you don't need the extra stuff
+in <code>evaluate()</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">confusion_matrix(
+  targets,
+  predictions,
+  metrics = list(),
+  positive = 2,
+  c_levels = NULL,
+  do_one_vs_all = TRUE,
+  parallel = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>targets</code></td>
+<td>
+<p><code>vector</code> with true classes. Either <code>numeric</code> or <code>character</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predictions</code></td>
+<td>
+<p><code>vector</code> with predicted classes. Either <code>numeric</code> or <code>character</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metrics</code></td>
+<td>
+<p><code>list</code> for enabling/disabling metrics.
+</p>
+<p>E.g. <code>list("Accuracy" = TRUE)</code> would add the regular accuracy metric,
+whie <code>list("F1" = FALSE)</code> would remove the <code>F1</code> metric.
+Default values (TRUE/FALSE) will be used for the remaining available metrics.
+</p>
+<p>You can enable/disable all metrics at once by including
+<code>"all" = TRUE/FALSE</code> in the <code>list</code>. This is done prior to enabling/disabling
+individual metrics, why for instance <code>list("all" = FALSE, "Accuracy" = TRUE)</code>
+would return only the <code>Accuracy</code> metric.
+</p>
+<p>The <code>list</code> can be created with
+<code>binomial_metrics()</code> or
+<code>multinomial_metrics()</code>.
+</p>
+<p>Also accepts the string <code>"all"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>positive</code></td>
+<td>
+<p>Level from <code>`targets`</code> to predict.
+Either as character (<em>preferable</em>) or level index (<code>1</code> or <code>2</code> - alphabetically). (<strong>Two-class only</strong>)
+</p>
+<p>E.g. if we have the levels <code>"cat"</code> and <code>"dog"</code> and we want <code>"dog"</code> to be the positive class,
+we can either provide <code>"dog"</code> or <code>2</code>, as alphabetically, <code>"dog"</code> comes after <code>"cat"</code>.
+</p>
+<p><strong>Note:</strong> For <em>reproducibility</em>, it's preferable to <strong>specify the name directly</strong>, as
+different <code>locales</code> may sort the levels differently.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>c_levels</code></td>
+<td>
+<p><code>vector</code> with categorical levels in the targets. Should have same type as <code>`targets`</code>.
+If <code>NULL</code>, they are inferred from <code>`targets`</code>.
+</p>
+<p>N.B. the levels are sorted alphabetically. When <code>`positive`</code> is numeric (i.e. an index),
+it therefore still refers to the index of the alphabetically sorted levels.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>do_one_vs_all</code></td>
+<td>
+<p>Whether to perform <em>one-vs-all</em> evaluations
+when working with more than 2 classes (multiclass).
+</p>
+<p>If you are only interested in the confusion matrix,
+this allows you to skip most of the metric calculations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+<p>Whether to perform the one-vs-all evaluations in parallel. (Logical)
+</p>
+<p>N.B. This only makes sense when you have a lot of classes or a very large dataset.
+</p>
+<p>Remember to register a parallel backend first.
+E.g. with <code>doParallel::registerDoParallel</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The following formulas are used for calculating the metrics:
+</p>
+<p><code>Sensitivity = TP / (TP + FN)</code>
+</p>
+<p><code>Specificity = TN / (TN + FP)</code>
+</p>
+<p><code>Pos Pred Value = TP / (TP + FP)</code>
+</p>
+<p><code>Neg Pred Value = TN / (TN + FN)</code>
+</p>
+<p><code>Balanced Accuracy = (Sensitivity + Specificity) / 2</code>
+</p>
+<p><code>Accuracy = (TP + TN) / (TP + TN + FP + FN)</code>
+</p>
+<p><code>Overall Accuracy = Correct / (Correct + Incorrect)</code>
+</p>
+<p><code>F1 = 2 * Pos Pred Value * Sensitivity / (Pos Pred Value + Sensitivity)</code>
+</p>
+<p><code>MCC = ((TP * TN) - (FP * FN)) / sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))</code>
+</p>
+<p>Note for <code>MCC</code>: Formula is for the <em>binary</em> case. When the denominator is <code>0</code>,
+we set it to <code>1</code> to avoid <code>NaN</code>.
+See the <code>metrics</code> vignette for the multiclass version.
+</p>
+<p><code>Detection Rate = TP / (TP + FN + TN + FP)</code>
+</p>
+<p><code>Detection Prevalence = (TP + FP) / (TP + FN + TN + FP)</code>
+</p>
+<p><code>Threat Score = TP / (TP + FN + FP)</code>
+</p>
+<p><code>False Neg Rate = 1 - Sensitivity</code>
+</p>
+<p><code>False Pos Rate = 1 - Specificity</code>
+</p>
+<p><code>False Discovery Rate = 1 - Pos Pred Value</code>
+</p>
+<p><code>False Omission Rate = 1 - Neg Pred Value</code>
+</p>
+<p>For <strong>Kappa</strong> the counts (<code>TP</code>, <code>TN</code>, <code>FP</code>, <code>FN</code>) are normalized to percentages (summing to 1).
+Then the following is calculated:
+</p>
+<p><code>p_observed = TP + TN</code>
+</p>
+<p><code>p_expected = (TN + FP) * (TN + FN) + (FN + TP) * (FP + TP)</code>
+</p>
+<p><code>Kappa = (p_observed - p_expected) / (1 - p_expected)</code>
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>tibble</code> with:
+</p>
+<p>Nested <strong>confusion matrix</strong> (tidied version)
+</p>
+<p>Nested confusion matrix (<strong>table</strong>)
+</p>
+<p>The <strong>Positive Class</strong>.
+</p>
+<p>Multiclass only: Nested <strong>Class Level Results</strong> with the two-class metrics,
+the nested confusion matrices, and the <strong>Support</strong> metric, which is a
+count of the class in the target column and is used for the weighted average metrics.
+</p>
+<p>The following metrics are available (see <code>`metrics`</code>):
+</p>
+
+
+<h4>Two classes or more</h4>
+
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>Metric</strong> </td>
+<td style="text-align: right;"> <strong>Name</strong> </td>
+<td style="text-align: right;"> <strong>Default</strong> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Balanced Accuracy </td>
+<td style="text-align: right;"> "Balanced Accuracy" </td>
+<td style="text-align: right;"> Enabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Accuracy </td>
+<td style="text-align: right;"> "Accuracy" </td>
+<td style="text-align: right;"> Disabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  F1 </td>
+<td style="text-align: right;"> "F1" </td>
+<td style="text-align: right;"> Enabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Sensitivity </td>
+<td style="text-align: right;"> "Sensitivity" </td>
+<td style="text-align: right;"> Enabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Specificity </td>
+<td style="text-align: right;"> "Specificity" </td>
+<td style="text-align: right;"> Enabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Positive Predictive Value </td>
+<td style="text-align: right;"> "Pos Pred Value" </td>
+<td style="text-align: right;"> Enabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Negative Predictive Value </td>
+<td style="text-align: right;"> "Neg Pred Value" </td>
+<td style="text-align: right;"> Enabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Kappa </td>
+<td style="text-align: right;"> "Kappa" </td>
+<td style="text-align: right;"> Enabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Matthews Correlation Coefficient </td>
+<td style="text-align: right;"> "MCC" </td>
+<td style="text-align: right;"> Enabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Detection Rate </td>
+<td style="text-align: right;"> "Detection Rate" </td>
+<td style="text-align: right;"> Enabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Detection Prevalence </td>
+<td style="text-align: right;"> "Detection Prevalence" </td>
+<td style="text-align: right;"> Enabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Prevalence </td>
+<td style="text-align: right;"> "Prevalence" </td>
+<td style="text-align: right;"> Enabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  False Negative Rate </td>
+<td style="text-align: right;"> "False Neg Rate" </td>
+<td style="text-align: right;"> Disabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  False Positive Rate </td>
+<td style="text-align: right;"> "False Pos Rate" </td>
+<td style="text-align: right;"> Disabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  False Discovery Rate </td>
+<td style="text-align: right;"> "False Discovery Rate" </td>
+<td style="text-align: right;"> Disabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  False Omission Rate </td>
+<td style="text-align: right;"> "False Omission Rate" </td>
+<td style="text-align: right;"> Disabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Threat Score </td>
+<td style="text-align: right;"> "Threat Score" </td>
+<td style="text-align: right;"> Disabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ </td>
+</tr>
+</table>
+<p>The <strong>Name</strong> column refers to the name used in the package.
+This is the name in the output and when enabling/disabling in <code>`metrics`</code>.
+</p>
+
+
+
+<h4>Three classes or more</h4>
+
+<p>The metrics mentioned above (excluding <code>MCC</code>)
+has a weighted average version (disabled by default; weighted by the <strong>Support</strong>).
+</p>
+<p>In order to enable a weighted metric, prefix the metric name with <code>"Weighted "</code> when specifying <code>`metrics`</code>.
+</p>
+<p>E.g. <code>metrics = list("Weighted Accuracy" = TRUE)</code>.
+</p>
+
+<table>
+<tr>
+<td style="text-align: right;">
+  <strong>Metric</strong> </td>
+<td style="text-align: right;"> <strong>Name</strong> </td>
+<td style="text-align: right;"> <strong>Default</strong> </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Overall Accuracy </td>
+<td style="text-align: right;"> "Overall Accuracy" </td>
+<td style="text-align: right;"> Enabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Weighted * </td>
+<td style="text-align: right;"> "Weighted *" </td>
+<td style="text-align: right;"> Disabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+  Multiclass MCC </td>
+<td style="text-align: right;"> "MCC" </td>
+<td style="text-align: right;"> Enabled </td>
+</tr>
+<tr>
+<td style="text-align: right;">
+ </td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Ludvig Renbo Olsen, <a href="mailto:r-pkgs@ludvigolsen.dk">r-pkgs@ludvigolsen.dk</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other evaluation functions: 
+<code>binomial_metrics()</code>,
+<code>evaluate()</code>,
+<code>evaluate_residuals()</code>,
+<code>gaussian_metrics()</code>,
+<code>multinomial_metrics()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Attach cvms
+library(cvms)
+
+# Two classes
+
+# Create targets and predictions
+targets &lt;- c(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1)
+predictions &lt;- c(1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0)
+
+# Create confusion matrix with default metrics
+cm &lt;- confusion_matrix(targets, predictions)
+cm
+cm[["Confusion Matrix"]]
+cm[["Table"]]
+
+# Three classes
+
+# Create targets and predictions
+targets &lt;- c(0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0)
+predictions &lt;- c(2, 1, 0, 2, 0, 1, 1, 2, 0, 1, 2, 0, 2)
+
+# Create confusion matrix with default metrics
+cm &lt;- confusion_matrix(targets, predictions)
+cm
+cm[["Confusion Matrix"]]
+cm[["Table"]]
+
+# Enabling weighted accuracy
+
+# Create confusion matrix with Weighted Accuracy enabled
+cm &lt;- confusion_matrix(targets, predictions,
+  metrics = list("Weighted Accuracy" = TRUE)
+)
+cm
+
+</code></pre>
+
+
+</div>

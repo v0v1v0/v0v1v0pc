@@ -1,0 +1,113 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>create_VRT_from_dir</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create a Virtual Raster (VRT) file from .tif files</h2>
+
+<h3>Description</h3>
+
+<p>Create a Virtual Raster (VRT) file from .tif files
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">create_VRT_from_dir(
+  dir_tifs,
+  output_path_VRT,
+  file_extension = ".tif",
+  verbose = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>dir_tifs</code></td>
+<td>
+<p>a valid path to a directory where the .tif files are saved</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output_path_VRT</code></td>
+<td>
+<p>a valid path to a file where the Virtual Raster (VRT) will be saved</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>file_extension</code></td>
+<td>
+<p>a character string specifying the image file extension from which the .vrt file will be built</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>a boolean. If TRUE then information will be printed out in the console</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>it doesn't return an object but it saves the output to a file
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Not run: 
+
+#.........................................................
+# create a directory to save the .tif files and a
+# Well Known Text (WKT) of a sample Area of Interest (AOI)
+#.........................................................
+
+DIR_SAVE = file.path(Sys.getenv('HOME'), 'DIR_SAVE_DEM')
+if (!dir.exists(DIR_SAVE)) dir.create(DIR_SAVE)
+
+WKT='POLYGON((61.5234 27.0591, 63.6328 27.0591, 63.6328 28.1495, 61.5234 28.1495, 61.5234 27.0591))'
+
+sf_obj = sf::st_as_sfc(WKT, crs = 4326)
+sf_obj = sf::st_make_valid(sf_obj)
+
+#......................
+# download 90 meter DEM
+#......................
+
+save_matches = CopernicusDEM::aoi_geom_save_tif_matches(sf_or_file = sf_obj,
+                                                        dir_save_tifs = DIR_SAVE,
+                                                        resolution = 90,
+                                                        crs_value = 4326,
+                                                        threads = parallel::detectCores(),
+                                                        verbose = TRUE)
+
+#........................................
+# create a Virtual Raster (VRT) file from
+# the 90 meter downloaded .tif files
+#........................................
+
+VRT_out = as.character(glue::glue("{DIR_SAVE}.vrt"))
+
+res_vrt = CopernicusDEM::create_VRT_from_dir(dir_tifs = DIR_SAVE,
+                                             output_path_VRT = VRT_out,
+                                             verbose = TRUE)
+
+#......................................................
+# load the saved VRT file as raster (which might
+# consist of multiple files, i.e. a mosaic) and plot it
+#......................................................
+
+rst = raster::raster(VRT_out)
+sp::plot(rst)
+
+
+## End(Not run)
+</code></pre>
+
+
+</div>

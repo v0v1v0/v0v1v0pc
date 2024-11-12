@@ -1,0 +1,435 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>detectionHistory</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Species detection histories for occupancy analyses</h2>
+
+<h3>Description</h3>
+
+<p>This function generates species detection histories that can be used in
+occupancy analyses, e.g. with package
+unmarked. It generates detection histories
+in different formats, with adjustable occasion length and occasion start
+time.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">detectionHistory(
+  recordTable,
+  species,
+  camOp,
+  output = c("binary", "count"),
+  stationCol = "Station",
+  speciesCol = "Species",
+  recordDateTimeCol = "DateTimeOriginal",
+  recordDateTimeFormat = "ymd HMS",
+  occasionLength,
+  minActiveDaysPerOccasion,
+  maxNumberDays,
+  day1,
+  buffer,
+  includeEffort = TRUE,
+  scaleEffort = FALSE,
+  occasionStartTime = "deprecated",
+  datesAsOccasionNames = FALSE,
+  timeZone,
+  writecsv = FALSE,
+  outDir,
+  unmarkedMultFrameInput
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>recordTable</code></td>
+<td>
+<p>data.frame. the record table created by
+<code>recordTable</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>species</code></td>
+<td>
+<p>character. the species for which to compute the detection
+history</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>camOp</code></td>
+<td>
+<p>The camera operability matrix as created by
+<code>cameraOperation</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output</code></td>
+<td>
+<p>character. Return binary detections ("binary") or counts of
+detections ("count")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stationCol</code></td>
+<td>
+<p>character. name of the column specifying Station ID in
+<code>recordTable</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>speciesCol</code></td>
+<td>
+<p>character. name of the column specifying species in
+<code>recordTable</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>recordDateTimeCol</code></td>
+<td>
+<p>character. name of the column specifying date and
+time in <code>recordTable</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>recordDateTimeFormat</code></td>
+<td>
+<p>character. Format of column
+<code>recordDateTimeCol</code> in <code>recordTable</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>occasionLength</code></td>
+<td>
+<p>integer. occasion length in days</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minActiveDaysPerOccasion</code></td>
+<td>
+<p>integer. minimum number of active trap days
+for occasions to be included (optional)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxNumberDays</code></td>
+<td>
+<p>integer. maximum number of trap days per station
+(optional)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>day1</code></td>
+<td>
+<p>character. When should occasions begin: station setup date
+("station"), first day of survey ("survey"), a specific date (e.g.
+"2015-12-31")?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>buffer</code></td>
+<td>
+<p>integer. Makes the first occasion begin a number of days after
+station setup. (optional)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>includeEffort</code></td>
+<td>
+<p>logical. Compute trapping effort (number of active
+camera trap days per station and occasion)?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scaleEffort</code></td>
+<td>
+<p>logical. scale and center effort matrix to mean = 0 and
+sd = 1?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>occasionStartTime</code></td>
+<td>
+<p>(DEPRECATED) integer. time of day (the full hour)
+at which to begin occasions. Please use argument <code>occasionStartTime</code> in
+<code>cameraOperation</code> instead.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>datesAsOccasionNames</code></td>
+<td>
+<p>If <code>day1 = "survey"</code>, occasion names in the
+detection history will be composed of first and last day of that occasion.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>timeZone</code></td>
+<td>
+<p>character. Must be a value returned by
+<code>OlsonNames</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>writecsv</code></td>
+<td>
+<p>logical. Should the detection history be saved as a .csv?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outDir</code></td>
+<td>
+<p>character. Directory into which detection history .csv file is
+saved</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>unmarkedMultFrameInput</code></td>
+<td>
+<p>logical. Return input for multi-season
+occupancy models in unmarked (argument "y" in
+<code>unmarkedMultFrame</code>?</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function computes a species detection matrix, either as a
+detection-by-date or a detection-by-occasion matrix. <code>day1</code> defines if
+each stations detection history will begin on that station's setup day
+(<code>day1 = "station"</code>) or if all station's detection histories have a
+common origin (the day the first station was set up if <code>day1 =
+"survey"</code> or a fixed date if, e.g. <code>day1 = "2015-12-31"</code>). If
+<code>day1</code> is a date, <code>as.Date</code> must be able to
+understand it. The most suitable format is "YYYY-MM-DD", e.g. "2015-12-31".
+</p>
+<p><code>output</code> is analogous to <code>spatialDetectionHistory</code>. It
+makes the function return either counts of detections during occasions, or a
+binary indicator for whether the species was detected.
+</p>
+<p><code>includeEffort</code> controls whether an additional effort matrix is
+computed or not. This also affects the detection matrices. If
+<code>includeEffort = FALSE</code>, all occasions in which a station was not set
+up or malfunctioning (NA or 0 in <code>camOp</code>) will result in NAs in the
+detection history. If <code>includeEffort = TRUE</code>, the record history will
+only contain 0 and 1, and no NAs. The effort matrix can then be included in
+occupancy models as a (continuous) observation covariate to estimate the
+effect of effort on detection probability.
+</p>
+<p>The number of days that are aggregated is controlled by
+<code>occasionLength</code>. <code>occasionStartTime</code> will be removed from the
+function. It has moved to <code>cameraOperation</code>, to ensure daily
+effort is computed correctly and takes the occasion start time into account.
+
+default). This may be relevant for nocturnal animals, in which 1 whole night
+would be considered an occasion.
+</p>
+<p>The values of <code>stationCol</code> in <code>recordTable</code> must be matched by the
+row names of <code>camOp</code> (case-insensitive), otherwise an error is raised.
+</p>
+<p><code>recordDateTimeFormat</code> defaults to the "YYYY-MM-DD HH:MM:SS"
+convention, e.g. "2014-09-30 22:59:59". <code>recordDateTimeFormat</code> can be
+interpreted either by base-R via <code>strptime</code> or in
+<span class="pkg">lubridate</span> via <code>parse_date_time</code> (argument
+"orders"). <span class="pkg">lubridate</span> will be used if there are no "%" characters in
+<code>recordDateTimeFormat</code>.
+</p>
+<p>For "YYYY-MM-DD HH:MM:SS", <code>recordDateTimeFormat</code> would be either
+"%Y-%m-%d %H:%M:%S" or "ymd HMS". For details on how to specify date
+and time formats in R see <code>strptime</code> or
+<code>parse_date_time</code>.
+</p>
+<p>If the camera operation matrix (<code>camOp</code>) was created for a multi-season
+study (argument <code>sesssionCol</code> in <code>cameraOperation</code> was set,
+it will be detected automatically. Output can be for unmarkedMultFrame by
+setting <code>unmarkedMultFrameInput = TRUE</code>. Each row corresponds to a
+site, and the columns are in season-major, occasion-minor order, e.g.
+season1-occasion1, season1-occasion2, etc.).
+</p>
+
+
+<h3>Value</h3>
+
+<p>Depending on the value of <code>includeEffort</code> and
+<code>scaleEffort</code>, a list with either 1, 2 or 3 elements. The first element
+is the species detection history. The second is the optional effort matrix
+and the third contains the effort scaling parameters.
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>detection_history</code></td>
+<td>
+<p>A species detection matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>effort</code></td>
+<td>
+<p>A matrix
+giving the number of active camera trap days per station and occasion (=
+camera trapping effort). It is only returned if <code>includeEffort = TRUE</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>effort_scaling_parameters</code></td>
+<td>
+<p>Scaling parameters of the effort matrix. It
+is only returned if <code>includeEffort</code> and <code>scaleEffort</code> are
+<code>TRUE</code></p>
+</td>
+</tr>
+</table>
+<h3>Warning</h3>
+
+<p>Setting <code>output = "count"</code> returns a count of
+detections, not individuals. We strongly advise against using it as input
+for models of animal abundance (such as N-Mixture models) models which use
+counts as input.
+</p>
+<p>Please note the section about defining argument <code>timeZone</code> in the
+vignette on data extraction (accessible via
+<code>vignette("DataExtraction")</code> or online
+(<a href="https://cran.r-project.org/package=camtrapR/vignettes/camtrapr3.pdf">https://cran.r-project.org/package=camtrapR/vignettes/camtrapr3.pdf</a>)).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Juergen Niedballa
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+# define image directory
+wd_images_ID &lt;- system.file("pictures/sample_images_species_dir", package = "camtrapR")
+
+# load station information
+data(camtraps)
+
+# create camera operation matrix
+camop_no_problem &lt;- cameraOperation(CTtable      = camtraps,
+                                    stationCol   = "Station",
+                                    setupCol     = "Setup_date",
+                                    retrievalCol = "Retrieval_date",
+                                    hasProblems  = FALSE,
+                                    dateFormat   = "dmy"
+)
+
+## Not run: 
+if (Sys.which("exiftool") != ""){        # only run this function if ExifTool is available
+recordTableSample &lt;- recordTable(inDir               = wd_images_ID,
+                                 IDfrom              = "directory",
+                                 minDeltaTime        = 60,
+                                 deltaTimeComparedTo = "lastRecord",
+                                 exclude             = "UNID",
+                                 timeZone            = "Asia/Kuala_Lumpur"
+)
+}
+
+## End(Not run)
+data(recordTableSample)    # load the record history, as created above
+
+
+# compute detection history for a species
+
+# without trapping effort
+DetHist1 &lt;- detectionHistory(recordTable         = recordTableSample,
+                            camOp                = camop_no_problem,
+                            stationCol           = "Station",
+                            speciesCol           = "Species",
+                            recordDateTimeCol    = "DateTimeOriginal",
+                            species              = "VTA",
+                            occasionLength       = 7,
+                            day1                 = "station",
+                            datesAsOccasionNames = FALSE,
+                            includeEffort        = FALSE,
+                            timeZone             = "Asia/Kuala_Lumpur"
+)
+
+DetHist1                     # this is a list with 1 element
+DetHist1$detection_history   # this is the contained detection/non-detection matrix
+
+
+# with effort / using base R to define recordDateTimeFormat
+DetHist2 &lt;- detectionHistory(recordTable          = recordTableSample,
+                             camOp                = camop_no_problem,
+                             stationCol           = "Station",
+                             speciesCol           = "Species",
+                             recordDateTimeCol    = "DateTimeOriginal",
+                             species              = "VTA",
+                             occasionLength       = 7,
+                             day1                 = "station",
+                             datesAsOccasionNames = FALSE,
+                             includeEffort        = TRUE,
+                             scaleEffort          = FALSE,
+                             timeZone             = "Asia/Kuala_Lumpur"
+)
+
+DetHist2$detection_history  # detection history  (alternatively, use: DetHist2[[1]])
+DetHist2$effort             # effort (alternatively, use: DetHist2[[2]])
+
+# with effort / using lubridate package to define recordDateTimeFormat
+DetHist2_lub &lt;- detectionHistory(recordTable          = recordTableSample,
+                                 camOp                = camop_no_problem,
+                                 stationCol           = "Station",
+                                 speciesCol           = "Species",
+                                 recordDateTimeCol    = "DateTimeOriginal",
+                                 recordDateTimeFormat = "ymd HMS",
+                                 species              = "VTA",
+                                 occasionLength       = 7,
+                                 day1                 = "station",
+                                 datesAsOccasionNames = FALSE,
+                                 includeEffort        = TRUE,
+                                 scaleEffort          = FALSE,
+                                 timeZone             = "Asia/Kuala_Lumpur"
+)    
+
+DetHist2_lub$detection_history  # detection history  (alternatively, use: DetHist2_lub[[1]])
+DetHist2_lub$effort             # effort (alternatively, use: DetHist2_lub[[2]])
+
+
+# multi-season detection history
+
+# load multi-season data
+data(camtrapsMultiSeason)
+data(recordTableSampleMultiSeason)
+
+# multi-season camera operation matrix
+camop_season &lt;- cameraOperation(CTtable          = camtrapsMultiSeason,
+                                    stationCol   = "Station",
+                                    setupCol     = "Setup_date",
+                                    sessionCol   = "session",
+                                    retrievalCol = "Retrieval_date",
+                                    hasProblems  = TRUE,
+                                    dateFormat   = "dmy"
+)
+
+# multi-season detection history
+DetHist_multi &lt;- detectionHistory(recordTable      = recordTableSampleMultiSeason,
+                            camOp                  = camop_season,
+                            stationCol             = "Station",
+                            speciesCol             = "Species",
+                            species                = "VTA",
+                            occasionLength         = 10,
+                            day1                   = "station",
+                            recordDateTimeCol      = "DateTimeOriginal",
+                            includeEffort          = TRUE,
+                            scaleEffort            = FALSE,
+                            timeZone               = "UTC",
+                            unmarkedMultFrameInput = TRUE
+)
+
+DetHist_multi
+
+
+</code></pre>
+
+
+</div>

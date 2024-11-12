@@ -1,0 +1,256 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CLONETv2-package</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+CLONETv2
+</h2>
+
+<h3>Description</h3>
+
+<p>This package is designed to analyze data from next-generation sequencing
+experiments on genomic samples. It offers a
+set of functions to compute allele specific copy number and
+clonality from segmented data and SNPs position pileup. The library
+also calculated the clonality of single nucleotide variants given
+read counts at mutated positions.
+</p>
+<p>The package has been developed at the laboratory of Computational and Functional Oncology,
+Department of CIBIO, University of Trento (Italy), under the supervision of prof.
+Francesca Demichelis.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Maintainer:
+Davide Prandi
+</p>
+<p>Contributors:
+Tarcisio Fedrizzi, Alessandro Romanel
+</p>
+
+
+<h3>References</h3>
+
+<p>Prandi, D., Baca, S. C., Romanel, A., Barbieri, C. E., Mosquera, J. M., Fontugne, J., Beltran,
+H., Sboner,
+A., Garraway, L. A., Rubin, M. A., and Demichelis, F. (2014). Unraveling the clonal hierarchy of
+somatic genomic aberrations. Genome biology 15, 439.
+</p>
+<p>Carreira, S., Romanel, A., Goodall, J., Grist, E., Ferraldeschi, R., Miranda, S., Prandi, D.,
+Lorente, D.,
+Frenel, J. S., Pezaro, C., et al. (2014). Tumor clone dynamics in lethal prostate cancer. Science
+translational medicine 6, 254ra125.
+</p>
+<p>Beltran, H., Eng, K., Mosquera, J. M., Sigaras, A., Romanel, A., Rennert, H., Kossai, M.,
+Pauli, C.,
+Faltas, B., Fontugne, J., et al. (2015). Whole-Exome Sequencing of Metastatic Cancer and
+Biomarkers
+of Treatment Response. JAMA Oncol 1, 466-474.
+</p>
+<p>Faltas, B. M., Prandi, D., Tagawa, S. T., Molina, A. M., Nanus, D. M., Sternberg, C.,
+Rosenberg, J.,
+Mosquera, J. M., Robinson, B., Elemento, O., et al. (2016). Clonal evolution of
+chemotherapyresistant
+urothelial carcinoma. Nature genetics 48, 1490-1499.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+###############
+###############
+## Diploid tumor sample
+
+## Load example data
+seg_tb &lt;- read.table(system.file("sample1.seg", package = "CLONETv2"),header = TRUE, as.is=TRUE)
+pileup_tumor &lt;- read.table(
+  gzfile(system.file("sample1_tumor_pileup.tsv.gz", package = "CLONETv2")),
+  header = TRUE, as.is=TRUE)
+pileup_normal &lt;- read.table(
+  gzfile(system.file("sample1_normal_pileup.tsv.gz", package = "CLONETv2")),
+  header = TRUE, as.is=TRUE)
+snv_reads &lt;- read.table(system.file("sample1_snv_read_count.tsv", package = "CLONETv2"),
+  header = TRUE, as.is=TRUE, comment.char = "", check.names = FALSE, na.strings = "-")
+
+## Compute beta table with default parameters
+bt &lt;- compute_beta_table(seg_tb, pileup_tumor, pileup_normal)
+
+## Compute ploidy table with default parameters
+pl_table &lt;- compute_ploidy(bt)
+
+## Compute admixture table with default parameters (admixture= 1-tumor_purity)
+adm_table &lt;- compute_dna_admixture(beta_table = bt, ploidy_table = pl_table)
+
+## Check ploidy and admixture estimates
+check_plot &lt;-  check_ploidy_and_admixture(beta_table = bt, ploidy_table = pl_table,
+  admixture_table = adm_table)
+print(check_plot)
+
+## Compute clonality table with default parameters
+scna_clonality_table &lt;- compute_scna_clonality_table(beta_table = bt, ploidy_table = pl_table,
+  admixture_table = adm_table)
+
+## Compute allele specific scna
+allele_specific_cna_table &lt;- compute_allele_specific_scna_table(beta_table = bt,
+  ploidy_table = pl_table, admixture_table = adm_table)
+
+## Compute snvs colonality
+sample_id &lt;- "sample1"
+snv_clonality_table &lt;- compute_snv_clonality(sample_id = sample_id, snv_read_count = snv_reads,
+  beta_table = bt, ploidy_table = pl_table, admixture_table = adm_table)
+
+
+###############
+###############
+## Aneuploid tumor sample
+
+## Load example data
+seg_tb &lt;- read.table(system.file("sample2.seg", package = "CLONETv2"),header = TRUE, as.is=TRUE)
+pileup_tumor &lt;- read.table(
+  gzfile(system.file("sample2_tumor_pileup.tsv.gz", package = "CLONETv2")),
+  header = TRUE, as.is=TRUE)
+pileup_normal &lt;- read.table(
+  gzfile(system.file("sample2_normal_pileup.tsv.gz", package = "CLONETv2")),
+  header = TRUE, as.is=TRUE)
+snv_reads &lt;- read.table(system.file("sample2_snv_read_count.tsv", package = "CLONETv2"),
+  header = TRUE, as.is=TRUE, comment.char = "", check.names = FALSE, na.strings = "-")
+
+## Compute beta table with default parameters
+bt &lt;- compute_beta_table(seg_tb, pileup_tumor, pileup_normal)
+
+## Compute ploidy table with default parameters
+pl_table &lt;- compute_ploidy(bt)
+
+## Compute admixture table with default parameters (admixture= 1-tumor_purity)
+adm_table &lt;- compute_dna_admixture(beta_table = bt, ploidy_table = pl_table)
+
+## Check ploidy and admixture estimates
+check_plot &lt;-  check_ploidy_and_admixture(beta_table = bt, ploidy_table = pl_table,
+  admixture_table = adm_table)
+print(check_plot)
+
+## Compute clonality table with default parameters
+scna_clonality_table &lt;- compute_scna_clonality_table(beta_table = bt, ploidy_table = pl_table,
+  admixture_table = adm_table)
+
+## Compute allele specific scna
+allele_specific_cna_table &lt;- compute_allele_specific_scna_table(beta_table = bt,
+  ploidy_table = pl_table, admixture_table = adm_table)
+
+## Compute snvs colonality
+sample_id &lt;- "sample2"
+snv_clonality_table &lt;- compute_snv_clonality(sample_id = sample_id, snv_read_count = snv_reads,
+  beta_table = bt, ploidy_table = pl_table, admixture_table = adm_table)
+
+
+###############
+###############
+## Aneuploidy tumor sample with problematic ploidy estimate
+
+## Load example data
+seg_tb &lt;- read.table(system.file("sample3.seg", package = "CLONETv2"),header = TRUE, as.is=TRUE)
+pileup_tumor &lt;- read.table(
+  gzfile(system.file("sample3_tumor_pileup.tsv.gz", package = "CLONETv2")),
+  header = TRUE, as.is=TRUE)
+pileup_normal &lt;- read.table(
+  gzfile(system.file("sample3_normal_pileup.tsv.gz", package = "CLONETv2")),
+  header = TRUE, as.is=TRUE)
+
+## Compute beta table with default parameters
+bt &lt;- compute_beta_table(seg_tb, pileup_tumor, pileup_normal)
+
+## Compute ploidy table with default parameters
+pl_table &lt;- compute_ploidy(bt)
+
+## Compute admixture table with default parameters (admixture= 1-tumor_purity)
+adm_table &lt;- compute_dna_admixture(beta_table = bt, ploidy_table = pl_table)
+
+## Check ploidy and admixture estimates
+check_plot &lt;-  check_ploidy_and_admixture(beta_table = bt, ploidy_table = pl_table,
+  admixture_table = adm_table)
+print(check_plot)
+## Observed data (gray points) does not fit with expcted positions (Red circles)
+
+
+###############
+###############
+## Tumor sample with problem in the segmented input data
+
+## Load example data
+seg_tb &lt;- read.table(system.file("sample4.seg", package = "CLONETv2"),header = TRUE, as.is=TRUE)
+pileup_tumor &lt;- read.table(
+  gzfile(system.file("sample4_tumor_pileup.tsv.gz", package = "CLONETv2")),
+  header = TRUE, as.is=TRUE)
+pileup_normal &lt;- read.table(
+  gzfile(system.file("sample4_normal_pileup.tsv.gz", package = "CLONETv2")),
+  header = TRUE, as.is=TRUE)
+
+## Compute beta table with default parameters
+bt &lt;- compute_beta_table(seg_tb, pileup_tumor, pileup_normal)
+
+## Compute ploidy table with default parameters
+pl_table &lt;- compute_ploidy(bt)
+
+## Compute admixture table with default parameters (admixture= 1-tumor_purity)
+adm_table &lt;- compute_dna_admixture(beta_table = bt, ploidy_table = pl_table)
+
+## Check ploidy and admixture estimates
+check_plot &lt;-  check_ploidy_and_admixture(beta_table = bt, ploidy_table = pl_table,
+  admixture_table = adm_table)
+print(check_plot)
+## CLONETv2 does not provide an estimate of the DNA admixture because
+## (LogR, beta) data does not fit any CLONETv2 model
+
+
+###############
+###############
+## Diploid tumor sample with subclonal hemizygous and homozygous deletions
+
+## Load example data
+seg_tb &lt;- read.table(system.file("sample5.seg", package = "CLONETv2"),header = TRUE, as.is=TRUE)
+pileup_tumor &lt;- read.table(
+  gzfile(system.file("sample5_tumor_pileup.tsv.gz", package = "CLONETv2")),
+  header = TRUE, as.is=TRUE)
+pileup_normal &lt;- read.table(
+  gzfile(system.file("sample5_normal_pileup.tsv.gz", package = "CLONETv2")),
+  header = TRUE, as.is=TRUE)
+snv_reads &lt;- read.table(system.file("sample5_snv_read_count.tsv", package = "CLONETv2"),
+  header = TRUE, as.is=TRUE, comment.char = "", check.names = FALSE, na.strings = "-")
+
+## Compute beta table with default parameters
+bt &lt;- compute_beta_table(seg_tb, pileup_tumor, pileup_normal)
+
+## Compute ploidy table with default parameters
+pl_table &lt;- compute_ploidy(bt)
+
+## Compute admixture table with default parameters (admixture= 1-tumor_purity)
+adm_table &lt;- compute_dna_admixture(beta_table = bt, ploidy_table = pl_table)
+
+## Check ploidy and admixture estimates
+check_plot &lt;-  check_ploidy_and_admixture(beta_table = bt, ploidy_table = pl_table,
+  admixture_table = adm_table)
+print(check_plot)
+
+## Compute clonality table with default parameters
+scna_clonality_table &lt;- compute_scna_clonality_table(beta_table = bt, ploidy_table = pl_table,
+  admixture_table = adm_table)
+
+## Compute allele specific scna
+allele_specific_cna_table &lt;- compute_allele_specific_scna_table(beta_table = bt,
+  ploidy_table = pl_table, admixture_table = adm_table)
+
+## Compute snvs colonality
+sample_id &lt;- "sample5"
+snv_clonality_table &lt;- compute_snv_clonality(sample_id = sample_id, snv_read_count = snv_reads,
+  beta_table = bt, ploidy_table = pl_table, admixture_table = adm_table)
+
+
+</code></pre>
+
+
+</div>

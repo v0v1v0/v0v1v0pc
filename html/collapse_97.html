@@ -1,0 +1,165 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fmatch</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fast Matching</h2>
+
+<h3>Description</h3>
+
+<p>Fast matching of elements/rows in <code>x</code> to elements/rows in <code>table</code>.
+</p>
+<p>This is a much faster replacement for <code>match</code> that works
+with atomic vectors and data frames / lists of equal-length vectors. It is the workhorse function of <code>join</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fmatch(x, table, nomatch = NA_integer_,
+       count = FALSE, overid = 1L)
+
+# Check match: throws an informative error for non-matched elements
+# Default message reflects frequent internal use to check data frame columns
+ckmatch(x, table, e = "Unknown columns:", ...)
+
+# Infix operators based on fmatch():
+x %!in% table   # Opposite of %in%
+x %iin% table   # = which(x %in% table), but more efficient
+x %!iin% table  # = which(x %!in% table), but more efficient
+# Use set_collapse(mask = "%in%") to replace %in% with
+# a much faster version based on fmatch()
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a vector, list or data frame whose elements are matched against <code>table</code>. If a list/data frame, matches are found by comparing rows, unlike <code>match</code> which compares columns. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>table</code></td>
+<td>
+<p>a vector, list or data frame to match against.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nomatch</code></td>
+<td>
+<p>integer. Value to be returned in the case when no match is found. Default is <code>NA_integer_</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>count</code></td>
+<td>
+<p>logical. Counts number of (unique) matches and attaches 4 attributes:
+</p>
+
+<ul>
+<li> <p><code>"N.nomatch"</code>: The number of elements in <code>x</code> not matched <code>= sum(result == nomatch)</code>.
+</p>
+</li>
+<li> <p><code>"N.groups"</code>: The size of the table <code> = NROW(table)</code>.
+</p>
+</li>
+<li> <p><code>"N.distinct"</code>: The number of unique matches <code> = fndistinct(result[result != nomatch])</code>.
+</p>
+</li>
+<li> <p><code>"class"</code>: The <code>"qG"</code> class: needed for optimized computations on the results object (e.g. <code>funique(result)</code>, which is needed for a full join).
+</p>
+</li>
+</ul>
+<p><em>Note</em> that computing these attributes requires an extra pass through the matching vector. Also note that these attributes contain no general information about whether either <code>x</code> or <code>table</code> are unique, except for two special cases when N.groups = N.distinct (table is unique) or length(result) = N.distinct (x is unique). Otherwise use <code>any_duplicated</code> to check x/table.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>overid</code></td>
+<td>
+<p>integer. If <code>x/table</code> are lists/data frames, <code>fmatch</code> compares the rows incrementally, starting with the first two columns, and matching further columns as necessary (see Details). Overidentification corresponds to the case when a subset of the columns uniquely identify the data. In this case this argument controls the behavior:
+</p>
+
+<ul>
+<li> <p><code>0</code>: Early termination: stop matching additional columns. Most efficient.
+</p>
+</li>
+<li> <p><code>1</code>: Continue matching columns and issue a warning that the data is overidentified.
+</p>
+</li>
+<li> <p><code>2</code>: Continue matching columns without warning.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>e</code></td>
+<td>
+<p>the error message thrown by <code>ckmatch</code> for non-matched elements. The message is followed by the comma-separated non-matched elements.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>further arguments to <code>fmatch</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>With data frames / lists, <code>fmatch</code> compares the rows but moves through the data on a column-by-column basis (like a vectorized hash join algorithm). With two or more columns, the first two columns are hashed simultaneously for speed. Further columns can be added to this match. It is likely that the first 2, 3, 4 etc. columns of a data frame fully identify the data. After each column <code>fmatch()</code> internally checks whether the <code>table</code> rows that are still eligible for matching (eliminating <code>nomatch</code> rows from earlier columns) are unique. If this is the case and <code>overid = 0</code>, <code>fmatch()</code> terminates early without considering further columns. This is efficient but may give undesirable/wrong results if considering further columns would turn some additional elements of the result vector into <code>nomatch</code> values.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Integer vector containing the positions of first matches of <code>x</code> in <code>table</code>. <code>nomatch</code> is returned for elements of <code>x</code> that have no match in <code>table</code>. If <code>count = TRUE</code>, the result has additional attributes and a class <code>"qG"</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>join</code>, <code>funique</code>, <code>group</code>, Fast Grouping and Ordering, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">x &lt;- c("b", "c", "a", "e", "f", "ff")
+fmatch(x, letters)
+fmatch(x, letters, nomatch = 0)
+fmatch(x, letters, count = TRUE)
+
+# Table 1
+df1 &lt;- data.frame(
+  id1 = c(1, 1, 2, 3),
+  id2 = c("a", "b", "b", "c"),
+  name = c("John", "Bob", "Jane", "Carl")
+)
+head(df1)
+# Table 2
+df2 &lt;- data.frame(
+  id1 = c(1, 2, 3, 3),
+  id2 = c("a", "b", "c", "e"),
+  name = c("John", "Janne", "Carl", "Lynne")
+)
+head(df2)
+
+# This gives an overidentification warning: columns 1:2 identify the data
+if(FALSE) fmatch(df1, df2)
+# This just runs through without warning
+fmatch(df1, df2, overid = 2)
+# This terminates computation after first 2 columns
+fmatch(df1, df2, overid = 0)
+fmatch(df1[1:2], df2[1:2])  # Same thing!
+# -&gt; note that here we get an additional match based on the unique ids,
+# which we didn't get before because "Jane" != "Janne"
+</code></pre>
+
+
+</div>

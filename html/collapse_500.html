@@ -1,0 +1,184 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>recode-replace</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Recode and Replace Values in Matrix-Like Objects
+</h2>
+
+<h3>Description</h3>
+
+<p>A small suite of functions to efficiently perform common recoding and replacing tasks in matrix-like objects.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">recode_num(X, ..., default = NULL, missing = NULL, set = FALSE)
+
+recode_char(X, ..., default = NULL, missing = NULL, regex = FALSE,
+            ignore.case = FALSE, fixed = FALSE, set = FALSE)
+
+replace_na(X, value = 0, cols = NULL, set = FALSE, type = "const")
+
+replace_inf(X, value = NA, replace.nan = FALSE, set = FALSE)
+
+replace_outliers(X, limits, value = NA,
+                 single.limit = c("sd", "mad", "min", "max"),
+                 ignore.groups = FALSE, set = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>a vector, matrix, array, data frame or list of atomic objects. <code>replace_outliers</code> has internal methods for grouped and indexed data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>comma-separated recode arguments of the form: <code>value = replacement, `2` = 0, Secondary = "SEC"</code> etc. <code>recode_char</code> with <code>regex = TRUE</code> also supports regular expressions i.e. <code>`^S|D$` = "STD"</code> etc.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>default</code></td>
+<td>
+<p>optional argument to specify a scalar value to replace non-matched elements with.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>missing</code></td>
+<td>
+<p>optional argument to specify a scalar value to replace missing elements with. <em>Note</em> that to increase efficiency this is done before the rest of the recoding i.e. the recoding is performed on data where missing values are filled!</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>set</code></td>
+<td>
+<p>logical. <code>TRUE</code> does replacements by reference (i.e. in-place modification of the data) and returns the result invisibly.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>character. One of <code>"const"</code>, <code>"locf"</code> (last non-missing observation carried forward) or <code>"focb"</code> (first non-missing observation carried back). The latter two ignore <code>value</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>regex</code></td>
+<td>
+<p>logical. If <code>TRUE</code>, all recode-argument names are (sequentially) passed to <code>grepl</code> as a pattern to search <code>X</code>. All matches are replaced. <em>Note</em> that <code>NA</code>'s are also matched as strings by <code>grepl</code>. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>value</code></td>
+<td>
+<p>a single (scalar) value to replace matching elements with. In <code>replace_outliers</code> setting <code>value = "clip"</code> will replace outliers with the corresponding threshold values. See Examples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cols</code></td>
+<td>
+<p>select columns to replace missing values in using a function, column names, indices or a logical vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>replace.nan</code></td>
+<td>
+<p>logical. <code>TRUE</code> replaces <code>NaN/Inf/-Inf</code>. <code>FALSE</code> (default) replaces only <code>Inf/-Inf</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>limits</code></td>
+<td>
+<p>either a vector of two-numeric values <code>c(minval, maxval)</code> constituting a two-sided outlier threshold, or a single numeric value:</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>single.limit</code></td>
+<td>
+<p>character, controls the behavior if <code>length(limits) == 1</code>:
+</p>
+
+<ul>
+<li> <p><code>"sd"/"mad":</code> <code>limits</code> will be interpreted as a (two-sided) outlier threshold in terms of (column) standard deviations/median absolute deviations. For the standard deviation this is equivalent to <code>X[abs(fscale(X)) &gt; limits] &lt;- value</code>. Since <code>fscale</code> is S3 generic with methods for 'grouped_df', 'pseries' and 'pdata.frame', the standardizing will be grouped if such objects are passed (i.e. the outlier threshold is then measured in within-group standard deviations) unless <code>ignore.groups = TRUE</code>. The same holds for median absolute deviations.
+</p>
+</li>
+<li> <p><code>"min"/"max":</code> <code>limits</code> will be interpreted as a (one-sided) minimum/maximum threshold. The underlying code is equivalent to <code>X[X &lt;/&gt; limits] &lt;- value</code>.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ignore.groups</code></td>
+<td>
+<p>logical. If <code>length(limits) == 1</code> and <code>single.limit %in% c("sd", "mad")</code> and <code>X</code> is a 'grouped_df', 'pseries' or 'pdata.frame', <code>TRUE</code> will ignore the grouped nature of the data and calculate outlier thresholds on the entire dataset rather than within each group.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ignore.case, fixed</code></td>
+<td>
+<p>logical. Passed to <code>grepl</code> and only applicable if <code>regex = TRUE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+
+<ul>
+<li> <p><code>recode_num</code> and <code>recode_char</code> can be used to efficiently recode multiple numeric or character values, respectively. The syntax is inspired by <code>dplyr::recode</code>, but the functionality is enhanced in the following respects: (1) when passed a data frame / list, all appropriately typed columns will be recoded. (2) They preserve the attributes of the data object and of columns in a data frame / list, and (3) <code>recode_char</code> also supports regular expression matching using <code>grepl</code>.
+</p>
+</li>
+<li> <p><code>replace_na</code> efficiently replaces <code>NA/NaN</code> with a value (default is <code>0</code>). data can be multi-typed, in which case appropriate columns can be selected through the <code>cols</code> argument. For numeric data a more versatile alternative is provided by <code>data.table::nafill</code> and <code>data.table::setnafill</code>.
+</p>
+</li>
+<li> <p><code>replace_inf</code> replaces <code>Inf/-Inf</code> (or optionally <code>NaN/Inf/-Inf</code>) with a value (default is <code>NA</code>). It skips non-numeric columns in a data frame.
+</p>
+</li>
+<li> <p><code>replace_outliers</code> replaces values falling outside a 1- or 2-sided numeric threshold or outside a certain number of standard deviations or median absolute deviation with a value (default is <code>NA</code>). It skips non-numeric columns in a data frame.
+</p>
+</li>
+</ul>
+<h3>Note</h3>
+
+<p>These functions are not generic and do not offer support for factors or date(-time) objects. see <code>dplyr::recode_factor</code>, <em>forcats</em> and other appropriate packages for dealing with these classes.
+</p>
+<p>Simple replacing tasks on a vector can also effectively be handled by, <code>setv</code> / <code>copyv</code>. Fast vectorized switches are offered by package <em>kit</em> (functions <code>iif</code>, <code>nif</code>, <code>vswitch</code>, <code>nswitch</code>) as well as <code>data.table::fcase</code> and <code>data.table::fifelse</code>. Using switches is more efficient than <code>recode_*</code>, as <code>recode_*</code> creates an internal copy of the object to enable cross-replacing.
+</p>
+<p>Function <code>TRA</code>, and the associated <code>TRA</code> ('transform') argument to Fast Statistical Functions also has option <code>"replace_na"</code>, to replace missing values with a statistic computed on the non-missing observations, e.g. <code>fmedian(airquality, TRA = "replace_na")</code> does median imputation.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>pad</code>, Efficient Programming, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">recode_char(c("a","b","c"), a = "b", b = "c")
+recode_char(month.name, ber = NA, regex = TRUE)
+mtcr &lt;- recode_num(mtcars, `0` = 2, `4` = Inf, `1` = NaN)
+replace_inf(mtcr)
+replace_inf(mtcr, replace.nan = TRUE)
+replace_outliers(mtcars, c(2, 100))                 # Replace all values below 2 and above 100 w. NA
+replace_outliers(mtcars, c(2, 100), value = "clip") # Clipping outliers to the thresholds
+replace_outliers(mtcars, 2, single.limit = "min")   # Replace all value smaller than 2 with NA
+replace_outliers(mtcars, 100, single.limit = "max") # Replace all value larger than 100 with NA
+replace_outliers(mtcars, 2)                         # Replace all values above or below 2 column-
+                                                    # standard-deviations from the column-mean w. NA
+replace_outliers(fgroup_by(iris, Species), 2)       # Passing a grouped_df, pseries or pdata.frame
+                                                    # allows to remove outliers according to
+                                                    # in-group standard-deviation. see ?fscale
+</code></pre>
+
+
+</div>

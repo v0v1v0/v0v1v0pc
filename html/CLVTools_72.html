@@ -1,0 +1,198 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>clvdata</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create an object for transactional data required to estimate CLV</h2>
+
+<h3>Description</h3>
+
+<p>Creates a data object that contains the prepared transaction data and that is used as input for
+model fitting. The transaction data may be split in an estimation and holdout sample if desired.
+The model then will only be fit on the estimation sample.
+</p>
+<p>If covariates should be used when fitting a model, covariate data can be added
+to an object returned from this function.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">clvdata(
+  data.transactions,
+  date.format,
+  time.unit,
+  estimation.split = NULL,
+  name.id = "Id",
+  name.date = "Date",
+  name.price = "Price"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data.transactions</code></td>
+<td>
+<p>Transaction data as <code>data.frame</code> or <code>data.table</code>. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>date.format</code></td>
+<td>
+<p>Character string that indicates the format of the date variable in the data used. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time.unit</code></td>
+<td>
+<p>What time unit defines a period. May be abbreviated, capitalization is ignored. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estimation.split</code></td>
+<td>
+<p>Indicates the length of the estimation period. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name.id</code></td>
+<td>
+<p>Column name of the customer id in <code>data.transactions</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name.date</code></td>
+<td>
+<p>Column name of the transaction date in <code>data.transactions</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name.price</code></td>
+<td>
+<p>Column name of price in <code>data.transactions</code>. NULL if no spending data is present.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>data.transactions</code> A <code>data.frame</code> or <code>data.table</code> with customers' purchase history.
+Every transaction record consists of a purchase date and a customer id.
+Optionally, the price of the transaction may be included to also allow for prediction
+of future customer spending.
+</p>
+<p><code>time.unit</code> The definition of a single period. Currently available are <code>"hours"</code>, <code>"days"</code>, <code>"weeks"</code>, and <code>"years"</code>.
+May be abbreviated.
+</p>
+<p><code>date.format</code> A single format to use when parsing any date that is given as character input. This includes
+the dates given in <code>data.transaction</code>, <code>estimation.split</code>, or as an input to any other function at
+a later point, such as <code>prediction.end</code> in <code>predict</code>.
+The function <code>parse_date_time</code> of package <code>lubridate</code> is used to parse inputs
+and hence all formats it accepts in argument <code>orders</code> can be used. For example, a date of format "year-month-day"
+(i.e., "2010-06-17") is indicated with <code>"ymd"</code>. Other combinations such as <code>"dmy"</code>, <code>"dym"</code>,
+<code>"ymd HMS"</code>, or <code>"HMS dmy"</code> are possible as well.
+</p>
+<p><code>estimation.split</code> May be specified as either the number of periods since the first transaction or the timepoint
+(either as character, Date, or POSIXct) at which the estimation period ends. The indicated timepoint itself will be part of the estimation sample.
+If no value is provided or set to <code>NULL</code>, the whole dataset will used for fitting the model (no holdout sample).
+</p>
+
+
+<h4>Aggregation of Transactions</h4>
+
+<p>Multiple transactions by the same customer that occur on the minimally representable temporal resolution are aggregated to a
+single transaction with their spending summed. For time units <code>days</code> and any other coarser <code>Date</code>-based
+time units (i.e. <code>weeks</code>, <code>years</code>), this means that transactions on the same day are combined.
+When using finer time units such as <code>hours</code> which are based on <code>POSIXct</code>, transactions on the same second are aggregated.
+</p>
+<p>For the definition of repeat-purchases, combined transactions are viewed as a single transaction. Hence, repeat-transactions
+are determined from the aggregated transactions.
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>clv.data</code>.
+See the class definition clv.data
+for more details about the returned object.
+</p>
+<p>The function <code>summary</code> can be used to obtain and print a summary of the data.
+The generic accessor function <code>nobs</code> is available to read out the number of customers.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>SetStaticCovariates</code> to add static covariates
+</p>
+<p><code>SetDynamicCovariates</code> for how to add dynamic covariates
+</p>
+<p><code>plot</code> to plot the repeat transactions
+</p>
+<p><code>summary</code> to summarize the transaction data
+</p>
+<p><code>pnbd</code> to fit Pareto/NBD models on a <code>clv.data</code> object
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+
+data("cdnow")
+
+# create clv data object with weekly periods
+#    and no splitting
+clv.data.cdnow &lt;- clvdata(data.transactions = cdnow,
+                          date.format="ymd",
+                          time.unit = "weeks")
+
+# same but split after 37 periods
+clv.data.cdnow &lt;- clvdata(data.transactions = cdnow,
+                          date.format="ymd",
+                          time.unit = "w",
+                          estimation.split = 37)
+
+# same but estimation end on the 15th Oct 1997
+clv.data.cdnow &lt;- clvdata(data.transactions = cdnow,
+                          date.format="ymd",
+                          time.unit = "w",
+                          estimation.split = "1997-10-15")
+
+# summary of the transaction data
+summary(clv.data.cdnow)
+
+# plot the total number of transactions per period
+plot(clv.data.cdnow)
+
+## Not run: 
+# create data with the weekly periods defined to
+#   start on Mondays
+
+# set start of week to Monday
+oldopts &lt;- options("lubridate.week.start"=1)
+
+# create clv.data while Monday is the beginning of the week
+clv.data.cdnow &lt;- clvdata(data.transactions = cdnow,
+                          date.format="ymd",
+                          time.unit = "weeks")
+
+# Dynamic covariates now have to be supplied for every Monday
+
+# set week start to what it was before
+options(oldopts)
+
+## End(Not run)
+
+
+
+
+</code></pre>
+
+
+</div>

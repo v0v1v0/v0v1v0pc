@@ -1,0 +1,240 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fmode</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fast (Grouped, Weighted) Statistical Mode for Matrix-Like Objects</h2>
+
+<h3>Description</h3>
+
+<p><code>fmode</code> is a generic function and returns the (column-wise) statistical mode i.e. the most frequent value of <code>x</code>, (optionally) grouped by <code>g</code> and/or weighted by <code>w</code>.
+The <code>TRA</code> argument can further be used to transform <code>x</code> using its (grouped, weighted) mode. Ties between multiple possible modes can be resolved by taking the minimum, maximum, (default) first or last occurring mode.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fmode(x, ...)
+
+## Default S3 method:
+fmode(x, g = NULL, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+      use.g.names = TRUE, ties = "first", nthreads = .op[["nthreads"]], ...)
+
+## S3 method for class 'matrix'
+fmode(x, g = NULL, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+      use.g.names = TRUE, drop = TRUE, ties = "first", nthreads = .op[["nthreads"]], ...)
+
+## S3 method for class 'data.frame'
+fmode(x, g = NULL, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+      use.g.names = TRUE, drop = TRUE, ties = "first", nthreads = .op[["nthreads"]], ...)
+
+## S3 method for class 'grouped_df'
+fmode(x, w = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+      use.g.names = FALSE, keep.group_vars = TRUE, keep.w = TRUE, stub = .op[["stub"]],
+      ties = "first", nthreads = .op[["nthreads"]], ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a vector, matrix, data frame or grouped data frame (class 'grouped_df').</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>g</code></td>
+<td>
+<p>a factor, <code>GRP</code> object, atomic vector (internally converted to factor) or a list of vectors / factors (internally converted to a <code>GRP</code> object) used to group <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>a numeric vector of (non-negative) weights, may contain missing values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>TRA</code></td>
+<td>
+<p>an integer or quoted operator indicating the transformation to perform:
+0 - "na"     |     1 - "fill"     |     2 - "replace"     |     3 - "-"     |     4 - "-+"     |     5 - "/"     |     6 - "%"     |     7 - "+"     |     8 - "*"     |     9 - "%%"     |     10 - "-%%". See <code>TRA</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.rm</code></td>
+<td>
+<p>logical. Skip missing values in <code>x</code>. Defaults to <code>TRUE</code> and implemented at very little computational cost. If <code>na.rm = FALSE</code>, <code>NA</code> is treated as any other value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use.g.names</code></td>
+<td>
+<p>logical. Make group-names and add to the result as names (default method) or row-names (matrix and data frame methods). No row-names are generated for <em>data.table</em>'s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ties</code></td>
+<td>
+<p>an integer or character string specifying the method to resolve ties between multiple possible modes i.e. multiple values with the maximum frequency or sum of weights:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<em> Int. </em>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> String </em>   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> <em> Description </em>  </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 1 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "first"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> take the first occurring mode. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 2 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "min" </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> take the smallest of the possible modes. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 3 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "max"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> take the largest of the possible modes. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                 4 </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> "last"   </td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> take the last occurring mode. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+                </td>
+</tr>
+</table>
+<p><em>Note:</em> <code>"min"/"max"</code> don't work with character data. 
+See also Details.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nthreads</code></td>
+<td>
+<p>integer. The number of threads to utilize. Parallelism is across groups for grouped computations and at the column-level otherwise. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop</code></td>
+<td>
+<p><em>matrix and data.frame method:</em> Logical. <code>TRUE</code> drops dimensions and returns an atomic vector if <code>g = NULL</code> and <code>TRA = NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.group_vars</code></td>
+<td>
+<p><em>grouped_df method:</em> Logical. <code>FALSE</code> removes grouping variables after computation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.w</code></td>
+<td>
+<p><em>grouped_df method:</em> Logical. Retain <code>sum</code> of weighting variable after computation (if contained in <code>grouped_df</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stub</code></td>
+<td>
+<p>character. If <code>keep.w = TRUE</code> and <code>stub = TRUE</code> (default), the summed weights column is prefixed by <code>"sum."</code>. Users can specify a different prefix through this argument, or set it to <code>FALSE</code> to avoid prefixing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments to be passed to or from other methods. If <code>TRA</code> is used, passing <code>set = TRUE</code> will transform data by reference and return the result invisibly.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>fmode</code> implements a pretty fast C-level hashing algorithm inspired by the <em>kit</em> package to find the statistical mode. 
+</p>
+
+<p>If <code>na.rm = FALSE</code>, <code>NA</code> is not removed but treated as any other value (i.e. its frequency is counted). If all values are <code>NA</code>, <code>NA</code> is always returned.
+</p>
+<p>The weighted mode is computed by summing up the weights for all distinct values and choosing the value with the largest sum. If <code>na.rm = TRUE</code>, missing values will be removed from both <code>x</code> and <code>w</code> i.e. utilizing only <code>x[complete.cases(x,w)]</code> and <code>w[complete.cases(x,w)]</code>.
+</p>
+<p>It is possible that multiple values have the same mode (the maximum frequency or sum of weights). Typical cases are simply when all values are either all the same or all distinct. In such cases, the default option <code>ties = "first"</code> returns the first occurring value in the data reaching the maximum frequency count or sum of weights. For example in a sample <code>x = c(1, 3, 2, 2, 4, 4, 1, 7)</code>, the first mode is 2 as <code>fmode</code> goes through the data from left to right. <code>ties = "last"</code> on the other hand gives 1. It is also possible to take the minimum or maximum mode, i.e. <code>fmode(x, ties = "min")</code> returns 1, and <code>fmode(x, ties = "max")</code> returns 4. It should be noted that options <code>ties = "min"</code> and <code>ties = "max"</code> give unintuitive results for character data (no strict alphabetic sorting, similar to using <code>&lt;</code> and <code>&gt;</code> to compare character values in R). These options are also best avoided if missing values are counted (<code>na.rm = FALSE</code>) since no proper logical comparison with missing values is possible: With numeric data it depends, since in C++ any comparison with <code>NA_real_</code> evaluates to <code>FALSE</code>, <code>NA_real_</code> is chosen as the min or max mode only if it is also the first mode, and never otherwise. For integer data, <code>NA_integer_</code> is stored as the smallest integer in C++, so it will always be chosen as the min mode and never as the max mode. For character data, <code>NA_character_</code> is stored as the string <code>"NA"</code> in C++ and thus the behavior depends on the other character content. 
+</p>
+
+<p><code>fmode</code> preserves all the attributes of the objects it is applied to (apart from names or row-names which are adjusted as necessary in grouped operations). If a data frame is passed to <code>fmode</code> and <code>drop = TRUE</code> (the default), <code>unlist</code> will be called on the result, which might not be sensible depending on the data at hand.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The (<code>w</code> weighted) statistical mode of <code>x</code>, grouped by <code>g</code>, or (if <code>TRA</code> is used) <code>x</code> transformed by its (grouped, weighed) mode. 
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fmean</code>, <code>fmedian</code>, Fast Statistical Functions, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">x &lt;- c(1, 3, 2, 2, 4, 4, 1, 7, NA, NA, NA)
+fmode(x)                            # Default is ties = "first"
+fmode(x, ties = "last")
+fmode(x, ties = "min")
+fmode(x, ties = "max")
+fmode(x, na.rm = FALSE)             # Here NA is the mode, regardless of ties option
+fmode(x[-length(x)], na.rm = FALSE) # Not anymore..
+
+## World Development Data
+attach(wlddev)
+## default vector method
+fmode(PCGDP)                      # Numeric mode
+head(fmode(PCGDP, iso3c))         # Grouped numeric mode
+head(fmode(PCGDP, iso3c, LIFEEX)) # Grouped and weighted numeric mode
+fmode(region)                     # Factor mode
+fmode(date)                       # Date mode (defaults to first value since panel is balanced)
+fmode(country)                    # Character mode (also defaults to first value)
+fmode(OECD)                       # Logical mode
+                                  # ..all the above can also be performed grouped and weighted
+## matrix method
+m &lt;- qM(airquality)
+fmode(m)
+fmode(m, na.rm = FALSE)         # NA frequency is also counted
+fmode(m, airquality$Month)      # Groupwise
+fmode(m, w = airquality$Day)    # Weighted: Later days in the month are given more weight
+fmode(m&gt;50, airquality$Month)   # Groupwise logical mode
+                                # etc..
+## data.frame method
+fmode(wlddev)                      # Calling unlist -&gt; coerce to character vector
+fmode(wlddev, drop = FALSE)        # Gives one row
+head(fmode(wlddev, iso3c))         # Grouped mode
+head(fmode(wlddev, iso3c, LIFEEX)) # Grouped and weighted mode
+
+detach(wlddev)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,344 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>clean_fossils</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Geographic and Temporal Cleaning of Records from Fossil Collections</h2>
+
+<h3>Description</h3>
+
+<p>Cleaning records by multiple empirical tests to flag potentially erroneous
+coordinates and time-spans, addressing issues common in fossil collection
+databases. Individual tests can be activated via the tests argument:
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">clean_fossils(
+  x,
+  lon = "decimalLongitude",
+  lat = "decimalLatitude",
+  min_age = "min_ma",
+  max_age = "max_ma",
+  taxon = "accepted_name",
+  tests = c("agesequal", "centroids", "equal", "gbif", "institutions", "spatiotemp",
+    "temprange", "validity", "zeros"),
+  countries = NULL,
+  centroids_rad = 0.05,
+  centroids_detail = "both",
+  inst_rad = 0.001,
+  outliers_method = "quantile",
+  outliers_threshold = 5,
+  outliers_size = 7,
+  outliers_replicates = 5,
+  zeros_rad = 0.5,
+  centroids_ref = NULL,
+  country_ref = NULL,
+  inst_ref = NULL,
+  value = "spatialvalid",
+  verbose = TRUE,
+  report = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>data.frame. Containing fossil records, containing taxon names, ages,
+and geographic coordinates..</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lon</code></td>
+<td>
+<p>character string. The column with the longitude coordinates.
+Default = “decimalLongitude”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lat</code></td>
+<td>
+<p>character string. The column with the latitude coordinates.
+Default = “decimalLatitude”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min_age</code></td>
+<td>
+<p>character string. The column with the minimum age. Default
+= “min_ma”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_age</code></td>
+<td>
+<p>character string. The column with the maximum age. Default
+= “max_ma”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>taxon</code></td>
+<td>
+<p>character string. The column with the taxon name. If
+“”, searches for outliers over the entire dataset, otherwise per
+specified taxon. Default = “accepted_name”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tests</code></td>
+<td>
+<p>vector of character strings, indicating which tests to run.
+See details for all tests available. Default = c("centroids",
+"equal", "gbif", "institutions", "temprange", "spatiotemp", "agesequal", "zeros")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>countries</code></td>
+<td>
+<p>a character string. The column with the country assignment
+of each record in three letter ISO code. Default = “countrycode”. If
+missing, the countries test is skipped.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>centroids_rad</code></td>
+<td>
+<p>numeric. The radius around centroid coordinates in
+meters. Default = 1000.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>centroids_detail</code></td>
+<td>
+<p>a <code>character string</code>. If set to ‘country’
+only country (adm-0) centroids are tested, if set to ‘provinces’
+only province (adm-1) centroids are tested.  Default = ‘both’.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inst_rad</code></td>
+<td>
+<p>numeric. The radius around biodiversity institutions
+coordinates in metres. Default = 100.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outliers_method</code></td>
+<td>
+<p>The method used for outlier testing. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outliers_threshold</code></td>
+<td>
+<p>numerical.  The multiplier for the interquantile
+range for outlier detection. The higher the number, the more conservative
+the outlier tests.  See <code>cf_outl</code> for details. Default = 3.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outliers_size</code></td>
+<td>
+<p>numerical.  The minimum number of records in a dataset
+to run the taxon-specific outlier test.  Default = 7.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outliers_replicates</code></td>
+<td>
+<p>numeric. The number of replications for the
+distance matrix calculation. See details.  Default = 5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>zeros_rad</code></td>
+<td>
+<p>numeric. The radius around 0/0 in degrees. Default = 0.5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>centroids_ref</code></td>
+<td>
+<p>a <code>data.frame</code> with alternative reference data for
+the centroid test. If NULL, the <code>countryref</code> dataset is used.
+Alternatives must be identical in structure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>country_ref</code></td>
+<td>
+<p>a <code>SpatVector</code> as alternative reference
+for the countries test. If NULL, the
+<code>rnaturalearth:ne_countries('medium', returnclass = "sf")</code> dataset is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inst_ref</code></td>
+<td>
+<p>a <code>data.frame</code> with alternative reference data for the
+biodiversity institution test. If NULL, the <code>institutions</code> dataset is
+used.  Alternatives must be identical in structure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>value</code></td>
+<td>
+<p>a character string defining the output value. See the value
+section for details. one of ‘spatialvalid’, ‘summary’,
+‘clean’. Default = ‘<code>spatialvalid</code>’.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>logical. If TRUE reports the name of the test and the number
+of records flagged.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>report</code></td>
+<td>
+<p>logical or character.  If TRUE a report file is written to the
+working directory, summarizing the cleaning results. If a character, the
+path to which the file should be written.  Default = FALSE.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+
+<ul>
+<li>
+<p> agesequal tests for equal minimum and maximum age.
+</p>
+</li>
+<li>
+<p> centroids tests a radius around country centroids.
+The radius is <code>centroids_rad</code>.
+</p>
+</li>
+<li>
+<p> countries tests if coordinates are from the
+country indicated in the country column.  <em>Switched off by default.</em>
+</p>
+</li>
+<li>
+<p> equal tests for equal absolute longitude and latitude.
+</p>
+</li>
+<li>
+<p> gbif tests a one-degree radius around the GBIF
+headquarters in Copenhagen, Denmark.
+</p>
+</li>
+<li>
+<p> institutions tests a radius around known
+biodiversity institutions from <code>instiutions</code>. The radius is
+<code>inst_rad</code>.
+</p>
+</li>
+<li>
+<p> spatiotemp test for records which are outlier in time and space. See below for details.
+</p>
+</li>
+<li>
+<p> temprange tests for records with unexpectedly large temporal ranges,
+using a quantile-based outlier test.
+</p>
+</li>
+<li>
+<p> validity checks if coordinates correspond to a lat/lon coordinate reference system.
+This test is always on, since all records need to pass for any other test to run.
+</p>
+</li>
+<li>
+<p> zeros tests for plain zeros, equal latitude and
+longitude and a radius around the point 0/0. The radius is <code>zeros_rad</code>.
+The outlier detection in ‘spatiotemp’ is based on an interquantile range test. In a first
+step a distance matrix of geographic distances among all records is
+calculate. Subsequently a similar distance matrix of temporal distances
+among all records is calculated based on a single point selected by random
+between the minimum and maximum age for each record. The mean distance for
+each point to all neighbours is calculated for both matrices and spatial and
+temporal distances are scaled to the same range. The sum of these distanced
+is then tested against the interquantile range and flagged as an outlier if
+<code class="reqn">x &gt; IQR(x) + q_75 * mltpl</code>. The test is replicated ‘replicates’
+times, to account for temporal uncertainty. Records are flagged as outliers
+if they are flagged by a fraction of more than ‘flag_thresh’
+replicates. Only datasets/taxa comprising more than ‘size.thresh’
+records are tested. Note that geographic distances are calculated as
+geospheric distances for datasets (or taxa) with fewer than 10,000 records
+and approximated as Euclidean distances for datasets/taxa with 10,000 to
+25,000 records. Datasets/taxa comprising more than 25,000 records are
+skipped.
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p>Depending on the output argument:
+</p>
+
+<dl>
+<dt>“spatialvalid”</dt>
+<dd>
+<p>an object of class <code>spatialvalid</code> similar to x
+with one column added for each test. TRUE = clean coordinate entry, FALSE = potentially
+problematic coordinate entries.  The .summary column is FALSE if any test flagged
+the respective coordinate.</p>
+</dd>
+<dt>“flagged”</dt>
+<dd>
+<p>a logical vector with the
+same order as the input data summarizing the results of all test. TRUE =
+clean coordinate, FALSE = potentially problematic (= at least one test
+failed).</p>
+</dd>
+<dt>“clean”</dt>
+<dd>
+<p>a <code>data.frame</code> similar to x
+with potentially problematic records removed</p>
+</dd>
+</dl>
+<h3>Note</h3>
+
+<p>Always tests for coordinate validity: non-numeric or missing
+coordinates and coordinates exceeding the global extent (lon/lat, WGS84).
+</p>
+<p>See <a href="https://ropensci.github.io/CoordinateCleaner/">https://ropensci.github.io/CoordinateCleaner/</a> for more details
+and tutorials.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other Wrapper functions: 
+<code>clean_coordinates()</code>,
+<code>clean_dataset()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+minages &lt;- runif(250, 0, 65)
+exmpl &lt;- data.frame(accepted_name = sample(letters, size = 250, replace = TRUE),
+                    decimalLongitude = runif(250, min = 42, max = 51),
+                    decimalLatitude = runif(250, min = -26, max = -11),
+                    min_ma = minages,
+                    max_ma = minages + runif(250, 0.1, 65))
+
+test &lt;- clean_fossils(x = exmpl)
+
+summary(test)
+
+</code></pre>
+
+
+</div>

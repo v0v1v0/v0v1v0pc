@@ -1,0 +1,138 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>uere</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate RMS UERE from calibration data</h2>
+
+<h3>Description</h3>
+
+<p>Functions for estimating and assigning the root-mean-square User Equivalent Range Error (UERE) of a GPS device from calibration data.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">uere(data)
+
+uere(data) &lt;- value
+
+uere.fit(data,precision=1/2)
+
+## S3 method for class 'UERE'
+summary(object,level=0.95,...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p><code>telemetry</code> object or list of telemetry objects, preferably with DOP columns.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>value</code></td>
+<td>
+<p>RMS UERE value(s) to assign to telemetry data (see details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>precision</code></td>
+<td>
+<p>Fraction of maximum possible digits of precision to target in categorical error fitting. <code>precision=1/2</code> results in about 7 decimal digits of precision.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p><code>UERE</code> object to summarize or list of <code>UERE</code> objects to compare.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>level</code></td>
+<td>
+<p>Confidence level for UERE estimate confidence intervals.</p>
+</td>
+</tr>
+</table>
+<table><tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments are ignored.</p>
+</td>
+</tr></table>
+<h3>Details</h3>
+
+<p>Often times GPS animal tracking devices return HDOP values but do not specifiy the device's RMS UERE necessary to transform the HDOP values into absolute errors.
+<code>uere.fit()</code> allows users to estimate the RMS UERE from calibration data, where the device was left fixed over a period of time.
+The calibration RMS UERE can then be applied to tracking data with the <code>uere()&lt;-</code> assignment method.
+Otherwise, when <code>error=TRUE</code> in <code>ctmm</code>, <code>ctmm.fit</code> will estimate the RMS UERE simultaneously with the movement model, which is less reliable than using calibration data.
+</p>
+<p><code>summary()</code> applied to single <code>UERE</code> object will return RMS UERE parameter estimates and confidence intervals in meters, while <code>summary()</code> applied to a list of <code>UERE</code> objects will return a model-selection table, with AICc and reduced Z squared (goodness of fit) values.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The RMS UERE estimate.</p>
+
+
+<h3>Note</h3>
+
+<p>The GPS device should be fixed during calibraiton.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>C. H. Fleming</p>
+
+
+<h3>References</h3>
+
+<p>C. H. Fleming et al, “A comprehensive framework for handling location error in animal tracking data”, bioRxiv 2020.06.12.130195 (2020) <a href="https://doi.org/10.1101/2020.06.12.130195">doi:10.1101/2020.06.12.130195</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code>as.telemetry</code>, <code>residuals.telemetry</code>.  </p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Load package and data
+library(ctmm)
+data(turtle)
+
+# the first two datasets are calibration data
+names(turtle)
+
+# estimate RMS UERE from calibration data
+UERE &lt;- uere.fit(turtle[1:2])
+# inspect UERE estimate
+summary(UERE)
+
+# assign RMS UERE to entire dataset
+uere(turtle) &lt;- UERE
+
+# calculate residuals of calibration data
+RES &lt;- lapply(turtle[1:2],residuals)
+
+# scatter plot of residuals with 50%, 95%, and 99.9% coverage areas
+plot(RES,col.DF=NA,level.UD=c(0.50,0.95,0.999))
+
+# check calibration data for autocorrelation using fast=FALSE because samples are small
+ACFS &lt;- lapply(RES,function(R){correlogram(R,fast=FALSE,dt=10 %#% 'min',trace=FALSE)})
+
+# pooling ACFs
+ACF &lt;- mean(ACFS)
+
+plot(ACF)
+</code></pre>
+
+
+</div>

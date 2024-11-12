@@ -1,0 +1,172 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>is_na</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Efficient functions for dealing with missing values.</h2>
+
+<h3>Description</h3>
+
+<p><code>is_na()</code> is a parallelised alternative to <code>is.na()</code>. <br><code>num_na(x)</code> is a faster and more efficient <code>sum(is.na(x))</code>. <br><code>which_na(x)</code> is a more efficient <code>which(is.na(x))</code> <br><code>which_not_na(x)</code> is a more efficient <code>which(!is.na(x))</code> <br><code>row_na_counts(x)</code> is a more efficient <code>rowSums(is.na(x))</code> <br><code>row_all_na()</code> returns a logical vector indicating which rows are empty
+and have only <code>NA</code> values. <br><code>row_any_na()</code> returns a logical vector indicating which rows have at least
+1 <code>NA</code> value. <br>
+The <code>col_</code> variants are the same, but operate by-column.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">is_na(x)
+
+## Default S3 method:
+is_na(x)
+
+## S3 method for class 'POSIXlt'
+is_na(x)
+
+## S3 method for class 'vctrs_rcrd'
+is_na(x)
+
+## S3 method for class 'data.frame'
+is_na(x)
+
+num_na(x, recursive = TRUE)
+
+which_na(x)
+
+which_not_na(x)
+
+any_na(x, recursive = TRUE)
+
+all_na(x, recursive = TRUE)
+
+row_na_counts(x, names = FALSE)
+
+col_na_counts(x, names = FALSE)
+
+row_all_na(x, names = FALSE)
+
+col_all_na(x, names = FALSE)
+
+row_any_na(x, names = FALSE)
+
+col_any_na(x, names = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A vector, list, data frame or matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>recursive</code></td>
+<td>
+<p>Should the function be applied recursively to lists?
+The default is <code>TRUE</code>. Setting this to <code>TRUE</code> is actually much cheaper because
+when <code>FALSE</code>, the other <code>NA</code> functions rely on calling <code>is_na()</code>,
+therefore allocating a vector. This is so that alternative objects with
+<code>is.na</code> methods can be supported.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>names</code></td>
+<td>
+<p>Should row/col names be added?</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>These functions are designed primarily for programmers, to increase the speed
+and memory-efficiency of <code>NA</code> handling. <br>
+Most of these functions can be parallelised through <code>options(cheapr.cores)</code>. <br></p>
+
+
+<h4>Common use-cases</h4>
+
+<p>To replicate <code>complete.cases(x)</code>, use <code>!row_any_na(x)</code>. <br>
+To find rows with any empty values,
+use <code>which_(row_any_na(df))</code>. <br>
+To find empty rows use <code>which_(row_all_na(df))</code> or <code>which_na(df)</code>.
+To drop empty rows use <code>na_rm(df)</code> or <code>sset(df, which_(row_all_na(df), TRUE))</code>.
+</p>
+
+
+
+<h4><code>is_na</code></h4>
+
+<p><code>is_na</code> Is an S3 generic function. It will internally fall back on
+using <code>is.na</code> if it can't find a suitable method.
+Alternatively you can write your own <code>is_na</code> method.
+For example there is a method for <code>vctrs_rcrd</code>
+objects that simply converts it to a data frame and then calls <code>row_all_na()</code>.
+There is also a <code>POSIXlt</code> method for <code>is_na</code> that is much faster than <code>is.na</code>.
+</p>
+
+
+
+<h4>Lists</h4>
+
+<p>When <code>x</code> is a list, <code>num_na</code>, <code>any_na</code> and <code>all_na</code> will recursively search
+the list for <code>NA</code> values. If <code>recursive = F</code> then <code>is_na()</code> is used to
+find <code>NA</code> values. <br><code>is_na</code> differs to <code>is.na</code> in 2 ways:
+</p>
+
+<ul>
+<li>
+<p> List elements are counted as <code>NA</code> if either that value is <code>NA</code>, or
+if it's a list, then all values of that list are <code>NA</code>.
+</p>
+</li>
+<li>
+<p> When called on a data frame, it returns <code>TRUE</code> for empty rows that contain
+only <code>NA</code> values.
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p>Number or location of <code>NA</code> values.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(cheapr)
+library(bench)
+
+x &lt;- 1:10
+x[c(1, 5, 10)] &lt;- NA
+num_na(x)
+which_na(x)
+which_not_na(x)
+
+row_nas &lt;- row_na_counts(airquality, names = TRUE)
+col_nas &lt;- col_na_counts(airquality, names = TRUE)
+row_nas
+col_nas
+
+df &lt;- sset(airquality, j = 1:2)
+
+# Number of NAs in data
+num_na(df)
+# Which rows are empty?
+row_na &lt;- row_all_na(df)
+sset(df, row_na)
+
+# Removing the empty rows
+sset(df, which_(row_na, invert = TRUE))
+# Or
+na_rm(df)
+# Or
+sset(df, row_na_counts(df) &lt; ncol(df))
+</code></pre>
+
+
+</div>

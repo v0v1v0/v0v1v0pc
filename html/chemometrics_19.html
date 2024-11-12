@@ -1,0 +1,274 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>mvr_dcv</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Repeated double-cross-validation for PLS and PCR</h2>
+
+<h3>Description</h3>
+
+<p>Performs a careful evaluation by repeated double-CV for multivariate regression 
+methods, like PLS and PCR.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">mvr_dcv(formula, ncomp, data, subset, na.action, 
+  method = c("kernelpls", "widekernelpls", "simpls", "oscorespls", "svdpc"), 
+  scale = FALSE, repl = 100, sdfact = 2, 
+  segments0 = 4, segment0.type = c("random", "consecutive", "interleaved"), 
+  length.seg0, segments = 10, segment.type = c("random", "consecutive", "interleaved"), 
+  length.seg, trace = FALSE, plot.opt = FALSE, selstrat = "hastie", ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>formula, like y~X, i.e., dependent~response variables</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncomp</code></td>
+<td>
+<p>number of PLS components</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>data frame to be analyzed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subset</code></td>
+<td>
+<p>optional vector to define a subset</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.action</code></td>
+<td>
+<p>a function which indicates what should happen when the data
+contain missing values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>the multivariate regression method to be used, see 
+<code>mvr</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scale</code></td>
+<td>
+<p>numeric vector, or logical.  If numeric vector, X is scaled
+by dividing each variable with the corresponding element of
+'scale'.  If 'scale' is 'TRUE', X is scaled by dividing each
+variable by its sample standard deviation.  If
+cross-validation is selected, scaling by the standard
+deviation is done for every segment.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>repl</code></td>
+<td>
+<p>Number of replicattion for the double-CV</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sdfact</code></td>
+<td>
+<p>factor for the multiplication of the standard deviation for
+the determination of the optimal number of components</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>segments0</code></td>
+<td>
+<p>the number of segments to use for splitting into training and test 
+data, or a list with segments (see <code>mvrCv</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>segment0.type</code></td>
+<td>
+<p>the type of segments to use.  Ignored if 'segments0' is a list</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>length.seg0</code></td>
+<td>
+<p>Positive integer.  The length of the segments to use.  If
+specified, it overrides 'segments' unless 'segments0' is a list</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>segments</code></td>
+<td>
+<p>the number of segments to use for selecting the optimal number if 
+components, or a list with segments (see <code>mvrCv</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>segment.type</code></td>
+<td>
+<p>the type of segments to use.  Ignored if 'segments' is a list</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>length.seg</code></td>
+<td>
+<p>Positive integer.  The length of the segments to use.  If
+specified, it overrides 'segments' unless 'segments' is a list</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>logical; if 'TRUE', the segment number is printed for each segment</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot.opt</code></td>
+<td>
+<p>if TRUE a plot will be generated that shows the selection of the
+optimal number of components for each step of the CV</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>selstrat</code></td>
+<td>
+<p>method that defines how the optimal number of components is 
+selected, should be one of "diffnext", "hastie", "relchange"; see details</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional parameters</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>In this cross-validation (CV) scheme, the optimal number of components is determined 
+by an additional CV in the training set, and applied to the test set. The procedure 
+is repeated repl times. There are different strategies for determining the optimal 
+number of components (parameter selstrat): "diffnext" compares MSE+sdfact*sd(MSE) 
+among the neighbors, and if the MSE falls outside this bound, this is the optimal 
+number. "hastie" searches for the number of components with the minimum of the mean 
+MSE's. The optimal number of components is the model with the smallest number of 
+components which is still in the range of the MSE+sdfact*sd(MSE), where MSE and sd 
+are taken from the minimum. "relchange" is a strategy where the relative change is 
+combined with "hastie": First the minimum of the mean MSE's is searched, and MSE's of 
+larger components are omitted. For this selection, the relative change in MSE compared 
+to the min, and relative to the max, is computed. If this change is very small 
+(e.g. smaller than 0.005), these components are omitted. Then the "hastie" strategy 
+is applied for the remaining MSE's.
+</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>resopt</code></td>
+<td>
+<p>array [nrow(Y) x ncol(Y) x repl] with residuals using optimum number 
+of components</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predopt</code></td>
+<td>
+<p>array [nrow(Y) x ncol(Y) x repl] with predicted Y using optimum 
+number of components</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optcomp</code></td>
+<td>
+<p>matrix [segments0 x repl] optimum number of components for each 
+training set</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pred</code></td>
+<td>
+<p>array [nrow(Y) x ncol(Y) x ncomp x repl] with predicted Y for all 
+numbers of components</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SEPopt</code></td>
+<td>
+<p>SEP over all residuals using optimal number of components</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sIQRopt</code></td>
+<td>
+<p>spread of inner half of residuals as alternative robust spread 
+measure to the SEPopt</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sMADopt</code></td>
+<td>
+<p>MAD of residuals as alternative robust spread measure to the SEPopt</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MSEPopt</code></td>
+<td>
+<p>MSEP over all residuals using optimal number of components</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>afinal</code></td>
+<td>
+<p>final optimal number of components</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SEPfinal</code></td>
+<td>
+<p>vector of length ncomp with final SEP values; use the element 
+afinal for the optimal SEP</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p> Peter Filzmoser &lt;P.Filzmoser@tuwien.ac.at&gt; </p>
+
+
+<h3>References</h3>
+
+<p> K. Varmuza and P. Filzmoser: Introduction to Multivariate Statistical 
+Analysis in Chemometrics. CRC Press, Boca Raton, FL, 2009. </p>
+
+
+<h3>See Also</h3>
+
+<p><code>mvr</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(NIR)
+X &lt;- NIR$xNIR[1:30,]      # first 30 observations - for illustration
+y &lt;- NIR$yGlcEtOH[1:30,1] # only variable Glucose
+NIR.Glc &lt;- data.frame(X=X, y=y)
+res &lt;- mvr_dcv(y~.,data=NIR.Glc,ncomp=10,method="simpls",repl=10)
+</code></pre>
+
+
+</div>

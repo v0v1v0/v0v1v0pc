@@ -1,0 +1,209 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cbs_get_data</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Get data from Statistics Netherlands (CBS)</h2>
+
+<h3>Description</h3>
+
+<p>Retrieves data from a table of Statistics Netherlands. A list of available tables
+can be retrieved with <code>cbs_get_datasets()</code>. Use the <code>Identifier</code> column of
+<code>cbs_get_datssets</code> as <code>id</code> in <code>cbs_get_data</code> and <code>cbs_get_meta</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cbs_get_data(
+  id,
+  ...,
+  catalog = "CBS",
+  select = NULL,
+  typed = TRUE,
+  add_column_labels = TRUE,
+  dir = tempdir(),
+  verbose = FALSE,
+  base_url = getOption("cbsodataR.base_url", BASE_URL),
+  include_ID = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>id</code></td>
+<td>
+<p>Identifier of table, can be found in <code>cbs_get_datasets()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>optional filter statements, see details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>catalog</code></td>
+<td>
+<p>catalog id, can be retrieved with <code>cbs_get_datasets()</code>
+(set <code>catalog=NULL</code> to see all catalogs)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>select</code></td>
+<td>
+<p><code>character</code> optional, columns to select</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>typed</code></td>
+<td>
+<p>Should the data automatically be converted into integer and numeric?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>add_column_labels</code></td>
+<td>
+<p>Should column titles be added as a label (TRUE) which are visible in <code>View</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dir</code></td>
+<td>
+<p>Directory where the table should be downloaded. Defaults to temporary
+directory</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Print extra messages what is happening.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>base_url</code></td>
+<td>
+<p>optionally specify a different server. Useful for
+third party data services implementing the same protocol.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include_ID</code></td>
+<td>
+<p>Should the data include the ID column for the rows?</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>To reduce the download time, optionaly the data can be filtered on category values:
+for large tables (&gt; 100k records) this is a wise thing to do.
+</p>
+<p>The filter is specified with (see examples below):
+</p>
+
+<ul>
+<li> <p><code style="white-space: pre;">⁠&lt;column_name&gt; = &lt;values&gt;⁠</code> in which <code style="white-space: pre;">⁠&lt;values&gt;⁠</code> is a character vector.
+Rows with values that are not part of the character vector are not returned.
+<strong>Note that the values have to be values from the <code style="white-space: pre;">⁠$Key⁠</code> column of the corresponding meta data. These may contain trailing spaces...</strong>
+</p>
+</li>
+<li> <p><code style="white-space: pre;">⁠&lt;column_name&gt; = has_substring(x)⁠</code> in which x is a character vector. Rows with values that
+do not have a substring that is in x are not returned. Useful substrings are
+"JJ", "KW", "MM" for Periods (years, quarters, months) and "PV", "CR" and "GM"
+for Regions (provinces, corops, municipalities).
+</p>
+</li>
+<li> <p><code style="white-space: pre;">⁠&lt;column_name&gt; = eq(&lt;values&gt;) | has_substring(x)⁠</code>, which combines the two statements above.
+</p>
+</li>
+</ul>
+<p>By default the columns will be converted to their type (<code>typed=TRUE</code>).
+CBS uses multiple types of missing (unknown, surpressed, not measured, missing): users
+wanting all these nuances can use <code>typed=FALSE</code> which results in character columns.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>data.frame</code> with the requested data. Note that a csv copy of
+the data is stored in <code>dir</code>.
+</p>
+
+
+<h3>Copyright use</h3>
+
+<p>The content of CBS opendata is subject to Creative Commons Attribution (CC BY 4.0).
+This means that the re-use of the content is permitted, provided Statistics
+Netherlands is cited as the source. For more information see:
+<a href="https://www.cbs.nl/en-gb/about-us/website/copyright">https://www.cbs.nl/en-gb/about-us/website/copyright</a>
+</p>
+
+
+<h3>Note</h3>
+
+<p>All data are downloaded using <code>cbs_download_table()</code>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cbs_get_meta()</code>, <code>cbs_download_data()</code>
+</p>
+<p>Other data retrieval: 
+<code>cbs_add_date_column()</code>,
+<code>cbs_add_label_columns()</code>,
+<code>cbs_add_unit_column()</code>,
+<code>cbs_download_data()</code>,
+<code>cbs_extract_table_id()</code>,
+<code>cbs_get_data_from_link()</code>
+</p>
+<p>Other query: 
+<code>eq()</code>,
+<code>has_substring()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+cbs_get_data( id      = "7196ENG"      # table id
+            , Periods = "2000MM03"     # March 2000
+            , CPI     = "000000"       # Category code for total 
+            )
+
+# useful substrings:
+## Periods: "JJ": years, "KW": quarters, "MM", months
+## Regions: "NL", "PV": provinces, "GM": municipalities
+  
+cbs_get_data( id      = "7196ENG"      # table id
+            , Periods = has_substring("JJ")     # all years
+            , CPI     = "000000"       # Category code for total 
+            )
+
+cbs_get_data( id      = "7196ENG"      # table id
+            , Periods = c("2000MM03","2001MM12")     # March 2000 and Dec 2001
+            , CPI     = "000000"       # Category code for total 
+            )
+
+# combine either this
+cbs_get_data( id      = "7196ENG"      # table id
+            , Periods = has_substring("JJ") | "2000MM01" # all years and Jan 2001
+            , CPI     = "000000"       # Category code for total 
+            )
+
+# or this: note the "eq" function
+cbs_get_data( id      = "7196ENG"      # table id
+            , Periods = eq("2000MM01") | has_substring("JJ") # Jan 2000 and all years
+            , CPI     = "000000"       # Category code for total 
+            )
+
+## End(Not run)
+</code></pre>
+
+
+</div>

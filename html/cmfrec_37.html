@@ -1,0 +1,89 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>swap.users.and.items</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Swap users and items in the model</h2>
+
+<h3>Description</h3>
+
+<p>This function will swap the users and items in a given matrix
+factorization model. Since the package functionality is user-centric, it
+is generally not possible or not efficient to make predictions about items
+(e.g. recommend users for a given item or calculate new item factors).
+</p>
+<p>This function allows using the same API while avoiding model refitting or deep
+copies of data by simply swapping the matrices, IDs, and hyperparameters
+as necessary.
+</p>
+<p>The resulting object can be used with the same functions as the original,
+such as topN or factors, but any mention of "user" in the
+functions will now mean "items".
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">swap.users.and.items(model, precompute = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>A collective matrix factorization model from this package - see
+fit_models for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>precompute</code></td>
+<td>
+<p>Whether to calculate the precomputed matrices for speeding up
+predictions in new data.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The same model object as before, but with the internal data
+swapped in order to make predictions about items. If passing 'precompute=TRUE',
+it will also generate precomputed matrices which can be used to speed up predictions.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(cmfrec)
+
+### Generate a small random matrix
+n_users &lt;- 10L
+n_items &lt;- 8L
+k &lt;- 3L
+set.seed(1)
+X &lt;- matrix(rnorm(n_users*n_items), nrow=n_users)
+
+### Factorize it
+model &lt;- CMF(X, k=k, verbose=FALSE, nthreads=1L)
+
+### Now swap the users and items
+model.swapped &lt;- swap.users.and.items(model)
+
+### These will now throw the same result
+### (up to numerical precision)
+item_factors(model, X[, 1])
+factors_single(model.swapped, X[, 1])
+
+### Swapping it again restores the original
+model.restored &lt;- swap.users.and.items(model.swapped)
+
+### These will throw the same result
+topN(model, user=2, n=3)
+topN(model.restored, user=2, n=3)
+</code></pre>
+
+
+</div>

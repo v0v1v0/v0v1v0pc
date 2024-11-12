@@ -1,0 +1,444 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>crch</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Censored and Truncated Regression with Conditional Heteroscedasticy</h2>
+
+<h3>Description</h3>
+
+<p>Fitting censored (tobit) or truncated regression models with conditional heteroscedasticy. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">crch(formula, data, subset, na.action, weights, offset, 
+  link.scale = c("log", "identity", "quadratic"),
+  dist = c("gaussian", "logistic", "student"), df = NULL, 
+  left = -Inf, right = Inf, truncated = FALSE, 
+  type = c("ml", "crps"), control = crch.control(...), 
+  model = TRUE, x = FALSE, y = FALSE, ...)
+
+trch(formula, data, subset, na.action, weights, offset, 
+  link.scale = c("log", "identity", "quadratic"),
+  dist = c("gaussian", "logistic", "student"), df = NULL, 
+  left = -Inf, right = Inf, truncated = TRUE, 
+  type = c("ml", "crps"), control = crch.control(...), 
+  model = TRUE, x = FALSE, y = FALSE, ...)
+
+crch.fit(x, z, y, left, right, truncated = FALSE, dist = "gaussian",
+  df = NULL, link.scale = "log", type = "ml", weights = NULL, offset = NULL, 
+  control = crch.control()) 
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>a formula expression of the form <code>y ~ x | z</code> where
+<code>y</code> is the response and <code>x</code> and <code>z</code> are regressor variables
+for the location and the scale of the fitted distribution respectively.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>an optional data frame containing the variables occurring in the
+formulas.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subset</code></td>
+<td>
+<p>an optional vector specifying a subset of observations to be
+used for fitting.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.action</code></td>
+<td>
+<p>a function which indicates what should happen when the data
+contain <code>NA</code>s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>optional case weights in fitting.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>offset</code></td>
+<td>
+<p>optional numeric vector with <em>a priori</em> known component to
+be included in the linear predictor for the location.  For <code>crch.fit</code>, 
+<code>offset</code> can also be a list of 2 offsets used for the location and scale
+respectively.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link.scale</code></td>
+<td>
+<p>character specification of the link function in
+the scale model. Currently, <code>"identity"</code>, <code>"log"</code>, 
+<code>"quadratic"</code> are supported. The default is <code>"log"</code>.
+Alternatively, an object of class <code>"link-glm"</code> can be supplied.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist</code></td>
+<td>
+<p>assumed distribution for the dependent variable <code>y</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>optional degrees of freedom for <code>dist="student"</code>. If omitted
+the degrees of freedom are estimated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>left</code></td>
+<td>
+<p>left limit for the censored dependent variable <code>y</code>.  If set
+to <code>-Inf</code>, <code>y</code> is assumed not to be left-censored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>right</code></td>
+<td>
+<p>right limit for the censored dependent variable <code>y</code>.  If
+set to <code>Inf</code>, <code>y</code> is assumed not to be right-censored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>truncated</code></td>
+<td>
+<p>logical. If <code>TRUE</code> truncated model is fitted
+with <code>left</code> and <code>right</code> interpreted as truncation points,
+If <code>FALSE</code> censored model is fitted. Default is <code>FALSE</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>loss function to be optimized. Can be either <code>"ml"</code> for
+maximum likelihood (default) or <code>"crps"</code> for minimum continuous ranked
+probability score (CRPS).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>a list of control parameters passed to <code>optim</code> 
+or to the internal boosting algorithm if <code>control=crch.boost()</code>. 
+Default is <code>crch.control()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>logical. If <code>TRUE</code> <em>model frame</em> is
+included as a component of the returned value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x, y</code></td>
+<td>
+<p>for <code>crch</code>: logical. If <code>TRUE</code> the model matrix and
+response vector used for fitting are returned as components of the returned
+value.
+for <code>crch.fit</code>: <code>x</code> is a design matrix with regressors for the
+location and <code>y</code> is a vector of observations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>a design matrix with regressors for the scale.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments to be used to form the default <code>control</code> argument
+if it is not supplied directly.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>crch</code> fits censored (tobit) or truncated regression models with conditional
+heteroscedasticy with maximum likelihood estimation. Student-t, Gaussian, and
+logistic distributions can be fitted to left- and/or right censored or 
+truncated responses. Different regressors can be used to model the location 
+and the scale of this distribution. If <code>control=crch.boost()</code>
+optimization is performed by boosting.
+</p>
+<p><code>trch</code> is a wrapper function for <code>crch</code> with default 
+<code>truncated = TRUE</code>.
+</p>
+<p><code>crch.fit</code> is the lower level function where the actual
+fitting takes place.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>"crch"</code> or <code>"crch.boost"</code>, i.e., a list with the 
+following elements.
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>coefficients</code></td>
+<td>
+<p>list of coefficients for location, scale, and df. Scale
+and df coefficients are in log-scale.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>if <code>dist = "student"</code>: degrees of freedom of student-t
+distribution. else <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>residuals</code></td>
+<td>
+<p>the residuals, that is response minus fitted values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitted.values</code></td>
+<td>
+<p>list of fitted location and scale parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist</code></td>
+<td>
+<p>assumed distribution for the dependent variable <code>y</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cens</code></td>
+<td>
+<p>list of censoring points.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optim</code></td>
+<td>
+<p>output from optimization from <code>optim</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>optimization method used for <code>optim</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>used loss function (maximum likelihood or minimum CRPS).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>list of control parameters passed to <code>optim</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start</code></td>
+<td>
+<p>starting values of coefficients used in the optimization.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>case weights used for fitting.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>offset</code></td>
+<td>
+<p>list of offsets for location and scale.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>number of observations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nobs</code></td>
+<td>
+<p>number of observations with non-zero weights.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>loglik</code></td>
+<td>
+<p>log-likelihood.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vcov</code></td>
+<td>
+<p>covariance matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link</code></td>
+<td>
+<p>a list with element <code>"scale"</code> containing
+the link objects for the scale model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>truncated</code></td>
+<td>
+<p>logical indicating wheter a truncated model has been fitted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>converged</code></td>
+<td>
+<p>logical variable whether optimization has converged or not.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iterations</code></td>
+<td>
+<p>number of iterations in optimization.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>function call.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>the formula supplied.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>terms</code></td>
+<td>
+<p>the <code>terms</code> objects used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>levels</code></td>
+<td>
+<p>list of levels of the factors used in fitting for location and
+scale respectively.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>contrasts</code></td>
+<td>
+<p>(where relevant) the contrasts used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>if requested, the response used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>if requested, the model matrix used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>if requested, the model frame used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stepsize, mstop, mstopopt, standardize</code></td>
+<td>
+<p>return values of boosting 
+optimization. See <code>crch.boost</code> for details.</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Messner JW, Mayr GJ, Zeileis A (2016). Heteroscedastic Censored and
+Truncated Regression with crch.
+<em>The R Journal</em>, <b>3</b>(1), 173–181.
+<a href="https://doi.org/10.32614/RJ-2016-012">doi:10.32614/RJ-2016-012</a>
+</p>
+<p>Messner JW, Zeileis A, Broecker J, Mayr GJ (2014). Probabilistic Wind Power
+Forecasts with an Inverse Power Curve Transformation and Censored Regression.
+<em>Wind Energy</em>, <b>17</b>(11), 1753–1766.
+<a href="https://doi.org/10.1002/we.1666">doi:10.1002/we.1666</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>predict.crch</code>, <code>crch.control</code>, <code>crch.boost</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data("RainIbk", package = "crch")
+## mean and standard deviation of square root transformed ensemble forecasts
+RainIbk$sqrtensmean &lt;- 
+  apply(sqrt(RainIbk[,grep('^rainfc',names(RainIbk))]), 1, mean)
+RainIbk$sqrtenssd &lt;- 
+  apply(sqrt(RainIbk[,grep('^rainfc',names(RainIbk))]), 1, sd)
+
+## fit linear regression model with Gaussian distribution 
+CRCH &lt;- crch(sqrt(rain) ~ sqrtensmean, data = RainIbk, dist = "gaussian")
+## same as lm?
+all.equal(
+  coef(lm(sqrt(rain) ~ sqrtensmean, data = RainIbk)),
+  head(coef(CRCH), -1),
+  tol = 1e-6)
+
+## print
+CRCH
+## summary
+summary(CRCH)
+
+## left censored regression model with censoring point 0:
+CRCH2 &lt;- crch(sqrt(rain) ~ sqrtensmean, data = RainIbk, 
+  dist = "gaussian", left = 0)
+
+## left censored regression model with censoring point 0 and 
+## conditional heteroscedasticy:
+CRCH3 &lt;- crch(sqrt(rain) ~ sqrtensmean|sqrtenssd, data = RainIbk, 
+  dist = "gaussian",  left = 0)
+
+## left censored regression model with censoring point 0 and 
+## conditional heteroscedasticy with logistic distribution:
+CRCH4 &lt;- crch(sqrt(rain) ~ sqrtensmean|sqrtenssd, data = RainIbk, 
+  dist = "logistic", left = 0)
+
+## compare AIC 
+AIC(CRCH, CRCH2, CRCH3, CRCH4)
+</code></pre>
+
+
+</div>

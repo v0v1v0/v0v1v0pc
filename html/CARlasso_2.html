@@ -1,0 +1,265 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CARlasso</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Gibbs sampler for Conditional Autoregressive LASSO and extensions</h2>
+
+<h3>Description</h3>
+
+<p>Main sampling algorithm of CAR-LASSO model
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CARlasso(
+  formula,
+  data,
+  link = "identity",
+  adaptive = FALSE,
+  r_beta = ifelse(adaptive, 0.01, 1),
+  delta_beta = ifelse(adaptive, 1e-06, 0.01),
+  r_Omega = ifelse(adaptive, 0.01, 1),
+  delta_Omega = ifelse(adaptive, 1e-06, 0.01),
+  lambda_diag = 0,
+  n_iter = 2000,
+  n_burn_in = 1000,
+  thin_by = 10,
+  ns = 1000,
+  m = 20,
+  emax = 64,
+  progress = TRUE,
+  verbos = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>A double sided formula with response at left hand side and predictors at right hand side</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data.frame with all response and predictors, row as observations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link</code></td>
+<td>
+<p>String name of link function? Currently can be "identity" for normal response, "probit" for binary, "log" for counting, "logit" for compositional. Note that when use "logit", the last response will be used as reference.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>adaptive</code></td>
+<td>
+<p>Bool, whether run the adaptive version of the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>r_beta</code></td>
+<td>
+<p>Hyper-parameter for regression coefficient, shape parameter of Gamma, if adaptive, should have row number same as number of predictors while column number of responses</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta_beta</code></td>
+<td>
+<p>Hyper-parameter for regression coefficient, rate parameter of Gamma, if adaptive, should have row number same as number of predictors while column number of responses</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>r_Omega</code></td>
+<td>
+<p>Hyper-parameter for precision matrix, shape parameter of Gamma. If adaptive, can be a matrix with same size as precision matrix, if this is the case, only upper triangular part without diagonal will be used, or can be a vector whose size was the upper triangular part of precision matrix, if non-adaptive, a scalar.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta_Omega</code></td>
+<td>
+<p>Hyper-parameter for precision matrix, rate parameter of Gamma, If adaptive, can be a matrix with same size as precision matrix, if this is the case, only upper triangular part without diagonal will be used, or can be a vector whose size was the upper triangular part of precision matrix, if non-adaptive, a scalar.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda_diag</code></td>
+<td>
+<p>adaptive only hyper-parameter for penalties on diagonal entries of Omega, should have dimension k and non-negative</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_iter</code></td>
+<td>
+<p>Number of sampling iterations (i.e. after burn in) for the Gibbs sampler</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_burn_in</code></td>
+<td>
+<p>Number of burn in iterations for the Gibbs sampler</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thin_by</code></td>
+<td>
+<p>Final sample was thin by this number</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ns</code></td>
+<td>
+<p>parameter for ARS, maximum number of hulls, only used when link is "log" and "logit"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>m</code></td>
+<td>
+<p>parameter for ARS, initial number of hulls, only used when link is "log" and "logit"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>emax</code></td>
+<td>
+<p>parameter for ARS, tolerance for small values being 0, larger meaning we tolerate smaller values, only used when link is "log" and "logit"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>progress</code></td>
+<td>
+<p>Bool, whether report progress from C++</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbos</code></td>
+<td>
+<p>Bool, whether show warnings and messages.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A <code>carlasso_out</code> object with elements:
+</p>
+
+<ul>
+<li>
+<p><code style="white-space: pre;">⁠$point_est⁠</code>
+</p>
+
+<ul>
+<li>
+<p><code style="white-space: pre;">⁠$Omega⁠</code>: Posterior mean of precision matrix
+</p>
+</li>
+<li>
+<p><code style="white-space: pre;">⁠$beta⁠</code>: Posterior mean of regression coefficient
+</p>
+</li>
+<li>
+<p><code style="white-space: pre;">⁠$CAR⁠</code>
+</p>
+
+<ul>
+<li>
+<p><code style="white-space: pre;">⁠$C⁠</code>: The conditional regression coefficients among responses
+</p>
+</li>
+<li>
+<p><code style="white-space: pre;">⁠$B⁠</code>: The conditional regression coefficients between response and predictors
+</p>
+</li>
+<li>
+<p><code style="white-space: pre;">⁠$M⁠</code>: The conditional variance
+</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><code style="white-space: pre;">⁠$nodes⁠</code>
+</p>
+
+<ul>
+<li>
+<p><code style="white-space: pre;">⁠$responses⁠</code>: node name of responses
+</p>
+</li>
+<li>
+<p><code style="white-space: pre;">⁠$predictors⁠</code>: node name of predictors
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p><code style="white-space: pre;">⁠$data⁠</code>
+</p>
+
+<ul>
+<li>
+<p><code style="white-space: pre;">⁠$response⁠</code>: response matrix
+</p>
+</li>
+<li>
+<p><code style="white-space: pre;">⁠$design⁠</code>: design matrix
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p><code style="white-space: pre;">⁠$settings⁠</code>: all settings sent to the algorithm, exclude data
+</p>
+</li>
+<li>
+<p><code style="white-space: pre;">⁠$MCMC_output⁠</code>
+</p>
+
+<ul>
+<li>
+<p><code style="white-space: pre;">⁠$beta⁠</code>: A coda::mcmc object, each row was an MCMC sample of the (column) vectorization of regression coefficient B
+</p>
+</li>
+<li>
+<p><code style="white-space: pre;">⁠$mu⁠</code>: A coda::mcmc object, each row was an MCMC sample of the mean vector
+</p>
+</li>
+<li>
+<p><code style="white-space: pre;">⁠$Omega⁠</code>: A coda::mcmc object, each row was an MCMC sample of the upper triangular part (with diagonal) of precision matrix Omega
+</p>
+</li>
+<li>
+<p><code style="white-space: pre;">⁠$lambda⁠</code>: <strong>Non-adaptive only</strong>, A coda::mcmc object, first column was the shrinkage parameter lambda for regression coefficient and the second column was shrinkage parameter lambda for precision matrix
+</p>
+</li>
+<li>
+<p><code style="white-space: pre;">⁠$lambda_beta⁠</code>: <strong>Adaptive only</strong>, A coda::mcmc object, each row was an MCMC sample of the (column) vectorization of shrinkage parameter for regression coefficient B
+</p>
+</li>
+<li>
+<p><code style="white-space: pre;">⁠$lambda_Omega⁠</code>: <strong>Adaptive only</strong>, A coda::mcmc object, each row was an MCMC sample of the shrinkage parameter for the upper triangular part (without diagonal) of precision matrix Omega
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(42)
+dt &lt;- simu_AR1()
+car_res &lt;- CARlasso(y1+y2+y3+y4+y5~x1+x2+x3+x4+x5, data = dt, adaptive = TRUE)
+plot(car_res,tol = 0.05)
+# with horseshoe inference
+car_res &lt;- horseshoe(car_res)
+plot(car_res)
+
+
+</code></pre>
+
+
+</div>

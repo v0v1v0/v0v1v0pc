@@ -1,0 +1,254 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>spectralmeas</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimation of the Spectral Measure</h2>
+
+<h3>Description</h3>
+
+<p>Kiriliouk <em>et al.</em> (2016, pp. 360–364) describe estimation of the <em>spectral measure</em> of bivariate data. Standardize the bivariate data as <code class="reqn">X^\star</code> and <code class="reqn">Y^\star</code> as in <code>psepolar</code> and select a “large” value for the <em>pseudo-polar radius</em> <code class="reqn">S_f</code> for nonexceedance probability <code class="reqn">f</code>. Estimate the spectral measure <code class="reqn">H(w)</code>, which is the limiting distribution of the <em>pseudo-polar angle</em> component <code class="reqn">W</code> given that the corresponding radial component <code class="reqn">S</code> is large:
+</p>
+<p style="text-align: center;"><code class="reqn">\mathrm{Pr}[W \in \cdot | S &gt; S_f] \rightarrow H(w) \mbox{\ as\ } S_f \rightarrow \infty\mbox{.}</code>
+</p>
+
+<p>So, <code class="reqn">H(w)</code> is the <em>cumulative distribution function</em> of the spectral measure for angle <code class="reqn">w \in (0,1)</code>. The <code class="reqn">S_f</code> can be specified by a nonexceedance probability <code class="reqn">F</code> for <code class="reqn">S_f(F)</code>.
+</p>
+<p>The estimation proceeds as follows:
+</p>
+<p><b>Step 1:</b> Convert the bivariate data <code class="reqn">(X_i, Y_i)</code> into <code class="reqn">(\widehat{S}_i, \widehat{W}_i)</code> by <code>psepolar</code> and set the threshold <code class="reqn">S_f</code> according to “<code class="reqn">n/k</code>” (this part involving <code class="reqn">k</code> does not make sense in Kiriliouk <em>et al.</em> (2016)) where for present implementation in <span class="pkg">copBasic</span> the <code class="reqn">S_f</code> given the <code class="reqn">f</code> by the user is based on the empirical distribution of the <code class="reqn">\widehat{S}_i</code>. The empirical distribution is estimated by the <em>Bernstein empirical distribution</em> function from the <span class="pkg">lmomco</span> package.
+</p>
+<p><b>Step 2:</b> Let <code class="reqn">I_n</code> denote the set of indices that correspond to the observations when <code class="reqn">\widehat{S}_i \ge S_f</code> and compute <code class="reqn">N_n</code> as the cardinality of <code class="reqn">N_n = |I_n|</code>, which simply means the length of the vector <code class="reqn">I_n</code>.
+</p>
+<p><b>Step 3:</b> Use the <em>maximum Euclidean likelihood estimator</em>, which is the third of three methods mentioned by Kiriliouk <em>et al.</em> (2016):
+</p>
+<p style="text-align: center;"><code class="reqn">\widehat{H}_3(w) = \sum_{i \in I_n} \hat{p}_{3,i} \times \mathbf{1}[\widehat{W}_i \le w ]\mbox{,}</code>
+</p>
+
+<p>where <code class="reqn">\mathbf{1}[\cdot]</code> is an <em>indicator function</em> that is only triggered if <code>smooth=FALSE</code>, and following the notation of Kiriliouk <em>et al.</em> (2016), the “3” represents maximum <em>Euclidean likelihood</em> estimation. The <code class="reqn">\hat{p}_{3,i}</code> are are the weights
+</p>
+<p style="text-align: center;"><code class="reqn">\hat{p}_{3,i} = \frac{1}{N_n}\bigl[ 1 - (\overline{W} - 1/2)S^{-2}_W(\widehat{W}_i - \overline{W}) \bigr]\mbox{,}</code>
+</p>
+
+<p>where <code class="reqn">\overline{W}</code> is the <em>sample mean</em> and <code class="reqn">S^2_W</code> is the <em>sample variance</em> of <code class="reqn">\widehat{W}_i</code>
+</p>
+<p style="text-align: center;"><code class="reqn">\overline{W} = \frac{1}{N_n} \sum_{i \in I_n} \widehat{W}_i\mbox{\quad and\quad } S^2_W = \frac{1}{N_n - 1} \sum_{i \in I_n} (\widehat{W}_i - \overline{W})^2\mbox{,}</code>
+</p>
+
+<p>where Kiriliouk <em>et al.</em> (2016, p. 363) do not show the <code class="reqn">N_n - 1</code> in the denominator for the variance but <span class="pkg">copBasic</span> uses it because those authors state that the <em>sample variance</em> is used.
+</p>
+<p><b>Step 4:</b> A smoothed version of <code class="reqn">\hat{H}_3(w)</code> is optionally available by
+</p>
+<p style="text-align: center;"><code class="reqn">\tilde{H}_3(w) = \sum_{i \in I_n} \hat{p}_{3,i} \times \mathcal{B}(w;\, \widehat{W}_i\nu,\, (1-\widehat{W}_i)\nu)\mbox{,}</code>
+</p>
+
+<p>where <code class="reqn">\mathcal{B}(x; p, q)</code> is the cumulative distribution function of the <em>Beta distribution</em> for <code class="reqn">p, q &gt; 0</code> and where <code class="reqn">\nu &gt; 0</code> is a smoothing parameter that can be optimized by cross validation.
+</p>
+<p><b>Step 5:</b> The <em>spectral density</em> lastly can be computed optionally as
+</p>
+<p style="text-align: center;"><code class="reqn">\tilde{h}_3(w) = \sum_{i \in I_n} \hat{p}_{3,i} \times \beta(w;\, \widehat{W}_i\nu,\, (1-\widehat{W}_i)\nu)</code>
+</p>
+
+<p>where <code class="reqn">\beta(x; p, q)</code> is the probability density function (pdf) of the Beta distribution. Readers are alerted to the absence of the <code class="reqn">\mathbf{1}[\cdot]</code> indicator function in the definitions of <code class="reqn">\tilde{H}_3(w)</code> and <code class="reqn">\tilde{h}_3(w)</code>. This is correct and matches Kiriliouk <em>et al.</em> (2016, eqs. 17.21 and 17.22) though this author was confused for a day or so by the indicator function in what is purported to be the core definition of <code class="reqn">\hat{H}_l(w)</code> where <code class="reqn">l = 3</code> in Kiriliouk <em>et al.</em> (2016, eq. 17.21 and 17.17).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">spectralmeas(u, v=NULL, w=NULL, f=0.90, snv=FALSE,
+                                smooth=FALSE, nu=100, pdf=FALSE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">u</code> in the <code class="reqn">X</code> direction (actually the ranks are used so this can be a real-value argument as well);</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>v</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">v</code> in the <code class="reqn">Y</code> direction  (actually the ranks are used so this can be a real-value argument as well) and if <code>NULL</code> then <code>u</code> is treated as a two column <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> <code>data.frame</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>A vector of polar angle values <code class="reqn">W \in [0,1]</code> on which to compute the <code class="reqn">H(w)</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+<p>The nonexceedance probability <code class="reqn">F(S_f)</code> of the <em>pseudo-polar radius</em> in <code>psepolar</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>snv</code></td>
+<td>
+<p>Return the standard normal variate of the <code class="reqn">H</code> by the well-known transform through the quantile function of the standard normal, <code>qnorm()</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smooth</code></td>
+<td>
+<p>A logical to return <code class="reqn">\tilde{H}_3(w)</code> instead of <code class="reqn">H_3(w)</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nu</code></td>
+<td>
+<p>The <code class="reqn">\nu &gt; 0</code> smoothing parameter;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pdf</code></td>
+<td>
+<p>A logical to return the smoothed probability density <code class="reqn">\tilde{h}_3(w)</code>. If <code>pdf=TRUE</code>, then internally <code>smooth=TRUE</code> will be set; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass to the <code>psepolar</code> function.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> <code>vector</code> of <code class="reqn">H_3(w)</code>, <code class="reqn">\tilde{H}_3(w)</code>, or <code class="reqn">\tilde{h}_3(w)</code> is returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The purpose of this section is to describe a CPU-intensive study of goodness-of-fit between a <em>Gumbel–Hougaard copula</em> (<code>GHcop</code>, <code class="reqn">\mathbf{GH}(u,v; \Theta_1)</code>) parent and a fitted <em>Hüsler–Reiss copula</em> (<code>HRcop</code>, <code class="reqn">\mathbf{HR}(u,v; \Theta_2)</code>). Both of these copulas are extreme values and are somewhat similar to each other, so sample sizes necessary for detection of differences should be large. A two-sided Kolmogorov–Smirnov tests (KS test, <code>ks.test()</code>) is used to measure significance in the differences between the estimated spectral measure distributions at <code class="reqn">f=0.90</code> (the 90th percentile, <code class="reqn">F(S_f)</code>) into the right tail.
+</p>
+<p>The true copula will be the <code class="reqn">\mathbf{GH}(\Theta_1)</code> having parameter <code class="reqn">\Theta_1 = 3.3</code>. The number of simulations per sample size <code>n</code> <code class="reqn">\in</code> <code>seq(50,1000, by=25)</code> is <code>nsim = 500</code>. For each sample size, a sample from the true parent is drawn, and a <code class="reqn">\mathbf{HR}(\Theta_2)</code> fit by maximum likelihood (<code>mleCOP</code>). The two spectral measure distributions (<code class="reqn">\widehat{H}_{\mathbf{GH}}(w)</code>, <code>Htru</code> and <code class="reqn">\widehat{H}_{\mathbf{HR}}(w)</code>, <code>Hfit</code>) are estimated for a uniform variate of the angle <code>W</code> having length equal to the applicable sample size. The Kolmogorov–Smirnov (KS) test is made between <code>Htru</code> and <code>Hfit</code>, and number of p-values less than the <code class="reqn">\beta = 0.05</code> (Type II error because alternative hypothesis is rigged as true) and simulation count are returned and written in file <code>Results.txt</code>. The sample sizes initially are small and traps of <code>NaN</code> (abandonment of a simulation run) are made. These traps are needed when the empirical distribution of <code>Htru</code> or <code>Hfit</code> degenerates.
+</p>
+<pre>
+  Results &lt;- NULL
+  true.par &lt;- 3.3; true.cop &lt;- GHcop; fit.cop &lt;- HRcop; search &lt;- c(0,100)
+  nsim &lt;- 20000; first_time &lt;- TRUE; f &lt;- 0.90; beta &lt;- 0.05
+  ns &lt;- c(seq(100,1000, by=50), 1250, 1500, 1750, 2000)
+  for(n in ns) {
+    W &lt;- sort(runif(n)); PV &lt;- vector(mode="numeric")
+    for(i in 1:(nsim/(n/2))) {
+      UV      &lt;- simCOP(n=n, cop=true.cop, para=true.par, graphics=FALSE)
+      fit.par &lt;- mleCOP(UV,  cop= fit.cop, interval=search)$para
+      UVfit   &lt;- simCOP(n=n, cop= fit.cop, para=fit.par,  graphics=FALSE)
+      Htru    &lt;- spectralmeas(UV,    w=W, bound.type="Carv", f=f)
+      Hfit    &lt;- spectralmeas(UVfit, w=W, bound.type="Carv", f=f)
+      if(length(Htru[! is.nan(Htru)]) != length(Hfit[! is.nan(Hfit)]) |
+         length(Htru[! is.nan(Htru)]) == 0 |
+         length(Hfit[! is.nan(Hfit)]) == 0) {
+         PV[i] &lt;- NA; next
+      }   # suppressWarnings() to silence ties warnings from ks.test()
+      KS &lt;- suppressWarnings( stats::ks.test(Htru, Hfit)$p.value )
+      #plot(FF, H, type="l"); lines(FF, Hfit, col=2); mtext(KS)
+      message("-",i, appendLF=FALSE)
+      PV[i] &lt;- KS
+    }
+    message(":",n)
+    zz &lt;- data.frame(SampleSize=n, NumPVle0p05=sum(PV[! is.na(PV)] &lt;= beta),
+                            SimulationCount=length(PV[! is.na(PV)]))
+    if(first_time) { Results &lt;- zz; first_time &lt;- FALSE; next }
+    Results &lt;- rbind(Results, zz)
+  }
+
+  plot(Results$SampleSize, 100*Results$NumPVle0p05/Results$SimulationCount,
+       type="b", cex=1.1, xlab="Sample size",
+       ylab="Percent simulations with p-value &lt; 0.05")
+</pre>
+<p>The <code>Results</code> show a general increase in the counts of p-value <code class="reqn">\le</code> 0.05 as sample size increases. There is variation of course and increasing <code>nsim</code> would smooth that considerably. The results show for <code class="reqn">n \approx 1{,}000</code> that the detection of statistically significant differences for extremal <code class="reqn">F(S_f) = 0.90</code> dependency between the <code class="reqn">\mathbf{GH}(\Theta_1{=}3.3)</code> and <code class="reqn">\mathbf{HR}(\Theta_2)</code> are detected at the error rate implied by the specified <code class="reqn">\beta = 0.05</code>.
+</p>
+<p>This range in sample size can be compared to the Kullback–Leibler sample size (<code class="reqn">n_{fg}</code>):
+</p>
+<pre>
+  UV      &lt;- simCOP(n=10000, cop=true.cop, para=true.par, graphics=FALSE)
+  fit.par &lt;- mleCOP(UV,      cop= fit.cop, interval=search)$para
+  kullCOP(cop1=true.cop, para1=true.par,
+          cop2=fit.cop,  para2=fit.par)$KL.sample.size
+  # The Kullback-Leibler (integer) sample size for detection of differences at
+  # alpha=0.05 are n_fg = (742, 809, 815, 826, 915, 973, 1203) for seven runs
+  # Do more to see variation.
+</pre>
+<p>where the Kullback–Leilber approach is to measure density departures across the whole <code class="reqn">\mathcal{I}^2</code> domain as opposed to extremal dependency in the right tail as does the spectral measure.
+</p>
+<p>Different runs of the above code will result in different <code class="reqn">n_{fg}</code> in part because of simulation differences internal to <code>kullCOP</code> but also because the <code class="reqn">\Theta_2</code> has its own slight variation in its fit to the large sample simulation (<code class="reqn">n=10{,}000</code>) of the parent. However, it seems that <code class="reqn">n_{fg} \approx 900</code> will be on the order of the <code class="reqn">n</code> for which the KS test on the spectral measure determines statistical significance with similar error rate.
+</p>
+<p>Now if the aforementioned simulation run is repeated for <code class="reqn">F(S_f) = 0.95</code> or <code>f=0.95</code>, the <code class="reqn">n_{fg}</code> obviously remains unchanged at about <code class="reqn">900</code> but the <code class="reqn">n</code> for which the error rate is about <code class="reqn">\beta = 0.05</code> is <code class="reqn">n \approx 600</code>. This sample size is clearly smaller than before and smaller than <code class="reqn">n_{fg}</code>, therefore, the analysis of the empirical spectral measure deeper into the tail <code class="reqn">F(S_f) = 0.95</code> requires a smaller sample size to distinguish between the two copula. Though the analysis does not address the question as to whether one or both copula are adequate for the problem at hand. For a final comparison, if the aforementioned simulation run is repeated for <code class="reqn">F(S_f) = 0.80</code> or <code>f=0.80</code>, then the <code class="reqn">n</code> for which the error rate is about <code class="reqn">\beta = 0.05</code> is <code class="reqn">n \approx 1{,}700</code>. Thus as analysis is made further away from the tail into the center of the distribution, the sample size to distinguish between these two similar copula increases substantially.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>William Asquith <a href="mailto:william.asquith@ttu.edu">william.asquith@ttu.edu</a></p>
+
+
+<h3>References</h3>
+
+<p>Kiriliouk, Anna, Segers, Johan, Warchoł, Michał, 2016, Nonparameteric estimation of extremal dependence: <em>in</em> Extreme Value Modeling and Risk Analysis, D.K. Dey and Jun Yan <em>eds.</em>, Boca Raton, FL, CRC Press, ISBN 978–1–4987–0129–7.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>psepolar</code>, <code>stabtaildepf</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+UV &lt;- simCOP(n=500, cop=HRcop, para=1.3, graphics=FALSE)
+W &lt;- seq(0,1,by=0.005)
+Hu &lt;- spectralmeas(UV, w=W)
+Hs &lt;- spectralmeas(UV, w=W, smooth=TRUE, nu=100)
+plot(W,Hu, type="l", ylab="Spectral Measure H", xlab="Angle")
+lines(W, Hs, col=2) #
+## End(Not run)
+
+## Not run: 
+"GAUScop" &lt;- function(u,v, para=NULL, ...) {
+  if(length(u)==1) u&lt;-rep(u,length(v)); if(length(v)==1) v&lt;-rep(v,length(u))
+  return(copula::pCopula(matrix(c(u,v), ncol=2), para))
+}
+GAUSparfn &lt;- function(rho) return(copula::normalCopula(rho, dim = 2))
+n &lt;- 2000 # The PSP parent has no upper tail dependency
+uv    &lt;- simCOP(n=n, cop=PSP,      para=NULL, graphics=FALSE)
+PLpar &lt;- mleCOP(uv,  cop=PLcop,    interval=c(0,100))$para
+PLuv  &lt;- simCOP(n=n, cop=PLcop,    para=PLpar, graphics=FALSE)
+GApar &lt;- mleCOP(uv,  cop=GAUScop,  parafn=GAUSparfn, interval=c(-1,1))$para
+GAuv  &lt;- simCOP(n=n, cop=GAUScop,  para=GApar, graphics=FALSE)
+GLpar &lt;- mleCOP(uv,  cop=GLcop,    interval=c(0,100))$para
+GLuv  &lt;- simCOP(n=n, cop=GLcop,    para=GLpar, graphics=FALSE)
+FF &lt;- c(0.001,seq(0.005,0.995, by=0.005),0.999); qFF &lt;- qnorm(FF)
+f &lt;- 0.90 # Seeking beyond the 90th percentile pseudo-polar radius
+PSPh &lt;- spectralmeas(  uv, w=FF, f=f, smooth=TRUE, snv=TRUE)
+PLh  &lt;- spectralmeas(PLuv, w=FF, f=f, smooth=TRUE, snv=TRUE)
+GAh  &lt;- spectralmeas(GAuv, w=FF, f=f, smooth=TRUE, snv=TRUE)
+GLh  &lt;- spectralmeas(GLuv, w=FF, f=f, smooth=TRUE, snv=TRUE)
+plot(qFF, PSPh, type="l", lwd=2, xlim=c(-3,3), ylim=c(-2,2),
+     xlab="STANDARD NORMAL VARIATE OF PSEUDO-POLAR ANGLE",
+     ylab="STANDARD NORMAL VARIATE OF SPECTRAL MEASURE PROBABILITY")
+lines(qFF, PLh, col=2) #  red  line is the Plackett copula
+lines(qFF, GAh, col=3) # green line is the Gaussian copula
+lines(qFF, GLh, col=4) #  blue line is the Galambos copula
+# Notice the flat spot and less steep nature of the PSP (black line), which is
+# indicative of no to even spreading tail dependency. The Plackett and Gaussian
+# copulas show no specific steepening near the middle, which remains indicative
+# of no tail dependency with the Plackett being less steep because it has a more
+# dispersed copula density at the right tail is approached than the Gaussian.
+# The Galambos copula has upper tail dependency, which is seen by
+# the mass concentration and steepening of the curve on the plot.
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,151 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>simulate_cycloSurv</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simulate periodic mortality process</h2>
+
+<h3>Description</h3>
+
+<p>Simulate periodic mortality process
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">simulate_cycloSurv(
+  n,
+  period = 1,
+  meanhazard = 0.5,
+  peaks = c(0.25, 0.75),
+  durations = c(0.2, 0.1),
+  weights = c(0.5, 0.5),
+  censoring = "random",
+  censor.times = max.periods * period/2,
+  max.periods = 10,
+  n.times = 1000,
+  plotme = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>number of simulated mortality/censoring events</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>period</code></td>
+<td>
+<p>length of one mortality cycle</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>meanhazard</code></td>
+<td>
+<p>average hazard value</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>peaks</code></td>
+<td>
+<p>k-vector of peaks</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>durations</code></td>
+<td>
+<p>k-vector of season length parameters, based on concentration parameter from wrapped Cauchy distribution</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>k-vector of weights ((k-1)-vector is also accepted)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>censoring</code></td>
+<td>
+<p>the type of censoring in the simulated data. Either "none" (all data is uncensored), "fixed" (all data is censored at a specified time), or "random" (data is randomly censored throughout).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>censor.times</code></td>
+<td>
+<p>numeric or vector listing times for censoring (only applicable if censoring == "fixed").</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.periods</code></td>
+<td>
+<p>maximum number of cycles</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.times</code></td>
+<td>
+<p>number of x-values for plots (a higher value results in more precision for curves)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plotme</code></td>
+<td>
+<p>if TRUE, produces a set of plots for the simulation to display its accuracy</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a <code>cycloSurv</code> object (a type of Surv object; see <code>Surv</code>)
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">par.init &lt;- par(no.readonly = TRUE)
+par(oma = c(2,0,2,0))
+T.morts1 &lt;- simulate_cycloSurv(1000, period = 1, 
+                             meanhazard = 0.3, 
+                             peaks = c(0.25, 0.75), 
+                             durations = c(0.2, 0.1), 
+                             weights = c(0.3, 0.7), 
+                             plotme = TRUE)
+
+with(attributes(T.morts1),
+     title(paste0("mean hazard: ", meanhazard, "; peaks: ",
+                  paste(peaks, collapse = ",")), outer = TRUE))
+
+par(oma = c(2,0,2,0))
+T.morts2 &lt;- simulate_cycloSurv(300, period = 365, 
+                             meanhazard = 0.5/365, 
+                             peaks = c(100, 250), 
+                             durations = c(20, 40), 
+                             weights = c(0.4, 0.6), 
+                             plotme = TRUE,
+                             max.periods = 5)
+
+with(attributes(T.morts2),
+     title(paste0("mean hazard: ", round(meanhazard, 3), "; peaks: ",
+                  paste(peaks, collapse = ",")), outer = TRUE))
+
+
+
+par(mfrow = c(1,1))
+require(magrittr)
+h &lt;- with(as.matrix(T.morts1) %&gt;% data.frame %&gt;% subset(status == 1),
+    hist(stop - floor(stop), breaks = 20, col = "grey", bor = "darkgrey"))
+
+with(attributes(T.morts1), curve(mwc(x, mus = peaks, 
+                                     rhos = findRho(durations), gammas = weights, 
+                                     tau = period)* mean(h$counts), add = TRUE))
+par(par.init)
+</code></pre>
+
+
+</div>

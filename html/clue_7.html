@@ -1,0 +1,106 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cl_membership</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Memberships of Partitions</h2>
+
+<h3>Description</h3>
+
+<p>Compute the memberships values for objects representing partitions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cl_membership(x, k = n_of_classes(x))
+as.cl_membership(x)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>an R object representing a partition of objects (for
+<code>cl_membership</code>) or raw memberships or class ids (for
+<code>as.cl_membership</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p>an integer giving the number of columns (corresponding to
+class ids) to be used in the membership matrix.  Must not be less,
+and default to, the number of classes in the partition.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>cl_membership</code> is a generic function.
+</p>
+<p>The methods provided in package <span class="pkg">clue</span> handle the partitions
+obtained from clustering functions in the base R distribution, as well
+as packages <span class="pkg">RWeka</span>, <span class="pkg">cba</span>, <span class="pkg">cclust</span>, <span class="pkg">cluster</span>,
+<span class="pkg">e1071</span>, <span class="pkg">flexclust</span>, <span class="pkg">flexmix</span>, <span class="pkg">kernlab</span>,
+<span class="pkg">mclust</span>, <span class="pkg">movMF</span> and <span class="pkg">skmeans</span> (and of course, <span class="pkg">clue</span>
+itself).
+</p>
+<p><code>as.cl_membership</code> can be used for coercing “raw” class
+ids (given as atomic vectors) or membership values (given as numeric
+matrices) to membership objects.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>"cl_membership"</code> with the matrix of
+membership values.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>is.cl_partition</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Getting the memberships of a single soft partition.
+d &lt;- dist(USArrests)
+hclust_methods &lt;-
+    c("ward", "single", "complete", "average", "mcquitty")
+hclust_results &lt;- lapply(hclust_methods, function(m) hclust(d, m))
+names(hclust_results) &lt;- hclust_methods 
+## Now create an ensemble from the results.
+hens &lt;- cl_ensemble(list = hclust_results)
+## And add the results of agnes and diana.
+require("cluster")
+hens &lt;- c(hens, list(agnes = agnes(d), diana = diana(d)))
+## Create a dissimilarity object from this.
+d1 &lt;- cl_dissimilarity(hens)
+## And compute a soft partition.
+party &lt;- fanny(d1, 2)
+round(cl_membership(party), 5)
+## The "nearest" hard partition to this:
+as.cl_hard_partition(party)
+## (which has the same class ids as cl_class_ids(party)).
+
+## Extracting the memberships from the elements of an ensemble of
+## partitions.
+pens &lt;- cl_boot(USArrests, 30, 3)
+pens
+mems &lt;- lapply(pens, cl_membership)
+## And turning these raw memberships into an ensemble of partitions.
+pens &lt;- cl_ensemble(list = lapply(mems, as.cl_partition))
+pens
+pens[[length(pens)]]
+</code></pre>
+
+
+</div>

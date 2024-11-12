@@ -1,0 +1,174 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>body_add_normal</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Add a new paragraph with default style</h2>
+
+<h3>Description</h3>
+
+<p>Add a new paragraph in an <code>officer</code> document with default style.<br>
+Variables can be inserted in the text as multiple strings (<code>paste()</code> style) or enclosed by braces (<code>glue()</code> style).  <br>
+Basic markdown syntax is available: <code style="white-space: pre;">⁠**bold**⁠</code>, <code style="white-space: pre;">⁠*italic*⁠</code>, and <code style="white-space: pre;">⁠_underlined_⁠</code>. <br>
+References to any bookmark can be inserted using the syntax <code style="white-space: pre;">⁠@ref(bookmark)⁠</code> and newlines can be inserted using the token <code style="white-space: pre;">⁠&lt;br&gt;⁠</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">body_add_normal(
+  doc,
+  ...,
+  .sep = "",
+  style = NULL,
+  squish = TRUE,
+  font_size = NA,
+  envir = parent.frame(),
+  parse = c("ref", "format", "code")
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>doc</code></td>
+<td>
+<p>the doc object (created with the <code>read_docx</code> function of <code>officer</code> package)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>one or several character strings, pasted using <code>.sep</code>. As with <code>glue::glue()</code>, expressions enclosed by braces will be evaluated as R code. If more than one variable is passed, all should be of length 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.sep</code></td>
+<td>
+<p>Separator used to separate elements.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>style</code></td>
+<td>
+<p>Style for normal text. Best set with <code>crosstable_options()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>squish</code></td>
+<td>
+<p>Whether to squish the result (remove trailing and repeated spaces). Default to <code>TRUE</code>. Allows to add multiline paragraph without breaking the string.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>font_size</code></td>
+<td>
+<p>Font size.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>envir</code></td>
+<td>
+<p>Environment to evaluate each expression in <code>glue()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parse</code></td>
+<td>
+<p>which format to parse. Default to all formats (<code>c("ref", "format", "code")</code>).</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a new doc object
+</p>
+<p>The docx object <code>doc</code>
+</p>
+
+
+<h3>Markdown support</h3>
+
+<p>In all <code>crosstable</code> helpers for <code>officer</code>, you can use the following Markdown syntax to format your text:
+</p>
+
+<ul>
+<li> <p><em>bold</em>: <code>"**text in bold**"</code>
+</p>
+</li>
+<li>
+<p> *italics: <code>"*text in italics*"</code>
+</p>
+</li>
+<li> <p><em>subscript</em>: <code>"Text in ~subscript~"</code>
+</p>
+</li>
+<li> <p><em>superscript</em>: <code>"Text in ^superscript^"</code>
+</p>
+</li>
+<li> <p><em>newline</em>: <code style="white-space: pre;">⁠Before &lt;br&gt; After⁠</code>
+</p>
+</li>
+<li> <p><em>color</em>: <code>"&lt;color:red&gt;red text&lt;/color&gt;"</code>
+</p>
+</li>
+<li> <p><em>shade</em>: <code>"&lt;shade:yellow&gt;yellow text&lt;/shade&gt;"</code> (background color)
+</p>
+</li>
+<li> <p><em>font family</em>: <code>"&lt;ff:symbol&gt;symbol&lt;/ff&gt;"</code> (
+</p>
+</li>
+</ul>
+<p>Note that the font name depends on your system language. For instant, in French, it would be <code>Symbol</code> with an uppercase first letter.
+</p>
+<p>See the last example of <code>body_add_normal()</code> for a practical case.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Dan Chaltiel
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(officer)
+library(crosstable)
+
+info_rows = c("Also, table iris has {nrow(iris)} rows.",
+              "And table mtcars has {nrow(mtcars)} rows.")
+doc = read_docx()  %&gt;%
+    body_add_normal("Table iris has", ncol(iris), "columns.", .sep=" ") %&gt;% #paste style
+    body_add_normal("However, table mtcars has {ncol(mtcars)} columns") %&gt;% #glue style
+    body_add_normal(info_rows)                                          %&gt;% #vector style
+    body_add_normal("")
+doc = doc %&gt;%
+    body_add_normal("You can write text in *italic1*, _underlined1_, **bold1**, and `code`,
+                    and you can also add * **references** *, for instance a ref to Table
+                    @ref(my_table). Multiple spaces are ignored (squished) so that you
+                    can enter multiline text.") %&gt;%
+    body_add_normal() %&gt;%
+    body_add_normal("Here I should use `body_add_crosstable()` to add a table before the
+                     legend.") %&gt;%
+    body_add_table_legend("My pretty table", bookmark="my_table")
+write_and_open(doc)
+
+#Markdown support
+read_docx() %&gt;%
+  body_add_normal("This is **bold and *italic* (see Table @ref(my_bkm)). ** &lt;br&gt; This is
+                   **bold `console \\*CODE\\*` and *bold _and_ italic* **") %&gt;%
+  body_add_normal("This is &lt;color:red&gt;red **bold** text&lt;/color&gt;, this is ~subscript *italic*~,
+                   and this is ^superscript with &lt;shade:yellow&gt;yellow&lt;/shade&gt;^") %&gt;%
+  body_add_normal("This is &lt;ff:Alibi&gt;a fancy font&lt;/ff&gt; and this `is code`!!") %&gt;%
+              #you might need to change "Alibi" to "alibi" here
+  body_add_normal() %&gt;%
+  body_add_table_legend("Some table legend", bookmark="my_bkm") %&gt;%
+  write_and_open()
+</code></pre>
+
+
+</div>

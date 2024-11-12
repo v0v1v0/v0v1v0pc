@@ -1,0 +1,290 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Estimate.b.k</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+RDS population size estimation
+</h2>
+
+<h3>Description</h3>
+
+<p>Estimate population size from respondent driven samples (RDS) using maximum likelihood, and several variation. 
+The underlying idea is that the sample spreads like an epidemic in the target population as described in the reference.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">Estimate.b.k(rds.object, type = "mle", jack.control = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>rds.object</code></td>
+<td>
+
+<p>A object of class <code>rds-object</code> as constructed by <code>initializeRdsObject</code> or outputted by <code>Estimate.b.k</code> (depending on the <code>type</code> used).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+
+<p>A character vector with the type of estimation. Possible values:
+</p>
+
+<ul>
+<li>
+<p><strong>mle</strong> Maximum likelihood.
+</p>
+</li>
+<li>
+<p><strong>integrated</strong> Integrated maximum likelihood.
+</p>
+</li>
+<li>
+<p><strong>observed</strong> Estimate with observed degrees.
+</p>
+</li>
+<li>
+<p><strong>jeffreys</strong> MAP estimation with Jeffreys prior.
+</p>
+</li>
+<li>
+<p><strong>parametric</strong> Assume <code class="reqn">\beta[k]:=\beta * \theta^k</code>.
+</p>
+</li>
+<li>
+<p><strong>rescaling</strong> Naive rescaling heuristic estimation. 
+</p>
+</li>
+<li>
+<p><strong>leave-d-out</strong> Leave-d-out resampling estimator. 
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>jack.control</code></td>
+<td>
+
+<p>A object of class <code>jack.control</code> as constructed by <code>makeJackControl.</code>
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>As of version 0.95, this function is the main workhorse of the <code>chords</code> package. 
+Given an <code>rds-class</code> object, it will return population size estimates for each degree. 
+Note that for the <code>rescaling</code> and <code>parametric</code> estimators, the input <code>rds-object</code> is expected to contain some initial estimate in the <code>estimates</code> slot. 
+</p>
+<p>See the reference for a description of the likelihood problem solved.
+Optimization is performed by noting that likelihood is coordinate-wise convex, thus amounts to a series of line-searches.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An <code>rds-class</code> object with an updated <code>estimates</code> slot.
+The <code>estiamtes</code> slot is <code>list</code> with the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>The function call.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Nk.estimates</code></td>
+<td>
+<p>The estimated degree frequencies.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>log.bk.estimates</code></td>
+<td>
+<p>The estimated sampling rates for each degree. In log scale.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>convergence</code></td>
+<td>
+<p>0 if estimation of <code class="reqn">N[k]</code>'s converged. Otherwise, 1 or -1, depending on the sign of the score function at the MLE. </p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>[1] Berchenko, Y., Rosenblatt D.J., and S.D.W. Frost. 
+"Modeling and Analyzing Respondent Driven Sampling as a Counting Process."
+arXiv:1304.3505, 
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>initializeRdsObject</code>, 
+<code>makeRdsSample</code>, 
+<code>getTheta</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Preliminaries
+data(brazil)
+rds.object2&lt;- initializeRdsObject(brazil)
+see &lt;- function(x) plot(x$estimates$Nk.estimates, type='h')
+
+# Maximum likelihood
+rds.object &lt;- Estimate.b.k(rds.object = rds.object2 )
+see(rds.object)
+
+# View estimates:
+plot(rds.object$estimates$Nk.estimates, type='h')
+# Population size estimate:
+sum(rds.object$estimates$Nk.estimates)
+plot(rds.object$estimates$log.bk.estimates, type='h')
+
+## Recover theta assuming b.k=b_0*k^theta
+getTheta(rds.object)
+
+# How many degrees were imputed?:
+table(rds.object$estimates$convergence)
+
+
+# Observed degree estimation:
+rds.object.4 &lt;- Estimate.b.k(rds.object = rds.object, type='observed')
+see(rds.object.4)
+
+# Naive rescaling
+rds.object.5 &lt;- Estimate.b.k(rds.object = rds.object, type='rescaling')
+see(rds.object.5)
+
+# Parametric rates
+rds.object.6 &lt;- Estimate.b.k(rds.object = rds.object, 
+                             type='parametric')
+see(rds.object.6)
+jack.control &lt;- makeJackControl(3, 1e1)
+rds.object.7 &lt;- Estimate.b.k(rds.object = rds.object, 
+                             type='leave-d-out', 
+                             jack.control = jack.control)
+see(rds.object.7)
+rds.object.8 &lt;- Estimate.b.k(rds.object = rds.object, 
+                             type='integrated', 
+                             jack.control = jack.control)
+see(rds.object.8)
+rds.object.9 &lt;- Estimate.b.k(rds.object = rds.object, 
+                             type='jeffreys')
+see(rds.object.9)
+
+
+
+## Not run: 
+## Simulated data example:
+    dk &lt;- c(2, 1e1) # unique degree classes
+    true.dks &lt;- rep(0,max(dk)); true.dks[dk] &lt;- dk
+    true.Nks &lt;- rep(0,max(dk)); true.Nks[dk] &lt;- 1e3
+    beta &lt;- 1 #5e-6
+    theta &lt;-  0.1
+    true.log.bks &lt;- rep(-Inf, max(dk))
+    true.log.bks[dk] &lt;- theta*log(beta*dk)
+    sample.length &lt;- 4e2
+    nsims &lt;- 1e2
+    
+    simlist &lt;- list()
+    for(i in 1:nsims){
+      simlist[[i]] &lt;- makeRdsSample(
+        N.k =true.Nks , 
+        b.k = exp(true.log.bks),
+        sample.length = sample.length)
+    }
+    
+    
+    # Estimate betas and theta with chords:
+    llvec &lt;- rep(NA,nsims)
+    bklist &lt;- list()
+    for(i in 1:nsims){
+      # i &lt;- 2
+      simlist[[i]] &lt;- Estimate.b.k(rds.object = simlist[[i]])
+      # llvec[i] &lt;- simlist[[i]]$estimates$likelihood
+      bklist[[i]] &lt;- simlist[[i]]$estimates$log.bk.estimates
+    }
+    b1vec &lt;- bklist 
+    b2vec &lt;- bklist 
+    
+    hist(b1vec)
+    abline(v=true.log.bks[2])
+    hist(b2vec)
+    abline(v=true.log.bks[10])
+    
+    beta0vec &lt;- rep(-Inf,nsims)
+    thetavec &lt;- rep(-Inf,nsims)
+    nvec &lt;- rep(-Inf,nsims)
+    converged &lt;- rep(9999,nsims)
+    
+    for(i in 1:nsims){
+      # i &lt;- 2
+      nvec[i] &lt;- sum(simlist[[i]]$estimates$Nk.estimates)
+      converged[i] &lt;- sum(simlist[[i]]$estimates$convergence, na.rm=TRUE)
+      # tfit &lt;- getTheta(simlist[[i]])
+      # beta0vec[i] &lt;- tfit$log.beta_0
+      # thetavec[i] &lt;- tfit$theta
+    }
+    summary(beta0vec)
+    summary(nvec)
+    # summary(thetavec)
+    # hist(thetavec)
+    # abline(v=theta)
+    hist(nvec)
+    abline(v=sum(true.Nks), col='red')
+    abline(v=median(nvec, na.rm = TRUE), lty=2)
+    table(converged)
+    
+    # Try various re-estimatinons:
+    rds.object2 &lt;- simlist[[which(is.infinite(nvec))[1]]]
+    
+    rds.object &lt;- Estimate.b.k(rds.object = rds.object2 )
+    see(rds.object)
+    rds.object$estimates$Nk.estimates
+    
+    rds.object.5 &lt;- Estimate.b.k(rds.object = rds.object, type='rescaling')
+    see(rds.object.5) # will not work. less than 2 converging estimates.
+    rds.object.5$estimates$Nk.estimates
+    
+    rds.object.6 &lt;- Estimate.b.k(rds.object = rds.object, type='parametric')
+    see(rds.object.6) # will not work. less than 2 converging estimates.
+    
+    
+    jack.control &lt;- makeJackControl(3, 1e2)
+    rds.object.7 &lt;- Estimate.b.k(rds.object = rds.object, 
+                             type='leave-d-out', 
+                             jack.control = jack.control)
+    see(rds.object.7)
+    rds.object.7$estimates$Nk.estimates
+    
+    
+    rds.object.8 &lt;- Estimate.b.k(rds.object = rds.object, type='integrated')
+    see(rds.object.8)
+    rds.object.8$estimates$Nk.estimates
+    
+    
+    rds.object.9 &lt;- Estimate.b.k(rds.object = rds.object, type='jeffreys')
+    see(rds.object.9)
+    rds.object.9$estimates$Nk.estimates
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

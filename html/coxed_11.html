@@ -1,0 +1,174 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>coxed.npsf</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Predict expected durations using the GAM method</h2>
+
+<h3>Description</h3>
+
+<p>This function is called by <code>coxed</code> and is not intended to be used by itself.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">coxed.npsf(cox.model, newdata = NULL, coef = NULL, b.ind = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cox.model</code></td>
+<td>
+<p>The output from a Cox proportional hazards model estimated
+with the <code>coxph</code> function in the <code>survival</code> package
+or with the <code>cph</code> function in the <code>rms</code>
+package</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdata</code></td>
+<td>
+<p>An optional data frame in which to look for variables with
+which to predict. If omitted, the fitted values are used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coef</code></td>
+<td>
+<p>A vector of new coefficients to replace the <code>coefficients</code> attribute
+of the <code>cox.model</code>. Used primarily for bootstrapping, to recalculate durations
+using new coefficients derived from a bootstrapped sample.
+If <code>NULL</code>, the original coefficients are employed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>b.ind</code></td>
+<td>
+<p>A vector of observation numbers to pass to the estimation sample to construct
+the a bootstrapped sample with replacement</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The non-parametric step function (NPSF) approach to calculating expected durations from the Cox
+proportional hazards model, described in Kropko and Harden (2018), uses the method proposed by
+Cox and Oakes (1984, 107-109) for estimating the cumulative baseline hazard function.  This
+method is nonparametric and results in a step-function representation of the cumulative
+baseline hazard.
+</p>
+<p>Cox and Oakes (1984, 108) show that the cumulative baseline hazard function can be estimated
+after fitting a Cox model by
+</p>
+<p style="text-align: center;"><code class="reqn">\hat{H}_0(t) = \sum_{\tau_j &lt; t}\frac{d_j}{\sum_{l\in\Re(\tau_j)}\hat{\psi}(l)},</code>
+</p>
+
+<p>where <code class="reqn">\tau_j</code> represents time points earlier than <code class="reqn">t</code>, <code class="reqn">d_j</code> is a count of the
+total number of failures at <code class="reqn">\tau_j</code>, <code class="reqn">\Re(\tau_j)</code> is the remaining risk set at <code class="reqn">\tau_j</code>,
+and <code class="reqn">\hat{\psi}(l)</code> represents the ELP from the Cox model for observations still in the
+risk set at <code class="reqn">\tau_j</code>. This equation is used calculate the cumulative baseline hazard at
+all time points in the range of observed durations. This estimate is a stepwise function
+because time points with no failures do not contribute to the cumulative hazard, so the function
+is flat until the next time point with observed failures.
+</p>
+<p>We extend this method to obtain expected durations by first calculating the baseline survivor
+function from the cumulative hazard function, using
+</p>
+<p style="text-align: center;"><code class="reqn">\hat{S}_0(t) = \exp[-\hat{H}_0(t)].</code>
+</p>
+
+<p>Each observation's survivor function is related to the baseline survivor function by
+</p>
+<p style="text-align: center;"><code class="reqn">\hat{S}_i(t) = \hat{S}_0(t)^{\hat{\psi}(i)},</code>
+</p>
+
+<p>where <code class="reqn">\hat{\psi}(i)</code> is the exponentiated linear predictor (ELP) for observation <code class="reqn">i</code>.
+These survivor functions can be used directly to calculate expected durations for each
+observation.  The expected value of a non-negative random variable can be calculated by
+</p>
+<p style="text-align: center;"><code class="reqn">E(X) = \int_0^{\infty} \bigg(1 - F(t)\bigg)dt,</code>
+</p>
+
+<p>where <code class="reqn">F(.)</code> is the cumulative distribution function for <code class="reqn">X</code>.  In the case of a
+duration variable <code class="reqn">t_i</code>, the expected duration is
+</p>
+<p style="text-align: center;"><code class="reqn">E(t_i) = \int_0^T S_i(t)\,dt,</code>
+</p>
+
+<p>where <code class="reqn">T</code> is the largest possible duration and <code class="reqn">S(t)</code> is the individual's survivor
+function.  We approximate this integral with a right Riemann-sum by calculating the survivor
+functions at every discrete time point from the minimum to the maximum observed durations,
+and multiplying these values by the length of the interval between time points with observed failures:
+</p>
+<p style="text-align: center;"><code class="reqn">E(t_i) \approx \sum_{t_j \in [0,T]} (t_j - t_{j-1})S_i(t_j).</code>
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>Returns a list containing the following components:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<code>exp.dur</code> </td>
+<td style="text-align: left;"> A vector of predicted mean durations for the estimation sample
+if <code>newdata</code> is omitted, or else for the specified new data. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>baseline.functions</code> </td>
+<td style="text-align: left;"> The estimated cumulative baseline hazard function and survivor function. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Jonathan Kropko &lt;jkropko@virginia.edu&gt; and Jeffrey J. Harden &lt;jharden2@nd.edu&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Kropko, J. and Harden, J. J. (2018). Beyond the Hazard Ratio: Generating Expected
+Durations from the Cox Proportional Hazards Model. <em>British Journal of Political Science</em>
+<a href="https://doi.org/10.1017/S000712341700045X">https://doi.org/10.1017/S000712341700045X</a>
+</p>
+<p>Cox, D. R., and Oakes, D. (1984). <em>Analysis of Survival Data. Monographs on Statistics &amp; Applied Probability</em>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>coxed</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">mv.surv &lt;- Surv(martinvanberg$formdur, event = rep(1, nrow(martinvanberg)))
+mv.cox &lt;- coxph(mv.surv ~ postel + prevdef + cont + ident + rgovm + pgovno + tpgovno +
+     minority, method = "breslow", data = martinvanberg)
+
+ed &lt;- coxed.npsf(mv.cox)
+ed$baseline.functions
+ed$exp.dur
+
+#Running coxed.npsf() on a bootstrap sample and with new coefficients
+bsample &lt;- sample(1:nrow(martinvanberg), nrow(martinvanberg), replace=TRUE)
+newcoefs &lt;- rnorm(8)
+ed2 &lt;- coxed.npsf(mv.cox, b.ind=bsample, coef=newcoefs)
+</code></pre>
+
+
+</div>

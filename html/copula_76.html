@@ -1,0 +1,101 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>corKendall</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>(Fast) Computation of Pairwise Kendall's Taus</h2>
+
+<h3>Description</h3>
+
+<p>For a data matrix <code>x</code>, compute the Kendall's tau
+“correlation” matrix, i.e., all pairwise Kendall's taus
+between the columns of <code>x</code>.
+</p>
+<p>By default and when <code>x</code> has no missing values
+(<code>NA</code>s), the fast <code class="reqn">O(n log(n))</code> algorithm of
+<code>cor.fk()</code> is used.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">corKendall(x, checkNA = TRUE,
+           use = if(checkNA &amp;&amp; anyNA(x)) "pairwise" else "everything")
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>data, a n x p matrix (or less efficiently a
+data.frame), or a numeric vector which is treated as n x 1 matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>checkNA</code></td>
+<td>
+<p>logical indicating if <code>x</code> should be checked for
+<code>NA</code>s and in the case of NA's <em>and</em> when <code>use</code>
+is not specified (<code>missing</code>), <code>cor(*, use =
+      "pairwise")</code> should be used.  Note that <code>corKendall(x,
+      checkNA = FALSE)</code> will produce an error when <code>x</code> has NA's.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use</code></td>
+<td>
+<p>a string to determine the treatment of <code>NA</code>s in
+<code>x</code>, see <code>cor</code>; its default determined via
+<code>checkNA</code>.  When this differs from <code>"everything"</code>, <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>'s
+<code>cor</code> is used; otherwise <a href="https://CRAN.R-project.org/package=pcaPP"><span class="pkg">pcaPP</span></a>'s
+<code>cor.fk()</code> which cannot deal with <code>NA</code>s.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The <code class="reqn">p \times p</code> matrix <code class="reqn">K</code> of pairwise Kendall's taus, with
+<code>K[i,j] := tau(x[,i], x[,j])</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cor.fk()</code> from <a href="https://CRAN.R-project.org/package=pcaPP"><span class="pkg">pcaPP</span></a> (used by default
+when there are no missing values (<code>NA</code>s) in <code>x</code>).
+</p>
+<p><code>etau()</code> or <code>fitCopula(*, method = "itau")</code>
+make use of <code>corKendall()</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## If there are no NA's, corKendall() is faster than cor(*, "kendall")
+## and gives the same :
+
+system.time(C1 &lt;- cor(swiss, method="kendall"))
+system.time(C2 &lt;- corKendall(swiss))
+stopifnot(all.equal(C1, C2,  tol = 1e-5))
+
+## In the case of missing values (NA), corKendall() reverts to
+## cor(*, "kendall", use = "pairwise") {no longer very fast} :
+
+swM &lt;- swiss # shorter names and three missings:
+colnames(swM) &lt;- abbreviate(colnames(swiss), min=6)
+swM[1,2] &lt;- swM[7,3] &lt;- swM[25,5] &lt;- NA
+(C3 &lt;- corKendall(swM)) # now automatically uses the same as
+stopifnot(identical(C3, cor(swM, method="kendall", use="pairwise")))
+## and is quite close to the non-missing "truth":
+stopifnot(all.equal(unname(C3), unname(C2), tol = 0.06)) # rel.diff.= 0.055
+
+try(corKendall(swM, checkNA=FALSE)) # --&gt; Error
+## the error is really from  pcaPP::cor.fk(swM)
+</code></pre>
+
+
+</div>

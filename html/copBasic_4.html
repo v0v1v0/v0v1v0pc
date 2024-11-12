@@ -1,0 +1,146 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>asCOP</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Wrapper on a User-Level Formula to Become a Copula Function</h2>
+
+<h3>Description</h3>
+
+<p>This function is intended to document and then to extend a simple API to end users to aid in implementation of other copulas for use within the <span class="pkg">copBasic</span> package. There is no need or requirement to use <code>asCOP</code> for almost all users. However, for the mathematical definition of some copulas, the <code>asCOP</code> function might help considerably. This is because there is a need for special treatment of <code class="reqn">u</code> and <code class="reqn">v</code> vectors of probability as each interacts with the vectorization implicit in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>. The special treatment is needed because many copulas are based on the operators such as <code>min()</code> and <code>max()</code>. When numerical integration used by the <code>integrate()</code> function in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> in some copula operators, such as <code>tauCOP</code> for the <em>Kendall Tau</em> of a copula, special accommodation is needed related to the inherent vectorization in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> and how <code>integrate()</code> works.
+</p>
+<p>Basically, the problem is that one can not strictly rely in all circumstances on what <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> does in terms of value recycling when <code class="reqn">u</code> and <code class="reqn">v</code> are of unequal lengths. The source code is straightforward. Simply put, if lengths of <code class="reqn">u</code> and <code class="reqn">v</code> are unity, then there is no concern, and even if the length of <code class="reqn">u</code> (say) is unity and <code class="reqn">v</code> is 21, then recycling of <code class="reqn">u</code> would often be okay. The real danger is when <code class="reqn">u</code> and <code class="reqn">v</code> have unequal lengths and those lengths are each greater than unity—the <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> treatment can not be universally relied upon with the various numerics herein involving optimization and nested numerical integration.
+</p>
+<p>The example shows how a formula definition of a copula that is not a copula already implemented by <span class="pkg">copBasic</span> is set into a function <code>deltacop</code> and then used inside another function <code>UsersCop</code> that will be the official copula that is compatible with a host of functions in <span class="pkg">copBasic</span>. The use of <code>asCOP</code> provides the length check necessary on <code class="reqn">u</code> and <code class="reqn">v</code>, and the argument <code>...</code> provides optional parameter support should the user's formula require more settings.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">asCOP(u, v, f=NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">u</code> in the <code class="reqn">X</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>v</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">v</code> in the <code class="reqn">Y</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+<p>A function for which the user desires to make as a copula; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass to the function <code>f</code> (such as parameters, if needed, for the copula in the form of a list).</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The value(s) for the copula are returned.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Nelsen, R.B., 2006, An introduction to copulas: New York, Springer, 269 p.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>COP</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+# Concerning Nelsen (2006, exer. 3.7, pp. 64--65)
+"trianglecop" &lt;- function(u,v, para=NULL, ...) {
+   # If para is set, then the triangle is rotated 90d clockwise.
+   if(! is.null(para) &amp;&amp; para == 1) { t &lt;- u; u &lt;- v; v &lt;- t }
+   if(length(u) &gt; 1 | length(v) &gt; 1) stop("only scalars for this function")
+   v2&lt;-v/2; if(0   &lt;= u    &amp;  u   &lt;= v2 &amp; v2 &lt;= 1/2) { return(u    )
+   } else   if(0   &lt;= v2   &amp; v2   &lt;  u  &amp;  u &lt; 1-v2) { return(v2   )
+   } else   if(1/2 &lt;= 1-v2 &amp; 1-v2 &lt;= u  &amp;  u &lt;= 1  ) { return(u+v-1)
+   } else { stop("should not be here in logic") }
+}
+"UsersCop" &lt;- function(u,v, ...) { asCOP(u,v, f=trianglecop, ...) }
+n=20000; UV &lt;- simCOP(n=n, cop=UsersCop)
+# The a-d elements of the problem now follow:
+# (a) Pr[V = 1 - |2*U -1|] = 1 and Cov(U,V) = 0; so that two random variables
+# can be uncorrelated but each is perfectly predictable from the other
+mean(UV$V - (1 - abs(2*UV$U -1))) # near zero; Nelsen says == 0
+cov(UV$U, UV$V)                   # near zero; Nelsen says == 0
+
+# (b) Cop(m,n) = Cop(n,m); so that two random variables can be identically
+# distributed, uncorrelated, and not exchangeable
+EMPIRcop(0.95,0.17, para=UV) # = A
+EMPIRcop(0.17,0.95, para=UV) # = B; then A != B
+
+# (c) Pr[V - U &gt; 0] = 2/3; so that two random variables can be identically
+# distributed, but their difference need not be symmetric about zero
+tmp &lt;- (UV$V - UV$U) &gt; 0
+length(tmp[tmp == TRUE])/n # about 2/3; Nelsen says == 2/3
+# the prior two lines yield about 1/2 for independence copula P()
+
+# (d) Pr[X + Y &gt; 0] = 2/3; so that uniform random variables on (-1,1) can each
+# be symmetric about zero, but their sum need not be.
+tmp &lt;- ((2*UV$V - 1) + (2*UV$U - 1)) &gt; 0
+length(tmp[tmp == TRUE])/n # about 2/3; Nelsen says == 2/3 
+## End(Not run)
+
+## Not run: 
+# Concerning Nelsen (2006, exam. 3.10, p. 73)
+"shufflecop" &lt;- # assume scalar arguments for u and v
+function(u,v, para, ...) {
+   m &lt;- para$mixer; subcop &lt;- para$subcop
+   if(is.na(m) | m &lt;= 0 | m &gt;= 1) stop("m ! in [0,1]")
+   if(u &lt;= m) { return(    subcop(1-m+u, v, para=para$para) -
+                           subcop(1-m,   v, para=para$para))
+   } else {     return(v - subcop(1-m,   v, para=para$para) +
+                           subcop(u-m,   v, para=para$para))
+}
+}
+"UsersCop" &lt;- function(u,v, para=NULL) {
+   asCOP(u,v, f=shufflecop, para=para)
+}
+n &lt;- 1000; u &lt;- runif(n)
+para &lt;- list(mixer=runif(1), subcop=W, para=20)
+v &lt;- sapply(1:n, function(i) {
+      simCOPmicro(u[i], cop=UsersCop, para=para) } )
+plot(data.frame(U=u, V=v), pch=17, col=rgb(1,0,1,1),
+     xlab="U, NONEXCEEDANCE PROBABILTY", ylab="V, NONEXCEEDANCE PROBABILITY")
+mtext("Shuffle Copula Nelsen (2006, exam. 3.10, p. 73)")
+
+# Concerning Nelsen (2006, exam. 5.14, p. 195)
+"deltacop" &lt;- function(u,v, ...) { min(c(u,v,(u^2+v^2)/2))     }
+"UsersCop" &lt;- function(u,v, ...) { asCOP(u,v, f=deltacop, ...) }
+isCOP.PQD(cop=UsersCop) # TRUE + Rho=0.288 and Tau=0.333 as Nelsen says
+isCOP.LTD(cop=UsersCop, wrtV=TRUE) # FALSE as Nelsen says
+isCOP.RTI(cop=UsersCop, wrtV=TRUE) # FALSE as Nelsen says 
+## End(Not run)
+</code></pre>
+
+
+</div>

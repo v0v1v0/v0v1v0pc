@@ -1,0 +1,105 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>countsplit</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Count splitting</h2>
+
+<h3>Description</h3>
+
+<p>Takes one matrix of counts and splits it into a specified number of folds. Each fold is a matrix of counts with the same dimension
+as the original matrix. Summing element-wise across the folds yields the original data matrix.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">countsplit(X, folds = 2, epsilon = rep(1/folds, folds), overdisps = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>A cell-by-gene matrix of integer counts</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>folds</code></td>
+<td>
+<p>An integer specifying how many folds you would like to split your data into.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>epsilon</code></td>
+<td>
+<p>A vector, which has length <code>folds</code>, that stores non-zero elements that sum to one. Determines the proportion of information from X that is allocated to each fold.
+When <code>folds</code> is not equal to 2, the recommended (and default) setting is to allocate equal amounts of information to each fold, such that each element is <code>1/folds</code>.
+When <code>folds=2</code>, the default is still <code style="white-space: pre;">⁠(1/2, 1/2)⁠</code>, but other values may be beneficial.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>overdisps</code></td>
+<td>
+<p>If NULL, then Poisson count splitting will be performed. Otherwise, this parameter should be a vector of non-negative numbers whose length is equal to the number of columns of <code>X</code>.
+These numbers are the overdispersion parameters for each column in <code>X</code>. If these are unknown, they can be estimated with a function such as
+<code>vst</code> in the package <code>sctransform</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>When the argument <code>overdisps</code> is set to NULL, this function performs the Poisson count splitting methodology outlined in
+Neufeld et al. (2022). With this setting, the folds of data are independent only if the original data were drawn from a Poisson distribution.
+</p>
+<p>If the data are thought to be overdispersed relative to the Poisson, then we may instead model them as coming from a negative binomial distribution,
+If we assume that <code class="reqn">X_{ij} \sim NB(\mu_{ij}, b_j)</code>, where this parameterization means that <code class="reqn"> E[X_{ij}] = \mu_{ij}</code> and <code class="reqn"> Var[X_{ij}] = \mu_{ij} + \mu_{ij}^2/b_j</code>, then
+we should pass in <code>overdisps</code> = <code class="reqn">c(b_1, \ldots, b_j)</code>. If this is the correct assumption, then the resulting folds of data will be independent.
+This is the negative binomial count splitting method of Neufeld et al. (2023).
+</p>
+<p>Please see our tutorials and vignettes for more details.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of length <code>folds</code>. Each element in the list stores a sparse matrix with the same dimensions as the data <code>X</code>. Each list element is a fold of data.
+</p>
+
+
+<h3>References</h3>
+
+<p>reference
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(countsplit)
+library(Matrix)
+library(Rcpp)
+# A Poisson count splitting example.
+n=400
+p=2
+X &lt;- matrix(rpois(n*p, 7), nrow=n, ncol=p)
+split &lt;- countsplit(X, folds=2)
+Xtrain &lt;- split[[1]]
+Xtest &lt;- split[[2]]
+cor(Xtrain[,1], Xtest[,1])
+cor(Xtrain[,2], Xtest[,2])
+
+# A negative binomial count splitting example.
+X &lt;- matrix(rnbinom(n*p, mu=7, size=7), nrow=n, ncol=p)
+split &lt;- countsplit(X, folds=2, overdisps=c(7,7))
+Xtrain &lt;- split[[1]]
+Xtest &lt;- split[[2]]
+cor(Xtrain[,1], Xtest[,1])
+cor(Xtrain[,2], Xtest[,2])
+</code></pre>
+
+
+</div>

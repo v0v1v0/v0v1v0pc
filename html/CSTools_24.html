@@ -1,0 +1,201 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CST_EnsClustering</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Ensemble clustering</h2>
+
+<h3>Description</h3>
+
+<p>This function performs a clustering on members/starting dates
+and returns a number of scenarios, with representative members for each of 
+them. The clustering is performed in a reduced EOF space.
+</p>
+<p>Motivation:
+Ensemble forecasts give a probabilistic insight of average weather conditions
+on extended timescales, i.e. from sub-seasonal to seasonal and beyond.
+With large ensembles, it is often an advantage to be able to group members
+according to similar characteristics and to select the most representative 
+member for each cluster. This can be useful to characterize the most probable 
+forecast scenarios in a multi-model (or single model) ensemble prediction.  
+This approach, applied at a regional level, can also be used to identify the 
+subset of ensemble members that best represent the full range of possible 
+solutions for downscaling applications. The choice of the ensemble members is 
+made flexible in order to meet the requirements of specific (regional) climate 
+information products, to be tailored for different regions and user needs. 
+</p>
+<p>Description of the tool:
+EnsClustering is a cluster analysis tool, based on the k-means algorithm, for 
+ensemble predictions. The aim is to group ensemble members according to 
+similar characteristics and to select the most representative member for each 
+cluster. The user chooses which feature of the data is used to group the 
+ensemble members by clustering: time mean, maximum, a certain percentile 
+(e.g., 75
+time period. For each ensemble member this value is computed at each grid 
+point, obtaining N lat-lon maps, where N is the number of ensemble members.
+The anomaly is computed subtracting the ensemble mean of these maps to each of 
+the single maps. The anomaly is therefore computed with respect to the 
+ensemble members (and not with respect to the time) and the Empirical 
+Orthogonal Function (EOF) analysis is applied to these anomaly maps. Regarding 
+the EOF analysis, the user can choose either how many Principal Components 
+(PCs) to retain or the percentage of explained variance to keep. After 
+reducing dimensionality via EOF analysis, k-means analysis is applied using 
+the desired subset of PCs. 
+</p>
+<p>The major final outputs are the classification in clusters, i.e. which member 
+belongs to which cluster (in k-means analysis the number k of clusters needs 
+to be defined prior to the analysis) and the most representative member for 
+each cluster, which is the closest member to the cluster centroid. Other 
+outputs refer to the statistics of clustering: in the PC space, the minimum 
+and the maximum distance between a member in a cluster and the cluster 
+centroid (i.e. the closest and the furthest member), the intra-cluster 
+standard deviation for each cluster (i.e. how much the cluster is compact).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CST_EnsClustering(
+  exp,
+  time_moment = "mean",
+  numclus = NULL,
+  lon_lim = NULL,
+  lat_lim = NULL,
+  variance_explained = 80,
+  numpcs = NULL,
+  time_dim = NULL,
+  time_percentile = 90,
+  cluster_dim = "member",
+  verbose = F
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>exp</code></td>
+<td>
+<p>An object of the class 's2dv_cube', containing the variables to be 
+analysed. The element 'data' in the 's2dv_cube' object must have, at
+least, spatial and temporal dimensions. Latitudinal dimension accepted 
+names: 'lat', 'lats', 'latitude', 'y', 'j', 'nav_lat'. Longitudinal 
+dimension accepted names: 'lon', 'lons','longitude', 'x', 'i', 'nav_lon'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_moment</code></td>
+<td>
+<p>Decides the moment to be applied to the time dimension. Can 
+be either 'mean' (time mean), 'sd' (standard deviation along time) or 'perc' 
+(a selected percentile on time). If 'perc' the keyword 'time_percentile' is 
+also used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>numclus</code></td>
+<td>
+<p>Number of clusters (scenarios) to be calculated. If set to NULL 
+the number of ensemble members divided by 10 is used, with a minimum of 2 
+and a maximum of 8.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lon_lim</code></td>
+<td>
+<p>List with the two longitude margins in 'c(-180,180)' format.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lat_lim</code></td>
+<td>
+<p>List with the two latitude margins.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>variance_explained</code></td>
+<td>
+<p>variance (percentage) to be explained by the set of 
+EOFs. Defaults to 80. Not used if numpcs is specified.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>numpcs</code></td>
+<td>
+<p>Number of EOFs retained in the analysis (optional).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_dim</code></td>
+<td>
+<p>String or character array with name(s) of dimension(s) over 
+which to compute statistics. If omitted c("ftime", "sdate", "time") are 
+searched in this order.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_percentile</code></td>
+<td>
+<p>Set the percentile in time you want to analyse (used 
+for 'time_moment = "perc").</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cluster_dim</code></td>
+<td>
+<p>Dimension along which to cluster. Typically "member" or 
+"sdate". This can also be a list like c("member", "sdate").</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Logical for verbose output</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list with elements <code>$cluster</code> (cluster assigned for each 
+member), <code>$freq</code> (relative frequency of each cluster), 
+<code>$closest_member</code> (representative member for each cluster), 
+<code>$repr_field</code> (list of fields for each representative member), 
+<code>composites</code> (list of mean fields for each cluster), <code>$lon</code> 
+(selected longitudes of output fields), <code>$lat</code> (selected longitudes of 
+output fields).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Federico Fabiano - ISAC-CNR, <a href="mailto:f.fabiano@isac.cnr.it">f.fabiano@isac.cnr.it</a>
+</p>
+<p>Ignazio Giuntoli - ISAC-CNR, <a href="mailto:i.giuntoli@isac.cnr.it">i.giuntoli@isac.cnr.it</a>
+</p>
+<p>Danila Volpi - ISAC-CNR, <a href="mailto:d.volpi@isac.cnr.it">d.volpi@isac.cnr.it</a>
+</p>
+<p>Paolo Davini - ISAC-CNR, <a href="mailto:p.davini@isac.cnr.it">p.davini@isac.cnr.it</a>
+</p>
+<p>Jost von Hardenberg - ISAC-CNR, <a href="mailto:j.vonhardenberg@isac.cnr.it">j.vonhardenberg@isac.cnr.it</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">dat_exp &lt;- array(abs(rnorm(1152))*275, dim = c(dataset = 1, member = 4, 
+                                              sdate = 6, ftime = 3, 
+                                              lat = 4, lon = 4))
+lon &lt;- seq(0, 3)
+lat &lt;- seq(48, 45)
+coords &lt;- list(lon = lon, lat = lat)
+exp &lt;- list(data = dat_exp, coords = coords)
+attr(exp, 'class') &lt;- 's2dv_cube'
+res &lt;- CST_EnsClustering(exp = exp, numclus = 3,
+                        cluster_dim = c("sdate"))
+
+</code></pre>
+
+
+</div>

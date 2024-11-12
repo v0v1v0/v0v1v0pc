@@ -1,0 +1,163 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fsubset</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fast Subsetting Matrix-Like Objects</h2>
+
+<h3>Description</h3>
+
+<p><code>fsubset</code> returns subsets of vectors, matrices or data frames which meet conditions. It is programmed very efficiently and uses C source code from the <em>data.table</em> package. 
+The methods also provide enhanced functionality compared to <code>subset</code>. The function <code>ss</code> provides an (internal generic) programmers alternative to <code>[</code> that does not drop dimensions and is significantly faster than <code>[</code> for data frames.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fsubset(.x, ...)
+sbt(.x, ...)     # Shorthand for fsubset
+
+## Default S3 method:
+fsubset(.x, subset, ...)
+
+## S3 method for class 'matrix'
+fsubset(.x, subset, ..., drop = FALSE)
+
+## S3 method for class 'data.frame'
+fsubset(.x, subset, ...)
+
+# Methods for indexed data / compatibility with plm:
+
+## S3 method for class 'pseries'
+fsubset(.x, subset, ..., drop.index.levels = "id")
+
+## S3 method for class 'pdata.frame'
+fsubset(.x, subset, ..., drop.index.levels = "id")
+
+
+# Fast subsetting (replaces `[` with drop = FALSE, programmers choice)
+ss(x, i, j, check = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>.x</code></td>
+<td>
+<p>object to be subsetted according to different methods.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a data frame / list, matrix or vector/array (only <code>i</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subset</code></td>
+<td>
+<p>logical expression indicating elements or rows to keep:
+missing values are taken as <code>FALSE</code>. The default, matrix and pseries methods only support logical vectors or row-indices (or a character vector of rownames if the matrix has rownames). </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>For the matrix or data frame method: multiple comma-separated expressions indicating columns to select. Otherwise: further arguments to be passed to or from other methods.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop</code></td>
+<td>
+<p>passed on to <code>[</code> indexing operator. Only available for the matrix method.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>i</code></td>
+<td>
+<p>positive or negative row-indices or a logical vector to subset the rows of <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>j</code></td>
+<td>
+<p>a vector of column names, positive or negative indices or a suitable logical vector to subset the columns of <code>x</code>. <em>Note:</em> Negative indices are converted to positive ones using <code>j &lt;- seq_along(x)[j]</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>check</code></td>
+<td>
+<p>logical. <code>FALSE</code> skips checks on <code>i</code> and <code>j</code>, e.g. whether indices are negative. This offers a speedup to programmers, but can terminate R if zero or negative indices are passed. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop.index.levels</code></td>
+<td>
+<p>character. Either <code>"id"</code>, <code>"time"</code>, <code>"all"</code> or <code>"none"</code>. See indexing.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>fsubset</code> is a generic function, with methods supplied for vectors, matrices, and data
+frames (including lists). It represents an improvement over <code>subset</code> in terms of both speed and functionality. The function <code>ss</code> is an improvement of <code>[</code> to subset (vectors) matrices and data frames without dropping dimensions. It is significantly faster than <code>[.data.frame</code>.
+</p>
+<p>For ordinary vectors, <code>subset</code> can be integer or logical, subsetting is done in C and more efficient than <code>[</code> for large vectors.
+</p>
+<p>For matrices the implementation is all base-R but slightly more efficient and more versatile than <code>subset.matrix</code>. Thus it is possible to <code>subset</code> matrix rows using logical or integer vectors, or character vectors matching rownames. The <code>drop</code> argument is passed on to the <code>[</code> method for matrices.
+</p>
+<p>For both matrices and data frames, the <code>...</code> argument can be used to subset columns, and is evaluated in a non-standard way. Thus it can support vectors of column names, indices or logical vectors, but also multiple comma separated column names passed without quotes, each of which may also be replaced by a sequence of columns i.e. <code>col1:coln</code>, and new column names may be assigned e.g. <code>fsubset(data, col1 &gt; 20, newname =  col2, col3:col6)</code> (see examples).
+</p>
+<p>For data frames, the <code>subset</code> argument is also evaluated in a non-standard way. Thus next to vector of row-indices or logical vectors, it supports logical expressions of the form <code>col2 &gt; 5 &amp; col2 &lt; col3</code> etc. (see examples). The data frame method is implemented in C, hence it is significantly faster than <code>subset.data.frame</code>. If fast data frame subsetting is required but no non-standard evaluation, the function <code>ss</code> is slightly simpler and faster.
+</p>
+<p>Factors may have empty levels after subsetting; unused levels are not automatically removed.  See <code>fdroplevels</code> to drop all unused levels from a data frame.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object similar to <code>.x/x</code> containing just the selected elements (for
+a vector), rows and columns (for a matrix or data frame).
+</p>
+
+
+<h3>Note</h3>
+
+<p><code>ss</code> offers no support for indexed data. Use <code>fsubset</code> with indices instead.
+</p>
+<p>No replacement method <code>fsubset&lt;-</code> or <code>ss&lt;-</code> is offered in <em>collapse</em>. For efficient subset replacement (without copying) use <code>data.table::set</code>, which can also be used with data frames and tibbles. To search and replace certain elements without copying, and to efficiently copy elements / rows from an equally sized vector / data frame, see <code>setv</code>.
+</p>
+<p>For subsetting columns alone, please also see selecting and replacing columns.
+</p>
+<p>Note that the use of <code>%==%</code> can yield significant performance gains on large data.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fselect</code>,
+<code>get_vars</code>,
+<code>ftransform</code>,
+Data Frame Manipulation, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">fsubset(airquality, Temp &gt; 90, Ozone, Temp)
+fsubset(airquality, Temp &gt; 90, OZ = Ozone, Temp) # With renaming
+fsubset(airquality, Day == 1, -Temp)
+fsubset(airquality, Day == 1, -(Day:Temp))
+fsubset(airquality, Day == 1, Ozone:Wind)
+fsubset(airquality, Day == 1 &amp; !is.na(Ozone), Ozone:Wind, Month)
+fsubset(airquality, Day %==% 1, -Temp)  # Faster for big data, as %==% directly returns indices
+
+ss(airquality, 1:10, 2:3)         # Significantly faster than airquality[1:10, 2:3]
+fsubset(airquality, 1:10, 2:3)    # This is possible but not advised
+</code></pre>
+
+
+</div>

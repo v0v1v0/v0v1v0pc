@@ -1,0 +1,171 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cvLM-package</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Cross-validation for linear and ridge regression models</h2>
+
+<h3>Description</h3>
+
+<p>This package provides efficient implementations of cross-validation techniques for linear and ridge regression models, leveraging C++ code with <code>Rcpp</code>, <code>RcppParallel</code>, and <code>Eigen</code> libraries. It supports leave-one-out, generalized, and <code>K</code>-fold cross-validation methods, utilizing Eigen matrices for high performance.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cvLM(object, ...)
+## S3 method for class 'formula'
+cvLM(object, data, subset, na.action, K.vals = 10L, lambda = 0,
+     generalized = FALSE, seed = 1L, n.threads = 1L, ...)
+## S3 method for class 'lm'
+cvLM(object, data, K.vals = 10L, lambda = 0,
+     generalized = FALSE, seed = 1L, n.threads = 1L, ...)
+## S3 method for class 'glm'
+cvLM(object, data, K.vals = 10L, lambda = 0,
+     generalized = FALSE, seed = 1L, n.threads = 1L, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>a <code>formula</code>, a linear model (<code>lm</code>), or a generalized linear model (<code>glm</code>) object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a <code>data.frame</code> containing the variables in the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subset</code></td>
+<td>
+<p>an optional vector specifying a subset of observations to be used in the fitting process. See <code>model.frame</code> for more details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.action</code></td>
+<td>
+<p>a function that indicates how to handle <code>NA</code> values in the data. See <code>model.frame</code> for more details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K.vals</code></td>
+<td>
+<p>an integer vector specifying the number of folds for cross-validation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>a non-negative numeric scalar specifying the regularization parameter for ridge regression.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>generalized</code></td>
+<td>
+<p>a logical value indicating whether to compute generalized or ordinary cross-validation. Defaults to <code>FALSE</code> for ordinary cross-validation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>a single integer value specifying the seed for random number generation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.threads</code></td>
+<td>
+<p>a single positive integer value specifying the number of threads for parallel computation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments. Currently, these do not affect the function's behavior.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>cvLM</code> function is a generic function that dispatches to specific methods based on the class of the <code>object</code> argument.
+</p>
+<p>The <code>cvLM.formula</code> method performs cross-validation for linear and ridge regression models specified using a formula interface.
+</p>
+<p>The <code>cvLM.lm</code> method performs cross-validation for linear regression models.
+</p>
+<p>The <code>cvLM.glm</code> method performs cross-validation for generalized linear models. It currently supports only gaussian family with identity link function.
+</p>
+<p>The cross-validation process involves splitting the data into <code>K</code> folds, fitting the model on <code>K-1</code> folds, and evaluating its performance on the remaining fold. This process is repeated <code>K</code> times, each time with a different fold held out for testing.
+</p>
+<p>The <code>cvLM</code> functions use closed-form solutions for leave-one-out and generalized cross-validation and efficiently handle the K-fold cross-validation process, optionally using multithreading for faster computation when working with larger data.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>data.frame</code> consisting of columns representing the number of folds, the cross-validation result, and the seed used for the computation.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Philip Nye, <a href="mailto:phipnye@proton.me">phipnye@proton.me</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Bates D, Eddelbuettel D (2013). "Fast and Elegant Numerical Linear Algebra Using the RcppEigen Package." Journal of Statistical Software, 52(5), 1-24. <a href="https://doi.org/10.18637/jss.v052.i05">doi:10.18637/jss.v052.i05</a>.
+</p>
+<p>Aggarwal, C. C. (2020). Linear Algebra and Optimization for Machine Learning: A Textbook. Springer Cham. <a href="https://doi.org/10.1007/978-3-030-40344-7">doi:10.1007/978-3-030-40344-7</a>.
+</p>
+<p>Hastie, T., Tibshirani, R., &amp; Friedman, J. (2009). The Elements of Statistical Learning: Data Mining, Inference, and Prediction (2nd ed.). Springer New York, NY. <a href="https://doi.org/10.1007/978-0-387-84858-7">doi:10.1007/978-0-387-84858-7</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>formula</code>, <code>lm</code>, <code>glm</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(mtcars)
+n &lt;- nrow(mtcars)
+
+# Formula method
+cvLM(
+  mpg ~ .,
+  data = mtcars,
+  K.vals = n,    # Leave-one-out CV
+  lambda = 10    # Shrinkage parameter of 10
+)
+
+# lm method
+my.lm &lt;- lm(mpg ~ ., data = mtcars)
+cvLM(
+  my.lm,
+  data = mtcars,
+  K.vals = c(5L, 8L), # Perform both 5- and 8-fold CV
+  n.threads = 8L,     # Allow up to 8 threads for computation
+  seed = 1234L
+)
+
+# glm method
+my.glm &lt;- glm(mpg ~ ., data = mtcars)
+cvLM(
+  my.glm,
+  data = mtcars,
+  K.vals = n, generalized = TRUE # Use generalized CV
+)
+</code></pre>
+
+
+</div>

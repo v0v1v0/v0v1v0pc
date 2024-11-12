@@ -1,0 +1,178 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>vcr.rpart.newdata</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Prepare for visualization of an rpart classification on new data.
+</h2>
+
+<h3>Description</h3>
+
+<p>Produces output for the purpose of constructing graphical displays such as the <code>classmap</code> on new data. Requires the output of
+<code>vcr.rpart.train</code> as an argument.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">vcr.rpart.newdata(Xnew, ynew = NULL, vcr.rpart.train.out,
+                  LOO = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Xnew</code></td>
+<td>
+<p>data matrix of the new data, with the same
+number of columns <code>d</code> as in the training data. Missing values are not allowed.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ynew</code></td>
+<td>
+<p>factor with class membership of each new case. Can be <code>NA</code> for some or all cases. If <code>NULL</code>, is assumed to be <code>NA</code> everywhere.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vcr.rpart.train.out</code></td>
+<td>
+<p>output of <code>vcr.rpart.train</code> on the training data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>LOO</code></td>
+<td>
+<p>leave one out. Only used when testing this function on a subset of the training data. Default is <code>LOO=FALSE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list with components: <br></p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>yintnew</code></td>
+<td>
+<p>number of the given class of each case. Can contain <code>NA</code>'s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ynew</code></td>
+<td>
+<p>given class label of each case. Can contain <code>NA</code>'s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>levels</code></td>
+<td>
+<p>levels of the response, from <code>vcr.rpart.train.out</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predint</code></td>
+<td>
+<p>predicted class number of each case. Always exists.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pred</code></td>
+<td>
+<p>predicted label of each case.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>altint</code></td>
+<td>
+<p>number of the alternative class. Among the classes different from the given class, it is the one with the highest posterior probability. Is <code>NA</code> for cases whose <code>ynew</code> is missing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>altlab</code></td>
+<td>
+<p>alternative label if yintnew was given, else <code>NA</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PAC</code></td>
+<td>
+<p>probability of the alternative class. Is <code>NA</code> for cases whose <code>ynew</code> is missing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fig</code></td>
+<td>
+<p>distance of each case <code class="reqn">i</code> from each class <code class="reqn">g</code>. Always exists.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>farness</code></td>
+<td>
+<p>farness of each case from its given class. Is <code>NA</code> for cases whose <code>ynew</code> is missing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ofarness</code></td>
+<td>
+<p>for each case <code class="reqn">i</code>, its lowest <code>fig[i,g]</code> to any class <code class="reqn">g</code>. Always exists.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Raymaekers J., Rousseeuw P.J.
+</p>
+
+
+<h3>References</h3>
+
+<p>Raymaekers J., Rousseeuw P.J.(2021). Silhouettes and quasi residual plots for neural nets and tree-based classifiers. <a href="https://arxiv.org/abs/2106.08814">(link to open access pdf)</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>vcr.rpart.train</code>, <code>classmap</code>, <code>silplot</code>, <code>stackedplot</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(rpart)
+data("data_titanic")
+traindata &lt;- data_titanic[which(data_titanic$dataType == "train"), -13]
+str(traindata); table(traindata$y)
+set.seed(123) # rpart is not deterministic
+rpart.out &lt;- rpart(y ~ Pclass + Sex + SibSp +
+                    Parch + Fare + Embarked,
+                  data = traindata, method = 'class', model = TRUE)
+y_train &lt;- traindata[, 12]
+x_train &lt;- traindata[, -12]
+mytype &lt;- list(nominal = c("Name", "Sex", "Ticket", "Cabin", "Embarked"), ordratio = c("Pclass"))
+# These are 5 nominal columns, and one ordinal.
+# The variables not listed are by default interval-scaled.
+vcrtrain &lt;- vcr.rpart.train(x_train, y_train, rpart.out, mytype)
+testdata &lt;- data_titanic[which(data_titanic$dataType == "test"), -13]
+dim(testdata)
+x_test &lt;- testdata[, -12]
+y_test &lt;- testdata[, 12]
+vcrtest &lt;- vcr.rpart.newdata(x_test, y_test, vcrtrain)
+confmat.vcr(vcrtest)
+silplot(vcrtest, classCols = c(2, 4))
+classmap(vcrtest, "casualty", classCols = c(2, 4))
+classmap(vcrtest, "survived", classCols = c(2, 4))
+
+# For more examples, we refer to the vignette:
+## Not run: 
+vignette("Rpart_examples")
+
+## End(Not run)
+</code></pre>
+
+
+</div>

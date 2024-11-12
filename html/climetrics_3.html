@@ -1,0 +1,192 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>aaClimate</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Changes in the Area of Analogous Climate</h2>
+
+<h3>Description</h3>
+
+<p>To quantify the change in area of analogous climates (classes),the change in area occupied by a given class between time 1 (t1) and time 2 (t2) periods is quantified. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">  aaClimate(precip,tmin, tmax, tmean,t1,t2)
+  aaClimateC(c1,c2)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>precip</code></td>
+<td>
+<p>A time series of precipitation as a Raster or Raster Time Series object</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tmin</code></td>
+<td>
+<p>A time series of minimum temperature as a Raster or Raster Time Series object</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tmax</code></td>
+<td>
+<p>A time series of maximum temperature as a Raster or Raster Time Series object</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tmean</code></td>
+<td>
+<p>A time series of mean temperature as a Raster or Raster Time Series object; if not provided, it will be calculated from tmin and tmax</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>t1</code></td>
+<td>
+<p>a chanracter or a numeric vector, specifying the index of raster layers for time 1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>t2</code></td>
+<td>
+<p>a chanracter or a numeric vector, specifying the index of raster layers for time 2</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>c1</code></td>
+<td>
+<p>A single layer Raster layer contains Climate classes (e.g., Koppen Geiger climate classification) for time 1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>c2</code></td>
+<td>
+<p>A single layer Raster layer contains Climate classes (e.g., Koppen Geiger climate classification) for time 2</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For a given cell with a given climate class, the change in area of analogous climates represented the ratio (in percentage) of the difference between time 2 and time 1 area of that class to the time 1 area of the same class. Positive values indicated gains in area, negative values indicated losses, and null values reflect no change.
+</p>
+<p>The aaClimate first uses <code>apply.months</code> function to generate the monthly mean of climate parameter (results a Raster object with 12 layers correspond to 12 months) over each time period (t1 and t2); then uses the <code>kgc</code> function to generate the Koppen Geiger climate classification for each time period. Then the changes in the area of each class is calculated between time 1 and time 2. If the climate classification (regions) are available for time 1 and time 2, then the <code>aaClimateC</code> can be used instead.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A single Raster layer (RasterLayer or SpatRaster depending on the input)
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Shirin Taheri; Babak Naimi
+</p>
+<p><a href="mailto:taheri.shi@gmail.com">taheri.shi@gmail.com</a>; <a href="mailto:naimi.b@gmail.com">naimi.b@gmail.com</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+#-------
+filePath &lt;- system.file("external/", package="climetrics") # path to the dataset folder
+
+# read the climate variables using the terra package (you can use the raster package as well):
+
+pr &lt;- rast(paste0(filePath,'/precip.tif'))
+tmin &lt;- rast(paste0(filePath,'/tmin.tif'))
+tmax &lt;- rast(paste0(filePath,'/tmax.tif'))
+tmean &lt;- rast(paste0(filePath,'/tmean.tif'))
+
+pr # has 360 layers corresponds to months of the years 1991-2020
+
+n &lt;- readRDS(paste0(filePath,'/dates.rds')) # read corresponding dates
+
+class(n)
+length(n)
+
+head(n) # Dates corresponds to the layers in climate variables (pr, tmin, tmax, tmean)
+
+####################
+
+# use rts function in the rts package to make a raster time series:
+
+pr.t &lt;- rts(pr,n) 
+tmin.t &lt;- rts(tmin,n)
+tmax.t &lt;- rts(tmax,n)
+tmean.t &lt;- rts(tmean,n)
+#------
+
+pr.t # see the summary report of the raster time series object
+
+
+###########################
+# test of the metric:
+#---------
+#---------
+# t1 (time1) = '1991/1990' takes all layers correspond to years between 1991-01-01 to 2000-12-31
+# t2 (time2) = '2010/2020' takes all layers correspond to years between 2010-01-01 to 2020-12-31
+
+aa &lt;- aaClimate(precip=pr.t,tmin=tmin.t,tmax=tmax.t,tmean=tmean.t,t1='1991/2000',t2='2010/2020')
+
+plot(aa,main="Changes in the area of Analogous Climates")
+
+
+########
+# Alternatively, if the climate in both times are available as climate classes
+# (e.g., Koppen Geiger climate classification), changes in the area of analogous 
+# climate can be quantified using the aaClimateC function:
+
+# Here, we first generate Koppen Geiger climate classification for time 1 and time 2, separately,
+# To do so, we need the monthly average of climate variables (over years for each month):
+
+# take the average of climate variables for each month over different years:
+
+p12.1 &lt;- apply.months(pr.t[['1991/2000']],'mean')
+p12.2 &lt;- apply.months(pr.t[['2010/2020']],'mean')
+
+p12.1 # has 12 layers corresponding to 12 months
+
+plot(p12.1)
+#--
+tmin12.1 &lt;- apply.months(tmin.t[['1991/2000']],'mean')
+tmin12.2 &lt;- apply.months(tmin.t[['2010/2020']],'mean')
+#--
+tmax12.1 &lt;- apply.months(tmax.t[['1991/2000']],'mean')
+tmax12.2 &lt;- apply.months(tmax.t[['2010/2020']],'mean')
+#--
+tmean12.1 &lt;- apply.months(tmean.t[['1991/2000']],'mean')
+tmean12.2 &lt;- apply.months(tmean.t[['2010/2020']],'mean')
+#--
+
+
+##-------- now, the kgc function can be used to generate the climate classification map:
+k1 &lt;- kgc(p=p12.1,tmin = tmin12.1,tmax=tmax12.1, tmean = tmean12.1)
+k2 &lt;- kgc(p=p12.2,tmin = tmin12.2,tmax=tmax12.2, tmean = tmean12.2)
+
+plot(k1, main= "Koppen Geiger climate classification - 1995")
+plot(k2, main= "Koppen Geiger climate classification - 2015")
+
+# Now, given the k1 and k2 climate classes, the changes in area of each class between two times
+# are calculated using the aaClimateC function:
+
+aa &lt;- aaClimateC(k1,k2)
+
+plot(aa)
+
+
+
+
+
+</code></pre>
+
+
+</div>

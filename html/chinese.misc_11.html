@@ -1,0 +1,167 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>dictionary_dtm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Making DTM/TDM for Groups of Words</h2>
+
+<h3>Description</h3>
+
+<p>A dictionary has several groups of words. Sometimes what we want is not the term frequency of this or that single word, 
+but rather the total sum of words that belong to the same group. 
+Given a dictionary, this function can save you a lot of time because 
+it sums up the frequencies of all groups of words and you do not need to do it manually.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">dictionary_dtm(
+  x,
+  dictionary,
+  type = "dtm",
+  simple_sum = FALSE,
+  return_dictionary = FALSE,
+  checks = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>an object of class DocumentTermMatrix or TermDocumentMatrix created by
+<code>corp_or_dtm</code> or <code>tm::DocumentTermMatrix</code> or 
+<code>tm::TermDocumentMatrix</code>. But it can also be a numeric matrix and you have to specify its type, 
+see below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dictionary</code></td>
+<td>
+<p>a dictionary telling the function how you group the words. It can be a list, matrix, data.frame 
+or character vector. Please see details for how to set this argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>if x is a matrix, you have to tell whether it represents a document term matrix or a term document 
+matrix. Character starting with "D" or "d" for document term matrix, and that with "T" or "t" for term document 
+matrix. The default is "dtm".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>simple_sum</code></td>
+<td>
+<p>if it is <code>FALSE</code> (default), a DTM/TDM will be returned. If <code>TRUE</code>, you will not 
+see the term frequency of each word in each text. Rather, a numeric vector is returned, each of its element 
+represents the sum of the corresponding group of words in the corpus as a whole.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return_dictionary</code></td>
+<td>
+<p>if <code>TRUE</code>, a modified dictionary is returned, which only contains words that
+do exist in the DTM/TDM. The default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>checks</code></td>
+<td>
+<p>The default is <code>TRUE</code>. This will check whether <code>x</code> and <code>dictionary</code> is valid.
+For <code>dictionary</code>, if the input is not a list of characters, the function will manage to convert. You should not set 
+this to <code>FALSE</code> unless you do believe that your input is OK.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The argument <code>dictionary</code> can be set in different ways:
+</p>
+
+<ul>
+<li>
+<p> (1) list: if it is a list, each element represents a group of words. The element should be a character vector; if it
+is not, the function will manage to convert. However, the length of the element should be &gt; 0 and has 
+to contain at least 1 non-NA word.
+</p>
+</li>
+<li>
+<p> (2) matrix or data.frame: each entry of the input should be character; if it is not, the function will manage to convert.
+At least one of the entries should not be <code>NA</code>. Each column (not row) represents a group of words.
+</p>
+</li>
+<li>
+<p> (3) character vector: it represents one group of words.
+</p>
+</li>
+<li>
+<p> (4) Note: you do not need to worry about two same words existing in the same group, because the function
+will only count one of them. Neither should you worry about that the words in a certain group do not really
+exist in the DTM/TDM, because the function will simply ignore those non-existent words. If none of the words 
+of that group exists, the group will still appear in the final result, although the total frequencies of that group 
+are all 0's. By setting <code>return_dictionary = TRUE</code>, you can see which words do exist.
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p>if <code>return_dictionary = FALSE</code>, an object of class DocumentTermMatrix or TermDocumentMatrix is 
+returned; if <code>TRUE</code>, a list is returned, the 1st element is the DTM/TDM, and the 2nd
+element is a named list of words. However, if <code>simple_sum = TRUE</code>, the DTM/TDM in the above two 
+situations will be replaced by a vector.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">x &lt;- c(
+  "Hello, what do you want to drink and eat?", 
+  "drink a bottle of milk", 
+  "drink a cup of coffee", 
+  "drink some water", 
+  "eat a cake", 
+  "eat a piece of pizza"
+)
+dtm &lt;- corp_or_dtm(x, from = "v", type = "dtm")
+D1 &lt;- list(
+  aa &lt;- c("drink", "eat"),
+  bb &lt;- c("cake", "pizza"),
+  cc &lt;- c("cup", "bottle")
+)
+y1 &lt;- dictionary_dtm(dtm, D1, return_dictionary = TRUE)
+#
+# NA, duplicated words, non-existent words, 
+# non-character elements do not affect the
+# result.
+D2 &lt;-list(
+  has_na &lt;- c("drink", "eat", NA),
+  this_is_factor &lt;- factor(c("cake", "pizza")),
+  this_is_duplicated &lt;- c("cup", "bottle", "cup", "bottle"), 
+  do_not_exist &lt;- c("tiger", "dream")
+)
+y2 &lt;- dictionary_dtm(dtm, D2, return_dictionary = TRUE)
+#
+# You can read into a data.frame 
+# dictionary from a csv file.
+# Each column represents a group.
+D3 &lt;- data.frame(
+  aa &lt;- c("drink", "eat", NA, NA),
+  bb &lt;- c("cake", "pizza", NA, NA),
+  cc &lt;- c("cup", "bottle", NA, NA),
+  dd &lt;- c("do", "to", "of", "and")
+)
+y3 &lt;- dictionary_dtm(dtm, D3, simple_sum = TRUE)
+#
+# If it is a matrix:
+mt &lt;- t(as.matrix(dtm))
+y4 &lt;- dictionary_dtm(mt, D3, type = "t", return_dictionary = TRUE)
+</code></pre>
+
+
+</div>

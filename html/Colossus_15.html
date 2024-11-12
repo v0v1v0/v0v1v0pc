@@ -1,0 +1,162 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>gen_time_dep</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Applies time dependence to parameters</h2>
+
+<h3>Description</h3>
+
+<p><code>gen_time_dep</code> generates a new dataframe with time dependent covariates by applying a grid in time
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">gen_time_dep(
+  df,
+  time1,
+  time2,
+  event0,
+  iscox,
+  dt,
+  new_names,
+  dep_cols,
+  func_form,
+  fname,
+  tform,
+  nthreads = as.numeric(detectCores())
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>a data.table containing the columns of interest</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time1</code></td>
+<td>
+<p>column used for time period starts</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time2</code></td>
+<td>
+<p>column used for time period end</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>event0</code></td>
+<td>
+<p>column used for event status</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iscox</code></td>
+<td>
+<p>boolean if rows not at event times should not be kept, rows are removed if true. a Cox proportional hazards model does not use rows with intervals not containing event times</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dt</code></td>
+<td>
+<p>spacing in time for new rows</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>new_names</code></td>
+<td>
+<p>list of new names to use instead of default, default used if entry is ”</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dep_cols</code></td>
+<td>
+<p>columns that are not needed in the new dataframe</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>func_form</code></td>
+<td>
+<p>vector of functions to apply to each time-dependent covariate. Of the form func(df, time) returning a vector of the new column value</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fname</code></td>
+<td>
+<p>filename used for new dataframe</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tform</code></td>
+<td>
+<p>list of string function identifiers, used for linear/step</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nthreads</code></td>
+<td>
+<p>number of threads to use, do not use more threads than available on your machine</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>returns the updated dataframe
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other Data Cleaning Functions: 
+<code>Check_Dupe_Columns()</code>,
+<code>Check_Trunc()</code>,
+<code>Check_Verbose()</code>,
+<code>Correct_Formula_Order()</code>,
+<code>Date_Shift()</code>,
+<code>Def_Control()</code>,
+<code>Def_Control_Guess()</code>,
+<code>Def_model_control()</code>,
+<code>Def_modelform_fix()</code>,
+<code>Joint_Multiple_Events()</code>,
+<code>Replace_Missing()</code>,
+<code>Time_Since()</code>,
+<code>factorize()</code>,
+<code>factorize_par()</code>,
+<code>interact_them()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(data.table)
+#Adapted from the tests
+a &lt;- c(20,20,5,10,15)
+b &lt;- c(1,2,1,1,2)
+c &lt;- c(0,0,1,1,1)
+df &lt;- data.table::data.table("a"=a,"b"=b,"c"=c)
+time1 &lt;- "%trunc%"
+time2 &lt;- "a"
+event &lt;- "c"
+control &lt;- list('lr' = 0.75,'maxiter' = -1,'halfmax' = 5,'epsilon' = 1e-9,
+           'deriv_epsilon' = 1e-9, 'abs_max'=1.0,'change_all'=TRUE,'dose_abs_max'=100.0,
+           'verbose'=FALSE, 'ties'='breslow','double_step'=1)
+grt_f &lt;- function(df,time_col){
+    return ((df[,"b"] * df[,get(time_col)])[[1]])
+}
+func_form &lt;- c("lin")
+df_new &lt;- gen_time_dep(df,time1,time2,event,TRUE,0.01,c("grt"),c(),
+       c(grt_f),paste("test","_new.csv",sep=""), func_form,2)
+file.remove('test_new.csv')
+
+</code></pre>
+
+
+</div>

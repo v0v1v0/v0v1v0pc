@@ -1,0 +1,194 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>quickInverse</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Point and Interval Inverse Estimation ("Dose-Finding"), using CIR and IR</h2>
+
+<h3>Description</h3>
+
+<p>Convenience wrapper for point and interval estimation of the "dose" that would generate a <code>target</code> "response" value, using CIR and IR.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">quickInverse(
+  y,
+  x = NULL,
+  wt = NULL,
+  target,
+  estfun = cirPAVA,
+  intfun = morrisCI,
+  delta = TRUE,
+  conf = 0.9,
+  resolution = 100,
+  extrapolate = FALSE,
+  adaptiveShrink = FALSE,
+  starget = target[1],
+  adaptiveCurve = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>can be either of the following: y values (response rates), a 2-column matrix with positive/negative response counts by dose, a <code>DRtrace</code> object or a <code>doseResponse</code> object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>dose levels (if not included in y).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wt</code></td>
+<td>
+<p>weights (if not included in y).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>target</code></td>
+<td>
+<p>A vector of target response rate(s), for which the percentile dose estimate is needed. See Note.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estfun</code></td>
+<td>
+<p>the function to be used for point estimation. Default <code>cirPAVA</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>intfun</code></td>
+<td>
+<p>the function to be used for interval estimation. Default <code>morrisCI</code> (see help on that function for additional options).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta</code></td>
+<td>
+<p>logical: should intervals be calculated using the delta ("local") method (default, <code>TRUE</code>) or back-drawn directly from the forward bounds? See Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conf</code></td>
+<td>
+<p>numeric, the interval's confidence level as a fraction in (0,1). Default 0.9.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resolution</code></td>
+<td>
+<p>numeric: how fine should the grid for the inverse-interval approximation be? Default 100, which seems to be quite enough. See 'Details'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extrapolate</code></td>
+<td>
+<p>logical: should extrapolation beyond the range of estimated y values be allowed? Default <code>FALSE</code>. Note this affects only the point estimate; interval boundaries are not extrapolated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>adaptiveShrink</code></td>
+<td>
+<p>logical, should the y-values be pre-shrunk towards an experiment's target? Recommended when the data were obtained via an adaptive dose-finding design. See <code>DRshrink</code> and the Note below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>starget</code></td>
+<td>
+<p>The shrinkage target. Defaults to <code>target[1]</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>adaptiveCurve</code></td>
+<td>
+<p>logical, should the CIs be expanded by using a parabolic curve between estimation points rather than straight interpolation (default <code>FALSE</code>)? Recommended when adaptive design was used and <code>target</code> is not 0.5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Other arguments passed on to <code>doseFind</code> and <code>quickIsotone</code>, and onwards from there.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The inverse point estimate is calculated in a straightforward manner from a forward estimate, using <code>doseFind</code>. For the inverse interval, the default option (<code>delta=TRUE</code>) calls <code>deltaInverse</code> for a "local" (Delta) inversion of the forward intervals.
+If <code>delta=FALSE</code>, a second call to <code>quickIsotone</code> generates a high-resolution grid outlining the forward intervals. Then the algorithm "draws a horizontal line" at <code>y=target</code> to find the right and left bounds on this grid. Note that the right (upper) dose-finding confidence bound is found on the lower forward confidence bound, and vice versa. This approach is not recommended, tending to produce CIs that are too wide.
+</p>
+<p>If the data were obtained from an adaptive dose-finding design and you seek to estimate a dose other than the experiment's target, note that away from the target the estimates are likely biased (Flournoy and Oron, 2019). Use <code>adaptiveShrink=TRUE</code> to mitigate the bias. In addition, either provide the true target as <code>starget</code>, or a vector of values to <code>target</code>, with the first value being the true target.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame with 4 elements:
+</p>
+
+<ul>
+<li> <p><code>target</code>     The user-provided target values of y, at which x is estimated
+</p>
+</li>
+<li> <p><code>point</code>    The point estimates of x
+</p>
+</li>
+<li> <p><code>lowerPPconf,upperPPconf</code>     the interval-boundary estimates for a 'PP'=<code>100*conf</code> confidence interval
+</p>
+</li>
+</ul>
+<h3>References</h3>
+
+<p>Flournoy N and Oron AP, 2020. Bias Induced by Adaptive Dose-Finding Designs. Journal of Applied Statistics 47, 2431-2442.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>quickIsotone</code>,<code>doseFind</code>,<code>deltaInverse</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Interesting run (#664) from a simulated up-and-down ensemble:
+# (x will be auto-generated as dose levels 1:5)
+dat=doseResponse(y=c(1/7,1/8,1/2,1/4,4/17),wt=c(7,24,20,12,17))
+# The experiment's goal is to find the 30th percentile
+inv1=quickInverse(dat, target=0.3, adaptiveShrink = TRUE, adaptiveCurve = TRUE)
+# With old PAVA as the forward estimator, and without the adaptive-design corrections:
+inv0=quickInverse(dat, target=0.3, estfun=oldPAVA)
+
+
+### Showing the data and the estimates
+par(mar=c(3,3,1,1), mgp=c(2,.5,0), tcl=-0.25)
+plot(dat, ylim=c(0.05,0.55), las=1) # uses plot.doseResponse()
+
+# The true response function; true target is where it crosses the y=0.3 line
+lines(seq(1,5,0.1),pweibull(seq(1,5,0.1),shape=1.1615,scale=8.4839),col=4)
+abline(h=0.3,col=2,lty=3)
+# Plotting the point estimates, as "tick" marks on the y=0.3 line
+lines(rep(inv1$point,2),c(0.25,0.35), lwd=1.5) # CIR
+lines(rep(inv0$point,2),c(0.25,0.35),lty=2, lwd=1.5) # IR
+# You could plot the CIs too, 
+# Here's code to plot the CIR 90% CI as a light-green rectangle:
+# rect(inv1$lower90conf,0.25,inv1$upper90conf,0.35,col=rgb(0,1,0,alpha=0.3),border=NA)
+#  Intervals are plotted and interval options are explored more extensively 
+#       in the 'deltaInverse' help page.
+
+legend('topleft',pch=c(NA,'X',NA,NA),lty=c(1,NA,2,1),col=c(4,1,1,1),
+	legend=c('True Curve','Observations','IR Estimate','CIR Estimate'),bty='n')
+
+</code></pre>
+
+
+</div>

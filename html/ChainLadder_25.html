@@ -1,0 +1,146 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CLFMdelta</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2> Find "selection consistent" values of delta  </h2>
+
+<h3>Description</h3>
+
+<p>This function finds the values of delta,
+one for each development period, 
+such that the model coefficients resulting from 
+the 'chainladder' function with delta = solution are consistent
+with an input vector of 'selected' development age-to-age factors.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">
+CLFMdelta(Triangle, selected, tolerance = .0005, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Triangle</code></td>
+<td>
+<p>cumulative claims triangle.  A (mxn)-matrix <code class="reqn">C_{ik}</code> 
+which is filled for <code class="reqn">k \leq n+1-i; i=1,\ldots,m; m\geq n </code>, see
+<code>qpaid</code> for how to use (mxn)-development triangles with
+m&lt;n, say higher development period frequency (e.g quarterly) than
+origin period frequency (e.g accident years).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>selected</code></td>
+<td>
+<p> a vector of selected age-to-age factors or "link ratios",
+one for each development period of 'Triangle'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tolerance</code></td>
+<td>
+<p>a 'tolerance' parameters. Default: .0005;
+for each element of 'selected' 
+a solution 'delta' will be found – if possible –
+so that the chainladder model indexed by
+'delta' results in a multiplicative coefficient within 'tolerance' 
+of the 'selected' factor.</p>
+</td>
+</tr>
+</table>
+<table><tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p> not in use</p>
+</td>
+</tr></table>
+<h3>Details</h3>
+
+<p>For a given input Triangle and vector of selected factors, 
+a search is conducted for chainladder models that are "consistent with" the 
+selected factors. 
+By "consistent with" is meant that the coefficients of the <code>chainladder</code> 
+function are equivalent to the selected factors.
+Not all vectors of selected factors can be considered consistent with a given
+Triangle; 
+feasibility is subject to restrictions on the 'selected' factors relative to
+the input 'Triangle'.
+See the References.
+</p>
+<p>The default average produced by the <code>chainladder</code> function is the 
+volume weighted average and corresponds to <code>delta = 1</code> in the call
+to that function;
+<code>delta = 2</code> produces the simple average; and
+<code>delta = 0</code> produces the "regression average", i.e., 
+the slope of a regression line fit to the data 
+and running through the origin.
+By convention, if the <code>selected</code> value corresponds to 
+the volume-weighted average, the simple average, or the regression average,
+then the value returned will be 1, 2, and 0, respectively. 
+</p>
+<p>Other real-number values for <code>delta</code> will produce a different average.
+The point of this function is to see if there exists a model as determined
+by delta whose average is consistent with the value in the 
+<code>selected</code> vector.
+That is not always possible. See the References.
+</p>
+<p>It can be the case that one or more of the above three "standard averages" 
+will be quite close to each other 
+(indistinguishable within <code>tolerance</code>).
+In that case, the value returned will be, in the following priority order
+by convention,
+1 (volume weighted average),
+2 (simple average), or
+0 (regression average).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A vector of real numbers, say delta0, such that 
+<code>coef(chainladder(Triangle, delta = delta0))</code> = <code>selected</code>
+within <code>tolerance</code>.
+A <code>logical</code> attribute 'foundSolution' indicates if a solution was
+found for each element of <code>selected</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Dan Murphy
+</p>
+
+
+<h3>References</h3>
+
+<p><cite>Bardis, Majidi, Murphy. A Family of Chain-Ladder Factor Models for Selected Link Ratios. <em>Variance</em>. Pending. Variance 6:2, 2012, pp. 143-160.</cite>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+x &lt;- RAA[1:9,1]
+y &lt;- RAA[1:9,2]
+F &lt;- y/x
+CLFMdelta(RAA[1:9, 1:2], selected = mean(F)) # value is 2, 'foundSolution' is TRUE
+CLFMdelta(RAA[1:9, 1:2], selected = sum(y) / sum(x)) # value is 1, 'foundSolution' is TRUE
+
+selected &lt;- mean(c(mean(F), sum(y) / sum(x))) # an average of averages
+CLFMdelta(RAA[1:9, 1:2], selected) # about 1.725
+CLFMdelta(RAA[1:9, 1:2], selected = 2) # negative solutions are possible
+
+# Demonstrating an "unreasonable" selected factor.
+CLFMdelta(RAA[1:9, 1:2], selected = 1.9) # NA solution, with warning
+
+</code></pre>
+
+
+</div>

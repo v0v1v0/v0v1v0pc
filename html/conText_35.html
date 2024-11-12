@@ -1,0 +1,119 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ncs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Given a set of embeddings and a set of tokenized contexts, find the top N nearest
+contexts.</h2>
+
+<h3>Description</h3>
+
+<p>Given a set of embeddings and a set of tokenized contexts, find the top N nearest
+contexts.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ncs(x, contexts_dem, contexts = NULL, N = 5, as_list = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a (quanteda) <code>dem-class</code> or <code>fem-class</code> object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>contexts_dem</code></td>
+<td>
+<p>a <code>dem-class</code> object corresponding to the ALC
+embeddings of candidate contexts.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>contexts</code></td>
+<td>
+<p>a (quanteda) <code>tokens-class</code> object of
+tokenized candidate contexts. Note, these must correspond to the same
+contexts in <code>contexts_dem</code>. If NULL, then the context (document) ids
+will be output instead of the text.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>N</code></td>
+<td>
+<p>(numeric) number of nearest contexts to return</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>as_list</code></td>
+<td>
+<p>(logical) if FALSE all results are combined into a single data.frame
+If TRUE, a list of data.frames is returned with one data.frame per embedding</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a <code>data.frame</code> or list of data.frames (one for each target)
+with the following columns:
+</p>
+
+<dl>
+<dt><code>target</code></dt>
+<dd>
+<p> (character) rownames of <code>x</code>,
+the labels of the ALC embeddings. <code>NA</code> if <code>is.null(rownames(x))</code>.</p>
+</dd>
+<dt><code>context</code></dt>
+<dd>
+<p>(character) contexts collapsed into single documents (i.e. untokenized).
+If <code>contexts</code> is NULL then this variable will show the context (document) ids which
+you can use to merge.</p>
+</dd>
+<dt><code>rank</code></dt>
+<dd>
+<p>(character) rank of context in terms of similarity with <code>x</code>.</p>
+</dd>
+<dt><code>value</code></dt>
+<dd>
+<p>(numeric) cosine similarity between <code>x</code> and context.</p>
+</dd>
+</dl>
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+library(quanteda)
+
+# tokenize corpus
+toks &lt;- tokens(cr_sample_corpus)
+
+# build a tokenized corpus of contexts sorrounding a target term
+immig_toks &lt;- tokens_context(x = toks, pattern = "immigr*",
+window = 6L, rm_keyword = FALSE)
+
+# build document-feature matrix
+immig_dfm &lt;- dfm(immig_toks)
+
+# construct document-embedding-matrix
+immig_dem &lt;- dem(immig_dfm, pre_trained = cr_glove_subset,
+transform = TRUE, transform_matrix = cr_transform, verbose = FALSE)
+
+# to get group-specific embeddings, average within party
+immig_wv_party &lt;- dem_group(immig_dem, groups = immig_dem@docvars$party)
+
+# find nearest contexts by party
+# setting as_list = FALSE combines each group's
+# results into a single data.frame (useful for joint plotting)
+ncs(x = immig_wv_party, contexts_dem = immig_dem,
+contexts = immig_toks, N = 5, as_list = TRUE)
+</code></pre>
+
+
+</div>

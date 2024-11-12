@@ -1,0 +1,151 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cpss.lm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Detecting changes in linear models</h2>
+
+<h3>Description</h3>
+
+<p>Detecting changes in linear models
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cpss.lm(
+  formula,
+  data = NULL,
+  algorithm = "BS",
+  dist_min = floor(log(n)),
+  ncps_max = ceiling(n^0.4),
+  pelt_pen_val = NULL,
+  pelt_K = 0,
+  wbs_nintervals = 500,
+  criterion = "CV",
+  times = 2
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>a <code>formula</code> object specifying the GLM with change-points.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>an optional data frame containing the variables in the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>algorithm</code></td>
+<td>
+<p>a character string specifying the change-point searching algorithm, one of the following choices: "SN" (segment neighborhood), "BS" (binary segmentation), "WBS" (wild binary segmentation) and "PELT" (pruned exact linear time) algorithms.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist_min</code></td>
+<td>
+<p>an integer specifying minimum searching distance (length of feasible segments).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncps_max</code></td>
+<td>
+<p>an integer specifying an upper bound of the number of true change-points.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pelt_pen_val</code></td>
+<td>
+<p>a numeric vector specifying candidate values of the penalty only if <code>algorithm = "PELT"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pelt_K</code></td>
+<td>
+<p>a numeric value for pruning adjustment only if <code>algorithm = "PELT"</code>. It is usually taken to be 0 if the negative log-likelihood is used as a cost, see Killick et al. (2012).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wbs_nintervals</code></td>
+<td>
+<p>an integer specifying the number of random intervals drawn only if <code>algorithm = "WBS"</code>, see Fryzlewicz (2014).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>criterion</code></td>
+<td>
+<p>a character string specifying the model selection criterion, "CV" ("cross-validation") or "MS" ("multiple-splitting").</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>times</code></td>
+<td>
+<p>an integer specifying how many times of sample-splitting should be performed; It should be 2 if <code>criterion = "CV"</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>cpss.lm</code> returns an object of an S4 class, called "<code>cpss</code>", which collects data and information required for further change-point analyses and summaries. See <code>cpss.custom</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Killick, R., Fearnhead, P., and Eckley, I. A. (2012). Optimal Detection of Changepoints With a Linear Computational Cost. Journal of the American Statistical Association, 107(500):1590–1598.
+</p>
+<p>Fryzlewicz, P. (2014). Wild binary segmentation for multiple change-point detection. The Annals of Statistics, 42(6): 2243–2281.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cpss.glm</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library("cpss")
+set.seed(666)
+n &lt;- 400
+tau &lt;- c(80, 200, 300)
+tau_ext &lt;- c(0, tau, n)
+be &lt;- list(c(0, 1), c(1, 0.5), c(0, 1), c(-1, 0.5))
+seg_len &lt;- diff(c(0, tau, n))
+x &lt;- rnorm(n)
+mu &lt;- lapply(seq(1, length(tau) + 1), function(k) {
+  be[[k]][1] + be[[k]][2] * x[(tau_ext[k] + 1):tau_ext[k + 1]]
+})
+mu &lt;- do.call(c, mu)
+sig &lt;- unlist(lapply(seq(1, length(tau) + 1), function(k) {
+  rep(be[[k]][2], seg_len[k])
+}))
+y &lt;- rnorm(n, mu, sig)
+res &lt;- cpss.lm(
+  formula = y ~ x,
+  algorithm = "BS", ncps_max = 10
+)
+summary(res)
+# 80  202  291
+coef(res)
+# $coef
+#             [,1]      [,2]        [,3]       [,4]
+# [1,] -0.00188792 1.0457718 -0.03963209 -0.9444813
+# [2,]  0.91061557 0.6291965  1.20694409  0.4410036
+#
+# $sigma
+# [1] 0.8732233 0.4753216 0.9566516 0.4782329
+</code></pre>
+
+
+</div>

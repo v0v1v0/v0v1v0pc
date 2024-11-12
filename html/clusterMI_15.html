@@ -1,0 +1,149 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>overimpute</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Overimputation diagnostic plot</h2>
+
+<h3>Description</h3>
+
+<p><code>overimpute</code> assesses the fit of the predictive distribution after performing multiple imputation with the <code>imputedata</code> function
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">overimpute(
+  res.imputedata,
+  plotvars = NULL,
+  plotinds = NULL,
+  nnodes = 2,
+  path.outfile = NULL,
+  alpha = 0.1,
+  mfrow = NULL,
+  mar = c(5, 4, 4, 2) - 1.9
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>res.imputedata</code></td>
+<td>
+<p>an output from the imputedata function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plotvars</code></td>
+<td>
+<p>column index of the variables overimputed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plotinds</code></td>
+<td>
+<p>row index of the individuals overimputed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nnodes</code></td>
+<td>
+<p>an integer indicating the number of nodes for parallel calculation. Default value is 5</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>path.outfile</code></td>
+<td>
+<p>a vector of strings indicating the path for redirection of print messages. Default value is NULL, meaning that silent imputation is performed. Otherwise, print messages are saved in the files path.outfile/output.txt. One file per node is generated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>alpha level for prediction intervals</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mfrow</code></td>
+<td>
+<p>a vector of the form c(nr, nc)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mar</code></td>
+<td>
+<p>a numerical vector of the form c(bottom, left, top, right)</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function imputes each observed value from each conditional imputation model obtained from the imputedata function. The comparison between the "overimputed" values and the observed values is made by building a confidence interval for each observed value using the quantiles of the overimputed values (see Blackwell et al. (2015) &lt;doi:10.1177/0049124115585360&gt;). Note that confidence intervals built with quantiles require a large number of imputations. If the model fits well the data, then the 90% confidence interval should contain the observed value in 90% of the cases. The function overimpute takes as an input an output of the <code>imputedata</code> function (<code>res.imputedata</code> argument), the indices of the incomplete continuous variables that are plotted (<code>plotvars</code>), the indices of individuals (can be useful for time consuming imputation methods), the number of CPU cores for parallel computation, and the path for exporting print message generated during the parallel process (<code>path.outfile</code>).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of two matrices
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>res.plot</code></td>
+<td>
+<p>7-columns matrix that contains (1) the variable which is overimputed, (2) the observed value of the observation, (3) the mean of the overimputations, (4) the lower bound of the confidence interval of the overimputations, (5) the upper bound of the confidence interval of the overimputations, (6) the proportion of the other variables that were missing for that observation in the original data, and (7) the color for graphical representation</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>res.values</code></td>
+<td>
+<p>a matrix with overimputed values for each cell. The number of columns corresponds to the number of values generated (i.e. the number of imputed datasets)</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Blackwell, M., Honaker, J. and King. G. 2015. A Unified Approach to Measurement Error and Missing Data: Overview and Applications. Sociological Methods and Research, 1-39. &lt;doi:10.1177/0049124115585360&gt;
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(wine)
+
+require(parallel)
+set.seed(123456)
+ref &lt;- wine$cult
+nb.clust &lt;- 3
+wine.na &lt;- wine
+wine.na$cult &lt;- NULL
+wine.na &lt;- prodna(wine.na)
+
+nnodes &lt;- 2 # Number of CPU cores used for parallel computation
+
+# Multiple imputation using m = 100 (should be larger in practice)
+
+res.imp.over &lt;- imputedata(data.na = wine.na,
+                           nb.clust = nb.clust,
+                           m = 100)
+# Overimputation
+
+## overimputed variable
+plotvars &lt;- "alco" 
+
+## selection of 20 complete individuals on variable "alco"
+plotinds &lt;- sample(which(!is.na(wine.na[, plotvars])),
+                    size = 20)
+## overimputation                   
+res.over &lt;- overimpute(res.imp.over,
+                       nnodes = nnodes,
+                       plotvars = plotvars,
+                       plotinds = plotinds,
+                       )
+
+</code></pre>
+
+
+</div>

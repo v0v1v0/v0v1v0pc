@@ -1,0 +1,180 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>db2dat</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Get daily or monthly data from a database and build input files *.dat and *.est</h2>
+
+<h3>Description</h3>
+
+<p>This function facilitates the creation of the input files needed by this package by retrieving the data from a database through an RODBC connection.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">db2dat(varcli, anyi, anyf, minny=5, daily=TRUE, ch, dformat='%Y-%m-%d',
+vtable, vcode, vdate, vval, stable, scode, sname, sx, sy, sz)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>varcli</code></td>
+<td>
+<p>Short name of the studied climatic variable,
+as it will appear in all data file names.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>anyi</code></td>
+<td>
+<p>Initial year of the data to be included in the file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>anyf</code></td>
+<td>
+<p>Final year of the data to be included in the file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minny</code></td>
+<td>
+<p>Minimum number of years with data for a series to be included in
+the file.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>daily</code></td>
+<td>
+<p>Logical flag indicating whether the data are daily (the default) or monthly (set <code>daily=FALSE</code> in this case).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ch</code></td>
+<td>
+<p>Already open ODBC connection to the climatic database.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dformat</code></td>
+<td>
+<p>Date format in the database.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vtable</code></td>
+<td>
+<p>Name of the table containing our climatic variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vcode</code></td>
+<td>
+<p>Name of the variable containing station codes in the <code>vtable</code> table.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vdate</code></td>
+<td>
+<p>Name of the variable containing dates in the <code>vtable</code> table.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vval</code></td>
+<td>
+<p>Name of the climatic variable in the <code>vtable</code> table.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stable</code></td>
+<td>
+<p>Name of the table containing station information (metadata).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scode</code></td>
+<td>
+<p>Name of the variable containing station codes in the table <code>stable</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sname</code></td>
+<td>
+<p>Name of the variable containing station names in the <code>stable</code> table.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sx</code></td>
+<td>
+<p>Name of the variable containing longitudes (degrees with decimals!) in the <code>stable</code> table.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sy</code></td>
+<td>
+<p>Name of the variable containing latitudes (degrees with decimals!) in the <code>stable</code> table.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sz</code></td>
+<td>
+<p>Name of the variable containing elevations (meters) in the <code>stable</code> table.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function creates the two input files needed by the homogenization functions of this package, ‘<span class="file">VRB_YEAR-YEAR.dat</span>’ (holding the data) and ‘<span class="file">VRB_YEAR-YEAR.est</span>’ (holding station coordinates, codes and names).
+</p>
+<p>The table in the accessed database must contain either daily or monthly data (set <code>daily=FALSE</code> in this case). Otherwise the number of data per series will not be match the expected value and the function will fail.
+</p>
+<p>Moreover, every data item must be in a different record in the database, as in this example table of monthly data (different variables for the same time step are O.K.):
+</p>
+<p><code>Station   Date     T.max T.min Rel.Hum Precip  Wind.speed</code><br><code>S032    1991-01-01  12.1  -2.1    59    128.2     5.4</code><br><code>S032    1991-02-01  13.2  -2.5    62     78.4     6.2</code><br><code>...</code>
+</p>
+<p>But if the table in the database arranges all monthly values of one year (or all daily values of one month) in a single record, then this function cannot be applied. In this cases, try to use the database functionalities to output series into CSV files and apply other conversion functions as <code>csv2climatol</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>homogen</code>, <code>csv2climatol</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+## First we must access our climatic database through RODBC, wich requires to
+## have this package installed. System programs that allow ODBC connections to
+## databases must also be installed and properly configured.
+
+## For this example we will assume that our database is named "climate" and we
+## access it with user "USER" and password "PASS".  Then we open the connection
+## with:
+library(RODBC)
+ch &lt;- odbcConnect("climate",uid="USER",pwd="PASS")
+
+## Now we want to use this function to gather all monthly relative humidity
+## averages for the period 1961-2015, requiring a minimum of 10 years of data
+## (not necessarily consecutive). We must use the corresponding names of tables
+## and headers existing the the database, and putting the parameters in the
+## required order we avoid the need to name them:
+db2dat('HRel',1961,2015,10,FALSE,ch,'%Y-%m-%d','monthly_relhum',
+'Station','Date','Value','stations','Station','Name','Longitude',
+'Latitude','Elevation')
+
+odbcClose(ch) #close the connection if you do not need it anymore
+
+## Our data would now be ready to be homogenized with the homogen function:
+homogen('HRel',1961,2015,vmin=0,vmax=100)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

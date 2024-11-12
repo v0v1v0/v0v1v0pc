@@ -1,0 +1,137 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>shrink.intensity</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimation of Shrinkage Intensities</h2>
+
+<h3>Description</h3>
+
+<p>The functions <code>estimate.lambda</code> and <code>estimate.lambda.var</code>  
+shrinkage intensities used for correlations and variances used
+in <code>cor.shrink</code> and <code>var.shrink</code>, respectively.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">estimate.lambda(x, w, verbose=TRUE)
+estimate.lambda.var(x, w, verbose=TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a data matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>optional: weights for each data point - if not specified uniform weights are assumed
+(<code>w = rep(1/n, n)</code> with <code>n = nrow(x)</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>report shrinkage intensities (default: TRUE)</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>var.shrink</code> computes the empirical variance of each considered random variable, 
+and shrinks them towards their median.  The corresponding 
+shrinkage intensity <code>lambda.var</code> is estimated using
+</p>
+<p style="text-align: center;"><code class="reqn">\lambda_{var}^{*} = (  \sum_{k=1}^p Var(s_{kk}) )/ \sum_{k=1}^p (s_{kk} - median(s))^2  </code>
+</p>
+
+<p>where <code class="reqn">median(s)</code> denotes the median of the empirical variances (see Opgen-Rhein and Strimmer 2007).   
+</p>
+<p>Similarly,   <code>cor.shrink</code> computes a shrinkage estimate of the correlation matrix by
+shrinking the empirical correlations towards  the identity matrix.  
+In this case the shrinkage intensity <code>lambda</code> equals
+</p>
+<p style="text-align: center;"><code class="reqn">\lambda^{*} = \sum_{k \neq l} Var(r_{kl}) / \sum_{k \neq l} r_{kl}^2  </code>
+</p>
+
+<p>(Sch\"afer and Strimmer 2005).
+</p>
+<p>Ahdesm\"aki suggested (2012) a computationally highly efficient algorithm to compute 
+the shrinkage intensity estimate for the correlation matrix (see the R code for the implementation).
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>estimate.lambda</code> and <code>estimate.lambda.var</code> returns a number between 0 and 1. 
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Juliane Sch\"afer,
+Rainer Opgen-Rhein, Miika Ahdesm\"aki
+and Korbinian Strimmer (<a href="https://strimmerlab.github.io">https://strimmerlab.github.io</a>).
+</p>
+
+
+<h3>References</h3>
+
+<p>Opgen-Rhein, R., and K. Strimmer. 2007. Accurate ranking of 
+differentially expressed genes by a distribution-free shrinkage 
+approach.    Statist. Appl. Genet. Mol. Biol. <b>6</b>:9.
+&lt;DOI:10.2202/1544-6115.1252&gt;
+</p>
+<p>Sch\"afer, J., and K. Strimmer. 2005.  A shrinkage approach to large-scale
+covariance estimation and implications for functional genomics. 
+Statist. Appl. Genet. Mol. Biol. <b>4</b>:32.
+&lt;DOI:10.2202/1544-6115.1175&gt;
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cor.shrink</code>, <code>var.shrink</code>.</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># load corpcor library
+library("corpcor")
+
+# small n, large p
+p = 100
+n = 20
+
+# generate random pxp covariance matrix
+sigma = matrix(rnorm(p*p),ncol=p)
+sigma = crossprod(sigma)+ diag(rep(0.1, p))
+
+# simulate multinormal data of sample size n  
+sigsvd = svd(sigma)
+Y = t(sigsvd$v %*% (t(sigsvd$u) * sqrt(sigsvd$d)))
+X = matrix(rnorm(n * ncol(sigma)), nrow = n) %*% Y
+
+
+# correlation shrinkage intensity
+estimate.lambda(X) 
+c = cor.shrink(X)
+attr(c, "lambda")
+
+# variance shrinkage intensity
+estimate.lambda.var(X) 
+v = var.shrink(X)
+attr(v, "lambda.var")
+
+</code></pre>
+
+
+</div>

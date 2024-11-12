@@ -1,0 +1,204 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>optimizeParam</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate optimal delay, embedding dimension and radius
+for continuous time-series data</h2>
+
+<h3>Description</h3>
+
+<p>Iterative procedure to examine the values
+of delay, embedding dimension and radius 
+to compute recurrence plots of one, two, 
+or more time-series.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">optimizeParam(ts1, ts2, par, min.rec, max.rec)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>ts1</code></td>
+<td>
+<p>First time-series</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ts2</code></td>
+<td>
+<p>Second time-series</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>par</code></td>
+<td>
+<p>A list of parameters needed for the optimization, 
+refer to the Details section.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>min.rec</code></td>
+<td>
+<p>The minimum value of recurrence accepted.
+Default = 2</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.rec</code></td>
+<td>
+<p>The maximum value of recurrence accepted.
+Default = 5</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The optimization can be applied both to uni-dimensional 
+time-series (method = crqa), or multi-dimensional (method = mdcrqa)
+</p>
+<p>The procedure is identical in both cases:
+</p>
+<p>1) Identify a delay that accommodates both time-series
+by finding the local minimum where mutual information
+between them drops, and starts to level off.
+When one ts has a considerably longer delay indicated
+than the another, the function selects the longer delay
+of the two to ensure that new information is gained for
+both. When the delays are close to each other, the
+function computes the mean of the two delays.
+</p>
+<p>2) Determine embedding dimensions by using false nearest
+neighbors and checking when it bottoms out (i.e., there
+is no gain in adding more dimensions). If the embedding
+dimension for the two ts are different the algorithm
+selects the higher embedding dimension of the two to
+make sure that both time series are sufficiently unfolded.
+</p>
+<p>3) Determine radius yielding a recurrence rate between 2-5
+To do so, we first determine a starting radius that yields 
+approximately 25
+We generate a sampled sequence of equally spaced possible 
+radi from such radius till 0, using as unit for the sequence 
+step, the standard deviation of the distance matrix divided 
+by a scaling parameter (radiusspan). The larger this parameter,
+the finer the unit.
+</p>
+<p>For uni-dimensional time-series, the user has to decide how to 
+choose the value of average mutual information (i.e., <code>typeami = mindip</code>, 
+the lag at which minimal information is observed, or <code>typeami = maxlag</code>, 
+the maximum lag at which minimal information is observed) and the relative
+percentage of information gained in FNN, relative to the first embedding 
+dimension, when higher embeddings are considered (i.e., <code>fnnpercent</code>). 
+Then, as <code>crqa</code> is integrated in the <code>optimizeParam</code> to estimate the
+radius, most of the arguments are the same (e.g., <code>mindiagline</code> 
+or <code>tw</code>).
+</p>
+<p>For multidimensional series, the user needs to specify the right RQA method 
+(i.e., <code>method = "mdcrqa"</code>). Then, for the estimation of the delay via
+AMI: (1) <code>nbins</code> the number of bins to compute the two-dimensional 
+histogram of the original and delayed time series and (2) the <code>criterion</code> 
+to select the delay (<code>firstBelow</code> to use the lowest delay at which the AMI
+function drops below the value set by the <code>threshold</code> argument, and 
+<code>localMin</code> to use the position of the first local AMI minimum). 
+The estimation of the embedding dimensions instead needs the following arguments:
+(1) <code>maxEmb</code>, which is the maximum number of embedding dimensions considered,
+(2) <code>noSamples</code>, which is the number of randomly drawn coordinates 
+from phase-space used to estimate the percentage of false-nearest neighbors,
+(3) <code>Rtol</code>, which is the first distance criterion for separating false
+neighbors, and (4) <code>Atol</code>, which is the second distance criterion for
+separating false neighbors. The radius is estimated as before.
+</p>
+
+
+<h3>Value</h3>
+
+<p>It returns a list with the following arguments:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>radius</code></td>
+<td>
+<p>The optimal radius value found</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>emddim</code></td>
+<td>
+<p>Number of embedding dimensions</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delay</code></td>
+<td>
+<p>The lag parameter.</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>As <code>optimizeParam</code> uses <code>crqa</code> to estimate
+the parameters: the additional arguments normalize,
+rescale, mindiagline, minvertline, whiteline,
+recpt should be supplied in the par list.
+Set up relatively large radiusspan (e.g. 100), 
+for a decent coverage of radius values.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Moreno I. Coco (moreno.cocoi@gmail.com),
+James A. Dixon (james.dixon@uconn.edu)
+Sebastian Wallot, Max Planck Insitute for Empirical Aesthetics
+Dan Moenster, Aarhus University
+</p>
+
+
+<h3>References</h3>
+
+<p>Marwan, N., Carmen Romano, M., Thiel, M., and Kurths, J.
+(2007). Recurrence plots for the analysis of
+complex systems. Physics Reports, 438(5), 237-329.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code>crqa</code>, <code>wincrqa</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data(crqa) ## load the data
+
+handset = handmovement[1:300, ] ## take less points
+
+P1 = cbind(handset$P1_TT_d, handset$P1_TT_n) 
+P2 = cbind(handset$P2_TT_d, handset$P2_TT_n)
+
+par = list(method = "mdcrqa", metric = "euclidean", maxlag =  20, 
+           radiusspan = 100, radiussample = 40, normalize = 0, 
+           rescale = 4, mindiagline = 10, minvertline = 10, tw = 0, 
+           whiteline = FALSE, recpt = FALSE, side = "both", 
+           datatype = "continuous", fnnpercent  = NA,  
+           typeami = NA, nbins  = 50, criterion = "firstBelow",
+           threshold = 1, maxEmb = 20, numSamples = 500, 
+           Rtol = 10, Atol = 2)
+
+results = optimizeParam(P1, P2, par, min.rec = 2, max.rec = 5)
+print(unlist(results))
+           
+
+</code></pre>
+
+
+</div>

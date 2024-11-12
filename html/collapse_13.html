@@ -1,0 +1,113 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>arithmetic</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fast Row/Column Arithmetic for Matrix-Like Objects
+</h2>
+
+<h3>Description</h3>
+
+<p>Fast operators to perform row- or column-wise replacing and sweeping operations of vectors on matrices, data frames, lists. See also <code>setop</code> for math by reference and <code>setTRA</code> for sweeping by reference.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## Perform the operation with v and each row of X
+
+X %rr% v    # Replace rows of X with v
+X %r+% v    # Add v to each row of X
+X %r-% v    # Subtract v from each row of X
+X %r*% v    # Multiply each row of X with v
+X %r/% v    # Divide each row of X by v
+
+## Perform a column-wise operation between V and X
+
+X %cr% V    # Replace columns of X with V
+X %c+% V    # Add V to columns of X
+X %c-% V    # Subtract V from columns of X
+X %c*% V    # Multiply columns of X with V
+X %c/% V    # Divide columns of X by V
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>a vector, matrix, data frame or list like object (with rows (r) columns (c) matching <code>v</code> / <code>V</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>v</code></td>
+<td>
+<p>for row operations: an atomic vector of matching <code>NCOL(X)</code>. If <code>X</code> is a data frame, <code>v</code> can also be a list of scalar atomic elements. It is also possible to sweep lists of vectors <code>v</code> out of lists of matrices or data frames <code>X</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>V</code></td>
+<td>
+<p>for column operations: a suitable scalar, vector, or matrix / data frame matching <code>NROW(X)</code>. <code>X</code> can also be a list of vectors / matrices in which case <code>V</code> can be a scalar / vector / matrix or matching list of scalars / vectors / matrices.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>With a matrix or data frame <code>X</code>, the default behavior of R when calling <code>X op v</code> (such as multiplication <code>X * v</code>) is to perform the operation of <code>v</code> with each column of <code>X</code>. The equivalent operation is performed by <code>X %cop% V</code>, with the difference that it computes significantly faster if <code>X</code>/<code>V</code> is a data frame / list. A more complex but frequently required task is to perform an operation with <code>v</code> on each row of <code>X</code>. This is provided based on efficient C++ code by the <code>%rop%</code> set of functions, e.g. <code>X %r*% v</code> efficiently multiplies <code>v</code> to each row of <code>X</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>X</code> where the operation with <code>v</code> / <code>V</code> was performed on each row or column. All attributes of <code>X</code> are preserved.
+</p>
+
+
+<h3>Note</h3>
+
+<p><em>Computations and Output:</em> These functions are all quite simple, they only work with <code>X</code> on the LHS i.e. <code>v %op% X</code> will likely fail. The row operations are simple wrappers around <code>TRA</code> which provides more operations including grouped replacing and sweeping (where <code>v</code> would be a matrix or data frame with less rows than <code>X</code> being mapped to the rows of <code>X</code> by grouping vectors). One consequence is that just like <code>TRA</code>, row-wise mathematical operations (+, -, *, /) always yield numeric output, even if both <code>X</code> and <code>v</code> may be integer. This is different for column- operations which depend on base R and may also preserve integer data.
+</p>
+<p><em>Rules of Arithmetic:</em> Since these operators are defined as simple infix functions, the normal rules of arithmetic are not respected. So <code>a %c+% b %c*% c</code> evaluates as <code>(a %c+% b) %c*% c</code>. As with all chained infix operations, they are just evaluated sequentially from left to right.
+</p>
+<p><em>Performance Notes:</em> The function <code>setop</code> and a related set of <code>%op=%</code> operators as well as the <code>setTRA</code> function can be used to perform these operations by reference, and are faster if copies of the output are not required!! Furthermore, for Fast Statistical Functions, using <code>fmedian(X, TRA = "-")</code> will be a tiny bit faster than <code>X %r-% fmedian(X)</code>. Also use <code>fwithin(X)</code> for fast centering using the mean, and <code>fscale(X)</code> for fast scaling and centering or mean-preserving scaling.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>setop</code>, <code>TRA</code>, <code>dapply</code>, Efficient Programming, Data Transformations, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Using data frame's / lists
+v &lt;- mtcars$cyl
+mtcars %cr% v
+mtcars %c-% v
+mtcars %r-% seq_col(mtcars)
+mtcars %r-% lapply(mtcars, quantile, 0.28)
+
+mtcars %c*% 5       # Significantly faster than mtcars * 5
+mtcars %c*% mtcars  # Significantly faster than mtcars * mtcars
+
+## Using matrices
+X &lt;- qM(mtcars)
+X %cr% v
+X %c-% v
+X %r-% dapply(X, quantile, 0.28)
+
+## Chained Operations
+library(magrittr) # Needed here to evaluate infix operators in sequence
+mtcars %&gt;% fwithin() %r-% rnorm(11) %c*% 5 %&gt;%
+    tfm(mpg = fsum(mpg)) %&gt;% qsu()
+
+</code></pre>
+
+
+</div>

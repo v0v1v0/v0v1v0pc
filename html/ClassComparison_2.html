@@ -1,0 +1,330 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>MultiLinearModel-class</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Class "MultiLinearModel"</h2>
+
+<h3>Description</h3>
+
+<p>Class to fit multiple (row-by-row) linear (fixed-effects) models on
+microarray or proteomics data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">MultiLinearModel(form, clindata, arraydata)
+## S4 method for signature 'MultiLinearModel'
+summary(object, ...)
+## S4 method for signature 'MultiLinearModel'
+as.data.frame(x, row.names=NULL, optional=FALSE, ...)
+## S4 method for signature 'MultiLinearModel'
+hist(x, xlab='F Statistics', main=NULL, ...)
+## S4 method for signature 'MultiLinearModel,missing'
+plot(x, y, ylab='F Statistics', ...)
+## S4 method for signature 'MultiLinearModel,ANY'
+plot(x, y, xlab='F Statistics',
+ ylab=deparse(substitute(y)), ...)
+## S4 method for signature 'MultiLinearModel'
+anova(object, ob2, ...)
+multiTukey(object, alpha)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>form</code></td>
+<td>
+<p><code>formula</code> object specifying the linear model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clindata</code></td>
+<td>
+<p>either a data frame of "clinical" or other
+covariates, or an <code>ExpressionSet</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>arraydata</code></td>
+<td>
+<p>matrix or data frame of values to be explained by the model.
+If <code>clindata</code> is an <code>ExpressionSet</code>, then <code>arraydata</code> can be
+omitted, since it is assumed to be part of the <code>ExpressionSet</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>object of class <code>MultiLinearModel</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ob2</code></td>
+<td>
+<p>object of class <code>MultiLinearModel</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>object of class <code>MultiLinearModel</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>optional numeric vector</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xlab</code></td>
+<td>
+<p>character string specifying label for the x-axis</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ylab</code></td>
+<td>
+<p>character string specifying label for the y-axis</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>main</code></td>
+<td>
+<p>character string specifying graph title</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>extra arguments for generic or plotting functions</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>row.names</code></td>
+<td>
+<p>see the base version</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optional</code></td>
+<td>
+<p>see the base version</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>numeric scalar between <code>0</code> and <code>1</code> specifying
+the significance level for the Tukey test.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The <code>anova</code> method returns a data frame.  The rows in the data
+frame corresponds to the rows in the <code>arraydata</code> object that was
+used to construct the <code>MultiLinearModel</code> objects.  The first
+column contains the F-statistics and the second column contains the
+p-values.
+</p>
+<p>The <code>multiTukey</code> function returns a vector whose length equals
+the number of rows in the <code>arraydata</code> object used to construct
+the <code>MultiLinearModel</code>. Assuming that the overall F-test was
+significant, differences in group means (in each data row) larger than
+this value are significant by Tukey's test for honestly significant
+difference. (Of course, that statement is incorrect, since we haven't
+fully corrected for multiple testing. Our standard practice is to take
+the p-values from the row-by-row F-tests and evaluate them using the
+beta-uniform mixture model (see <code>Bum</code>). For the rows that
+correspond to models whose p-values are smaller than the <code>Bum</code>
+cutoff, we simply use the Tukey HSD values without further
+modification.)
+</p>
+
+
+<h3>Creating Objects</h3>
+
+<p>Objects should be created by calling the <code>MultiLinearModel</code>
+function. The first argument is a <code>formula</code> specifying
+the linear model, in the same manner that it would be passed to
+<code>lm</code>. We will fit the linear model separately for each
+row in the <code>arraydata</code> matrix. Rows of <code>arraydata</code> are
+attached to the <code>clindata</code> data frame and are always referred to
+as "Y" in the formulas. In particular, this implies that
+<code>clindata</code> can not include a column already called "Y". Further,
+the implementation only works if "Y" is the response variable in the model.
+</p>
+
+
+<h3>Multiple linear models with "ExpressionSet" objects</h3>
+
+<p>The BioConductor packages uses an <code>ExpressionSet</code> to combine microarray
+data and clinical covariates (known in their context as
+<code>phenoData</code> objects) into a single structure.
+You can call <code>MultiLinearModel</code> using an <code>ExpressionSet</code> object
+for the <code>clindata</code> argument. In this case, the function extracts
+the <code>phenoData</code> slot of the <code>ExpressionSet</code> to use for the
+clinical covariates, and extracts the <code>exprs</code> slot of the
+<code>ExpressionSet</code> object to use for the array data.
+</p>
+
+
+<h3>Slots</h3>
+
+
+<dl>
+<dt>
+<code>call</code>:</dt>
+<dd>
+<p>A <code>call</code> object describing how the object
+was constructed. </p>
+</dd>
+<dt>
+<code>model</code>:</dt>
+<dd>
+<p>The <code>formula</code> object specifying the linear
+model. </p>
+</dd>
+<dt>
+<code>F.statistics</code>:</dt>
+<dd>
+<p>A numeric vector of F-statistics
+comparing the linear model to the null model. </p>
+</dd>
+<dt>
+<code>p.values</code>:</dt>
+<dd>
+<p>A numeric vector containing the p-values
+associated to the F-statistics.</p>
+</dd>
+<dt>
+<code>coefficients</code>:</dt>
+<dd>
+<p>A <code>matrix</code> of the coefficients in
+the linear models. </p>
+</dd>
+<dt>
+<code>predictions</code>:</dt>
+<dd>
+<p>A <code>matrix</code> of the (Y-hat) values
+predicted by the models. </p>
+</dd>
+<dt>
+<code>sse</code>:</dt>
+<dd>
+<p>A numeric vector of the sum of squared error
+terms from fitting the models. </p>
+</dd>
+<dt>
+<code>ssr</code>:</dt>
+<dd>
+<p>A numeric vector of the sum of squared
+regression terms from the model. </p>
+</dd>
+<dt>
+<code>df</code>:</dt>
+<dd>
+<p>A numeric vector (of length two) containing the
+degrees of freedom for the F-tests.</p>
+</dd>
+</dl>
+<h3>Methods</h3>
+
+
+<dl>
+<dt>summary(object, ...)</dt>
+<dd>
+<p>Write out a summary of the object.</p>
+</dd>
+<dt>hist(x, xlab='F Statistics', main=NULL, ...)</dt>
+<dd>
+<p>Create a
+histogram of the F-statistics.</p>
+</dd>
+<dt>plot(x, ylab='F Statistics', ...)</dt>
+<dd>
+<p>Plot the F-statistics as a
+function of the row index.</p>
+</dd>
+<dt>plot(x, y, xlab='F Statistics', ylab=deparse(substitute(y)),
+...)</dt>
+<dd>
+<p>Plot the F-statistics against the numeric vector <code>y</code>.</p>
+</dd>
+<dt>anova(object, ob2, ...)</dt>
+<dd>
+<p>Perform row-by-row F-tests comparing
+two different linear models.</p>
+</dd>
+</dl>
+<h3>Details</h3>
+
+<p>The <code>MultiLinearModel</code> constructor computes row-by-row F-tests
+comparing each linear model to the null model Y ~ 1.  In many
+instances, one wishes to use an F-test to compare two different linear
+models. For instance, many standard applications of analysis of
+variance (ANOVA) can be described using such a comparison between two
+different linear models. The <code>anova</code> method for the
+<code>MultiLinearModel</code> class performs row-by-row F-tests comparing
+two competing linear models.
+</p>
+<p>The implementation of <code>MultiLinearModel</code> does not take the naive
+approach of using either <code>apply</code> or a
+<code>for</code>-loop to attach rows one at a time and fit separate
+linear models. All the models are actually fit simultaneously by a
+series of matrix operations, which greatly reduces the amount of time
+needed to compute the models. The constraint on the column names in
+<code>clindata</code> still holds, since one row is attached to allow
+<code>model.matrix</code> to determine the contrasts matrix.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Kevin R. Coombes <a href="mailto:krc@silicovore.com">krc@silicovore.com</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>anova</code>,
+<code>lm</code>,
+<code>Bum</code>,
+<code>MultiTtest</code>,
+<code>MultiWilcoxonTest</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">showClass("MultiLinearModel")
+ng &lt;- 10000
+ns &lt;- 50
+dat &lt;- matrix(rnorm(ng*ns), ncol=ns)
+cla &lt;- factor(rep(c('A', 'B'), 25))
+cla2 &lt;- factor(rep(c('X', 'Y', 'Z'), times=c(15, 20, 15)))
+covars &lt;- data.frame(Grade=cla, Stage=cla2)
+res &lt;- MultiLinearModel(Y ~ Grade + Stage, covars, dat)
+summary(res)
+hist(res, breaks=101)
+plot(res)
+plot(res, res@p.values)
+
+graded &lt;- MultiLinearModel(Y ~ Grade, covars, dat)
+summary(graded)
+
+hist(graded@p.values, breaks=101)
+hist(res@p.values, breaks=101)
+
+oop &lt;- anova(res, graded)
+hist(oop$p.values, breaks=101)
+</code></pre>
+
+
+</div>

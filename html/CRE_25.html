@@ -1,0 +1,251 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>generate_cre_dataset</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate CRE synthetic data</h2>
+
+<h3>Description</h3>
+
+<p>Generates synthetic data sets to run simulation for causal inference
+experiments composed by an outcome vector (<code>y</code>), a treatment vector (<code>z</code>),
+a covariates matrix (<code>X</code>), and an unobserved individual treatment effects
+vector (<code>ite</code>).
+The arguments specify the data set characteristic, including the
+number of individuals (<code>n</code>), the number of covariates (<code>p</code>), the correlation
+within the covariates (<code>rho</code>),  the number of decision rules
+(<code>n_rules</code>) decomposing the Conditional Average Treatment Effect (CATE), the
+treatment effect magnitude (<code>effect_size</code>), the confounding mechanism
+(<code>confounding</code>), and whether the covariates and outcomes are binary or
+continuous (<code>binary_covariates</code>, <code>binary_outcome</code>).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">generate_cre_dataset(
+  n = 1000,
+  rho = 0,
+  n_rules = 2,
+  p = 10,
+  effect_size = 2,
+  binary_covariates = TRUE,
+  binary_outcome = TRUE,
+  confounding = "no"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>An integer number that represents the number of observations.
+Non-integer values will be converted into an integer number.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rho</code></td>
+<td>
+<p>A positive double number that represents the correlation
+within the covariates (default: 0, range: [0,1)).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_rules</code></td>
+<td>
+<p>The number of causal rules (default: 2, range: {1,2,3,4}).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p>The number of covariates (default: 10).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>effect_size</code></td>
+<td>
+<p>The treatment effect size magnitude (default: 2,
+range: <code class="reqn">\geq</code>0).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>binary_covariates</code></td>
+<td>
+<p>Whether to use binary or continuous covariates
+(default: <code>TRUE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>binary_outcome</code></td>
+<td>
+<p>Whether to use binary or continuous outcomes
+(default: <code>TRUE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>confounding</code></td>
+<td>
+<p>Only for continuous outcome, add confounding variables:
+</p>
+
+<ul>
+<li> <p><code>"lin"</code> for linear confounding,
+</p>
+</li>
+<li> <p><code>"nonlin"</code> for non-linear confounding,
+</p>
+</li>
+<li> <p><code>"no"</code> for no confounding (default).
+</p>
+</li>
+</ul>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The covariates matrix is generated with the specified correlation among
+individuals, and each covariate is sampled either from a
+<code>Bernoulli(0.5)</code> if binary, or a <code>Gaussian(0,1)</code> if continuous.
+The treatment vector is sampled from a
+<code>Bernoulli</code>(<code class="reqn">\frac{1}{1+ \exp(1-x_1+x_2-x_3)}</code>), enforcing the treatment
+assignment probabilities to be a function of observed covariates.
+The potential outcomes (<code class="reqn">y(0)</code> and <code class="reqn">y(1)</code>) are then sampled from a Bernoulli
+if binary, or a Gaussian (with standard deviation equal to 1) if continuous.
+Their mean is equal to a confounding term (null, linear or non-linear and
+always null for binary outcome) plus 1-4 decision rules weighted by the
+treatment effect magnitude. The two potential outcomes characterizes the CATE
+(and then the unobserved individual treatment effects vector) as the sum of
+different additive contributions for each decision rules considered
+(plus an intercept).
+The final expression of the CATE depends on the treatment effect magnitude
+and the number of decision rules considered.
+</p>
+<p>The 4 decision rules are:
+</p>
+
+<ul>
+<li>
+<p> Rule 1: <code class="reqn">1\{x_1 &gt; 0.5; x_2 \leq 0.5\}(\textbf{x})</code>
+</p>
+</li>
+<li>
+<p> Rule 2: <code class="reqn">1\{x_5 &gt; 0.5; x_6 \leq 0.5\}(\textbf{x})</code>
+</p>
+</li>
+<li>
+<p> Rule 3: <code class="reqn">1\{x_4 \leq 0.5\}(\textbf{x})</code>
+</p>
+</li>
+<li>
+<p> Rule 4: <code class="reqn">1\{x_5 \leq 0.5; x_7 &gt; 0.5; x_8 \leq 0.5\}(\textbf{x})</code>
+with corresponding additive average treatment effect (AATE) equal to:
+</p>
+</li>
+<li>
+<p> Rule 1: <code class="reqn">-</code> <code>effect_size</code>,
+</p>
+</li>
+<li>
+<p> Rule 2: <code class="reqn">+</code> <code>effect_size</code>,
+</p>
+</li>
+<li>
+<p> Rule 3: <code class="reqn">- 0.5 \cdot</code> <code>effect_size</code>,
+</p>
+</li>
+<li>
+<p> Rule 4: <code class="reqn">+ 2 \cdot</code> <code>effect_size</code>.
+</p>
+</li>
+</ul>
+<p>In example, setting <code>effect_size</code>=4 and <code>n_rules</code>=2:
+</p>
+<p style="text-align: center;"><code class="reqn">\text{CATE}(\textbf{x}) = -4 \cdot 1\{x_1 &gt; 0.5; x_2 \leq 0.5\}(\textbf{x}) +
+4 \cdot 1\{x_5 &gt; 0.5; x_6 \leq 0.5\}(\textbf{x})</code>
+</p>
+
+<p>The final outcome vector <code>y</code> is finally computed by combining the potential
+outcomes according to the treatment assignment.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list, representing the generated synthetic data set, containing:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>an outcome vector,</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>a treatment vector,</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>a covariates matrix,</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ite</code></td>
+<td>
+<p>an individual treatment vector.</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>Set the covariates domain (<code>binary_covariates</code>) and outcome domain
+(<code>binary_outcome</code>) according to the experiment of interest.
+Increase complexity in heterogeneity discovery:
+</p>
+
+<ul>
+<li>
+<p> decreasing the sample size (<code>n</code>),
+</p>
+</li>
+<li>
+<p> adding correlation among covariates (<code>rho</code>),
+</p>
+</li>
+<li>
+<p> increasing the number of rules (<code>n_rules</code>),
+</p>
+</li>
+<li>
+<p> increasing the number of covariates (<code>p</code>),
+</p>
+</li>
+<li>
+<p> decreasing the absolute value of the causal effect (<code>effect_size</code>),
+</p>
+</li>
+<li>
+<p> adding linear or not-linear confounders (<code>confounding</code>).
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(123)
+dataset &lt;- generate_cre_dataset(n = 1000, rho = 0, n_rules = 2, p = 10,
+                                effect_size = 2, binary_covariates = TRUE,
+                                binary_outcome = TRUE, confounding = "no")
+
+</code></pre>
+
+
+</div>

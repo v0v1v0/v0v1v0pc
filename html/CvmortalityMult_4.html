@@ -1,0 +1,236 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>multipopulation_cv</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Function to apply cross-validation techniques for testing the forecasting accuracy
+of multi-population mortality models</h2>
+
+<h3>Description</h3>
+
+<p>R function for testing the accuracy out-of-sample of different multi-population mortality models, Additive (Debon et al., 2011) and Multiplicative (Russolillo et al., 2011).
+We provide a R function that employ the cross-validation techniques for data panel-time series (Atance et al. 2020) to test the forecasting accuracy.
+These techniques consist on split the database in two parts: training set (to run the model) and test set (to check the forecasting accuracy of the model).
+This procedure is repeated several times trying to check the forecasting accuracy in different ways.
+With this function, the user can provide its own mortality rates for different populations. The function will split the database chronologically (Bergmeir and Benitez, 2012) based on the nahead which consist on the length of the training set.
+We have include the following Figure 1 to understand how the R function works.
+<img src="../help/figures/CVtechnique.jpg" width="100%" alt="Figure: mai.png">
+It should be mentioned that this function is developed for cross-validation the forecasting accuracy of several populations.
+However, in case you only consider one population, the function will forecast the Lee-Carter model for one population.
+To test the forecasting accuracy of the selected model, the function provides five different measures: SSE, MSE, MAE, MAPE or All. Depending on how you want to check the forecasting accuracy of the model you could select one or other.
+In this case, the measures will be obtained using the mortality rates in the normal scale as recommended by Santolino (2023) against the log scale.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">multipopulation_cv(
+  qxt,
+  model = c("additive", "multiplicative"),
+  periods,
+  ages,
+  nPop,
+  lxt = NULL,
+  nahead,
+  ktmethod = c("Arimapdq", "arima010"),
+  kt_include.cte = TRUE,
+  measures = c("SSE", "MSE", "MAE", "MAPE", "All")
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>qxt</code></td>
+<td>
+<p>mortality rates used to fit the multi-population mortality models. This rates can be provided in matrix or in data.frame.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>multi-population mortality model chosen to fit the mortality rates c("<code>additive</code>", "<code>multiplicative</code>"). In case you do not provide any value, the function will apply the "<code>additive</code>" option.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>periods</code></td>
+<td>
+<p>periods considered in the fitting in a vector way c(<code>minyear</code>:<code>maxyear</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ages</code></td>
+<td>
+<p>vector with the ages considered in the fitting. If the mortality rates provide from an abridged life tables, it is necessary to provide a vector with the ages, see the example.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nPop</code></td>
+<td>
+<p>number of population considered for fitting.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lxt</code></td>
+<td>
+<p>survivor function considered for every population, not necessary to provide.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nahead</code></td>
+<td>
+<p>is a vector specifying the number of periods to block in the blocked CV. The function operates by using the sum of the periods in nahead and three (the minimum number of years required to construct a time series), as the initial training set. This ensures that the first train set has sufficient observations to forecast the initial test set, which will be of length <code>nahead</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ktmethod</code></td>
+<td>
+<p>method used to forecast the value of <code>kt</code> Arima(p,d,q) or ARIMA(0,1,0); c("<code>Arimapdq</code>", "<code>arima010</code>").</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kt_include.cte</code></td>
+<td>
+<p>if you want that <code>kt</code> include constant in the arima process.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>measures</code></td>
+<td>
+<p>choose the non-penalized measure of forecasting accuracy that you want to use; c("<code>SSE</code>", "<code>MSE</code>", "<code>MAE</code>", "<code>MAPE</code>", "<code>All</code>"). Check the function. In case you do not provide any value, the function will apply the "<code>SSE</code>" as measure of forecasting accuracy.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An object of the class <code>"MultiCv"</code> including a <code>list()</code> with different components of the cross-validation process:
+</p>
+
+<ul>
+<li> <p><code>ax</code> parameter that captures the average shape of the mortality curve in all considered populations.
+</p>
+</li>
+<li> <p><code>bx</code> parameter that explains the age effect x with respect to the general trend <code>kt</code> in the mortality rates of all considered populations.
+</p>
+</li>
+<li> <p><code>kt.fitted</code> obtained values for the tendency behavior captured by <code>kt</code> .
+</p>
+</li>
+<li> <p><code>kt.future</code> future values of <code>kt</code> for every iteration in the cross-validation.
+</p>
+</li>
+<li> <p><code>kt.arima</code>  the arima selected for each <code>kt</code> time series.
+</p>
+</li>
+<li> <p><code>Ii</code> parameter that captures the differences in the pattern of mortality in any region i with respect to Region 1.
+</p>
+</li>
+<li> <p><code>formula</code> multi-population mortality formula used to fit the mortality rates.
+</p>
+</li>
+<li> <p><code>model</code> provided the model selected in every case.
+</p>
+</li>
+<li> <p><code>nPop</code> provided number of populations to fit the periods.
+</p>
+</li>
+<li> <p><code>qxt.real</code> real mortality rates.
+</p>
+</li>
+<li> <p><code>qxt.future</code> future mortality rates estimated with the multi-population mortality model.
+</p>
+</li>
+<li> <p><code>logit.qxt.future</code> future mortality rates in logit way estimated with the multi-population mortality model.
+</p>
+</li>
+<li> <p><code>meas_ages</code> measure of forecasting accuracy through the ages of the study.
+</p>
+</li>
+<li> <p><code>meas_periodsfut</code> measure of forecasting accuracy in every forecasting period(s) of the study.
+</p>
+</li>
+<li> <p><code>meas_pop</code> measure of forecasting accuracy through the populations considered in the study.
+</p>
+</li>
+<li> <p><code>meas_total</code> a global measure of forecasting accuracy through the ages, periods and populations of the study.
+</p>
+</li>
+</ul>
+<h3>References</h3>
+
+<p>Atance, D., Debon, A., and Navarro, E. (2020).
+A comparison of forecasting mortality models using resampling methods.
+Mathematics 8(9): 1550.
+</p>
+<p>Bergmeir, C. &amp; Benitez, J.M. (2012)
+On the use of cross-validation for time series predictor evaluation.
+Information Sciences, 191, 192–213.
+</p>
+<p>Debon, A., &amp; Atance, D. (2022).
+Two multi-population mortality models: A comparison of the forecasting accuracy with resampling methods.
+in Contributions to Risk Analysis: Risk 2022. Fundacion Mapfre
+</p>
+<p>Debon, A., Montes, F., &amp; Martinez-Ruiz, F. (2011).
+Statistical methods to compare mortality for a group with non-divergent populations: an application to Spanish regions.
+European Actuarial Journal, 1, 291-308.
+</p>
+<p>Lee, R.D. &amp; Carter, L.R. (1992).
+Modeling and forecasting US mortality.
+Journal of the American Statistical Association, 87(419), 659–671.
+</p>
+<p>Russolillo, M., Giordano, G., &amp; Haberman, S. (2011).
+Extending the Lee–Carter model: a three-way decomposition.
+Scandinavian Actuarial Journal, 96-117.
+</p>
+<p>Santolino, M. (2023).
+Should Selection of the Optimum Stochastic Mortality Model Be Based on the Original or the Logarithmic Scale of the Mortality Rate?.
+Risks, 11(10), 170.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>multipopulation_loocv</code>,
+<code>fitLCmulti</code>, <code>forecast.fitLCmulti</code>,
+<code>plot.fitLCmulti</code>, <code>plot.forLCmulti</code>,
+<code>MeasureAccuracy</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+#The example takes more than 5 seconds because it includes
+#several fitting and forecasting process and hence all
+#the process is included in donttest
+
+#We present a cross-validation method for spanish male regions
+
+ages &lt;- c(0, 1, 5, 10, 15, 20, 25, 30, 35, 40,
+         45, 50, 55, 60, 65, 70, 75, 80, 85, 90)
+library(gnm)
+library(forecast)
+#Let start with a simple nahead=5 CV method obtaining the SSE forecasting measure of accuracy
+cv_Spainmales_addit &lt;- multipopulation_cv(qxt = SpainRegions$qx_male,
+                                         model = c("additive"),
+                                         periods =  c(1991:2020), ages = c(ages),
+                                         nPop = 18, lxt = SpainRegions$lx_male,
+                                         nahead = 5,
+                                         ktmethod = c("Arimapdq"),
+                                         kt_include.cte = TRUE,
+                                         measures = c("SSE"))
+cv_Spainmales_addit
+
+#Once, we have run the function we can check the result in different ways:
+cv_Spainmales_addit$meas_ages
+cv_Spainmales_addit$meas_periodsfut
+cv_Spainmales_addit$meas_pop
+cv_Spainmales_addit$meas_total
+
+</code></pre>
+
+
+</div>

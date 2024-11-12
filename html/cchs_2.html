@@ -1,0 +1,143 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cchsData</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Data from a case–cohort study with stratified subcohort-selection</h2>
+
+<h3>Description</h3>
+
+<p>A case–cohort dataset where the subcohort was selected by stratified simple random sampling. This is an artificial dataset that was made from <code>nwtco</code>, a real dataset from the National Wilms Tumor Study (NWTS). It is designed for demonstrating the use of <code>cchs</code>. 
+</p>
+
+
+<h3>Format</h3>
+
+
+<table>
+<tr>
+<td style="text-align: left;">
+	<code>id</code> </td>
+<td style="text-align: left;"> An ID number. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <code>localHistol</code> </td>
+<td style="text-align: left;"> Result of the histology from the local institution. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <code>centralLabHistol</code> </td>
+<td style="text-align: left;"> Result of the histology from the central laboratory. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <code>stage</code> </td>
+<td style="text-align: left;"> Stage of the cancer (I, II, III, or IV). </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <code>study</code> </td>
+<td style="text-align: left;"> The study (NWTS-3 or NWTS-4). For details see <a href="https://web.archive.org/web/20211020034700/http://nwtsg.org/about/clinical_trials.html">this NWTS webpage (archived copy)</a>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <code>isCase</code> </td>
+<td style="text-align: left;"> Indicator for whether this participant had a relapse or not. </td>
+</tr>
+<tr>
+<td style="text-align: left;">     
+    <code>time</code> </td>
+<td style="text-align: left;"> Number of days from diagnosis of Wilms tumor to relapse or censoring. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <code>ageAtDiagnosis</code> </td>
+<td style="text-align: left;"> Age in years at diagnosis of Wilms tumor. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    <code>inSubcohort</code> </td>
+<td style="text-align: left;"> Indicator for whether this participant is in the subcohort or not. </td>
+</tr>
+<tr>
+<td style="text-align: left;">     
+    <code>sampFrac</code> </td>
+<td style="text-align: left;"> The sampling fraction for the stratum that contains this participant. 
+  </td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>nwtco</code> data is from two clinical trials but can be regarded as cohort data. <code>cchsData</code> can be created from it by running the code in the Source section below, which is partly based on the Examples section of the <code>cch</code> documentation. 
+</p>
+<p>Two strata are used for the subcohort-selection, corresponding to the two values of <code>localHistol</code>. The sampling fraction is 5% for the stratum defined by <code>localHistol="favorable"</code> and 20% for the stratum defined by <code>localHistol="unfavorable"</code>. After the subcohort is selected, the sampling fractions are recalculated using the exact integer numbers of participants in the subcohort and the full cohort, and then stored in the data-frame.
+</p>
+<p>As an alternative to the sampling fractions, the stratum sizes in the full cohort could be used. A suitable value for the <code>cohortStratumSizes</code> argument to <code>cchs</code> would be <code>c(favorable=3622,</code> <code>unfavorable=406)</code>. This can be worked out by entering <code>table(nwtco$instit, useNA="always")</code> and noting that for <code>nwtco$instit</code> and <code>nwtco$histol</code>, a value of <code>1</code> means “favorable histology result” and <code>2</code> means “unfavorable”—this is not stated in the <code>nwtco</code> documentation but can be deduced from the line in the <code>cch</code> examples that contains <code>labels=c("FH","UH")</code>, or by comparing the output of the <code>table</code> command with the numbers in Table 1 of Breslow &amp; Chatterjee (1999).
+</p>
+<p>For information about the two clinical trials, NWTS-3 and NWTS-4, see D'Angio et al. (1989) and Green et al. (1998) respectively, or the <a href="https://web.archive.org/web/20211021054158/http://www.nwtsg.org/">National Wilms Tumor Study website (archived copy)</a>. 
+</p>
+
+
+<h3>Source</h3>
+
+<pre>
+
+# Starting with nwtco, rename variables, convert some to factors, drop  
+# in.subcohort (which is used elsewhere for a different simulated dataset), etc. 
+library(survival, quietly=TRUE)
+cchsData &lt;- data.frame(
+   id = nwtco$seqno, 
+   localHistol = factor(nwtco$instit, labels=c("favorable", "unfavorable")), 
+   centralLabHistol = factor(nwtco$histol, labels=c("favorable", "unfavorable")), 
+   stage = factor(nwtco$stage, labels=c("I", "II", "III", "IV")), 
+   study = factor(nwtco$study, labels=c("NWTS-3", "NWTS-4")),
+   isCase = as.logical(nwtco$rel), 
+   time = nwtco$edrel,
+   ageAtDiagnosis = nwtco$age / 12  # nwtco$age is in months
+)
+
+# Define the intended sampling fractions for the two strata. 
+samplingFractions &lt;- c(favorable=0.05, unfavorable=0.2)
+
+# Select participants/rows to be in the subcohort by stratified simple random 
+# sampling. 
+cchsData$inSubcohort &lt;- rep(FALSE, nrow(cchsData))
+set.seed(1)
+for (stratumName in levels(cchsData$localHistol)) {
+   inThisStratum &lt;- cchsData$localHistol == stratumName
+   stratumSubcohortSize &lt;- 
+         round(samplingFractions[stratumName] * sum(inThisStratum))
+   rowsToSetTrue &lt;- sample(which(inThisStratum), size=stratumSubcohortSize)
+   cchsData$inSubcohort[rowsToSetTrue] &lt;- TRUE
+}
+
+# Change the sampling fractions to their exact values. 
+stratumSubcohortSizes &lt;- table(cchsData$localHistol[cchsData$inSubcohort])
+stratumCohortSizes &lt;- table(cchsData$localHistol)
+samplingFractions &lt;- stratumSubcohortSizes / stratumCohortSizes
+samplingFractions &lt;- c(samplingFractions)  # make it a vector, not a table
+
+# Keep only the cases and the subcohort. 
+cchsData &lt;- cchsData[cchsData$isCase | cchsData$inSubcohort,]
+
+# Put the sampling fraction in each row of the data-frame. 
+cchsData$sampFrac &lt;- 
+      samplingFractions[match(cchsData$localHistol, names(samplingFractions))]
+
+</pre>
+
+<h3>References</h3>
+
+<p>Note: doi links are shown where these pass CRAN checks and appear correctly in the PDF reference manual. In other cases, URLs are shown. 
+</p>
+<p>Breslow, N.E., Chatterjee, N. (1999). Design and analysis of two-phase studies with binary outcome applied to Wilms tumour prognosis. <em>Journal of the Royal Statistical Society: Series C (Applied Statistics)</em> <b>48</b> (4), 457–468. https://doi.org/10.1111/1467-9876.00165
+</p>
+<p>D'Angio, G.J., Breslow, N., Beckwith, J.B., Evans, A., Baum, E., Delorimier, A., Fernbach, D., Hrabovsky, E., Jones, B., Kelalis, P., Othersen, H.B., Tefft, M., Thomas, P.R.M. (1989). Treatment of Wilms' tumor: Results of the third National Wilms' Tumor Study. <em>Cancer</em> <b>64</b> (2), 349–360. https://doi.org/bc95fv
+</p>
+<p>Green, D.M., Breslow, N.E., Beckwith, J.B., Finklestein, J.Z., Grundy, P.E., Thomas, P.R., Kim, T., Shochat, S.J., Haase, G.M., Ritchey, M.L., Kelalis, P.P., D'Angio, G.J. (1998). Comparison between single-dose and divided-dose administration of dactinomycin and doxorubicin for patients with Wilms' tumor: a report from the National Wilms' Tumor Study Group. <em>Journal of Clinical Oncology</em> <b>16</b> (1), 237–245. doi: <a href="https://doi.org/10.1200/JCO.1998.16.1.237">10.1200/JCO.1998.16.1.237</a> 
+</p>
+
+
+</div>

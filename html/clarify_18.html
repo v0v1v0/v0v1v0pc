@@ -1,0 +1,118 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>transform.clarify_est</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>#' Transform and combine <code>clarify_est</code> objects</h2>
+
+<h3>Description</h3>
+
+<p><code>transform()</code> modifies a <code>clarify_est</code> object by allowing for the calculation of new quantities from the existing quantities without re-simulating them. <code>cbind()</code> binds two <code>clarify_est</code> objects together.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'clarify_est'
+transform(`_data`, ...)
+
+## S3 method for class 'clarify_est'
+cbind(..., deparse.level = 1)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>_data</code></td>
+<td>
+<p>the <code>clarify_est</code> object to be transformed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>for <code>transform()</code>, arguments in the form <code>name = value</code>, where <code>name</code> is the name of a new quantity to be computed and <code>value</code> is an expression that is a function of the existing quantities corresponding to the new quantity to be computed. See Details. For <code>cbind()</code>, <code>clarify_est</code> objects to be combined.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deparse.level</code></td>
+<td>
+<p>ignored.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For <code>transform()</code>, the expression on the right side of the <code>=</code> should use the names of the existing quantities (e.g., <code>`E[Y(1)]` - `E[Y(1)]`</code>), with <code style="white-space: pre;">⁠`⁠</code> appropriately included when the quantity name include parentheses or brackets. Alternatively, it can use indexes prefixed by <code>.b</code>, e.g., <code>.b2 - .b1</code>, to refer to the corresponding quantity by position. This can aid in computing derived quantities of quantities with complicated names. (Note that if a quantity is named something like <code>.b1</code>, it will need to be referred to by position rather than name, as the position-based label takes precedence). See examples. Setting an existing value to <code>NULL</code> will remove that quantity from the object.
+</p>
+<p><code>cbind()</code> does not rename the quanities or check for uniqueness of the names, so it is important to rename them yourself prior to combining the objects.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>clarify_est</code> object, either with new columns added (when using <code>transform()</code>) or combining two <code>clarify_est</code> objects. Note that any type attributes corresponding to the <code>sim_apply()</code> wrapper used (e.g., <code>sim_ame()</code>) is lost when using either function. This can affect any helper functions (e.g., <code>plot()</code>) designed to work with the output of specific wrappers.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>transform()</code>, <code>cbind()</code>, <code>sim()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data("lalonde", package = "MatchIt")
+
+# Fit the model
+fit &lt;- lm(re78 ~ treat * (age + educ + race +
+             married + re74 + re75),
+           data = lalonde)
+
+# Simulate coefficients
+set.seed(123)
+s &lt;- sim(fit, n = 100)
+
+# Average adjusted predictions for `treat` within
+# subsets of `race`
+est_b &lt;- sim_ame(s, var = "treat", verbose = FALSE,
+                 subset = race == "black")
+est_b
+
+est_h &lt;- sim_ame(s, var = "treat", verbose = FALSE,
+                 subset = race == "hispan")
+est_h
+
+# Compute differences between adjusted predictions
+est_b &lt;- transform(est_b,
+                   diff = `E[Y(1)]` - `E[Y(0)]`)
+est_b
+
+est_h &lt;- transform(est_h,
+                   diff = `E[Y(1)]` - `E[Y(0)]`)
+est_h
+
+# Bind estimates together after renaming
+names(est_b) &lt;- paste0(names(est_b), "_b")
+names(est_h) &lt;- paste0(names(est_h), "_h")
+
+est &lt;- cbind(est_b, est_h)
+est
+
+# Compute difference in race-specific differences
+est &lt;- transform(est,
+                 `diff-diff` = .b6 - .b3)
+
+summary(est,
+        parm = c("diff_b", "diff_h", "diff-diff"))
+
+# Remove last quantity by using `NULL`
+transform(est, `diff-diff` = NULL)
+</code></pre>
+
+
+</div>

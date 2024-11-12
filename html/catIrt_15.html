@@ -1,0 +1,199 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>simIrt</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simulate Responses to IRT Models</h2>
+
+<h3>Description</h3>
+
+<p><code>simIrt</code> simulates responses to various IRT models given a vector of ability
+values and a vector/matrix of item parameters.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">simIrt( theta = seq(-3, 3, by = 0.1), params, mod = c("brm", "grm") )
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+<p><b>numeric:</b> a vector of ability values, one for each
+simulee.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>params</code></td>
+<td>
+<p><b>numeric:</b> a vector or matrix of item parameters.  If specified as
+a matrix, the rows must index the items, and the columns
+must designate the item parameters.  For the binary response model,
+(<span class="option">"brm"</span>), <code>params</code> must either be a 3-element vector
+or a 3-column matrix.  See <b>Details</b> for more information.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mod</code></td>
+<td>
+<p><b>character:</b> a character string indicating the IRT model.  Current support
+is for the 3-parameter binary response model (<span class="option">"brm"</span>),
+and Samejima's graded response model (<span class="option">"grm"</span>).  The contents
+of <code>params</code> must match the designation of <code>mod</code>.  See
+<b>Details</b> for more information.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function <code>simIrt</code> returns a response matrix of class "brm" or "grm" depending
+on the model.  For the binary response model, the probability of endorsing item <code class="reqn">j</code>
+for simulee <code class="reqn">i</code> is the following (Embretson &amp; Reise, 2000):
+</p>
+<p style="text-align: center;"><code class="reqn"> p_{ij} = Pr(u_{ij} = 1 | \theta_i, a_j, b_j, c_j) = c_j + (1 - c_j)\frac{1}{1 + \exp[-a(\theta - b)]} </code>
+</p>
+
+<p>For the graded response model, the probability of endorsing at or above boundary <code class="reqn">k</code>
+of item <code class="reqn">j</code> for simulee <code class="reqn">i</code> is the following:
+</p>
+<p style="text-align: center;"><code class="reqn"> p_{ijk} = Pr(u_{ij} \geq k | \theta_i, a_j, b_k) = \frac{1}{1 + \exp[-a(\theta - b_k)]} </code>
+</p>
+
+<p>so that the probability of scoring <em>in</em> category <code class="reqn">k</code> is,
+<code class="reqn">P_{ijk} = Pr(u_{ij} = k | \theta_i, a_j, \boldsymbol{b}) = 1 - p_{ijk}</code> if <code class="reqn">k = 1</code>;
+<code class="reqn">p_{ijk}</code> if <code class="reqn">k = K</code>; and <code class="reqn">p_{ij(k - 1)} - p_{ijk}</code> otherwise, where <code class="reqn">K</code>
+is the number of categories, so that <code class="reqn">K - 1</code> is the number of boundaries.
+</p>
+<p>Assuming perfect model fit, <code>simIrt</code> generates the probability of responding in a category,
+simulates a random, uniform deviate, and compares the probability of response with the location
+of the deviate.  For instance, for the binary response model, if <code class="reqn">p_{ij} = .7</code>, so that
+<code class="reqn">q_{ij} = 1 - p_{ij} = .3</code>, <code>simIrt</code> will generate a uniform deviate (<code class="reqn">u_{ij}</code>) between 0 and 1.  
+If <code class="reqn">u_{ij} &lt; p_{ij}</code>, the simulee will score a 1, and otherwise, the simulee will score a 0.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The function <code>simIrt</code> returns a list of the following elements:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>resp</code></td>
+<td>
+<p>a matrix of class "brm" or "grm" depending on the model used.
+The dimensions of the matrix will be <code class="reqn">N \times J</code> (persons by items),
+and will contain 0s and 1s for the binary response model or <code class="reqn">1 \ldots K</code>
+for the graded response model, where <em>K</em> indicates the number of categories.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>params</code></td>
+<td>
+<p>a matrix of class "brm" or "grm" containing the item parameters used 
+in the simulation.  In the case of "grm", the threshold parameters will be
+ordered so that they will work in other functions.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+<p>a vector of theta used in the simulation.  If <code>theta</code> is not specified
+by the user, it will default to a 201-length vector of evenly spaced points
+between -3 and 3.
+</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Steven W. Nydick <a href="mailto:swnydick@gmail.com">swnydick@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Embretson, S. E., &amp; Reise, S. P.  (2000).  <em>Item Response Theory for Psychologists</em>.  Mahway, NJ: Lawrence Erlbaum Associates.
+</p>
+<p>Samejima, F.  (1969).  Estimation of latent ability using a response pattern of graded scores.  <em>Psychometrika Monograph Supplement</em>, <em>34</em>, 100 – 114.
+</p>
+<p>van der Linden, W. J. &amp; Hambleton, R. K.  (2010).  <em>Handbook of Modern Item Response Theory</em>.  New York, NY: Springer.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>catIrt</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#########################
+# Binary Response Model #
+#########################
+set.seed(888)
+# generating an item bank under a binary response model:
+b.params &lt;- cbind(a = runif(100, .5, 1.5), b = rnorm(100, 0, 2), c = .2)
+# simulating responses using default theta:
+b.mod &lt;- simIrt(params = b.params, mod = "brm")
+
+# same type of model without a guessing (c) parameter:
+b.params2 &lt;- cbind(a = runif(100, .5, 1.5), b = rnorm(100, 0, 2), c = 0)
+b.mod2 &lt;- simIrt(params = b.params2, mod = "brm")
+
+# now generating a different theta:
+theta &lt;- rnorm(201)
+b.mod3 &lt;- simIrt(theta = theta, params = b.params2, mod = "brm")
+
+# notice all of the responses are 0 or 1:
+unique(as.vector(b.mod$resp))
+
+# and the percentages (in general) increase as theta increases:
+apply(b.mod$resp, 1, mean)    # theta = seq(-3, 3, by = 0.1)
+
+
+#########################
+# Graded Response Model #
+#########################
+set.seed(999)
+# generating an item bank under a graded response model:
+# (as many categories as your heart desires!)
+g.params &lt;- cbind(a = runif(10, .5, 1.5), b1 = rnorm(10), b2 = rnorm(10),
+                                          b3 = rnorm(10))
+# simulating responses using default theta (automatically sorts boundaries):
+g.mod &lt;- simIrt(params = g.params, mod = "grm")
+
+# notice how the old parameters were not sorted:
+g.params
+# but the new parameters are sorted from column 2 on:
+g.mod$params
+
+# don't use these parameters with the binary response model:
+try(simIrt(params = g.params, mod = "brm"), silent = TRUE)[1]
+
+# a better parameter set for the graded response model:
+g.params2 &lt;- cbind(runif(100, .5, 1.5), b1 = runif(100, -2, -1), b2 = runif(100, -1, 0),
+                                        b3 = runif(100, 0, 1), b4 = runif(100, 1, 2))
+g.mod2 &lt;- simIrt(params = g.params2, mod = "grm")
+
+# notice all of the responses are positive integers:
+unique(as.vector(g.mod$resp))
+unique(as.vector(g.mod2$resp))
+
+# and the responses (in general) increase as theta increases:
+apply(g.mod2$resp, 1, mean)
+</code></pre>
+
+
+</div>

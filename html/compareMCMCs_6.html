@@ -1,0 +1,217 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>compareMCMCs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Run a set of MCMCs for performance comparison</h2>
+
+<h3>Description</h3>
+
+<p>Run one or more MCMC engines for one model specification, with timing and
+performance metrics calculated. See details for special case of precompiled
+nimble MCMCs.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">compareMCMCs(
+  modelInfo = list(),
+  MCMCcontrol = list(niter = 10000, thin = 1, burnin = 2000),
+  MCMCs = names(nimbleMCMCdefs),
+  monitors = character(),
+  nimbleMCMCdefs = list(),
+  externalMCMCinfo = list(),
+  metrics = c("mean", "median", "sd", "CI95_low", "CI95_upp", "efficiency_coda"),
+  metricOptions = list(),
+  conversions = list(),
+  seed = NULL,
+  needRmodel,
+  verbose = TRUE,
+  sessionInfo = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>modelInfo</code></td>
+<td>
+<p>A list of nimble model-specification information (which may
+be relevant for JAGS, WinBUGS and/or OpenBUGS as well) and/or a nimble
+model itself. To provide information for a different MCMC engine, see
+argument <code>externalMCMCinfo</code>. Named elements in <code>modelInfo</code> can
+include <code>code</code> (model code as returned from <code>nimbleCode</code>), <code>data</code> (a list
+with data), <code>constants</code> (a list with data and/or constants), <code>inits</code> (a
+list of initial values), and/or <code>model</code> (an object returned from
+<code>nimbleModel</code>). If <code>model</code> is not provided, and if an R model will be
+needed, then <code>nimbleModel</code> will be called to create one using <code>code</code>,
+<code>data</code>, and/or <code>inits</code>. See <code>nimbleModel</code> in package nimble for for
+information on these arguments. For JAGS, WinBUGS and OpenBUGS, many models
+can be run from the same specification since they use nearly the same model
+language. If <code>model</code> is provided, the other elements will not be needed if
+only nimble MCMCs are used but will be needed if JAGS, WinBUGS or OpenBUGS
+will be used. (Note: There is currently no built-in support for WinBUGS or
+OpenBUGS. They are mentioned here in case one makes a plug-in to use them.)
+If model is a <em>compiled</em> nimble model, then other list elements will be
+ignored and the only MCMCs that can be run are <em>compiled</em> nimble MCMCs
+provided in <code>nimbleMCMCdefs</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MCMCcontrol</code></td>
+<td>
+<p>A list with fields <code>niter</code> (number of
+iterations), <code>thin</code> (thinning interval), and <code>burnin</code> (number
+of iterations to discard from the beginning of the MCMC
+sample).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MCMCs</code></td>
+<td>
+<p>A character vector of MCMC cases to run. This can include
+"nimble" (default nimble samplers), "jags", "stan", one of several nimble
+special cases (see details below), custom nimble sampler configurations
+provided via argument <code>nimbleMCMCdefs</code>, and external MCMC engines
+registered via <code>registerMCMCengine</code>. See builtin_MCMCs
+for information on "jags" and "stan". Support for OpenBUGS and WinBUGS is
+pending. Default is names(nimbleMCMCdefs), so that all provided nimble
+cases will be run. (If a <em>compiled</em> nimble model is provided in
+<code>modelInfo$model</code>, then <code>MCMCs</code> can include only names of
+<code>nimbleMCMCdefs</code>.)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>monitors</code></td>
+<td>
+<p>A character vector of variable names to monitor
+(record in MCMC output).  If missing, this will be determined
+from the nimble model as all top-level parameter names
+(e.g. hyper-parameters).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nimbleMCMCdefs</code></td>
+<td>
+<p>A list of information for custom sampler configurations
+in nimble. See package vignette for details. If a <em>compiled</em> nimble model
+is provided in <code>modelInfo$model</code>, then <code>nimbleMCMCdefs</code> must be a named
+list of <em>compiled</em> nimble MCMCs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>externalMCMCinfo</code></td>
+<td>
+<p>A list of arbitrary information for
+external MCMC engines, named by engine names.  If there is an
+external MCMC engine named "myMCMC", then a list element <code>myMCMC</code>
+of <code>externalMCMCinfo</code> will be passed to the engine as its
+<code>MCMCinfo</code> argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metrics</code></td>
+<td>
+<p>Either a character vector of registered metric names
+to apply to each sample, or a list of elements with either
+metric names or metric functions to apply to each sample.  See
+<code>addMetrics</code> for more information.  A useful set of
+default metrics is provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metricOptions</code></td>
+<td>
+<p>Optional named list of individual metric
+options passed as the third argument ("<code>options</code>") of
+<code>addMetrics</code> when MCMC metrics are calculated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conversions</code></td>
+<td>
+<p>List of parameter conversion (transformation)
+specifications, useful when different MCMCs use different
+parameterizations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>An (arbitrary) numeric value passed to <code>set.seed</code> to
+set the random-number generator seed before calling each MCMC
+engine.  If NULL, no seed is set.  To obtain identical results
+from one call of <code>compareMCMCs</code> to the next, use identical <code>seed</code>
+values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>needRmodel</code></td>
+<td>
+<p>If <code>TRUE</code>, a <code>nimble</code> model object should definitely be created
+(if necessary, or obtained from <code>modelInfo$model</code> if provided) and
+used, for example to determine variable names.  If missing, <code>needRmodel</code>
+will be set
+<code>TRUE</code> if <code>MCMCs</code> includes "nimble", "jags", "openbugs", or
+"winbugs".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>If <code>TRUE</code>, more verbose output may be generated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sessionInfo</code></td>
+<td>
+<p>If <code>TRUE</code>, record the results of
+<code>sessionInfo()</code>, run before calling each MCMC, with each MCMC
+result.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The special cases provided for the <code>MCMCs</code> argument
+include:
+</p>
+
+<ul>
+<li>
+<p> "nimble_noConj": use adaptive random-walk
+Metropolis-Hastings (ARWMH) samplers in place of Gibbs
+(conjugate) samplers.
+</p>
+</li>
+<li>
+<p> "nimble_RW": use all adaptive random-walk Metropolis-Hastings samplers.
+</p>
+</li>
+<li>
+<p> "nimble_slice": use all slice samplers.
+</p>
+</li>
+</ul>
+<p>If you have already used <code>compileNimble</code> to compile both a nimble model and
+one or more nimble MCMCs, provide the compiled model as <code>modelInfo$model</code> and
+provide the compiled MCMCs as elements of a named list for <code>nimbleMCMCdefs</code>.
+In that case, the monitors will already be set in the MCMCs and can't be
+changed. However, you can still use the <code>monitors</code> argument to subset and/or
+re-order the monitored nodes (parameters).
+</p>
+<p>See package vignette for more details and examples.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of <code>MCMCresult</code> objects.
+</p>
+
+
+</div>

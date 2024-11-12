@@ -1,0 +1,217 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>NPCoImp</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Non-Parametric Copula-Based Imputation Method</h2>
+
+<h3>Description</h3>
+
+<p>Imputation method based on empirical conditional copula functions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">NPCoImp(X, Psi=seq(0.05,0.45,by=0.05), K=7, method="gower", N=1000, seed=set.seed(7))
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>a data matrix with missing values. Missing values should be denoted with <code>NA</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Psi</code></td>
+<td>
+<p>vector of probabilities to assess the symmetry/asymmetry of the empirical conditional copula (ecc) function and find the best quantile for the imputation (see below for details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K</code></td>
+<td>
+<p>the number of data matrix rows more similar to the missing one that are used for the imputation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>the distance measure used for the imputation, among Euclidean, Manhattan, Canberra, Gower, and two based on the Kendall-correlation coefficient (see below for details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>N</code></td>
+<td>
+<p>the number of uniform numbers to numerically construct the empirical conditional copula.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>the set.seed for the numerical construction of the empirical conditional copula.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>NPCoImp is a non-parametric imputation method based on the empirical conditional copula function. To choose the best quantile for the imputation it assesses the (a)symmetry of the empirical conditional copula and it uses the K pseudo-observations more similar to the missing one. The NPCoImp allows the imputation of missing observations according to the multivariate dependence structure of the data generating process without any assumptions on the margins. This method can be used independently from the dimension and the kind (monotone or non monotone) of the missing patterns. 
+Brief description of the approach:
+</p>
+
+<ol>
+<li>
+<p> reconstruct numerically the empirical conditional copula of the missing observation(s); 
+</p>
+</li>
+<li>
+<p> evaluate the (a)symmetry of the empirical conditional copula around 0.5. Inspired by Patil et al. (2012), we compute C(0.5-Psi|available obs)-( 1 - C(0.5+Psi|available obs)) where Psi in ]0,0.5[ and say that C(.|available obs) is symmetric (negative asymmetric or positive asymmetric) if the above equation is null (positive or negative, respectively);
+</p>
+</li>
+<li>
+<p> select the quantile of the empirical conditional copula on the basis of its (a)symmetry. Therefore:
+</p>
+
+<ul>
+<li>
+<p> symmetry: we impute through the median of the empirical conditional copula; 
+</p>
+</li>
+<li>
+<p> negative asymmetry: we impute with a quantile on the left tail of the ecc (see the paper in the references for details);
+</p>
+</li>
+<li>
+<p> positive asymmetry: we impute with a quantile on the right tail of the ecc (see the paper in the references for details);
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p> select the K pseudo-observations closest to the imputed one and the corresponding original observations;
+</p>
+</li>
+<li>
+<p> impute missing values by replacing them from the average of the original observations derived at the previous step.
+</p>
+</li>
+</ol>
+<h3>Value</h3>
+
+<p>An object of S4 class "NPCoImp", which is a list with the following elements:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>Imputed.matrix</code></td>
+<td>
+<p>the imputed data matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Selected.alpha</code></td>
+<td>
+<p>the order alpha of each quantile used for the imputation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>numFlat</code></td>
+<td>
+<p>the number of possible flat empirical conditional copulas, i.e. when ecc is always zero.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>F. Marta L. Di Lascio &lt;marta.dilascio@unibz.it&gt;,
+Aurora Gatto &lt;aurora.gatto@unibz.it&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Di Lascio, F.M.L, Gatto A. (202x) "A non-parametric conditional copula-based imputation method". Under review.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>CoImp</code>,
+<code>MCAR</code>,
+<code>MAR</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## generate data from a 4-variate Frank copula with different margins
+
+set.seed(21)
+n.marg &lt;- 4
+theta  &lt;- 5
+copula &lt;- frankCopula(theta, dim = n.marg)
+mymvdc &lt;- mvdc(copula, c("norm", "gamma", "beta","gamma"), list(list(mean=7, sd=2),
+list(shape=3, rate=2), list(shape1=4, shape2=1), list(shape=4, rate=3)))
+n      &lt;- 20
+x.samp &lt;- copula::rMvdc(n, mymvdc)
+
+# randomly introduce univariate and multivariate missing
+
+perc.mis    &lt;- 0.25
+set.seed(14)
+miss.row    &lt;- sample(1:n, perc.mis*n, replace=TRUE)
+miss.col    &lt;- sample(1:n.marg, perc.mis*n, replace=TRUE)
+miss        &lt;- cbind(miss.row,miss.col)
+x.samp.miss &lt;- replace(x.samp,miss,NA)
+x.samp.miss
+probs &lt;- seq(0.05,0.45,by=0.1)
+ndist &lt;- 7
+dist.meth &lt;- "gower"  
+
+# impute missing values
+NPimp &lt;- NPCoImp(X=x.samp.miss, Psi=probs, K=ndist, method=dist.meth, 
+                 N=1000, seed=set.seed(7))
+
+# methods show
+
+show(NPimp)
+
+## Not run: 
+## generate data from a 3-variate Clayton copula and introduce missing by
+## using the MCAR function and try to impute through a rotated copula
+
+set.seed(11)
+n.marg &lt;- 3
+theta  &lt;- 5
+copula &lt;- claytonCopula(theta, dim = n.marg)
+mymvdc &lt;- mvdc(copula, c("beta", "beta", "beta"), list(list(shape1=4, shape2=1),
+            list(shape1=.5, shape2=.5), list(shape1=2, shape2=3)))
+n      &lt;- 50
+x.samp &lt;- copula::rMvdc(n, mymvdc)
+
+# randomly introduce MCAR univariate and multivariate missing
+
+perc.miss &lt;- 0.15
+setseed   &lt;- set.seed(13)
+x.samp.miss &lt;- MCAR(x.samp, perc.miss, setseed)
+x.samp.miss &lt;- x.samp.miss@"db.missing"
+probs &lt;- seq(0.05,0.45,by=0.05)
+ndist &lt;- 7
+dist.meth &lt;- "gower" 
+
+# impute missing values
+
+NPimp2 &lt;- NPCoImp(X=x.samp.miss, Psi=probs, K=ndist, method=dist.meth, N=1000)
+# methods show and plot
+
+show(NPimp2)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

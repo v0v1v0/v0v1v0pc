@@ -1,0 +1,244 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ctmleDiscrete</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Discrete Collaborative Targeted Minimum-loss based Estimation</h2>
+
+<h3>Description</h3>
+
+<p>This function computes the discrete Collaborative Targeted Minimum-loss based Estimator for variable selection.
+It includes the greedy C-TMLE algorithm (Gruber and van der Laan 2010), and scalable C-TMLE algorithm
+(Ju, Gruber, and Lendle et al. 2016) with a user-specified order.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ctmleDiscrete(Y, A, W, Wg = W, Q = NULL, preOrder = FALSE, order = NULL,
+  patience = FALSE, Qbounds = NULL, cvQinit = FALSE, Qform = NULL,
+  SL.library = NULL, alpha = 0.995, family = "gaussian", gbound = 0.025,
+  like_type = "RSS", fluctuation = "logistic", verbose = FALSE,
+  detailed = FALSE, PEN = FALSE, V = 5, folds = NULL,
+  stopFactor = 10^6)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Y</code></td>
+<td>
+<p>continuous or binary outcome variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>A</code></td>
+<td>
+<p>binary treatment indicator, 1 for treatment, 0 for control</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>W</code></td>
+<td>
+<p>vector, matrix, or dataframe containing baseline covariates for Q bar</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Wg</code></td>
+<td>
+<p>vector, matrix, or dataframe containing baseline covariates for propensity score model (defaults to W if not supplied by user)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Q</code></td>
+<td>
+<p>n by 2 matrix of initial values for Q0W, Q1W in columns 1 and 2, respectively. Current version does not support SL for automatic initial estimation of Q bar</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>preOrder</code></td>
+<td>
+<p>boolean indicator for using scalable C-TMLE algorithm or not</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>order</code></td>
+<td>
+<p>the use-specified order of covariables. Only used when (preOrder = TRUE). If not supplied by user,
+it would automatically order covariates from W_1 to W_p</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>patience</code></td>
+<td>
+<p>a number to stop early when the score in the CV function does not improve after so many covariates. Used only when (preOrder = TRUE)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Qbounds</code></td>
+<td>
+<p>bound on initial Y and predicted values for Q.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cvQinit</code></td>
+<td>
+<p>if TRUE, cross-validate initial values for Q to avoid overfits</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Qform</code></td>
+<td>
+<p>optional regression formula for estimating initial Q</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SL.library</code></td>
+<td>
+<p>optional vector of prediction algorithms for data adaptive estimation of Q, defaults to glm, and glmnet</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>used to keep predicted initial values bounded away from (0,1) for logistic fluctuation, 0.995 (default)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>family specification for working regression models, generally 'gaussian' for continuous outcomes (default), 'binomial' for binary outcomes</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gbound</code></td>
+<td>
+<p>bound on P(A=1|W), defaults to 0.025</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>like_type</code></td>
+<td>
+<p>'RSS' or 'loglike'. The metric to use for forward selection and cross-validation</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fluctuation</code></td>
+<td>
+<p>'logistic' (default) or 'linear', for targeting step</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>print status messages if TRUE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>detailed</code></td>
+<td>
+<p>boolean number. If it is TRUE, return more detailed results</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PEN</code></td>
+<td>
+<p>boolean. If true, penalized loss is used in cross-validation step</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>V</code></td>
+<td>
+<p>Number of folds. Only used if folds is not specified</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>folds</code></td>
+<td>
+<p>The list of indices for cross-validation step. We recommend the cv-splits in C-TMLE matchs that in gn_candidate_cv</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stopFactor</code></td>
+<td>
+<p>Numerical value with default 1e6. If the current empirical likelihood is stopFactor times larger than the best previous one, the construction would stop</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>best_k  the index of estimate that selected by cross-validation
+</p>
+<p>est estimate of psi_0
+</p>
+<p>CI  IC-based 95
+</p>
+<p>pvalue pvalue for the null hypothesis that Psi = 0
+</p>
+<p>likelihood sum of squared residuals, based on selected estimator evaluated on all obs or, logistic loglikelihood if like_type != 'RSS'
+</p>
+<p>varIC empirical variance of the influence curve adjusted for estimation of g
+</p>
+<p>varDstar empirical variance of the influence curve
+</p>
+<p>var.psi variance of the estimate
+</p>
+<p>varIC.cv cross-validated variance of the influence curve
+</p>
+<p>penlikelihood.cv penalized cross-validated likelihood
+</p>
+<p>cv.res all cross-validation results for each fold
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+N &lt;- 1000
+p = 10
+Wmat &lt;- matrix(rnorm(N * p), ncol = p)
+beta1 &lt;- 4+2*Wmat[,1]+2*Wmat[,2]+2*Wmat[,5]+2*Wmat[,6]+2*Wmat[,8]
+beta0 &lt;- 2+2*Wmat[,1]+2*Wmat[,2]+2*Wmat[,5]+2*Wmat[,6]+2*Wmat[,8]
+tauW &lt;- 2
+tau &lt;- 2
+gcoef &lt;- matrix(c(-1,-1,rep(-(3/((p)-2)),(p)-2)),ncol=1)
+Wm &lt;- as.matrix(Wmat)
+g &lt;- 1/(1+exp(Wm%*%gcoef))
+A &lt;- rbinom(N, 1, prob = g)
+sigma &lt;- 1
+epsilon &lt;-rnorm(N,0,sigma)
+Y  &lt;- beta0 + tauW*A + epsilon
+
+# Initial estimate of Q
+Q &lt;- cbind(rep(mean(Y[A == 0]), N), rep(mean(Y[A == 1]), N))
+
+# User-suplied initial estimate
+time_greedy &lt;- system.time(
+ctmle_discrete_fit1 &lt;- ctmleDiscrete(Y = Y, A = A, W = data.frame(Wmat), Q = Q,
+                                    preOrder = FALSE)
+)
+
+# If there is no input Q, then intial Q would be estimated by SL with Sl.library
+ctmle_discrete_fit2 &lt;- ctmleDiscrete(Y = Y, A = A, W = data.frame(Wmat),
+                                    preOrder = FALSE, detailed = TRUE)
+
+# scalable C-TMLE with pre-order option; order is user-specified,
+# If 'order' is  not specified takes order from W1 to Wp.
+time_preorder &lt;- system.time(
+ctmle_discrete_fit3 &lt;- ctmleDiscrete(Y = Y, A = A, W = data.frame(Wmat), Q = Q,
+                                    preOrder = TRUE,
+                                    order = rev(1:p), detailed = TRUE)
+)
+
+# Compare the running time
+time_greedy
+time_preorder
+
+## End(Not run)
+</code></pre>
+
+
+</div>

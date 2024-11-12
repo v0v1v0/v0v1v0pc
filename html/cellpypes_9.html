@@ -1,0 +1,230 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>plot_classes</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Call and visualize 'classify' function</h2>
+
+<h3>Description</h3>
+
+<p>Call and visualize 'classify' function
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">plot_classes(
+  obj,
+  classes = NULL,
+  knn_refine = 0,
+  replace_overlap_with = "Unassigned",
+  return_logical_matrix = FALSE,
+  fast = NULL,
+  point_size = 0.4,
+  point_size_legend = 2,
+  base_size = 15,
+  overdispersion = 0.01
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>obj</code></td>
+<td>
+<p>A cellpypes object, see section <strong>cellpypes Objects</strong> below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>classes</code></td>
+<td>
+<p>Character vector with one or more class names.
+If NULL (the default), plots finest available cell types
+(all classes that are not parent of any other class).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>knn_refine</code></td>
+<td>
+<p>Numeric between 0 and 1. If 0, do not refine labels
+obtained from UMI count pooling.
+If larger than 0 (recommended: 0.1), cellpypes will try to label
+unassigned cells by majority vote, see section <strong>knn_refine</strong> below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>replace_overlap_with</code></td>
+<td>
+<p>Character string, by default: <code>"Unassigned"</code>.
+See section <strong>Handling overlap</strong>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return_logical_matrix</code></td>
+<td>
+<p>logical. If TRUE,
+a logical matrix with
+classes in columns and cells in rows is returned instead of resolving
+overlaps with <code>replace_overlap_with</code>.
+If a single class is supplied, the matrix has exactly one
+column and the user can pipe it into "drop" to convert it to a vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fast</code></td>
+<td>
+<p>Set this to TRUE if you want fast plotting in spite of many cells
+(using the scattermore package). If NULL (default), cellpypes decides
+automatically and fast plotting is done for more than 10k cells, if FALSE
+it always uses <code>geom_point</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>point_size</code></td>
+<td>
+<p>Dot size used by geom_point.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>point_size_legend</code></td>
+<td>
+<p>Dot size displayed in legend.
+Legend colors are easier to read with larger points.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>base_size</code></td>
+<td>
+<p>The base_size of theme_bw, i.e.
+how large text is displayed. Default: 15.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>overdispersion</code></td>
+<td>
+<p>Defaults to 0.01, only change it if you know
+what you are doing.
+If set to 0, the NB simplifies to the Poisson distribution, and larger
+values give more variance.
+The 0.01 default value follows the recommendation by
+Lause, Berens and Kobak (Genome Biology 2021) to use
+<code>size=100</code> in pnbinom for typical data sets.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A ggplot2 object.
+</p>
+
+
+<h3>cellpypes Objects</h3>
+
+<p>A cellpypes object is a list with four slots:
+</p>
+
+<dl>
+<dt><code>raw </code></dt>
+<dd>
+<p>(sparse) matrix with genes in rows, cells in columns</p>
+</dd>
+<dt><code>totalUMI </code></dt>
+<dd>
+<p>the colSums of obj$raw</p>
+</dd>
+<dt><code>embed </code></dt>
+<dd>
+<p>two-dimensional embedding of the cells, provided as data.frame
+or tibble with two columns and one row per cell.</p>
+</dd>
+<dt><code>neighbors </code></dt>
+<dd>
+<p>index matrix with one row per cell and k columns, where
+k is the number of nearest neighbors (we recommend 15&lt;k&lt;100, e.g. k=50).
+Here are two ways to get the neighbors index matrix:
+</p>
+
+<ul>
+<li>
+<p> Use <code>find_knn(featureMatrix)$idx</code>, where featureMatrix could be
+principal components, latent variables or normalized genes (features in
+rows, cells in columns).
+</p>
+</li>
+<li>
+<p> use <code>as(seurat@graphs[["RNA_nn"]], "dgCMatrix")&gt; .1</code> to extract
+the kNN
+graph computed on RNA. The <code>&gt; .1</code> ensures this also works with RNA_snn,
+wknn/wsnn or any other
+available graph – check with <code>names(seurat@graphs)</code>.
+</p>
+</li>
+</ul>
+</dd>
+</dl>
+<h3>Handling overlap</h3>
+
+<p>Overlap denotes all cells
+for which rules from multiple classes apply, and these cells will be
+labeled as <code>Unassigned</code> by default.
+If you are in fact interested in where the overlap is,
+set <code>return_logical_matrix</code>=TRUE and inspect the result.
+Note that
+it matters whether you call <code>classify("Tcell")</code> or
+<code>classify(c("Tcell","Bcell")</code> – any existing overlap between T and B cells
+is labelled as <code>Unassigned</code> in
+this second call, but not in the first.
+</p>
+<p>Replacing overlap happens only between mutually
+exclusive labels (such as Tcell and Bcell), but
+not within a lineage.
+To make an example, overlap is NOT replaced between child (PD1+Ttox) and
+parent (Ttox) or any other ancestor (Tcell), but instead the
+most detailed cell type (PD1+Ttox) is returned.
+</p>
+<p>All of the above is also true for <code>plot_classes</code>, as it wraps <code>classify</code>.
+</p>
+
+
+<h3>knn_refine</h3>
+
+<p>With <code>knn_refine &gt; 0</code>, cellpypes refines cell type labels with a kNN classifier.
+</p>
+<p>By default, cellpypes only assigns cells to a class if all relevant rules
+apply.
+In other words, all marker gene UMI counts in the cell's neighborhood all have to
+be clearly above/below their threshold.
+Since UMI counts are sparse (even after neighbor pooling done by cellpypes),
+this can leave many cells unassigned.
+</p>
+<p>It is reasonable to assume an unassigned cell is of the same cell type as the
+majority of its nearest neighbors.
+Therefore, cellpypes implements a kNN classifier to further refine labels
+obtained by
+manually thresholding UMI counts.
+<code>knn_refine = 0.3</code> means a cell is assigned the class label held by
+most of its neighbors unless no class gets more than 30 %.
+If most neighbors are unassigned, the cell will also be set to "Unassigned".
+Choosing <code>knn_refine = 0.3</code> gives results reminiscent of clustering
+(which assigns all cells),
+while <code>knn_refine = 0.5</code> leaves cells 'in between' two similar
+cell types unassigned.
+</p>
+<p>We recommend looking at <code>knn_refine =  0</code> first as it's faster and
+more directly tied to marker gene expression.
+If assigning all cells is desired, we recommend <code>knn_refine = 0.3</code> or lower,
+while <code>knn_refine = 0.5</code> makes cell types more 'crisp' by setting cells
+'in between' related subtypes to "Unassigned".
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">plot_classes(rule(simulated_umis, "T", "CD3E","&gt;", 1))
+</code></pre>
+
+
+</div>

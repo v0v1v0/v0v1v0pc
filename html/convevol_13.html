@@ -1,0 +1,147 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>convSigCt</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Computes and conducts significance tests on Ct-metric scores for putatively convergent tips (or groups of tips) given a set of user provided phenotypic characters and a time calibrated phylogeny.</h2>
+
+<h3>Description</h3>
+
+<p>calcConvCt Computes and conducts significance tests on Ct-metric scores for putatively convergent tips (or groups of tips) given a set of user provided phenotypic characters and a time calibrated phylogeny.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">convSigCt(
+  phy,
+  traits,
+  focaltaxa,
+  groups = NULL,
+  user.ace = NULL,
+  nsim = 1000,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>phy</code></td>
+<td>
+<p>The time calibrated phylogeny of interest in phylo format</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>traits</code></td>
+<td>
+<p>A matrix of numeric phenotypic traits with rownames matching tip labels of phy</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>focaltaxa</code></td>
+<td>
+<p>A vector of tip labels for the putatively convergent taxa to be compared</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>groups</code></td>
+<td>
+<p>An optional vector of groups with names matching focaltaxa. Indicates the group identity of all putatively convergent taxa and limits Ct measures to intergroup comparisons only</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>user.ace</code></td>
+<td>
+<p>A matrix of user supplied ancestral trait values at internal nodes (formatted as "traits" but with node number as rownames)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsim</code></td>
+<td>
+<p>Number of simulated (Brownian motion) datasets used to build the null distribution</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>optional arguments to be passed to calcConvCt. If conservative == TRUE, Dmax.t will be restricted to occurr before the oldest stem lineage of the two groups involved in each pairwise comparison. Stem lineage age for each group is defined as the height of the parent node of the branch subtending the most recent common ancestor of tips within a group. Where groups include a single tip, the parent node of the tip's subtending branch is used. Requires group object to be provided by user.. If VERBOSE is TRUE, model information will be printed during computation, including time limits imposed on Dmax.t if the conservative option is chosen.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Function incorporates the optimizations introduced by Zelditch et al. (2017), which significantly improve runtimes
+</p>
+<p>Reconstructions part way along branches are obtained using equation 2 of Felsenstein (1985), following code modified from the phytools (Revell, 2012) function contMap
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of the following components:
+</p>
+<p>pvals a matrix containing Ct1 - Ct4 and p-values from significance tests for each
+</p>
+<p>meas.Cmat a matrix of Ct values for each pairwise comparison of focaltaxa
+</p>
+<p>meas.path a list of dataframes, one per pairwise comparison of focaltaxa, each containing information from all timepoint measurements of the two putatively convergent lineages. These provide the nodes at which comparisons were drawn, the evolutionary path along which that node fell (i.e., leading to one of two tips), the node height, reconstructed ancestral states at that node for each phenotypic trait, reconstructed ancestral values for each trait along the opposite path, and the phenotypic distance between the two lineages at that point.
+</p>
+<p>sim.avg average Ct values from all pairwise comparisons between focaltaxa using simulated Brownian motion traits, number of columns corresponds to the user provided number of simulations
+</p>
+<p>sim.path a list of dataframes as in meas.path, but obtained using simulated data. Length of object determined by number of pairwise comparisons multiplied by the number of simulated datasets.
+</p>
+<p>grp.mean a matrix of Ct-metrics summarized for inter-group comparisons, returned only if user defined groups were specified. Provides overall results matching those reported in "mean", results for each unique inter-group comparison, and results averaged with equal weight given to each unique inter-group comparison (i.e., ignoring differences in the number of tips in each group).
+</p>
+<p>grp.pvals a matrix of p-values associated with Ct values in grp.mean object. Returned only if user defined groups were specified.
+</p>
+<p>limits a list of tree heights used to constrain Dmax.t calculations for each pairwise comparison in conservative analyses. Only returned if conservative == TRUE.
+</p>
+
+
+<h3>References</h3>
+
+<p>Grossnickle DM, Brightly WH, Weaver LN, Stanchak KE, Roston RA, Pevsner SK, Stayton CT, Polly PD, Law CJ. 2022. A cautionary note on quantitative measures of phenotypic convergence. in revision
+Zelditch ML, Ye J, Mitchell JS, Swiderski DL. 2017. Rare ecomorphological convergence on a complex adaptive landscape: Body size and diet mediate evolution of jaw shape in squirrels (Sciuridae). Evolution 71: 633-649
+Stayton CT. 2015. The definition, recognition, and interpretation of convergent evolution and two new measures for quantifying and assessing the significance of convergence. Evolution 69(8): 2140-2153.
+Revell, L. J. (2012) phytools: An R package for phylogenetic comparative biology (and other things). Methods Ecol. Evol., 3, 217-223.
+Felsenstein, J. 1985. Phylogenies and the comparative method. American Naturalist, 125, 1-15.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+library(phytools)
+library(geiger)
+
+# create time calibrated tree
+mytree&lt;-rtree(100)
+mycalibration &lt;- makeChronosCalib(mytree, node="root", age.max=50)
+phy &lt;- chronos(mytree, lambda = 1, model = "correlated", calibration = mycalibration, 
+control = chronos.control() )
+class(phy)&lt;-"phylo"
+
+# create three normally distributed phenotypic traits
+traits &lt;- cbind(rnorm(Ntip(phy)),rnorm(Ntip(phy)),rnorm(Ntip(phy)))
+rownames(traits) &lt;- phy$tip.label
+
+#	select two random tips, excluding sister taxa
+pairs &lt;- apply(combn(phy$tip.label,2),2,function(x) nodepath(phy,which(phy$tip.label == x[1]),
+which(phy$tip.label == x[2])))
+nosis &lt;- combn(phy$tip.label,2)[,unlist(lapply(pairs, function(x) length(x) &gt; 3))]
+focaltaxa &lt;- nosis[,sample(1:ncol(nosis),1)]
+
+system.time(run &lt;- calcConvCt(phy, traits, focaltaxa))
+system.time(run2 &lt;- convSigCt(phy, traits, focaltaxa, nsim=100))
+
+plotCt(output = run2,phy = phy,focaltaxa = focaltaxa)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

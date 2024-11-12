@@ -1,0 +1,182 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>amce_diffs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Preference Heterogeneity Diagnostics</h2>
+
+<h3>Description</h3>
+
+<p>Tests for preference heterogeneity in conjoint experiments
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">amce_diffs(
+  data,
+  formula,
+  by,
+  id = ~0,
+  weights = NULL,
+  feature_order = NULL,
+  feature_labels = NULL,
+  level_order = c("ascending", "descending"),
+  alpha = 0.05,
+  ...
+)
+
+cj_anova(data, formula, id = NULL, weights = NULL, by = NULL, ...)
+
+mm_diffs(
+  data,
+  formula,
+  by,
+  id = ~0,
+  weights = NULL,
+  feature_order = NULL,
+  feature_labels = NULL,
+  level_order = c("ascending", "descending"),
+  alpha = 0.05,
+  h0 = 0,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data frame containing variables specified in <code>formula</code>. All RHS variables should be factors; the base level for each will be used in estimation and for AMCEs the base level's AMCE will be NA. Optionally, this can instead be an object of class “survey.design” returned by <code>svydesign</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>A formula specifying a model to be estimated. All variables should be factors; all levels across features should be unique.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by</code></td>
+<td>
+<p>A formula containing only RHS variables, specifying grouping factors over which to perform estimation. For <code>amce_diffs</code>, this can be a factor or something coercable to factor. For <code>mm_diffs</code>, differences are calculated against the base level of this variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id</code></td>
+<td>
+<p>Ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>An (optional) RHS formula specifying a variable holding survey weights.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>feature_order</code></td>
+<td>
+<p>An (optional) character vector specifying the names of feature (RHS) variables in the order they should be encoded in the resulting data frame.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>feature_labels</code></td>
+<td>
+<p>A named list of “fancy” feature labels to be used in output. By default, the function looks for a “label” attribute on each variable in <code>formula</code> and uses that for pretty printing. This argument overrides those attributes or otherwise provides fancy labels for this purpose. This should be a list with names equal to variables on the righthand side of <code>formula</code> and character string values; arguments passed here override variable attributes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>level_order</code></td>
+<td>
+<p>A character string specifying levels (within each feature) should be ordered increasing or decreasing in the final output. This is mostly only consequential for plotting via <code>plot.cj_mm</code>, etc.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>A numeric value indicating the significance level at which to calculate confidence intervals for the MMs (by default 0.95, meaning 95-percent CIs are returned).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to <code>amce</code>, <code>cj_freqs</code>, or <code>mm</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>h0</code></td>
+<td>
+<p>A numeric value specifying a null hypothesis value to use when generating z-statistics and p-values (only used for <code>mm_diffs</code>).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>cj_anova</code> takes a model formula (“reduced” model) and generates a “full” model with two-way interactions between the variables specified in <code>by</code> and all RHS variables in <code>formula</code>, then computes an F-test comparing the two models, providing a test for whether preferences vary across levels of <code>by</code>. This is, in essence, a test of whether all such interaction coefficients are distinguishable from zero. (Because the test depends on overall model fit, not the coefficient variances, clustering is irrelevant.)
+</p>
+<p><code>mm_diffs</code> provides a data frame of differences in marginal means (literally differencing the results from <code>mm</code> across levels of <code>by</code>. This provides the clearest direct measure of preference differences from a conjoint design.
+</p>
+<p><code>amce_diffs</code> provides a data frame of differences in AMCEs (the coefficient on an interaction between each RHS factor and the variable in <code>by</code>). This provides an estimate of the difference in causal effects of each factor level relative to the baseline level (i.e., the difference in conditional AMCEs). This quantity is easily misinterpreted as the difference in preferences, which it is not. Rather it is a difference in the effect of the factor on preferences relative to the baseline/reference category of that feature. If preferences in the reference category differ across levels of <code>by</code>, the the difference in conditional AMCEs will have an unpredictable sign and significance, making differences in marginal means a more sensible quantity of interest. See <code>amce_by_reference</code> for a diagnostic.
+</p>
+<p>Note: <code>amce_diffs</code> does not work with constrained designs. To obtain such differences, subset the design by constraints and calculate differences within each subset.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>amce_diffs</code> and <code>mm_diffs</code> return a data frame similar to the one returned by <code>cj</code>, including a <code>BY</code> column (with the value “Difference”) for easy merging with results returned by that function.
+</p>
+<p><code>cj_anova</code> returns an <code>anova</code> object.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Thomas J. Leeper &lt;thosjleeper@gmail.com&gt;
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>amce</code> <code>mm</code> <code>cj_freqs</code> <code>plot.cj_amce</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data("immigration")
+immigration$contest_no &lt;- factor(immigration$contest_no)
+# Test for heterogeneity by profile order
+cj_anova(immigration, ChosenImmigrant ~ Gender + Education + LanguageSkills, by = ~ contest_no)
+
+# Test for heterogeneity by CountryOfOrigin feature
+cj_anova(immigration, ChosenImmigrant ~ Gender + Education, by = ~ CountryOfOrigin)
+
+
+# Differences in MMs by Gender feature
+mm_diffs(immigration, ChosenImmigrant ~ LanguageSkills + Education, ~ Gender, id = ~ CaseID)
+
+# Differences in AMCEs by Gender feature (i.e., feature interactions)
+amce_diffs(immigration, ChosenImmigrant ~ LanguageSkills + Education, ~ Gender, id = ~ CaseID)
+
+
+# preferences differ for Male and Female immigrants with 'Broken English' ability
+(m1 &lt;- mm_diffs(immigration, ChosenImmigrant ~ LanguageSkills, ~ Gender, id = ~ CaseID))
+
+# yet differences in conditional AMCEs  depend on the reference category
+amce_diffs(immigration, ChosenImmigrant ~ LanguageSkills, ~ Gender, id = ~ CaseID)
+immigration$LanguageSkills2 &lt;- relevel(immigration$LanguageSkills, "Used Interpreter")
+amce_diffs(immigration, ChosenImmigrant ~ LanguageSkills2, ~ Gender, id = ~ CaseID)
+
+# while differences in MMs do not depend on the reference cateory
+(m2 &lt;- mm_diffs(immigration, ChosenImmigrant ~ LanguageSkills2, ~ Gender, id = ~ CaseID))
+
+</code></pre>
+
+
+</div>

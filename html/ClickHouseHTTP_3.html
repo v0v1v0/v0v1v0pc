@@ -1,0 +1,237 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ClickHouseHTTPDriver-class</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Driver for the ClickHouse database using HTTP(S) interface</h2>
+
+<h3>Description</h3>
+
+<p>Driver for the ClickHouse database using HTTP(S) interface
+</p>
+<p>Connect to a ClickHouse database using the ClickHouseHTTP DBI
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S4 method for signature 'ClickHouseHTTPDriver'
+dbConnect(
+  drv,
+  host = "localhost",
+  port = 8123L,
+  dbname = "default",
+  user = "default",
+  password = "",
+  https = FALSE,
+  ssl_verifypeer = TRUE,
+  host_path = NA,
+  session_timeout = 3600L,
+  convert_uint = TRUE,
+  extended_headers = list(),
+  reset_handle = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>drv</code></td>
+<td>
+<p>A driver object created by <code>ClickHouseHTTP()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>host</code></td>
+<td>
+<p>name of the database host (default: "localhost")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>port</code></td>
+<td>
+<p>port on which the database is listening (default: 8123L)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dbname</code></td>
+<td>
+<p>name of the default database (default: "default")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>user</code></td>
+<td>
+<p>user name (default: "default")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>password</code></td>
+<td>
+<p>user password (default: "")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>https</code></td>
+<td>
+<p>a logical to use the HTTPS protocol (default: FALSE)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ssl_verifypeer</code></td>
+<td>
+<p>a logical to verify SSL certificate when using
+HTTPS (default: TRUE)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>host_path</code></td>
+<td>
+<p>a path to use on host (e.g. "ClickHouse/"):
+it allows to connect on a server behind a reverse proxy for example</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>session_timeout</code></td>
+<td>
+<p>timeout in seconds (default: 3600L seconds)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>convert_uint</code></td>
+<td>
+<p>a logical: if TRUE (default), UInt ClickHouse
+data types are converted in the following R classes:
+</p>
+
+<ul>
+<li>
+<p> UInt8 : logical
+</p>
+</li>
+<li>
+<p> UInt16: Date
+(when using Arrow format
+in dbSendQuery,ClickHouseHTTPConnection,character-method)
+</p>
+</li>
+<li>
+<p> UInt32: POSIXct
+(when using Arrow format
+in dbSendQuery,ClickHouseHTTPConnection,character-method)
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extended_headers</code></td>
+<td>
+<p>a named list with other HTTP headers
+(for example: <code>extended_headers=list("X-Authorization"="Bearer &lt;token&gt;")</code>
+can be used for OAuth access delegation)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reset_handle</code></td>
+<td>
+<p>a logical indicating how to manage Curl handles
+(see httr::handle_pool). If TRUE, handle reset is used (default: FALSE).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Other parameters passed on to methods</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A ClickHouseHTTPConnection
+</p>
+
+
+<h3>See Also</h3>
+
+<p>ClickHouseHTTPConnection
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+
+## Connection ----
+
+library(DBI)
+### HTTP connection ----
+
+con &lt;- dbConnect(
+   ClickHouseHTTP::ClickHouseHTTP(), host="localhost",
+   port=8123
+)
+
+### HTTPS connection (without ssl peer verification) ----
+
+con &lt;- dbConnect(
+   ClickHouseHTTP::ClickHouseHTTP(), host="localhost",
+   port=8443, https=TRUE, ssl_verifypeer=FALSE
+)
+
+## Write a table in the database ----
+
+library(dplyr)
+data("mtcars")
+mtcars &lt;- as_tibble(mtcars, rownames="car")
+dbWriteTable(con, "mtcars", mtcars)
+
+## Query the database ----
+
+carsFromDB &lt;- dbReadTable(con, "mtcars")
+dbGetQuery(con, "SELECT car, mpg, cyl, hp FROM mtcars WHERE hp&gt;=110")
+
+## By default, ClickHouseHTTP relies on the
+## Apache Arrow format provided by ClickHouse.
+## The `format` argument of the `dbGetQuery()` function can be used to
+## rely on the *TabSeparatedWithNamesAndTypes* format.
+selCars &lt;- dbGetQuery(
+   con, "SELECT car, mpg, cyl, hp FROM mtcars WHERE hp&gt;=110",
+   format="TabSeparatedWithNamesAndTypes"
+)
+## Identifying the original ClickHouse data types
+attr(selCars, "type")
+
+## Using alternative databases stored in ClickHouse ----
+
+dbSendQuery(con, "CREATE DATABASE swiss")
+dbSendQuery(con, "USE swiss")
+
+## The chosen database is used until the session expires.
+## It can also be chosen when connecting using the `dbname` argument of
+## the `dbConnect()` function.
+
+## The example below shows that spaces in column names are supported.
+## It also shows the support of R `list` using the *Array* ClickHouse type.
+data("swiss")
+swiss &lt;- as_tibble(swiss, rownames="province")
+swiss &lt;- mutate(swiss, "pr letters"=strsplit(province, ""))
+dbWriteTable(
+   con, "swiss", swiss,
+   engine="MergeTree() ORDER BY (Fertility, province)"
+)
+swissFromDB &lt;- dbReadTable(con, "swiss")
+
+## A table from another database can also be accessed as following:
+dbReadTable(con, SQL("default.mtcars"))
+
+
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,162 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>varying</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fast Check of Variation in Data</h2>
+
+<h3>Description</h3>
+
+<p><code>varying</code> is a generic function that (column-wise) checks for variation in the values of <code>x</code>, (optionally) within the groups <code>g</code> (e.g. a panel-identifier).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">varying(x, ...)
+
+## Default S3 method:
+varying(x, g = NULL, any_group = TRUE, use.g.names = TRUE, ...)
+
+## S3 method for class 'matrix'
+varying(x, g = NULL, any_group = TRUE, use.g.names = TRUE, drop = TRUE, ...)
+
+## S3 method for class 'data.frame'
+varying(x, by = NULL, cols = NULL, any_group = TRUE, use.g.names = TRUE, drop = TRUE, ...)
+
+# Methods for indexed data / compatibility with plm:
+
+## S3 method for class 'pseries'
+varying(x, effect = 1L, any_group = TRUE, use.g.names = TRUE, ...)
+
+## S3 method for class 'pdata.frame'
+varying(x, effect = 1L, cols = NULL, any_group = TRUE, use.g.names = TRUE,
+        drop = TRUE, ...)
+
+# Methods for grouped data frame / compatibility with dplyr:
+
+## S3 method for class 'grouped_df'
+varying(x, any_group = TRUE, use.g.names = FALSE, drop = TRUE,
+        keep.group_vars = TRUE, ...)
+
+# Methods for grouped data frame / compatibility with sf:
+
+## S3 method for class 'sf'
+varying(x, by = NULL, cols = NULL, any_group = TRUE, use.g.names = TRUE, drop = TRUE, ...)
+
+
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a vector, matrix, data frame, 'indexed_series' ('pseries'), 'indexed_frame' ('pdata.frame') or grouped data frame ('grouped_df'). Data must not be numeric.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>g</code></td>
+<td>
+<p>a factor, <code>GRP</code> object, atomic vector (internally converted to factor) or a list of vectors / factors (internally converted to a <code>GRP</code> object) used to group <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by</code></td>
+<td>
+<p>same as <code>g</code>, but also allows one- or two-sided formulas i.e. <code>~ group1 + group2</code> or <code>var1 + var2 ~ group1 + group2</code>. See Examples</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>any_group</code></td>
+<td>
+<p>logical. If <code>!is.null(g)</code>, <code>FALSE</code> will check and report variation in all groups, whereas the default <code>TRUE</code> only checks if there is variation within any group. See Examples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cols</code></td>
+<td>
+<p>select columns using column names, indices or a function (e.g. <code>is.numeric</code>). Two-sided formulas passed to <code>by</code> overwrite <code>cols</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use.g.names</code></td>
+<td>
+<p>logical. Make group-names and add to the result as names (default method) or row-names (matrix and data frame methods). No row-names are generated for <em>data.table</em>'s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop</code></td>
+<td>
+<p><em>matrix and data.frame methods:</em> Logical. <code>TRUE</code> drops dimensions and returns an atomic vector if the result is 1-dimensional.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>effect</code></td>
+<td>
+<p><em>plm</em> methods: Select the panel identifier by which variation in the data should be examined. 1L takes the first variable in the index, 2L the second etc.. Index variables can also be called by name. More than one index variable can be supplied, which will be interacted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.group_vars</code></td>
+<td>
+<p><em>grouped_df method:</em> Logical. <code>FALSE</code> removes grouping variables after computation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments to be passed to or from other methods.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Without groups passed to <code>g</code>, <code>varying</code> simply checks if there is any variation in the columns of <code>x</code> and returns <code>TRUE</code> for each column where this is the case and <code>FALSE</code> otherwise. A set of data points is defined as varying if it contains at least 2 distinct non-missing values (such that a non-0 standard deviation can be computed on numeric data). <code>varying</code> checks for variation in both numeric and non-numeric data.
+</p>
+<p>If groups are supplied to <code>g</code> (or alternatively a <em>grouped_df</em> to <code>x</code>), <code>varying</code> can operate in one of 2 modes:
+</p>
+
+<ul>
+<li>
+<p> If <code>any_group = TRUE</code> (the default), <code>varying</code> checks each column for variation in any of the groups defined by <code>g</code>, and returns <code>TRUE</code> if such within-variation was detected and <code>FALSE</code> otherwise. Thus only one logical value is returned for each column and the computation on each column is terminated as soon as any variation within any group was found.
+</p>
+</li>
+<li>
+<p> If <code>any_group = FALSE</code>, <code>varying</code> runs through the entire data checking each group for variation and returns, for each column in <code>x</code>, a logical vector reporting the variation check for all groups. If a group contains only missing values, a <code>NA</code> is returned for that group.
+</p>
+</li>
+</ul>
+<p>The <em>sf</em> method simply ignores the geometry column.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A logical vector or (if <code>!is.null(g)</code> and <code>any_group = FALSE</code>), a matrix or data frame of logical vectors indicating whether the data vary (over the dimension supplied by <code>g</code>).
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Summary Statistics, Data Transformations, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Checks overall variation in all columns
+varying(wlddev)
+
+## Checks whether data are time-variant i.e. vary within country
+varying(wlddev, ~ country)
+
+## Same as above but done for each country individually, countries without data are coded NA
+head(varying(wlddev, ~ country, any_group = FALSE))
+</code></pre>
+
+
+</div>

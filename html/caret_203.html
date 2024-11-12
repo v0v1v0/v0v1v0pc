@@ -1,0 +1,131 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>plotObsVsPred</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Plot Observed versus Predicted Results in Regression and Classification
+Models</h2>
+
+<h3>Description</h3>
+
+<p>This function takes an object (preferably from the function
+<code>extractPrediction</code>) and creates a lattice plot. For numeric
+outcomes, the observed and predicted data are plotted with a 45 degree
+reference line and a smoothed fit. For factor outcomes, a dotplot plot is
+produced with the accuracies for the different models.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">plotObsVsPred(object, equalRanges = TRUE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>an object (preferably from the function
+<code>extractPrediction</code>. There should be columns named <code>obs</code>,
+<code>pred</code>, <code>model</code> (e.g. "rpart", "nnet" etc.)  and <code>dataType</code>
+(e.g. "Training", "Test" etc)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>equalRanges</code></td>
+<td>
+<p>a logical; should the x- and y-axis ranges be the same?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>parameters to pass to <code>xyplot</code> or
+<code>dotplot</code>, such as <code>auto.key</code></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If the call to <code>extractPrediction</code> included test data, these
+data are shown, but if unknowns were also included, they are not plotted
+</p>
+
+
+<h3>Value</h3>
+
+<p>A lattice object. Note that the plot has to be printed to be
+displayed (especially in a loop).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Max Kuhn
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Not run: 
+# regression example
+data(BostonHousing)
+rpartFit &lt;- train(BostonHousing[1:100, -c(4, 14)], 
+                  BostonHousing$medv[1:100], 
+                  "rpart", tuneLength = 9)
+plsFit &lt;- train(BostonHousing[1:100, -c(4, 14)], 
+                BostonHousing$medv[1:100], 
+                "pls")
+
+predVals &lt;- extractPrediction(list(rpartFit, plsFit), 
+                              testX = BostonHousing[101:200, -c(4, 14)], 
+                              testY = BostonHousing$medv[101:200], 
+                              unkX = BostonHousing[201:300, -c(4, 14)])
+
+plotObsVsPred(predVals)
+
+
+#classification example
+data(Satellite)
+numSamples &lt;- dim(Satellite)[1]
+set.seed(716)
+
+varIndex &lt;- 1:numSamples
+
+trainSamples &lt;- sample(varIndex, 150)
+
+varIndex &lt;- (1:numSamples)[-trainSamples]
+testSamples &lt;- sample(varIndex, 100)
+
+varIndex &lt;- (1:numSamples)[-c(testSamples, trainSamples)]
+unkSamples &lt;- sample(varIndex, 50)
+
+trainX &lt;- Satellite[trainSamples, -37]
+trainY &lt;- Satellite[trainSamples, 37]
+
+testX &lt;- Satellite[testSamples, -37]
+testY &lt;- Satellite[testSamples, 37]
+
+unkX &lt;- Satellite[unkSamples, -37]
+
+knnFit  &lt;- train(trainX, trainY, "knn")
+rpartFit &lt;- train(trainX, trainY, "rpart")
+
+predTargets &lt;- extractPrediction(list(knnFit, rpartFit), 
+                                 testX = testX, 
+                                 testY = testY, 
+                                 unkX = unkX)
+
+plotObsVsPred(predTargets)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

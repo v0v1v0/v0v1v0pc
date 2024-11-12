@@ -1,0 +1,291 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>collap</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Advanced Data Aggregation
+</h2>
+
+<h3>Description</h3>
+
+<p><code>collap</code> is a fast and versatile multi-purpose data aggregation command.
+</p>
+<p>It performs simple and weighted aggregations, multi-type aggregations automatically applying different functions to numeric and categorical columns, multi-function aggregations applying multiple functions to each column, and fully custom aggregations where the user passes a list mapping functions to columns.
+</p>
+
+
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R"># Main function: allows formula and data input to `by` and `w` arguments
+collap(X, by, FUN = fmean, catFUN = fmode, cols = NULL, w = NULL, wFUN = fsum,
+       custom = NULL, ..., keep.by = TRUE, keep.w = TRUE, keep.col.order = TRUE,
+       sort = .op[["sort"]], decreasing = FALSE, na.last = TRUE, return.order = sort,
+       method = "auto", parallel = FALSE, mc.cores = 2L,
+       return = c("wide","list","long","long_dupl"), give.names = "auto")
+
+# Programmer function: allows column names and indices input to `by` and `w` arguments
+collapv(X, by, FUN = fmean, catFUN = fmode, cols = NULL, w = NULL, wFUN = fsum,
+        custom = NULL, ..., keep.by = TRUE, keep.w = TRUE, keep.col.order = TRUE,
+        sort = .op[["sort"]], decreasing = FALSE, na.last = TRUE, return.order = sort,
+        method = "auto", parallel = FALSE, mc.cores = 2L,
+        return = c("wide","list","long","long_dupl"), give.names = "auto")
+
+# Auxiliary function: for grouped data ('grouped_df') input + non-standard evaluation
+collapg(X, FUN = fmean, catFUN = fmode, cols = NULL, w = NULL, wFUN = fsum,
+        custom = NULL, keep.group_vars = TRUE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>a data frame, or an object coercible to data frame using <code>qDF</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by</code></td>
+<td>
+<p>for <code>collap</code>: a one-or two sided formula, i.e. <code>~ group1</code> or <code>var1 + var2 ~ group1 + group2</code>, or a atomic vector, list of vectors or <code>GRP</code> object used to group <code>X</code>. For <code>collapv</code>: names or indices of grouping columns, or a logical vector or selector function such as <code>is_categorical</code> selecting grouping columns.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FUN</code></td>
+<td>
+<p>a function, list of functions (i.e. <code>list(fsum, fmean, fsd)</code> or <code>list(sd = fsd, myfun1 = function(x)..)</code>), or a character vector of function names, which are automatically applied only to numeric variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>catFUN</code></td>
+<td>
+<p>same as <code>FUN</code>, but applied only to categorical (non-numeric) typed columns (<code>is_categorical</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cols</code></td>
+<td>
+<p>select columns to aggregate using a function, column names, indices or logical vector. <em>Note</em>: <code>cols</code> is ignored if a two-sided formula is passed to <code>by</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+<p>weights. Can be passed as numeric vector or alternatively as formula i.e. <code>~ weightvar</code> in <code>collap</code> or column name / index etc. i.e. <code>"weightvar"</code> in <code>collapv</code>. <code>collapg</code> supports non-standard evaluations so <code>weightvar</code> can be indicated without quotes. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wFUN</code></td>
+<td>
+<p>same as <code>FUN</code>: Function(s) to aggregate weight variable if <code>keep.w = TRUE</code>. By default the sum of the weights is computed in each group.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>custom</code></td>
+<td>
+<p>a named list specifying a fully customized aggregation task. The names of the list are function names and the content columns to aggregate using this function (same input as <code>cols</code>). For example <code>custom = list(fmean = 1:6, fsd = 7:9, fmode = 10:11)</code> tells <code>collap</code> to aggregate columns 1-6 of <code>X</code> using the mean, columns 7-9 using the standard deviation etc. <em>Notes</em>: <code>custom</code> lets <code>collap</code> ignore any inputs passed to <code>FUN</code>, <code>catFUN</code> or <code>cols</code>. Since v1.6.0 you can also rename columns e.g. <code>custom = list(fmean = c(newname = "col1", "col2"), fmode = c(newname = 3))</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.by, keep.group_vars</code></td>
+<td>
+<p>logical. <code>FALSE</code> will omit grouping variables from the output. <code>TRUE</code> keeps the variables, even if passed externally in a list or vector (unlike other <em>collapse</em> functions).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.w</code></td>
+<td>
+<p>logical. <code>FALSE</code> will omit weight variable from the output i.e. no aggregation of the weights. <code>TRUE</code> aggregates and adds weights, even if passed externally as a vector (unlike other <em>collapse</em> functions).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.col.order</code></td>
+<td>
+<p>logical. Retain original column order post-aggregation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sort, decreasing, na.last, return.order, method</code></td>
+<td>
+<p>logical / character. Arguments passed to <code>GRP.default</code> and affecting the row-order in the aggregated data frame and the grouping algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+<p>logical. Use <code>mclapply</code> instead of <code>lapply</code> to parallelize the computation at the column level. Not available for Windows.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mc.cores</code></td>
+<td>
+<p>integer. Argument to <code>mclapply</code> setting the number of cores to use, default is 2.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return</code></td>
+<td>
+<p>character. Control the output format when aggregating with multiple functions or performing custom aggregation. "wide" (default) returns a wider data frame with added columns for each additional function. "list" returns a list of data frames - one for each function. "long" adds a column "Function" and row-binds the results from different functions using <code>data.table::rbindlist</code>. "long.dupl" is a special option for aggregating multi-type data using multiple <code>FUN</code> but only one <code>catFUN</code> or vice-versa. In that case the format is long and data aggregated using only one function is duplicated. See Examples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>give.names</code></td>
+<td>
+<p>logical. Create unique names of aggregated columns by adding a prefix 'FUN.var'. <code>'auto'</code> will automatically create such prefixes whenever multiple functions are applied to a column. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments passed to all functions supplied to <code>FUN</code>, <code>catFUN</code>, <code>wFUN</code> or <code>custom</code>. Since v1.9.0 these are also split by groups for non-Fast Statistical Functions. The behavior of Fast Statistical Functions with unused arguments is regulated by <code>option("collapse_unused_arg_action")</code> and defaults to <code>"warning"</code>. <code>collapg</code> also allows other arguments to <code>collap</code> except for <code>sort, decreasing, na.last, return.order, method</code> and <code>keep.by</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>collap</code> automatically checks each function passed to it whether it is a Fast Statistical Function (i.e. whether the function name is contained in <code>.FAST_STAT_FUN</code>). If the function is a fast statistical function, <code>collap</code> only does the grouping and then calls the function to carry out the grouped computations (vectorized in C/C++), resulting in high aggregation speeds, even with weights. If the function is not one of <code>.FAST_STAT_FUN</code>, <code>BY</code> is called internally to perform the computation. The resulting computations from each function are put into a list and recombined to produce the desired output format as controlled by the <code>return</code> argument. This is substantially slower, particularly with many groups.
+</p>
+<p>When setting <code>parallel = TRUE</code> on a non-windows computer, aggregations will efficiently be parallelized at the column level using <code>mclapply</code> utilizing <code>mc.cores</code> cores. Some Fast Statistical Function support multithreading i.e. have an <code>nthreads</code> argument that can be passed to <code>collap</code>. Using C-level multithreading is much more effective than R-level parallelism, and also works on Windows, but the two should never be combined.
+</p>
+<p>When the <code>w</code> argument is used, the weights are passed to all functions except for <code>wFUN</code>. This may be undesirable in settings like <code>collap(data, ~ id, custom = list(fsum = ..., fmean = ...), w = ~ weights)</code> where we wish to aggregate some columns using the weighted mean, and others using a simple sum or another unweighted statistic. 
+Therefore it is possible to append Fast Statistical Functions by <code>_uw</code> to yield an unweighted computation. So for the above example one can specify: <code>collap(data, ~ id, custom = list(fsum_uw = ..., fmean = ...), w = ~ weights)</code> to get the weighted mean and the simple sum. <em>Note</em> that the <code>_uw</code> functions are not available for use outside collap. Thus one also needs to quote them when passing to the <code>FUN</code> or <code>catFUN</code> arguments, e.g. use <code>collap(data, ~ id, fmean, "fmode_uw", w = ~ weights)</code>. 
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>X</code> aggregated. If <code>X</code> is not a data frame it is coerced to one using <code>qDF</code> and then aggregated.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fsummarise</code>, <code>BY</code>, Fast Statistical Functions, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## A Simple Introduction --------------------------------------
+head(iris)
+collap(iris, ~ Species)                                        # Default: FUN = fmean for numeric
+collapv(iris, 5)                                               # Same using collapv
+collap(iris, ~ Species, fmedian)                               # Using the median
+collap(iris, ~ Species, fmedian, keep.col.order = FALSE)       # Groups in-front
+collap(iris, Sepal.Width + Petal.Width ~ Species, fmedian)     # Only '.Width' columns
+collapv(iris, 5, cols = c(2, 4))                               # Same using collapv
+collap(iris, ~ Species, list(fmean, fmedian))                  # Two functions
+collap(iris, ~ Species, list(fmean, fmedian), return = "long") # Long format
+collapv(iris, 5, custom = list(fmean = 1:2, fmedian = 3:4))    # Custom aggregation
+collapv(iris, 5, custom = list(fmean = 1:2, fmedian = 3:4),    # Raw output, no column reordering
+        return = "list")
+collapv(iris, 5, custom = list(fmean = 1:2, fmedian = 3:4),    # A strange choice..
+        return = "long")
+collap(iris, ~ Species, w = ~ Sepal.Length)                    # Using Sepal.Length as weights, ..
+weights &lt;- abs(rnorm(fnrow(iris)))
+collap(iris, ~ Species, w = weights)                           # Some random weights..
+collap(iris, iris$Species, w = weights)                        # Note this behavior..
+collap(iris, iris$Species, w = weights,
+       keep.by = FALSE, keep.w = FALSE)
+
+
+
+## Multi-Type Aggregation --------------------------------------
+head(wlddev)                                                    # World Development Panel Data
+head(collap(wlddev, ~ country + decade))                        # Aggregate by country and decade
+head(collap(wlddev, ~ country + decade, fmedian, ffirst))       # Different functions
+head(collap(wlddev, ~ country + decade, cols = is.numeric))     # Aggregate only numeric columns
+head(collap(wlddev, ~ country + decade, cols = 9:13))           # Only the 5 series
+head(collap(wlddev, PCGDP + LIFEEX ~ country + decade))         # Only GDP and life-expactancy
+head(collap(wlddev, PCGDP + LIFEEX ~ country + decade, fsum))   # Using the sum instead
+head(collap(wlddev, PCGDP + LIFEEX ~ country + decade, sum,     # Same using base::sum -&gt; slower!
+            na.rm = TRUE))
+head(collap(wlddev, wlddev[c("country","decade")], fsum,        # Same, exploring different inputs
+            cols = 9:10))
+head(collap(wlddev[9:10], wlddev[c("country","decade")], fsum))
+head(collapv(wlddev, c("country","decade"), fsum))              # ..names/indices with collapv
+head(collapv(wlddev, c(1,5), fsum))
+
+g &lt;- GRP(wlddev, ~ country + decade)                            # Precomputing the grouping
+head(collap(wlddev, g, keep.by = FALSE))                        # This is slightly faster now
+# Aggregate categorical data using not the mode but the last element
+head(collap(wlddev, ~ country + decade, fmean, flast))
+head(collap(wlddev, ~ country + decade, catFUN = flast,         # Aggregate only categorical data
+            cols = is_categorical))
+
+
+## Weighted Aggregation ----------------------------------------
+# We aggregate to region level using population weights
+head(collap(wlddev, ~ region + year, w = ~ POP))                # Takes weighted mean for numeric..
+# ..and weighted mode for categorical data. The weight vector is aggregated using fsum
+
+head(collap(wlddev, ~ region + year, w = ~ POP,                 # Aggregating weights using sum
+            wFUN = list(sum = fsum, max = fmax)))               # and max (corresponding to mode)
+
+
+## Multi-Function Aggregation ----------------------------------
+head(collap(wlddev, ~ country + decade, list(mean = fmean, N = fnobs),  # Saving mean and Nobs
+            cols = 9:13))
+
+head(collap(wlddev, ~ country + decade,                         # Same using base R -&gt; slower
+            list(mean = mean,
+                 N = function(x, ...) sum(!is.na(x))),
+            cols = 9:13, na.rm = TRUE))
+
+lapply(collap(wlddev, ~ country + decade,                       # List output format
+       list(mean = fmean, N = fnobs), cols = 9:13, return = "list"), head)
+
+head(collap(wlddev, ~ country + decade,                         # Long output format
+     list(mean = fmean, N = fnobs), cols = 9:13, return = "long"))
+
+head(collap(wlddev, ~ country + decade,                         # Also aggregating categorical data,
+     list(mean = fmean, N = fnobs), return = "long_dupl"))      # and duplicating it 2 times
+
+head(collap(wlddev, ~ country + decade,                         # Now also using 2 functions on
+     list(mean = fmean, N = fnobs), list(mode = fmode, last = flast),   # categorical data
+            keep.col.order = FALSE))
+
+head(collap(wlddev, ~ country + decade,                         # More functions, string input,
+            c("fmean","fsum","fnobs","fsd","fvar"),             # parallelized execution
+            c("fmode","ffirst","flast","fndistinct"),           # (choose more than 1 cores,
+            parallel = TRUE, mc.cores = 1L,                     # depending on your machine)
+            keep.col.order = FALSE))
+
+
+## Custom Aggregation ------------------------------------------
+head(collap(wlddev, ~ country + decade,                         # Custom aggregation
+            custom = list(fmean = 11:13, fsd = 9:10, fmode = 7:8)))
+
+head(collap(wlddev, ~ country + decade,                         # Using column names
+            custom = list(fmean = "PCGDP", fsd = c("LIFEEX","GINI"),
+                          flast = "date")))
+
+head(collap(wlddev, ~ country + decade,                         # Weighted parallelized custom
+            custom = list(fmean = 9:12, fsd = 9:10,             # aggregation
+                          fmode = 7:8), w = ~ POP,
+            wFUN = list(fsum, fmax),
+            parallel = TRUE, mc.cores = 1L))
+
+head(collap(wlddev, ~ country + decade,                         # No column reordering
+            custom = list(fmean = 9:12, fsd = 9:10,
+                          fmode = 7:8), w = ~ POP,
+            wFUN = list(fsum, fmax),
+            parallel = TRUE, mc.cores = 1L, keep.col.order = FALSE))
+
+## Piped Use --------------------------------------------------
+iris |&gt; fgroup_by(Species) |&gt; collapg()
+wlddev |&gt; fgroup_by(country, decade) |&gt; collapg() |&gt; head()
+wlddev |&gt; fgroup_by(region, year) |&gt; collapg(w = POP) |&gt; head()
+wlddev |&gt; fgroup_by(country, decade) |&gt; collapg(fmedian, flast) |&gt; head()
+wlddev |&gt; fgroup_by(country, decade) |&gt;
+  collapg(custom = list(fmean = 9:12, fmode = 5:7, flast = 3)) |&gt; head()
+</code></pre>
+
+
+</div>

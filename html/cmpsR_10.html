@@ -1,0 +1,96 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>get_all_phases</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Obtain a list of all phases of a bullet-by-bullet comparison</h2>
+
+<h3>Description</h3>
+
+<p>Obtain a list of all phases of a bullet-by-bullet comparison
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">get_all_phases(land1, land2, score, addNA = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>land1</code></td>
+<td>
+<p>(numeric) vector with land ids of bullet 1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>land2</code></td>
+<td>
+<p>(numeric) vector with land ids of bullet 2</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>score</code></td>
+<td>
+<p>numeric vector of scores to be summarized into a single number</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>addNA</code></td>
+<td>
+<p>logical value. In case of missing lands, are scores set to 0 (addNA = FALSE) or set to NA (addNA = TRUE)</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>a list of all phases
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(tidyverse)
+
+data("bullets")
+
+lands &lt;- unique(bullets$bulletland)
+
+comparisons &lt;- data.frame(expand.grid(land1 = lands[1:6], land2 = lands[7:12]),
+                          stringsAsFactors = FALSE)
+
+comparisons &lt;- comparisons %&gt;%
+  left_join(bullets %&gt;% select(bulletland, sig1=sigs),
+            by = c("land1" = "bulletland")) %&gt;%
+  left_join(bullets %&gt;% select(bulletland, sig2=sigs),
+            by = c("land2" = "bulletland"))
+
+comparisons &lt;- comparisons %&gt;% mutate(
+  cmps = purrr::map2(sig1, sig2, .f = function(x, y) {
+    extract_feature_cmps(x$sig, y$sig, include = "full_result")
+  })
+)
+
+comparisons &lt;- comparisons %&gt;%
+  mutate(
+    cmps_score = sapply(comparisons$cmps, function(x) x$CMPS_score),
+    cmps_nseg = sapply(comparisons$cmps, function(x) x$nseg)
+  )
+  
+cp1 &lt;- comparisons %&gt;% select(land1, land2, cmps_score, cmps_nseg)
+cp1 &lt;- cp1 %&gt;% mutate(
+  land1idx = land1 %&gt;% str_sub(-1, -1) %&gt;% as.numeric(),
+  land2idx = land2 %&gt;% str_sub(-1, -1) %&gt;% as.numeric()
+)
+
+with(cp1, {
+  get_all_phases(land1idx, land2idx, cmps_score, addNA = TRUE)
+})
+</code></pre>
+
+
+</div>

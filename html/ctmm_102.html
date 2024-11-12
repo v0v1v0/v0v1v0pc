@@ -1,0 +1,172 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>sdm.fit</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fit species distribution models (SDMs) [IN DEVELOPMENT]</h2>
+
+<h3>Description</h3>
+
+<p>This function fits species distribution models, sampling density models, and integrated SDMs.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">sdm.fit(data,R=list(),formula=NULL,area=NULL,reference="auto",standardize=TRUE,
+        integrator="MonteCarlo",error=0.01,max.mem="1 Gb",interpolate=TRUE,trace=TRUE,...)
+
+sdm.select(data,R=list(),formula=NULL,area=NULL,verbose=FALSE,IC="AICc",trace=TRUE,...)
+
+sdm.integrate(biased=NULL,bias=NULL,unbiased=NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A <code>telemetry</code> object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>R</code></td>
+<td>
+<p>A named list of rasters or time-varying raster stacks [NOT TESTED] to fit Poisson regression coefficients to (under a log link).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>Formula object for <code class="reqn">\log(\lambda)</code> referencing the elements of <code>R</code> and columns of <code>data</code> (see Details below). If not specified, a linear term will be included for every element of <code>R</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>area</code></td>
+<td>
+<p>A spatial polygon object defining the extent of the SDM. If left <code>NULL</code>, an integrated Gaussian model will be used to define the extent of the SDM, which can be a very bad model for geographic ranges.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>reference</code></td>
+<td>
+<p>When expanding categorical predictors into indicator variables, <code>reference="auto"</code> will choose the most common predictor to be the reference category. Otherwise, the reference category can be specified by this argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>standardize</code></td>
+<td>
+<p>For numerical stability, predictors are <em>internally</em> standardized, if <code>rescale=TRUE</code> and no <code>formula</code> is specified. (The final outputs are not standardized.) <b>Otherwise, users are responsible for standardizing their predictors.</b></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>integrator</code></td>
+<td>
+<p>Numerical integrator used for likelihood evaluation. Can be <code>"MonteCarlo"</code> or <code>"Riemann"</code> (IN TESTING).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>error</code></td>
+<td>
+<p>Relative numerical error threshold for the parameter estimates and log-likelihood.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.mem</code></td>
+<td>
+<p>Maximum amount of memory to allocate for availability sampling.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interpolate</code></td>
+<td>
+<p>Whether or not to interpolate raster values during extraction.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>Report progress on convergence (see Details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Returns all candidate models if <code>TRUE</code>. Otherwise, only the <code>IC</code>-best model is returned.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>IC</code></td>
+<td>
+<p>Model selection criterion. Can be AIC, AICc, or BIC.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Arguments passed to <code>rsf.fit</code> or <code>optimizer</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>biased</code></td>
+<td>
+<p>A biased SDM calculated from occurrence records with non-uniform sampling density.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bias</code></td>
+<td>
+<p>An “SDM” calculated from data representative of the above sampling density.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>unbiased</code></td>
+<td>
+<p>An unbiased SDM or list of RSFs.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Instead of specifying a number of “available” points to sample and having an unknown amount of numerical error to contend with, <code>rsf.fit</code> specifies an estimation target <code>error</code> and the number of “available” points is increased until this target is met. Moreover, the output log-likelihood is that of the continuous Poisson point process, which does not depend on the number of “available” points that were sampled, though the numerical variance estimate is recorded in the <code>VAR.loglike</code> slot of the fit object.
+</p>
+<p>When <code>trace=TRUE</code>, a number of convergence estimates are reported, including the standard deviation of the numerical error of the log-likelihood, SD[<code class="reqn">\log(\ell)</code>], the most recent log-likelihood update, d<code class="reqn">\log(\ell)</code>, and the most recent (relative) parameter estimate updates d<code class="reqn">\hat{\beta}/</code>SD[<code class="reqn">\hat{\beta}</code>].
+</p>
+<p>The <code>formula</code> object determines <code class="reqn">\log(\lambda)</code> and can reference static rasters in <code>R</code>, time-dependent raster stacks in <code>R</code> [NOT TESTED], and time-dependent effect modifiers in the columns of <code>data</code>, such as provided by <code>annotate</code>.
+Any <code>offset</code> terms are applied under a log transformation (or multiplicatively to <code class="reqn">\lambda</code>), and can be used to enforce hard boundaries,
+where <code>offset(raster)=TRUE</code> denotes accesible points and <code>offset(raster)=FALSE</code> denotes inaccessible points [NOT TESTED].
+Intercept terms are ignored, as they generally do not make sense for individual Poisson point process models.
+This includes terms only involving the columns of <code>data</code>, as they lack spatial dependence.
+</p>
+<p>Categorical raster variables are expanded into indicator variables, according to the <code>reference</code> category argument.
+Upon import via <code>raster</code>, categorical variables may need to be assigned with <code>as.factor</code>, or else they may be interpreted as numerical variables.
+</p>
+
+
+<h3>Note</h3>
+
+<p>It is much faster to calculate all predictors ahead of time and specifying them in the <code>R</code> list than to reference then in the <code>formula</code> argument, which will calculate them as needed, saving memory.
+</p>
+<p>AIC and BIC values for <code>integrated=FALSE</code> models do not include any penalty for the estimated location and shape of the available area, and so their AIC and BIC values  are expected to be <em>worse</em> than reported.</p>
+
+
+<h3>Author(s)</h3>
+
+<p> C. H. Fleming </p>
+
+
+<h3>References</h3>
+
+<p>J. M. Alston, C. H. Fleming, R. Kays, J. P. Streicher, C. T. Downs, T. Ramesh, B. Reineking, &amp; J. M. Calabrese, “Mitigating pseudoreplication and bias in resource selection functions with autocorrelation-informed weighting”, Methods in Ecology and Evolution 14:2  643–654 (2023) <a href="https://doi.org/10.1111/2041-210X.14025">doi:10.1111/2041-210X.14025</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code>rsf.fit</code>, <code>optimizer</code>, <code>summary.ctmm</code>. </p>
+
+
+</div>

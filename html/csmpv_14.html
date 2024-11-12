@@ -1,0 +1,197 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>XGBtraining</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>A Wrapper Function for xgboost::xgboost</h2>
+
+<h3>Description</h3>
+
+<p>This wrapper function streamlines the process of utilizing the xgboost package for model training. 
+It takes care of converting the data format to xgb.DMatrix, handling xgboost's specific settings, 
+and invoking xgboost::xgboost. The function is suitable for all three outcome types: binary, 
+continuous, and time-to-event. It returns both the trained model and the model scores for the 
+training dataset.
+</p>
+<p>It's important to note that all independent variables (X variables) should already be selected 
+and in numeric format when passed to this function. Additionally, this function does not perform 
+variable selection or automatically convert categorical variables to numeric format.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">XGBtraining(
+  data,
+  biomks = NULL,
+  outcomeType = c("binary", "continuous", "time-to-event"),
+  Y = NULL,
+  time = NULL,
+  event = NULL,
+  nrounds = 5,
+  nthread = 2,
+  gamma = 1,
+  max_depth = 3,
+  eta = 0.3,
+  outfile = "nameWithPath"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data matrix or a data frame where samples are in rows and features/traits are in columns.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>biomks</code></td>
+<td>
+<p>A vector of potential biomarkers for variable selection. They should be a subset of the column names in the "data" variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outcomeType</code></td>
+<td>
+<p>The outcome variable type. There are three choices: "binary" (default), "continuous", and "time-to-event".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Y</code></td>
+<td>
+<p>The outcome variable name when the outcome type is either "binary" or "continuous". When Y is binary, it should be in 0-1 format.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>The time variable name when the outcome type is "time-to-event".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>event</code></td>
+<td>
+<p>The event variable name when the outcome type is "time-to-event".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nrounds</code></td>
+<td>
+<p>The maximum number of boosting iterations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nthread</code></td>
+<td>
+<p>The number of parallel threads used to run XGBoost.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gamma</code></td>
+<td>
+<p>The minimum loss reduction required to make a further partition on a leaf node of the tree.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_depth</code></td>
+<td>
+<p>The maximum depth of a tree. Increasing this value will make the model more complex and more likely to overfit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eta</code></td>
+<td>
+<p>The step size shrinkage used in the update to prevent overfitting.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outfile</code></td>
+<td>
+<p>A string for the output file, including the path if necessary but without the file type extension.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list is returned:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>XGBoost_model</code></td>
+<td>
+<p>An XGBoost model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>XGBoost_score</code></td>
+<td>
+<p>Scores for the given training data set.
+For a continuous outcome variable, this is a vector of the estimated continuous values;
+for a binary outcome variable, this is a vector representing the probability of the positive class;
+for a time-to-event outcome, this is a vector of risk scores.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>h0</code></td>
+<td>
+<p>Cumulative baseline hazard table, for time to event outcome only.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Y</code></td>
+<td>
+<p>The outcome variable name when the outcome type is either "binary" or "continuous".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>The time variable name when the outcome type is "time-to-event".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>event</code></td>
+<td>
+<p>The event variable name when the outcome type is "time-to-event".</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Aixiang Jiang
+</p>
+
+
+<h3>References</h3>
+
+<p>Tianqi Chen and Carlos Guestrin, "XGBoost: A Scalable Tree Boosting System", 22nd SIGKDD Conference on Knowledge Discovery and Data Mining, 2016, https://arxiv.org/abs/1603.02754
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Load in data sets:
+data("datlist", package = "csmpv")
+tdat = datlist$training
+# The function saves files locally. You can define your own temporary directory. 
+# If not, tempdir() can be used to get the system's temporary directory.
+temp_dir = tempdir()
+# As an example, let's define Xvars, which will be used later:
+Xvars = c("highIPI", "B.Symptoms", "MYC.IHC", "BCL2.IHC", "CD10.IHC", "BCL6.IHC")
+
+# The function can work with three outcome types. 
+# Here, we use time-to-event outcome as an example:
+txfit = XGBtraining(data = tdat, biomks = Xvars,
+                    outcomeType = "time-to-event",
+                    time = "FFP..Years.",event = "Code.FFP",
+                    outfile = paste0(temp_dir, "/survival_XGBoost"))
+# To delete the "temp_dir", use the following:
+unlink(temp_dir)
+</code></pre>
+
+
+</div>

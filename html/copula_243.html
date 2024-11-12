@@ -1,0 +1,178 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>initOpt</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Initial Interval or Value for Parameter Estimation of Archimedean
+Copulas</h2>
+
+<h3>Description</h3>
+
+<p>Compute an initial interval or initial value for optimization/estimation
+routines (only a heuristic; if this fails, choose your own interval or value).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">initOpt(family, tau.range=NULL, interval = TRUE, u,
+        method = c("tau.Gumbel", "tau.mean"), warn = TRUE, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>Archimedean family to find an initial interval for.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau.range</code></td>
+<td>
+<p>numeric vector containing lower and upper admissible
+Kendall's tau, or <code>NULL</code> which choses family-specific defaults,
+see the function definition.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interval</code></td>
+<td>
+<p><code>logical</code> indicating whether an initial interval
+(the default) or an initial value should be returned.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>matrix of realizations following the copula family specified
+by <code>family</code>.  Note that <code>u</code> can be omitted if
+<code>interval=TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>a <code>character</code> string specifying the method to be
+used to compute an estimate of Kendall's tau.  This has to be one (or a
+unique abbreviation) of
+</p>
+
+<dl>
+<dt><code>"tau.Gumbel"</code></dt>
+<dd>
+<p>an estimator based on the diagonal
+maximum-likelihood estimator for Gumbel is used.</p>
+</dd>
+<dt><code>"tau.mean"</code></dt>
+<dd>
+<p>an estimator based on the mean of pairwise sample
+versions of Kendall's tau is applied.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>warn</code></td>
+<td>
+<p>logical indicating if warnings are printed for
+<code>method="tau.Gumbel"</code> when the diagonal maximum-likelihood
+estimator is smaller than <code class="reqn">1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments passed to <code>cor()</code> when
+<code>method="tau.mean"</code>.  Note that otherwise (no additional arg.),
+the much faster <code>cor.fk()</code> from package
+<a href="https://CRAN.R-project.org/package=pcaPP"><span class="pkg">pcaPP</span></a> is used.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For <code>method="tau.mean"</code> and <code>interval=FALSE</code>, the mean of pairwise
+sample versions of Kendall's tau is computed as an estimator of the Kendall's
+tau of the Archimedean copula family provided.  This can be slow, especially
+if the dimension is large.  Method <code>method="tau.Gumbel"</code> (the default)
+uses the explicit and thus very fast diagonal maximum-likelihood estimator for
+Gumbel's family to find initial values.  Given this estimator
+<code class="reqn">\hat{\theta}^\mathrm{G}</code>, the corresponding Kendall's tau
+is <code class="reqn">\tau^\mathrm{G}(\hat{\theta}^\mathrm{G})</code> where
+<code class="reqn">\tau^\mathrm{G}(\theta)=(\theta-1)/\theta</code>
+denotes Kendall's tau for Gumbel.  This provides an estimator of Kendall's tau
+which is typically much faster to evaluate than, pairwise Kendall's taus.
+Given the estimated ‘amount of concordance’ based on Kendall's tau, one
+can obtain an initial value for the provided family by applying
+<code class="reqn">\tau^{-1}</code>, that is, the inverse of Kendall's tau of the
+family for which the initial value is to be computed.  Note that if the
+estimated Kendall's tau does not lie in the range of Kendall's tau as provided
+by the bivariate vector <code>tau.range</code>, the point in <code>tau.range</code>
+closest to the estimated Kendall's tau is chosen.
+</p>
+<p>The default (<code>interval=TRUE</code>) returns a reasonably large initial
+interval; see the default of <code>tau.range</code> in the definition of
+<code>initOpt</code> for the chosen values (in terms of Kendall's tau).  These
+default values cover a large range of concordance.  If this interval is
+(still) too small, one can adjust it by providing <code>tau.range</code>. If it is
+too large, a ‘distance to concordance’ can be used to determine
+parameter values such that the corresponding Kendall's taus share a certain
+distance to the initial value.  For more details, see Hofert et al. (2012).
+Finally, let us note that for the case <code>interval=TRUE</code>, <code>u</code> is not
+required.
+</p>
+
+
+<h3>Value</h3>
+
+<p>initial interval which can be used for optimization (for example, for
+<code>emle</code>).
+</p>
+
+
+<h3>References</h3>
+
+<p>Hofert, M., Mächler, M., and McNeil, A. J. (2012).
+Likelihood inference for Archimedean copulas in high dimensions
+under known margins. <em>Journal of Multivariate Analysis</em>
+<b>110</b>, 133–150.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>enacopula</code>, <code>emle</code>, <code>edmle</code>,
+<code>emde</code>, and <code>ebeta</code> (where <code>initOpt</code> is
+applied to find initial intervals).
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Definition of the function:
+initOpt
+
+## Generate some data:
+tau &lt;- 0.25
+(theta &lt;- copGumbel@iTau(tau)) # 4/3
+d &lt;- 20
+(cop &lt;- onacopulaL("Gumbel", list(theta,1:d)))
+
+set.seed(1)
+n &lt;- 200
+U &lt;- rnacopula(n, cop)
+
+## Initial interval:
+initOpt("Gumbel") # contains theta
+
+## Initial values:
+initOpt("Gumbel", interval=FALSE, u=U) # 1.3195
+initOpt("Gumbel", interval=FALSE, u=U, method="tau.mean") # 1.2844
+</code></pre>
+
+
+</div>

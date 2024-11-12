@@ -1,0 +1,148 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>FixedMean</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2> Fixed means (proportions) random data constructor for emaxsim
+for continuous or binary data </h2>
+
+<h3>Description</h3>
+
+<p>Creates a list object that contains inputs and  a function to create
+simulated data sets with a common mean (proportion) for use in emaxsim
+with normal or continuous data
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">FixedMean(n, doselev, meanlev, resSD, parm = NULL, binary=FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p> Sample size for each dose group </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>doselev</code></td>
+<td>
+<p>Dose levels (including 0 for placebo) in the
+study corresponding to <code>n</code>.  Must be in increasing order.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>meanlev</code></td>
+<td>
+<p> Mean response at each doselev.  For binary data, these
+are the proportion of responders (no logit transformation).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resSD</code></td>
+<td>
+<p> Standard deviation for residuals within each dose
+group (assumed common to all dose groups) </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parm</code></td>
+<td>
+<p> Population parameters that are 
+saved for later reference, but are not used when creating simulated
+data.  <code>parm</code> can contain
+parameters for a 3- or 4- parameter Emax model that generated
+<code>meanlev</code>.  They should be stored in the order given in
+<code>emaxfun</code>.  Default is <code>NULL</code>. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>binary</code></td>
+<td>
+<p>Normal data with homogeneous variance are generated unless
+<code>binary</code> is <code>TRUE</code>, and then means are interpreted as
+proportions and <code>0/1</code> data are generated.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list of length <code>2</code>.  
+The first element is itself a list named <code>genP</code> that contains named elments
+<code>n</code>, <code>resSD</code>, <code>doselev</code>, <code>dose</code>, <code>parm</code>, 
+<code>binary</code>, and the
+element <code>meanlev</code>, which is specific to <code>FixedMean</code>.  The second
+element is a function named <code>genFun</code> that takes
+<code>genP</code> as input and returns a list with named elements <code>meanlev</code>, 
+<code>parm</code>, <code>resSD</code>, <code>y</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Neal Thomas </p>
+
+
+<h3>See Also</h3>
+
+ <p><code>emaxsim</code>, <code>RandEmax</code> </p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+## Not run: 
+##  example changes the random number seed
+
+doselev&lt;-c(0,5,25,50,100)
+n&lt;-c(78,81,81,81,77)
+
+### population parameters for simulation
+e0&lt;-2.465375 
+ed50&lt;-67.481113 
+
+dtarget&lt;-100
+diftarget&lt;-9.032497
+emax&lt;-solveEmax(diftarget,dtarget,log(ed50),1,e0)
+
+sdy&lt;-7.967897
+pop&lt;-c(log(ed50),emax,e0)  
+  
+meanlev&lt;-emaxfun(doselev,pop)  
+
+###FixedMean is specialized constructor function for emaxsim
+genp&lt;-FixedMean(n,doselev,meanlev,sdy,pop)  
+
+### binary example
+n&lt;-rep(500,5)
+doselev&lt;-c(0,5,25,50,1000)
+dose&lt;-rep(doselev,n)
+
+e0&lt;- qlogis(0.2)
+ed50&lt;-20
+diftarget&lt;-qlogis(0.6)-qlogis(0.2)
+lambda&lt;-2
+dtarget&lt;-100
+emax&lt;-solveEmax(diftarget,dtarget,log(ed50),lambda,e0)
+
+pop&lt;-c(log(ed50),lambda,emax,e0)
+meanlev&lt;-plogis(emaxfun(doselev,pop))
+
+genp&lt;-FixedMean(n,doselev,meanlev,sdy,pop,binary=TRUE)  
+
+tapply(genp$genFun(genp$genP)$y,dose,mean)
+meanlev
+
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

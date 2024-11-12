@@ -1,0 +1,156 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Wbal_</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>W' balance.</h2>
+
+<h3>Description</h3>
+
+<p>Generate a vector of W' balance values from time and power data. The
+underlying algorithm is published in Skiba <em>et al.</em> (2012). <code>Wbal</code>
+is a wrapper for the Rcpp function <code>Wbal_</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">Wbal_(t, P, CP)
+
+Wbal(data, time = "timer.s", pwr = "power.smooth.W", CP = attr(data,
+  "CP"), noisy = TRUE, character.only = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>t, P</code></td>
+<td>
+<p>numeric vectors of time and power, respectively.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CP</code></td>
+<td>
+<p>a critical power value for use in the calculation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a data.frame/matrix object with time and power columns.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>character; name of the time (seconds) column in <code>data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pwr</code></td>
+<td>
+<p>character; name of the power (watts) column in <code>data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>noisy</code></td>
+<td>
+<p>logical; create smoother data by pooling power data into sub-
+and supra-CP sections.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>character.only</code></td>
+<td>
+<p>are column name arguments given as character strings? A
+backdoor around non-standard evaluation.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The algorithm used here, while based on Dr Phil Skiba's model, differs in
+that values are positive as opposed to negative. The original published model
+expressed W' balance as W' minus W' expended, the latter recovering with an
+exponential time course when P &lt; CP. An issue with this approach is that an
+athlete might be seen to go into negative W' balance. Hence, to avoid
+assumptions regarding available W', this algorithm returns W' expended (and
+its recovery) as positive values; i.e. a ride is begun at 0 W' expended, and
+it will <em>increase</em> in response to supra-CP efforts.
+</p>
+<p>It is advisable on physiological grounds to enter smoothed power values to
+the function, hence this is the default behaviour. If nothing else, this
+prevents an unrealistic inflation of W' values that are inconsistent with
+estimates derived from power-time modelling.
+</p>
+<p>The essence of the algorithm can be seen in the function
+<a href="https://github.com/jmackie4/cycleRtools/blob/master/tests/testthat/test_Wbal.R">test
+file.</a>
+</p>
+<p>Note that if there are <code>NA</code> values in the power column, these are
+ignored and the correspoding W' expended value assumes that of the last
+available power value. <code>NA</code> values are not allowed in the time column.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A numeric vector of W' balance values, in kilojoules or joules for
+<code>Wbal</code> or <code>Wbal_</code> respectively.
+</p>
+
+
+<h3>References</h3>
+
+<p>Skiba, P. F., W. Chidnok, A. Vanhatalo, and A. M. Jones. Modeling
+the Expenditure and Reconstitution of Work Capacity above Critical Power.
+Med. Sci. Sports Exerc., Vol. 44, No. 8, pp. 1526-1532, 2012.
+<a href="http://www.ncbi.nlm.nih.gov/pubmed/22382171">PubMed link</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>plot.cycleRdata</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+data(ridedata)
+
+## Basic usage.
+ridedata$Wexp.kJ &lt;- Wbal(ridedata, timer.s, power.W, 310)
+
+## Data can be noisy or "smooth"; e.g.
+Wbal_noisy &lt;- Wbal(ridedata, timer.s, power.W, 310, noisy = TRUE)
+Wbal_smth  &lt;- Wbal(ridedata, timer.s, power.W, 310, noisy = FALSE)
+
+## Plot:
+ylim &lt;- rev(extendrange(Wbal_noisy))  # Reverse axes.
+
+plot(ridedata$timer.min, Wbal_noisy, type = "l", ylim = ylim,
+     main = "NOISY")
+plot(ridedata$timer.min, Wbal_smth, type = "l", ylim = ylim,
+     main = "Smooooth")
+
+## Example of NA handling.
+d &lt;- data.frame(t = seq_len(20), pwr = rnorm(20, 300, 50), Wexp.J = NA)
+d[14:16, "pwr"] &lt;- NA
+d[, "Wexp.J"]   &lt;- Wbal(d, "t", "pwr", CP = 290)
+print(d)
+
+## Using underlying Rcpp function:
+Wbal_(t = 1:20, P = rnorm(20, 300, 50), CP = 300)  # Values are in joules.
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

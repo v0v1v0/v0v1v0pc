@@ -1,0 +1,125 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>color</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Color telemetry objects by time</h2>
+
+<h3>Description</h3>
+
+<p>These functions facilitate the coloring of tracks by annotating tracking data with time/location specific information and computing color arguments for <code>plot</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">annotate(object,by="all",cores=1,...)
+
+color(object,by="time",col.fn=NULL,alpha=1,dt=NULL,cores=1,...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>A <code>telemetry</code> object or list of objects. <code>color</code> can also take <code>ctmm</code> and <code>UD</code> objects.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by</code></td>
+<td>
+<p>What to <code>annotate</code> or <code>color</code> times by. Options include <code>"individual"</code>, <code>"time"</code>, <code>"sun"</code>, <code>"moon"</code>, <code>"season"</code>, and <code>"tropic"</code> (see Details below). <code>ctmm</code> and <code>UD</code> objects can only be colored by <code>"individual"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>col.fn</code></td>
+<td>
+<p>Optional coloring function that can take a [0,1] interval and alpha channel argument.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>Base alpha channel value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dt</code></td>
+<td>
+<p>Sampling interval specification for making oversampled times more transparent. If <code>NULL</code>, the median will be used. Disabled if zero.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cores</code></td>
+<td>
+<p>Number of annotations or overlap calculations to peform in parallel. <code>cores=0</code> will use all cores, while <code>cores&lt;0</code> will reserve <code>abs(cores)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Annotated <code>telemetry</code> objects are required for <code>color</code> <code>by</code> arguments <code>"sun"</code>, <code>"moon"</code>, <code>"season"</code>, or <code>"tropic"</code>.
+</p>
+<p><code>by="time"</code> colors tracking data with a gradient that increases in time.
+<code>by="sun"</code> colors according to the sine of the sun's altitude, which is proportional to solar flux during daylight hours.
+<code>by="moon"</code> colors according to the illuminated fraction of the moon.
+<code>by="season"</code> colors according to the length of the day, and therefore corresponds to the local season.
+<code>by="tropic"</code> currently colors according to the calender day, but will eventually be upgraded to tropical-year cycle. The default <code>col.fn</code> argument runs from blue to red with increasing time, sunlight, moonlight, or day length.
+</p>
+<p><code>by="individual"</code> assigns colors to minimize the maximum combined spatial and color overlap.
+Finding the best color assignment is an <code class="reqn">NP</code>-hard problem that is here approximated in <code class="reqn">O(N^3)</code> time with a custom greedy algorithm.
+</p>
+<p>Other named columns in the <code>telemetry</code> object can also be used with <code>color</code>, by specifying the column name with <code>by</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>annotate</code> returns an annotated telemetry object with extra columns to facilitate coloring.
+<code>color</code> returns a valid <code>col</code> argument for <code>{plot.telemetry}</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> C. H. Fleming. </p>
+
+
+<h3>See Also</h3>
+
+ <p><code>plot.telemetry</code> </p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Load package and data
+library(ctmm)
+data(buffalo)
+
+# assign distinct colors to buffalo
+COL &lt;- color(buffalo,by='individual')
+# Notice the separation into RGB and CMY for maximum contrast
+plot(buffalo,col=COL)
+
+# annotate buffalo with sunlight data and compute colors
+buffalo &lt;- annotate(buffalo,cores=2) # CRAN policy limits to 2 cores
+COL &lt;- color(buffalo,by='sun')
+
+# use North-preserving projection and plot
+projection(buffalo) &lt;- median(buffalo)
+plot(buffalo,col=COL)
+</code></pre>
+
+
+</div>

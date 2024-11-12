@@ -1,0 +1,258 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cirls.fit</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Constrained Iteratively Reweighted Least-Squares</h2>
+
+<h3>Description</h3>
+
+<p>Fits a generalized linear model with linear constraints on the coefficients through a Constrained Iteratively Reweighted Least-Squares (CIRLS) algorithm.
+This function is the constrained counterpart to glm.fit and is meant to be called by glm through its <code>method</code> argument. See details for the main differences.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cirls.fit(x, y, weights = rep.int(1, nobs), start = NULL,
+  etastart = NULL, mustart = NULL, offset = rep.int(0, nobs),
+  family = stats::gaussian(), control = list(), intercept = TRUE,
+  singular.ok = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x, y</code></td>
+<td>
+<p><code>x</code> is a design matrix and <code>y</code> is a vector of response observations. Usually internally computed by glm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>An optional vector of observation weights.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start</code></td>
+<td>
+<p>Starting values for the parameters in the linear predictor.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>etastart</code></td>
+<td>
+<p>Starting values for the linear predictor.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mustart</code></td>
+<td>
+<p>Starting values for the vector or means.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>offset</code></td>
+<td>
+<p>An optional vector specifying a known component in the model. See model.offset.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>The result of a call to a family function, describing the error distribution and link function of the model. See family for details of available family functions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>A list of parameters controlling the fitting process. See details and cirls.control.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>intercept</code></td>
+<td>
+<p>Logical. Should an intercept be included in the null model?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>singular.ok</code></td>
+<td>
+<p>Logical. If <code>FALSE</code>, the function returns an error for singular fits.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function is a plug-in for glm and works similarly to glm.fit. In addition to the parameters already available in glm.fit, <code>cirls.fit</code> allows the specification of a constraint matrix <code>Cmat</code> with bound vectors <code>lb</code> and <code>ub</code> on the regression coefficients. These additional parameters can be passed through the <code>control</code> list or through <code>...</code> in glm.
+</p>
+<p>The CIRLS algorithm is a modification of the classical IRLS algorithm in which each update of the regression coefficients is performed by a quadratic program (QP), ensuring the update stays within the feasible region defined by <code>Cmat</code>, <code>lb</code> and <code>ub</code>. More specifically, this feasible region is defined as
+</p>
+<p><code style="white-space: pre;">⁠lb &lt;= Cmat %*% coefficients &lt;= ub⁠</code>
+</p>
+<p>where <code>coefficients</code> is the coefficient vector returned by the model. This specification allows for any linear constraint, including equality ones.
+</p>
+
+
+<h4>Specifying <code>Cmat</code>, <code>lb</code> and <code>ub</code>
+</h4>
+
+<p><code>Cmat</code> is a matrix that defines the linear constraints. If provided directly as a matrix, the number of columns in <code>Cmat</code> must match the number of coefficients estimated by glm. This includes all variables that are not involved in any constraint potential expansion such as factors or splines for instance, as well as the intercept. Columns not involved in any constraint will be filled by 0s.
+</p>
+<p>Alternatively, it may be more convenient to pass <code>Cmat</code> as a list of constraint matrices for specific terms. This is advantageous if a single term should be constrained in a model containing many terms. If provided as a list, <code>Cmat</code> is internally expanded to create the full constraint matrix. See examples of constraint matrices below.
+</p>
+<p><code>lb</code> and <code>ub</code> are vectors defining the bounds of the constraints. By default they are set to <code>0</code> and <code>Inf</code>, meaning that the linear combinations defined by <code>Cmat</code> should be positive, but any bounds are possible. When some elements of <code>lb</code> and <code>ub</code> are identical, they define equality constraints. Setting <code>lb = -Inf</code> and <code>ub = Inf</code> disable the constraints.
+</p>
+
+
+
+<h4>Quadratic programming solvers</h4>
+
+<p>The function cirls.fit relies on a quadratic programming solver. Several solver are currently available.
+</p>
+
+<ul>
+<li> <p><code>"osqp"</code> (the default) solves the quadratic program via the Alternating Direction Method of Multipliers (ADMM). Internally it calls the function solve_osqp.
+</p>
+</li>
+<li> <p><code>"quadprog"</code> performs a dual algorithm to solve the quadratic program. It relies on the function solve.QP.
+</p>
+</li>
+<li> <p><code>"coneproj"</code> solves the quadratic program by a cone projection method. It relies on the function qprog.
+</p>
+</li>
+</ul>
+<p>Each solver has specific parameters that can be controlled through the argument <code>qp_pars</code>. Sensible defaults are set within cirls.control and the user typically doesn't need to provide custom parameters.
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>A <code>cirls</code> object inheriting from the class <code>glm</code>. At the moment, two non-standard methods specific to <code>cirls</code> objects are available: vcov.cirls to obtain the coefficients variance-covariance matrix and confint.cirls to obtain confidence intervals. These custom methods account for the reduced degrees of freedom resulting from the constraints, see vcov.cirls and confint.cirls. Any method for <code>glm</code> objects can be used, including the generic coef or summary for instance.
+</p>
+<p>An object of class <code>cirls</code> includes all components from glm objects, with the addition of:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>active.cons</code></td>
+<td>
+<p>vector of indices of the active constraints in the fitted model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inner.iter</code></td>
+<td>
+<p>number of iterations performed by the last call to the QP solver.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Cmat, lb, ub</code></td>
+<td>
+<p>the (expanded) constraint matrix, and lower and upper bound vectors.</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Goldfarb, D., Idnani, A., 1983. A numerically stable dual method for solving strictly convex quadratic programs. <em>Mathematical Programming</em> <strong>27</strong>, 1–33. <a href="https://doi.org/10.1007/BF02591962">doi:10.1007/BF02591962</a>
+</p>
+<p>Meyer, M.C., 2013. A Simple New Algorithm for Quadratic Programming with Applications in Statistics. <em>Communications in Statistics - Simulation and Computation</em> <strong>42</strong>, 1126–1139. <a href="https://doi.org/10.1080/03610918.2012.659820">doi:10.1080/03610918.2012.659820</a>
+</p>
+<p>Stellato, B., Banjac, G., Goulart, P., Bemporad, A., Boyd, S., 2020. OSQP: an operator splitting solver for quadratic programs. <em>Math. Prog. Comp.</em> <strong>12</strong>, 637–672. <a href="https://doi.org/10.1007/s12532-020-00179-2">doi:10.1007/s12532-020-00179-2</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>vcov.cirls, confint.cirls for methods specific to <code>cirls</code> objects. cirls.control for fitting parameters specific to cirls.fit. glm for details on <code>glm</code> objects.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">####################################################
+# Simple non-negative least squares
+
+# Simulate predictors and response with some negative coefficients
+set.seed(111)
+n &lt;- 100
+p &lt;- 10
+betas &lt;- rep_len(c(1, -1), p)
+x &lt;- matrix(rnorm(n * p), nrow = n)
+y &lt;- x %*% betas + rnorm(n)
+
+# Define constraint matrix (includes intercept)
+# By default, bounds are 0 and +Inf
+Cmat &lt;- cbind(0, diag(p))
+
+# Fit GLM by CIRLS
+res1 &lt;- glm(y ~ x, method = cirls.fit, Cmat = Cmat)
+coef(res1)
+
+# Same as passing Cmat through the control argument
+res2 &lt;- glm(y ~ x, method = cirls.fit, control = list(Cmat = Cmat))
+identical(coef(res1), coef(res2))
+
+####################################################
+# Increasing coefficients
+
+# Generate two group of variables: an isotonic one and an unconstrained one
+set.seed(222)
+p1 &lt;- 5; p2 &lt;- 3
+x1 &lt;- matrix(rnorm(100 * p1), 100, p1)
+x2 &lt;- matrix(rnorm(100 * p2), 100, p2)
+
+# Generate coefficients: those in b1 should be increasing
+b1 &lt;- runif(p1) |&gt; sort()
+b2 &lt;- runif(p2)
+
+# Generate full data
+y &lt;- x1 %*% b1 + x2 %*% b2 + rnorm(100, sd = 2)
+
+#----- Fit model
+
+# Create constraint matrix and expand for intercept and unconstrained variables
+Ciso &lt;- diff(diag(p1))
+Cmat &lt;- cbind(0, Ciso, matrix(0, nrow(Ciso), p2))
+
+# Fit model
+resiso &lt;- glm(y ~ x1 + x2, method = cirls.fit, Cmat = Cmat)
+coef(resiso)
+
+# Compare with unconstrained
+plot(c(0, b1, b2), pch = 16)
+points(coef(resiso), pch = 16, col = 3)
+points(coef(glm(y ~ x1 + x2)), col = 2)
+
+#----- More convenient specification
+
+# Cmat can be provided as a list
+resiso2 &lt;- glm(y ~ x1 + x2, method = cirls.fit, Cmat = list(x1 = Ciso))
+
+# Internally Cmat is expanded and we obtain the same result
+identical(resiso$Cmat, resiso2$Cmat)
+identical(coef(resiso), coef(resiso2))
+
+#----- Adding bounds to the constraints
+# Difference between coefficients must be above a lower bound and below 1
+lb &lt;- 1 / (p1 * 2)
+ub &lt;- 1
+
+# Re-fit the model
+resiso3 &lt;- glm(y ~ x1 + x2, method = cirls.fit, Cmat = list(x1 = Ciso),
+  lb = lb, ub = ub)
+
+# Compare the fit
+plot(c(0, b1, b2), pch = 16)
+points(coef(resiso), pch = 16, col = 3)
+points(coef(glm(y ~ x1 + x2)), col = 2)
+points(coef(resiso3), pch = 16, col = 4)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,160 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>dapply</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Data Apply
+</h2>
+
+<h3>Description</h3>
+
+<p><code>dapply</code> efficiently applies functions to columns or rows of matrix-like objects and by default returns an object of the same type and with the same attributes (unless the result is scalar and <code>drop = TRUE</code>). Alternatively it is possible to return the result in a plain matrix or data.frame. A simple parallelism is also available.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">dapply(X, FUN, ..., MARGIN = 2, parallel = FALSE, mc.cores = 1L,
+       return = c("same", "matrix", "data.frame"), drop = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>a matrix, data frame or alike object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FUN</code></td>
+<td>
+<p>a function, can be scalar- or vector-valued.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>further arguments to <code>FUN</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MARGIN</code></td>
+<td>
+<p>integer. The margin which <code>FUN</code> will be applied over. Default <code>2</code> indicates columns while <code>1</code> indicates rows. See also Details. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+<p>logical. <code>TRUE</code> implements simple parallel execution by internally calling <code>mclapply</code> instead of <code>lapply</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mc.cores</code></td>
+<td>
+<p>integer. Argument to <code>mclapply</code> indicating the number of cores to use for parallel execution. Can use <code>detectCores()</code> to select all available cores.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return</code></td>
+<td>
+<p>an integer or string indicating the type of object to return. The default <code>1 - "same"</code> returns the same object type (i.e. class and other attributes are retained, just the names for the dimensions are adjusted). <code>2 - "matrix"</code> always returns the output as matrix and <code>3 - "data.frame"</code> always returns a data frame.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop</code></td>
+<td>
+<p>logical. If the result has only one row or one column, <code>drop = TRUE</code> will drop dimensions and return a (named) atomic vector.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>dapply</code> is an efficient command to apply functions to rows or columns of data without loosing information (attributes) about the data or changing the classes or format of the data. It is principally an efficient wrapper around <code>lapply</code> and works as follows:
+</p>
+
+<ul>
+<li>
+<p> Save the attributes of <code>X</code>.
+</p>
+</li>
+<li>
+<p> If <code>MARGIN = 2</code> (columns), convert matrices to plain lists of columns using <code>mctl</code> and remove all attributes from data frames.
+</p>
+</li>
+<li>
+<p> If <code>MARGIN = 1</code> (rows), convert matrices to plain lists of rows using <code>mrtl</code>. For data frames remove all attributes, efficiently convert to matrix using <code>do.call(cbind, X)</code> and also convert to list of rows using <code>mrtl</code>.
+</p>
+</li>
+<li>
+<p> Call <code>lapply</code> or <code>mclapply</code> on these plain lists (which is faster than calling <code>lapply</code> on an object with attributes).
+</p>
+</li>
+<li>
+<p> depending on the requested output type, use <code>matrix</code>, <code>unlist</code> or <code>do.call(cbind, ...)</code> to convert the result back to a matrix or list of columns.
+</p>
+</li>
+<li>
+<p> modify the relevant attributes accordingly and efficiently attach to the object again (no further checks). 
+</p>
+</li>
+</ul>
+<p>The performance gain from working with plain lists makes <code>dapply</code> not much slower than calling <code>lapply</code> itself on a data frame. Because of the conversions involved, row-operations require some memory, but are still faster than <code>apply</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>X</code> where <code>FUN</code> was applied to every row or column.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>BY</code>, <code>collap</code>, Fast Statistical Functions, Data Transformations, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">head(dapply(mtcars, log))                      # Take natural log of each variable
+head(dapply(mtcars, log, return = "matrix"))   # Return as matrix
+m &lt;- as.matrix(mtcars)
+head(dapply(m, log))                           # Same thing
+head(dapply(m, log, return = "data.frame"))    # Return data frame from matrix
+dapply(mtcars, sum); dapply(m, sum)            # Computing sum of each column, return as vector
+dapply(mtcars, sum, drop = FALSE)              # This returns a data frame of 1 row
+dapply(mtcars, sum, MARGIN = 1)                # Compute row-sum of each column, return as vector
+dapply(m, sum, MARGIN = 1)                     # Same thing for matrices, faster t. apply(m, 1, sum)
+head(dapply(m, sum, MARGIN = 1, drop = FALSE)) # Gives matrix with one column
+head(dapply(m, quantile, MARGIN = 1))          # Compute row-quantiles
+dapply(m, quantile)                            # Column-quantiles
+head(dapply(mtcars, quantile, MARGIN = 1))     # Same for data frames, output is also a data.frame
+dapply(mtcars, quantile)
+
+# With classed objects, we have to be a bit careful
+## Not run: 
+dapply(EuStockMarkets, quantile)  # This gives an error because the tsp attribute is misspecified
+
+## End(Not run)
+dapply(EuStockMarkets, quantile, return = "matrix")    # These both work fine..
+dapply(EuStockMarkets, quantile, return = "data.frame")
+ 
+# Similarly for grouped tibbles and other data frame based classes
+library(dplyr)
+gmtcars &lt;- group_by(mtcars,cyl,vs,am)
+head(dapply(gmtcars, log))               # Still gives a grouped tibble back
+dapply(gmtcars, quantile, MARGIN = 1)    # Here it makes sense to keep the groups attribute
+dapply(gmtcars, quantile)                # This does not make much sense, ...
+dapply(gmtcars, quantile,                # better convert to plain data.frame:
+       return = "data.frame")
+
+</code></pre>
+
+
+</div>

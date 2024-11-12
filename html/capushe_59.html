@@ -1,0 +1,239 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>DDSE</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Model selection by Data-Driven Slope Estimation
+</h2>
+
+<h3>Description</h3>
+
+<p><code>DDSE</code> is a model selection function based on the slope heuristics.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">DDSE(data, pct = 0.15, point = 0, psi.rlm = psi.bisquare, scoef = 2)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+
+<p><code>data</code> is a matrix or a data.frame with four columns of the same length
+and each line corresponds to a model:
+</p>
+
+<ol>
+<li>
+<p> The first column contains the model names. 
+</p>
+</li>
+<li>
+<p> The second column contains the penalty shape values.   
+</p>
+</li>
+<li>
+<p> The third column contains the model complexity values. 
+</p>
+</li>
+<li>
+<p> The fourth column contains the minimum contrast value for each model. 
+</p>
+</li>
+</ol>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pct</code></td>
+<td>
+
+<p>Minimum percentage of points for the plateau selection.
+It must be between 0 and 1. Default value is 0.15.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>point</code></td>
+<td>
+
+<p>Minimum number of point for the plateau selection. 
+If <code>point</code> is different from 0, <code>pct</code> is obsolete.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>psi.rlm</code></td>
+<td>
+
+<p>Weight function used by <code>rlm</code>. <code>psi.rlm</code>="lm" for non robust
+linear regression. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scoef</code></td>
+<td>
+
+<p>Ratio parameter. Default value is 2.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Let <code class="reqn">M</code> be the model collection and <code class="reqn">P=\{pen_{shape}(m),m\in M\}</code>.
+The DDSE algorithm proceeds in four steps:
+</p>
+
+<ol>
+<li>
+<p>If several models in the collection have the same penalty shape value (column 2),
+only the model having the smallest contrast value <code class="reqn">\gamma_n(\hat{s}_m)</code> (column 4)
+is considered.
+</p>
+</li>
+<li>
+<p>For any <code class="reqn">p\in P</code>, the slope <code class="reqn">\hat{\kappa}(p)</code> (argument <code>@kappa</code>) of the linear regression
+(argument <code>psi.rlm</code>) on the couples of points <code class="reqn">\{(pen_{shape}(m),-\gamma_n (\hat{s}_m)); pen_{shape}(m)\geq p\}</code>
+is computed.
+</p>
+</li>
+<li>
+<p>For any <code class="reqn">p\in P</code>, the model fulfilling the following condition is selected:
+</p>
+<p><code class="reqn">\hat{m}(p)=</code> argmin <code class="reqn">\gamma_n (\hat{s}_m)+scoef\times \hat{\kappa}(p)\times pen_{shape}(m)</code>.
+</p>
+<p>This gives an increasing sequence of change-points <code class="reqn">(p_i)_{1\leq i\leq I+1}</code> (output 
+<code>@ModelHat$point_breaking</code>). Let <code class="reqn">(N_i)_{1\leq i\leq I}</code> (output <code>@ModelHat$number_plateau</code>)
+be the lengths of each "plateau".
+</p>
+</li>
+<li>
+<p>If <code>point</code> is different from 0, let <code class="reqn">\hat{i}=</code> max 
+<code class="reqn">\{1\leq i\leq I; N_i\geq point\}</code> else let <code class="reqn">\hat{i}=</code> max 
+<code class="reqn">\{1\leq i\leq I; N_i\geq pct\sum_{l=1}^IN_l\}</code> (output <code>@ModelHat$imax</code>).
+The model <code class="reqn">\hat{m}(p_{\hat{i}})</code> (output <code>@model</code>) is finally returned.
+</p>
+</li>
+</ol>
+<p>The "slope interval" is the interval <code class="reqn">[a,b]</code> where <code class="reqn">a=inf\{\hat{\kappa}(p),p\in[p_{\hat{i}},p_{\hat{i}+1}[\cap P\}</code>
+and <code class="reqn">b=sup\{\hat{\kappa}(p),p\in[p_{\hat{i}},p_{\hat{i}+1}[\cap P\}</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>@model</code></td>
+<td>
+<p>The <code>model</code> selected by the DDSE algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>@kappa</code></td>
+<td>
+<p>The vector of the successive slope values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>@ModelHat</code></td>
+<td>
+<p>A list describing the algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>@ModelHat$model_hat</code></td>
+<td>
+<p>The vector of preselected models <code class="reqn">\hat{m}(p)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>@ModelHat$point_breaking</code></td>
+<td>
+<p>The vector of the breaking points <code class="reqn">(p_i)_{1\leq i\leq I+1}</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>@ModelHat$number_plateau</code></td>
+<td>
+<p>The vector of the lengths <code class="reqn">(N_i)_{1\leq i\leq I}</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>@ModelHat$imax</code></td>
+<td>
+<p>The rank <code class="reqn">\hat{i}</code> of the selected plateau.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>@interval</code></td>
+<td>
+<p>A list about the "slope interval".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>@interval$interval</code></td>
+<td>
+<p>The slope interval.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>@interval$percent_of_points</code></td>
+<td>
+<p>The proportion <code class="reqn">N_{\hat{i}}/\sum_{l=1}^IN_l</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>@graph</code></td>
+<td>
+<p>A list computed for the <code>plot</code> method.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Vincent Brault
+</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://www.math.univ-toulouse.fr/~maugis/CAPUSHE.html">http://www.math.univ-toulouse.fr/~maugis/CAPUSHE.html</a>
+</p>
+<p><a href="http://www.math.u-psud.fr/~brault/capushe.html">http://www.math.u-psud.fr/~brault/capushe.html</a>
+</p>
+<p>Article: Baudry, J.-P., Maugis, C. and Michel, B. (2011) Slope heuristics:
+overview and implementation. <var>Statistics and Computing</var>, to appear. doi: 10.1007/
+s11222-011-9236-1
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>capushe</code> for a model selection function including <code>AIC</code>,
+<code>BIC</code>, the <code>DDSE</code> algorithm and the <code>Djump</code> algorithm.
+<code>plot</code> for graphical dsiplays of the <code>DDSE</code> algorithm
+and the <code>Djump</code> algorithm.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(datacapushe)
+DDSE(datacapushe)
+plot(DDSE(datacapushe))
+## DDSE with "lm" for the regression
+DDSE(datacapushe,psi.rlm="lm")
+</code></pre>
+
+
+</div>

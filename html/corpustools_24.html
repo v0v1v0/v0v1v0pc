@@ -1,0 +1,241 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>create_tcorpus</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create a tCorpus</h2>
+
+<h3>Description</h3>
+
+<p>Create a tCorpus from raw text input. Input can be a character (or factor) vector, data.frame or quanteda corpus.
+If a data.frame is given, all columns other than the document id and text columns are included as meta data. If a quanteda
+corpus is given, the ids and texts are already specified, and the docvars will be included in the tCorpus as meta data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">create_tcorpus(x, ...)
+
+## S3 method for class 'character'
+create_tcorpus(
+  x,
+  doc_id = 1:length(x),
+  meta = NULL,
+  udpipe_model = NULL,
+  split_sentences = F,
+  max_sentences = NULL,
+  max_tokens = NULL,
+  udpipe_model_path = getwd(),
+  udpipe_cache = 3,
+  udpipe_cores = NULL,
+  udpipe_batchsize = 50,
+  use_parser = F,
+  remember_spaces = F,
+  verbose = T,
+  ...
+)
+
+## S3 method for class 'data.frame'
+create_tcorpus(
+  x,
+  text_columns = "text",
+  doc_column = "doc_id",
+  udpipe_model = NULL,
+  split_sentences = F,
+  max_sentences = NULL,
+  max_tokens = NULL,
+  udpipe_model_path = getwd(),
+  udpipe_cache = 3,
+  udpipe_cores = NULL,
+  udpipe_batchsize = 50,
+  use_parser = F,
+  remember_spaces = F,
+  verbose = T,
+  ...
+)
+
+## S3 method for class 'factor'
+create_tcorpus(x, ...)
+
+## S3 method for class 'corpus'
+create_tcorpus(x, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>main input. can be a character (or factor) vector where each value is a full text, or a data.frame that has a column that contains full texts.
+If x (or a text_column in x) has leading or trailing whitespace, this is cut off (and you'll get a warning about it).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Arguments passed to create_tcorpus.character</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>doc_id</code></td>
+<td>
+<p>if x is a character/factor vector, doc_id can be used to specify document ids. This has to be a vector of the same length as x</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>meta</code></td>
+<td>
+<p>A data.frame with document meta information (e.g., date, source). The rows of the data.frame need to match the values of x</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>udpipe_model</code></td>
+<td>
+<p>Optionally, the name of a Universal Dependencies language model (e.g., "english-ewt", "dutch-alpino"), to use the udpipe package
+(<code>udpipe_annotate</code>) for natural language processing. You can use <code>show_udpipe_models</code> to get
+an overview of the available models. For more information about udpipe and performance benchmarks of the UD models, see the
+GitHub page of the <a href="https://github.com/bnosac/udpipe">udpipe package</a>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>split_sentences</code></td>
+<td>
+<p>Logical. If TRUE, the sentence number of tokens is also computed. (only if udpipe_model is not used)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_sentences</code></td>
+<td>
+<p>An integer. Limits the number of sentences per document to the specified number. If set when split_sentences == FALSE, split_sentences will be set to TRUE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_tokens</code></td>
+<td>
+<p>An integer. Limits the number of tokens per document to the specified number</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>udpipe_model_path</code></td>
+<td>
+<p>If udpipe_model is used, this path wil be used to look for the model, and if the model doesn't yet exist it will be downloaded to this location. Defaults to working directory</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>udpipe_cache</code></td>
+<td>
+<p>The number of persistent caches to keep for inputs of udpipe. The caches store tokens in batches.
+This way, if a lot of data has to be parsed, or if R crashes, udpipe can continue from the latest batch instead of start over.
+The caches are stored in the corpustools_data folder (in udpipe_model_path). Only the most recent [udpipe_caches] caches will be stored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>udpipe_cores</code></td>
+<td>
+<p>If udpipe_model is used, this sets the number of parallel cores. If not specified, will use the same number of cores as used by data.table (or limited to OMP_THREAD_LIMIT).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>udpipe_batchsize</code></td>
+<td>
+<p>In order to report progress and cache results, texts are parsed with udpipe in batches of 50.
+The price is that there will be some overhead for each batch, so for very large jobs it can be faster to increase the batchsize.
+If the number of texts divided by the number of parallel cores is lower than the batchsize, the texts are evenly distributed over cores.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use_parser</code></td>
+<td>
+<p>If TRUE, use dependency parser (only if udpipe_model is used)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>remember_spaces</code></td>
+<td>
+<p>If TRUE, a column with spaces after each token and column with the start and end positions of tokens are included. Can turn it of for a bit more speed and less memory use, but some features won't work.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>If TRUE, report progress. Only if x is large enough to require multiple sequential batches</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>text_columns</code></td>
+<td>
+<p>if x is a data.frame, this specifies the column(s) that contains text. If multiple columns are used, they are pasted together separated by a double line break.
+If remember_spaces is true, a "field" column is also added that show the column name for each token, and the start/end positions are local within these fields</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>doc_column</code></td>
+<td>
+<p>If x is a data.frame, this specifies the column with the document ids.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>By default, texts will only be tokenized, and basic preprocessing techniques (lowercasing, stemming) can be applied with the
+<code>preprocess</code> method. Alternatively, the udpipe package can be used to apply more advanced NLP preprocessing, by
+using the udpipe_model argument.
+</p>
+<p>For certain advanced features you need to set remember_spaces to true. We are often used to forgetting all about spaces when
+we do bag-of-word type stuff, and that's sad. With remember_spaces, the exact position of each token is remembered, including 
+what type of space follows the token (like a space or a line break), and what text field the token came from (if multiple text_columns are specified in create_tcorpus.data.frame)
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## ...
+tc = create_tcorpus(c('Text one first sentence. Text one second sentence', 'Text two'))
+tc$tokens
+
+tc = create_tcorpus(c('Text one first sentence. Text one second sentence', 'Text two'),
+                    split_sentences = TRUE)
+tc$tokens
+
+## with meta (easier to S3 method for data.frame)
+meta = data.frame(doc_id = c(1,2), source = c('a','b'))
+tc = create_tcorpus(c('Text one first sentence. Text one second sentence', 'Text two'),
+                    split_sentences = TRUE,
+                    doc_id = c(1,2),
+                    meta = meta)
+tc
+d = data.frame(text = c('Text one first sentence. Text one second sentence.',
+               'Text two', 'Text three'),
+               date = c('2010-01-01','2010-01-01','2012-01-01'),
+               source = c('A','B','B'))
+
+tc = create_tcorpus(d, split_sentences = TRUE)
+tc
+tc$tokens
+
+## use multiple text columns
+d$headline = c('Head one', 'Head two', 'Head three')
+## use custom doc_id
+d$doc_id = c('#1', '#2', '#3')
+
+tc = create_tcorpus(d, text_columns = c('headline','text'), doc_column = 'doc_id',
+                    split_sentences = TRUE)
+tc
+tc$tokens
+## It makes little sense to have full texts as factors, but it tends to happen.
+## The create_tcorpus S3 method for factors is essentially identical to the
+##  method for a character vector.
+text = factor(c('Text one first sentence', 'Text one second sentence'))
+tc = create_tcorpus(text)
+tc$tokens
+
+library(quanteda)
+create_tcorpus(data_corpus_inaugural)
+</code></pre>
+
+
+</div>

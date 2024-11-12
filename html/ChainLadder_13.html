@@ -1,0 +1,204 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>BootChainLadder</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2> Bootstrap-Chain-Ladder Model </h2>
+
+<h3>Description</h3>
+
+<p>The <code>BootChainLadder</code> procedure provides a predictive
+distribution of reserves or IBNRs for a cumulative claims development triangle.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">BootChainLadder(Triangle, R = 999, process.distr=c("gamma", "od.pois"), seed = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Triangle</code></td>
+<td>
+<p>cumulative claims triangle. Assume columns are the development
+period, use transpose otherwise.  A (mxn)-matrix <code class="reqn">C_{ik}</code> 
+which is filled for <code class="reqn">k \le n+1-i; i=1,\ldots,m; m\ge n </code>. See
+<code>qpaid</code> for how to use (mxn)-development triangles with
+m&lt;n, say higher development period frequency (e.g quarterly) than
+origin period frequency (e.g accident years).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>R</code></td>
+<td>
+<p>the number of bootstrap replicates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>process.distr</code></td>
+<td>
+<p> character string indicating which process
+distribution to be assumed. One of "gamma" (default), 
+or "od.pois" (over-dispersed Poisson), can be abbreviated</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>optional seed for the random generator</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>BootChainLadder</code> function uses a two-stage
+bootstrapping/simulation approach. In the first stage an ordinary
+chain-ladder methods is applied to the cumulative claims triangle.
+From this we calculate the scaled Pearson residuals which we bootstrap
+R times to forecast future incremental claims payments via the
+standard chain-ladder method. 
+In the second stage we simulate the process error with the bootstrap
+value as the mean and using the process distribution assumed. 
+The set of reserves obtained in this way forms the predictive distribution, 
+from which summary statistics such as mean, prediction error or
+quantiles can be derived.
+</p>
+
+
+<h3>Value</h3>
+
+<p>BootChainLadder gives a list with the following elements back:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>matched call</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Triangle</code></td>
+<td>
+<p>input triangle</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+<p>chain-ladder factors</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>simClaims</code></td>
+<td>
+<p>array of dimension <code>c(m,n,R)</code> with the simulated claims</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>IBNR.ByOrigin</code></td>
+<td>
+<p>array of dimension <code>c(m,1,R)</code> with the modeled
+IBNRs by origin period</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>IBNR.Triangles</code></td>
+<td>
+<p>array of dimension <code>c(m,n,R)</code> with the modeled
+IBNR development triangles</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>IBNR.Totals</code></td>
+<td>
+<p>vector of R samples of the total IBNRs</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ChainLadder.Residuals</code></td>
+<td>
+<p>adjusted Pearson chain-ladder residuals</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>process.distr</code></td>
+<td>
+<p>assumed process distribution</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>R</code></td>
+<td>
+<p>the number of bootstrap replicates</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p> The implementation of <code>BootChainLadder</code> follows closely the
+discussion of the bootstrap model in section 8 and appendix 3 of the
+paper by England and Verrall (2002).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Markus Gesmann, <a href="mailto:markus.gesmann@gmail.com">markus.gesmann@gmail.com</a> </p>
+
+
+<h3>References</h3>
+
+<p><cite>England, PD and Verrall, RJ. Stochastic Claims Reserving in
+General Insurance (with discussion), <em>British Actuarial Journal</em> 8,
+III. 2002 </cite>
+</p>
+<p><cite>Barnett and Zehnwirth. The need for diagnostic assessment of
+bootstrap predictive models, <em>Insureware technical report</em>. 2007</cite>
+</p>
+
+
+<h3>See Also</h3>
+
+<p> See also  
+<code>summary.BootChainLadder</code>, 
+<code>plot.BootChainLadder</code> displaying results and finally 
+<code>CDR.BootChainLadder</code> for the one year claims development result. 
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># See also the example in section 8 of England &amp; Verrall (2002) on page 55.
+
+B &lt;- BootChainLadder(RAA, R=999, process.distr="gamma")
+B
+plot(B)
+# Compare to MackChainLadder
+MackChainLadder(RAA)
+quantile(B, c(0.75,0.95,0.99, 0.995))
+
+# fit a distribution to the IBNR
+library(MASS)
+plot(ecdf(B$IBNR.Totals))
+# fit a log-normal distribution 
+fit &lt;- fitdistr(B$IBNR.Totals[B$IBNR.Totals&gt;0], "lognormal")
+fit
+curve(plnorm(x,fit$estimate["meanlog"], fit$estimate["sdlog"]), col="red", add=TRUE)
+
+# See also the ABC example in  Barnett and Zehnwirth (2007) 
+A &lt;- BootChainLadder(ABC, R=999, process.distr="gamma")
+A
+plot(A, log=TRUE)
+
+## One year claims development result
+CDR(A)
+
+</code></pre>
+
+
+</div>

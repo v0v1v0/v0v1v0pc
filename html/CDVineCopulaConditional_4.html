@@ -1,0 +1,178 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CDVineCondSim</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simulation from a conditional C- or D-vine</h2>
+
+<h3>Description</h3>
+
+<p>Simulates from a d-dimensional conditional C- or D-vine of the variables (<strong>Y</strong>,<strong>X</strong>),  
+given the fixed conditioning variables <strong>X</strong>. The algorithm works 
+for vines satysfying the requirements discussed in <em>Bevacqua et al. (2017)</em>. The algorthm implemented here 
+is a modified version of those form <em>Aas et al. (2009)</em> and is shown in <em>Bevacqua et al. (2017)</em>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CDVineCondSim(RVM, Condition, N)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>RVM</code></td>
+<td>
+<p>An <code>RVineMatrix</code> object containing the information of the d-dimensional C- or D-Vine 
+model (for further details about <code>RVineMatrix</code> objects see the documentation file of the <code>VineCopula</code> package). 
+If the full copula is 2-dimensional, RVM can be an <code>RVineMatrix</code> object or a data.frame (or list) object 
+where <code>$family</code>, <code>$par</code> and <code>$par2</code> are specified.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Condition</code></td>
+<td>
+<p>A <code>N x Nx</code> matrix of the Nx conditioning variables.
+For D-vine: data corresponding to the conditioning variable whose index is in <code>RVM$Matrix[i,i]</code>, are in i-th column of <code>Condition</code>. 
+For C-vine: data corresponding to the conditioning variable whose index is in <code>RVM$Matrix[i,i]</code>, are in [(d+1)-i]-th column 
+of <code>Condition</code>. See examples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>N</code></td>
+<td>
+<p>Number of data to be simulated. By default N is taken from <code>Condition</code>, which is a <code>N x Nx</code> matrix.
+It is necessary to specify <code>N</code> only when <code>Condition</code> is not given.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A <code>N x d</code> matrix of the simulated variables from the given C- or D-vine copula model. In the first columns there are
+the simulated conditioned variables, and in the last columns the conditioning variables <code>Condition</code>.
+For more details about the exact order of the variables in the columns see the examples. The 
+function is built to work easily in combination with <code>CDVineCondFit</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Emanuele Bevacqua
+</p>
+
+
+<h3>References</h3>
+
+<p>Bevacqua, E., Maraun, D., Hobaek Haff, I., Widmann, M., and Vrac, M.: Multivariate statistical modelling of compound events via pair-copula constructions: analysis of floods in Ravenna (Italy), 
+Hydrol. Earth Syst. Sci., 21, 2701-2723, https://doi.org/10.5194/hess-21-2701-2017, 2017.
+<a href="https://www.researchgate.net/publication/317414374_Multivariate_statistical_modelling_of_compound_events_via_pair-copula_constructions_Analysis_of_floods_in_Ravenna_Italy">[link]</a> 
+<a href="https://www.hydrol-earth-syst-sci.net/21/2701/2017/hess-21-2701-2017.html">[link]</a> 
+</p>
+<p>Aas, K., Czado, C., Frigessi, A. and Bakken, H.: Pair-copula constructions of multiple dependence, Insurance:
+Mathematics and Economics, 44(2), 182-198, &lt;doi:10.1016/j.insmatheco.2007.02.001&gt;, 2009. 
+<a href="http://www.sciencedirect.com/science/article/pii/S0167668707000194">[link]</a> 
+</p>
+<p>Ulf Schepsmeier, Jakob Stoeber, Eike Christian Brechmann, Benedikt Graeler, Thomas 
+Nagler and Tobias Erhardt (2017). VineCopula: Statistical Inference of Vine Copulas. R 
+package version 2.1.1. <a href="https://CRAN.R-project.org/package=VineCopula">[link]</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>CDVineCondFit</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Example 1: conditional sampling from a C-Vine
+
+# Read data
+data(dataset) 
+data &lt;- dataset$data[1:400,1:4]
+
+# Define the variables Y and X. X are the conditioning variables, 
+# which have to be positioned in the last columns of the data.frame
+colnames(data) &lt;- c("Y1","Y2","X3","X4")
+
+## Not run: 
+# Select a vine and fit the copula families, specifying that there are 2 conditioning variables
+RVM &lt;- CDVineCondFit(data,Nx=2,type="CVine")
+
+# Set the values of the conditioning variables as those used for the calibration. 
+# Order them with respect to RVM$Matrix, considering that is a C-Vine
+d=dim(RVM$Matrix)[1]
+cond1 &lt;- data[,RVM$Matrix[(d+1)-1,(d+1)-1]]
+cond2 &lt;- data[,RVM$Matrix[(d+1)-2,(d+1)-2]]
+condition &lt;- cbind(cond1,cond2)
+
+# Simulate the variables
+Sim &lt;- CDVineCondSim(RVM,condition)
+
+# Plot the simulated variables over the observed
+Sim &lt;- data.frame(Sim)
+overplot(Sim,data)
+
+
+
+# Example 2: conditional sampling from a D-Vine
+
+# Read data
+data(dataset) 
+data &lt;- dataset$data[1:100,1:4]
+
+# Define the variables Y and X. X are the conditioning variables, 
+# which have to be positioned in the last columns of the data.frame
+colnames(data) &lt;- c("Y1","Y2","X3","X4")
+
+# Select a vine and fit the copula families, specifying that there are 2 conditioning variables
+RVM &lt;- CDVineCondFit(data,Nx=2,type="DVine")
+summary(RVM) #It is a D-Vine.
+
+# Set the values of the conditioning variables as those used for the calibration. 
+# Order them with respect to RVM$Matrix, considering that is a D-Vine.
+cond1 &lt;- data[,RVM$Matrix[1,1]]
+cond2 &lt;- data[,RVM$Matrix[2,2]]
+condition &lt;- cbind(cond1,cond2)
+
+# Simulate the variables
+Sim &lt;- CDVineCondSim(RVM,condition)
+
+# Plot the simulated variables over the observed
+Sim &lt;- data.frame(Sim)
+overplot(Sim,data)
+
+
+
+# Example 3
+
+# Read data
+data(dataset) 
+data &lt;- dataset$data[1:100,1:2]
+colnames(data) &lt;- c("Y1","X2")
+
+# Fit copula
+require(VineCopula)
+BiCop &lt;- BiCopSelect(data$Y1,data$X2)
+BiCop
+
+# Fix conditioning variable to low values and simulate
+condition &lt;- data$X2/10
+Sim &lt;- CDVineCondSim(BiCop,condition)
+
+# Plot the simulated variables over the observed
+Sim &lt;- data.frame(Sim)
+overplot(Sim,data)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

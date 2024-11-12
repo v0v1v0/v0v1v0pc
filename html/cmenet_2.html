@@ -1,0 +1,261 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cv.cmenet</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Bi-level selection of conditional main effects
+</h2>
+
+<h3>Description</h3>
+
+<p>The main function in this package. <code>cv.cmenet</code> performs variable selection of conditional main effects (CMEs) via a bi-level penalization framework, with penalty parameters tuned via cross-validation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cv.cmenet(xme, xcme, y,
+                    nfolds = 10, var.names = NULL,
+                    nlambda.sib=20, nlambda.cou=20, lambda.min.ratio=1e-6,
+                    ngamma=10, max.gamma=150, ntau=20,
+                    max.tau=0.01, tau.min.ratio=0.01,
+                    it.max=250, it.max.cv=25, warm.str="lasso")
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>xme</code></td>
+<td>
+<p>An <code class="reqn">n</code> x <code class="reqn">p</code> binary model matrix for MEs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xcme</code></td>
+<td>
+<p>An <code class="reqn">n</code> x (4*choose(<code class="reqn">p</code>,2)) model matrix for CMEs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>An <code class="reqn">n</code>-length response vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nfolds</code></td>
+<td>
+<p>Number of folds for cross-validation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var.names</code></td>
+<td>
+<p>A (<code class="reqn">p</code>+4*choose(<code class="reqn">p</code>,2))-length string vector for variable names.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nlambda.sib</code></td>
+<td>
+<p>Number of values for <code>lambda.sib</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nlambda.cou</code></td>
+<td>
+<p>Number of values for <code>lambda.cou</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.min.ratio</code></td>
+<td>
+<p>Smallest value for <code>lambda.sib</code> and <code>lambda.cou</code>, as a fraction of <code>lambda.max</code> (the smallest penalty for which all coefficients are zero).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ngamma</code></td>
+<td>
+<p>Number of values for <code>gamma</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.gamma</code></td>
+<td>
+<p>Maximum value for <code>gamma</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ntau</code></td>
+<td>
+<p>Number of values for <code>tau</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.tau</code></td>
+<td>
+<p>Maximum value for <code>tau</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tau.min.ratio</code></td>
+<td>
+<p>Smallest value for <code>tau</code>, as a fraction of <code>max.tau</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>it.max</code></td>
+<td>
+<p>Number of optimization iterations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>it.max.cv</code></td>
+<td>
+<p>Number of optimization iterations in cross-validation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>warm.str</code></td>
+<td>
+<p>A string indicating which method should be used for warm-starting active variables. Current options include <code>"lasso"</code> (default) and <code>"hierNet"</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cme.fit</code></td>
+<td>
+<p>Fitted <code>cmenet</code> object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>params</code></td>
+<td>
+<p>Fitted penalty parameters (<code>lambda.sib</code>, <code>lambda.cou</code>, <code>gamma</code> and <code>tau</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>select.names</code></td>
+<td>
+<p>Selected ME and CME variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>select.idx</code></td>
+<td>
+<p>Indices for <code>select.names</code>.</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Mak and Wu (2018). cmenet: a new method for bi-level variable selection of conditional main effects. <em>Journal of the American Statistical Association</em>, to appear.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">  ## Not run: 
+library(MASS)
+n &lt;- 50 #number of observations
+p &lt;- 50 #number of main effects
+
+## Simulate model matrix for MEs and CMEs
+set.seed(1)
+rho &lt;- 0 #correlation
+ones &lt;- matrix(1,p,p)
+covmtx &lt;- rho*ones+(1-rho)*diag(p)
+latmtx &lt;- mvrnorm(n,p,mu=rep(0,p),Sigma=covmtx) #equicorrelated cov. matrix
+memtx &lt;- (latmtx&gt;=0)-(latmtx&lt;0) #simulate model matrix for MEs
+model.mtx &lt;- full.model.mtx(memtx)$model.mtx #generate model matrix for MEs and CMEs
+
+## Set true model and generate response
+num.act &lt;- 2 # two siblings active
+num.grp &lt;- 4 # ... within four active groups
+ind &lt;- c()
+for (ii in 1:num.grp){
+  eff &lt;- sample(seq(2*(p-1)),num.act)
+  ind &lt;- c(ind, p + eff + (ii-1)*(2*(p-1)))
+}
+colnames(model.mtx)[ind] # active CMEs
+
+des.mtx &lt;- model.mtx[,ind]
+inter &lt;- 12 #intercept
+xbtrue &lt;- inter + rowSums(des.mtx)
+y &lt;- xbtrue + rnorm(n,sd=1) #response
+xme &lt;- model.mtx[,1:p]
+xcme &lt;- model.mtx[,(p+1):ncol(model.mtx)]
+
+#---------------------------------------------------------------
+# Selection of MEs and CMEs:
+#---------------------------------------------------------------
+
+## cmenet (parameters tuned via cross-validation)
+cv.cme &lt;- cv.cmenet(xme, xcme, y, var.names=colnames(model.mtx))
+fit.cme &lt;- cv.cme$cme.fit
+sel.cme &lt;- cv.cme$select.idx
+colnames(model.mtx)[ind] #true model
+colnames(model.mtx)[sel.cme] #selected effects from cmenet
+colnames(model.mtx)[setdiff(sel.cme,ind)] #selected effects not in true model
+colnames(model.mtx)[setdiff(ind,sel.cme)] #true effects not in selected model
+
+## lasso
+library(glmnet)
+cv.las &lt;- cv.glmnet(cbind(xme,xcme),y)
+fit.las &lt;- glmnet(cbind(xme,xcme),y)
+sel.las &lt;- which(fit.las$beta[,which(cv.las$lambda==cv.las$lambda.min)]!=0)
+colnames(model.mtx)[ind] #true model
+colnames(model.mtx)[sel.las] #selected effects from lasso
+colnames(model.mtx)[setdiff(sel.las,ind)] #selected effects not in true model
+colnames(model.mtx)[setdiff(ind,sel.las)] #true effects not in selected model
+
+## sparsenet
+library(sparsenet)
+cv.sn &lt;- cv.sparsenet(cbind(xme,xcme),y)
+fit.sn &lt;- sparsenet(cbind(xme,xcme),y)
+sel.sn &lt;- which(fit.sn$coefficients[[cv.sn$which.min[2]]]$beta[,cv.sn$which.min[1]]!=0)
+colnames(model.mtx)[ind] #true model
+colnames(model.mtx)[sel.sn] #selected effects from sparsenet
+colnames(model.mtx)[setdiff(sel.sn,ind)] #selected effects not in true model
+colnames(model.mtx)[setdiff(ind,sel.sn)] #true effects not in selected model
+
+#---------------------------------------------------------------
+## Comparison:
+#---------------------------------------------------------------
+
+## (a) Misspecifications
+length(setdiff(sel.cme,ind)) + length(setdiff(ind,sel.cme)) # cmenet:    25
+length(setdiff(sel.las,ind)) + length(setdiff(ind,sel.las)) # lasso:     29
+length(setdiff(sel.sn,ind)) + length(setdiff(ind,sel.sn))   # sparsenet: 60
+
+## (b) MSPE
+set.seed(1000)
+ntst &lt;- 20
+latmtx &lt;- mvrnorm(ntst,p,mu=rep(0,p),Sigma=covmtx)
+memtx &lt;- (latmtx&gt;=0)-(latmtx&lt;0)
+tst.mtx &lt;- full.model.mtx(memtx)$model.mtx
+xbtst &lt;- inter + rowSums(tst.mtx[,ind])
+ytst &lt;- xbtst + rnorm(ntst,sd=1)
+
+pred.cme &lt;- predictcme(fit.cme,newx=tst.mtx)[,which(cv.cme$lambda.sib==cv.cme$params[1]),
+            which(cv.cme$lambda.cou==cv.cme$params[2])]
+pred.las &lt;- predict(fit.las,newx=tst.mtx)[,which(cv.las$lambda==cv.las$lambda.min)]
+pred.sn &lt;- predict(fit.sn,newx=tst.mtx)[[which(fit.sn$gamma==cv.sn$parms.min[1])]][,
+           which(fit.sn$lambda==cv.sn$parms.min[2])]
+mean( (ytst-pred.cme)^2 ) # cmenet:    3.61
+mean( (ytst-pred.las)^2 ) # lasso:     4.22
+mean( (ytst-pred.sn)^2 )  # sparsenet: 4.00
+
+
+  
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,173 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fsummarise</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fast Summarise
+</h2>
+
+<h3>Description</h3>
+
+<p><code>fsummarise</code> is a much faster version of <code>dplyr::summarise</code>, when used together with the Fast Statistical Functions.
+</p>
+<p><code>fsummarize</code> and <code>fsummarise</code> are synonyms.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fsummarise(.data, ..., keep.group_vars = TRUE, .cols = NULL)
+fsummarize(.data, ..., keep.group_vars = TRUE, .cols = NULL)
+smr(.data, ..., keep.group_vars = TRUE, .cols = NULL)        # Shorthand
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>.data</code></td>
+<td>
+
+<p>a (grouped) data frame or named list of columns. Grouped data can be created with <code>fgroup_by</code> or <code>dplyr::group_by</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+
+<p>name-value pairs of summary functions, <code>across</code> statements, or arbitrary expressions resulting in a list. See Examples. For fast performance use the Fast Statistical Functions. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.group_vars</code></td>
+<td>
+
+<p>logical. <code>FALSE</code> removes grouping variables after computation.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.cols</code></td>
+<td>
+
+<p>for expressions involving <code>.data</code>, <code>.cols</code> can be used to subset columns, e.g. <code>mtcars |&gt; gby(cyl) |&gt; smr(mctl(cor(.data), TRUE), .cols = 5:7)</code>. Can pass column names, indices, a logical vector or a selector function (e.g. <code>is.numericr</code>).
+</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>If <code>.data</code> is grouped by <code>fgroup_by</code> or <code>dplyr::group_by</code>, the result is a data frame of the same class and attributes with rows reduced to the number of groups. If <code>.data</code> is not grouped, the result is a data frame of the same class and attributes with 1 row.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Since v1.7, <code>fsummarise</code> is fully featured, allowing expressions using functions and columns of the data as well as external scalar values (just like <code>dplyr::summarise</code>). <b>NOTE</b> however that once a Fast Statistical Function is used, the execution will be vectorized instead of split-apply-combine computing over groups. Please see the first Example.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>across</code>, <code>collap</code>, Data Frame Manipulation, Fast Statistical Functions, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Since v1.7, fsummarise supports arbitrary expressions, and expressions
+## containing fast statistical functions receive vectorized execution:
+
+# (a) This is an expression using base R functions which is executed by groups
+mtcars |&gt; fgroup_by(cyl) |&gt; fsummarise(res = mean(mpg) + min(qsec))
+
+# (b) Here, the use of fmean causes the whole expression to be executed
+# in a vectorized way i.e. the expression is translated to something like
+# fmean(mpg, g = cyl) + min(mpg) and executed, thus the result is different
+# from (a), because the minimum is calculated over the entire sample
+mtcars |&gt; fgroup_by(cyl) |&gt; fsummarise(mpg = fmean(mpg) + min(qsec))
+
+# (c) For fully vectorized execution, use fmin. This yields the same as (a)
+mtcars |&gt; fgroup_by(cyl) |&gt; fsummarise(mpg = fmean(mpg) + fmin(qsec))
+
+# More advanced use: vectorized grouped regression slopes: mpg ~ carb
+mtcars |&gt;
+  fgroup_by(cyl) |&gt;
+  fmutate(dm_carb = fwithin(carb)) |&gt;
+  fsummarise(beta = fsum(mpg, dm_carb) %/=% fsum(dm_carb^2))
+
+
+# In across() statements it is fine to mix different functions, each will
+# be executed on its own terms (i.e. vectorized for fmean and standard for sum)
+mtcars |&gt; fgroup_by(cyl) |&gt; fsummarise(across(mpg:hp, list(fmean, sum)))
+
+# Note that this still detects fmean as a fast function, the names of the list
+# are irrelevant, but the function name must be typed or passed as a character vector,
+# Otherwise functions will be executed by groups e.g. function(x) fmean(x) won't vectorize
+mtcars |&gt; fgroup_by(cyl) |&gt; fsummarise(across(mpg:hp, list(mu = fmean, sum = sum)))
+
+# We can force none-vectorized execution by setting .apply = TRUE
+mtcars |&gt; fgroup_by(cyl) |&gt; fsummarise(across(mpg:hp, list(mu = fmean, sum = sum), .apply = TRUE))
+
+# Another argument of across(): Order the result first by function, then by column
+mtcars |&gt; fgroup_by(cyl) |&gt;
+     fsummarise(across(mpg:hp, list(mu = fmean, sum = sum), .transpose = FALSE))
+
+
+# Since v1.9.0, can also evaluate arbitrary expressions
+mtcars |&gt; fgroup_by(cyl, vs, am) |&gt;
+   fsummarise(mctl(cor(cbind(mpg, wt, carb)), names = TRUE))
+
+# This can also be achieved using across():
+corfun &lt;- function(x) mctl(cor(x), names = TRUE)
+mtcars |&gt; fgroup_by(cyl, vs, am) |&gt;
+   fsummarise(across(c(mpg, wt, carb), corfun, .apply = FALSE))
+
+#----------------------------------------------------------------------------
+# Examples that also work for pre 1.7 versions
+
+# Simple use
+fsummarise(mtcars, mean_mpg = fmean(mpg),
+                   sd_mpg = fsd(mpg))
+
+# Using base functions (not a big difference without groups)
+fsummarise(mtcars, mean_mpg = mean(mpg),
+                   sd_mpg = sd(mpg))
+
+# Grouped use
+mtcars |&gt; fgroup_by(cyl) |&gt;
+  fsummarise(mean_mpg = fmean(mpg),
+             sd_mpg = fsd(mpg))
+
+# This is still efficient but quite a bit slower on large data (many groups)
+mtcars |&gt; fgroup_by(cyl) |&gt;
+  fsummarise(mean_mpg = mean(mpg),
+             sd_mpg = sd(mpg))
+
+# Weighted aggregation
+mtcars |&gt; fgroup_by(cyl) |&gt;
+  fsummarise(w_mean_mpg = fmean(mpg, wt),
+             w_sd_mpg = fsd(mpg, wt))
+
+ 
+## Can also group with dplyr::group_by, but at a conversion cost, see ?GRP
+library(dplyr)
+mtcars |&gt; group_by(cyl) |&gt;
+  fsummarise(mean_mpg = fmean(mpg),
+             sd_mpg = fsd(mpg))
+
+# Again less efficient...
+mtcars |&gt; group_by(cyl) |&gt;
+  fsummarise(mean_mpg = mean(mpg),
+             sd_mpg = sd(mpg))
+
+
+</code></pre>
+
+
+</div>

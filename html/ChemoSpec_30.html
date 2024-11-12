@@ -1,0 +1,138 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>normSpectra</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Normalize a Spectra Object</h2>
+
+<h3>Description</h3>
+
+<p>This function carries out normalization of the spectra in a
+<code>Spectra</code> object.  There are currently four options:
+</p>
+
+<ul>
+<li> <p><code>"PQN"</code> carries out "Probabalistic Quotient Normalization" as described
+in the reference.  This is probably the best option for many data sets.  However, please
+be careful if your sample has protein in it, PQN is potentially biased.
+See the references.
+</p>
+</li>
+<li> <p><code>"TotInt"</code> normalizes by total intensity.  In this
+case, the y-data of a <code>Spectra</code> object is normalized by dividing
+each y-value by the sum of the y-values in a given spectrum.  Thus each
+spectrum sums to 1.  This method assumes that the total concentration of
+all substances giving peaks does not vary across samples which may not be true.
+</p>
+</li>
+<li> <p><code>"Range"</code> allows one to do something similar to <code>"TotInt"</code> but rather than using the
+sum of the entire spectrum as the denominator, only the sum of the given
+range is used.  This would be appropriate if there was an internal standard
+in the spectrum which was free of interferance, and one wanted to normalize
+relative to it.
+</p>
+</li>
+<li> <p><code>"zero2one"</code> scales each spectrum separately to a <code style="white-space: pre;">⁠[0...1]⁠</code> scale.
+This is sometimes useful for visual comparison of chromatograms but is
+inappropriate for spectral data sets.
+</p>
+</li>
+</ul>
+<h3>Usage</h3>
+
+<pre><code class="language-R">normSpectra(spectra, method = "PQN", RangeExpress = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>spectra</code></td>
+<td>
+<p>An object of S3 class <code>Spectra()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>One of <code>c("PQN", "TotInt", "Range", "zero2one")</code> giving
+the method for normalization.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>RangeExpress</code></td>
+<td>
+<p>A vector of
+logicals (must be of <code>length(Spectra$freq)</code>).  This vector should be <code>TRUE</code> for
+the frequency range you want to serve as the basis for norming, and <code>FALSE</code> otherwise.
+The entire spectrum will be divided by the sum of the <code>TRUE</code> range.  See the examples.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An object of S3 class <code>Spectra()</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Bryan A. Hanson (DePauw University).
+</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li> <p>Probabalistic Quotient Normalization is reported in F. Dieterle
+et al. Analytical Chemistry vol. 78 pages 4281-4290 (2006).
+</p>
+</li>
+<li> <p>The exact same mathematics are called "median fold change normalization"
+by Nicholson's group, reported in K. A. Veselkov et. al. Analytical
+Chemistry vol. 83 pages 5864-5872 (2011).
+</p>
+</li>
+<li> <p>Corriea et al. "1H NMR Signals from Urine Excreted Protein are
+a Source of Bias in Probablistic Quotient Normalization" Analytical Chemistry
+vol. 94 pages 6919-6923 (2022).
+</p>
+</li>
+</ul>
+<h3>See Also</h3>
+
+<p>Additional documentation at <a href="https://bryanhanson.github.io/ChemoSpec/">https://bryanhanson.github.io/ChemoSpec/</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># This example assumes the graphics output is set to ggplot2 (see ?GraphicsOptions).
+library("ggplot2")
+data(SrE.IR)
+
+# Reference spectrum before normalization
+p1 &lt;- plotSpectra(SrE.IR) + ggtitle("Original Spectrum")
+p1
+
+# Default PQN normalization
+res1 &lt;- normSpectra(SrE.IR)
+p2 &lt;- plotSpectra(res1) + ggtitle("PQN Normalization")
+p2
+
+# Norm over carbonyl region
+RE &lt;- SrE.IR$freq &gt; 1650 &amp; SrE.IR$freq &lt; 1800
+res2 &lt;- normSpectra(SrE.IR, method = "Range", RangeExpress = RE)
+p3 &lt;- plotSpectra(res2) + ggtitle("Normalized to Carbonyl Peaks")
+p3
+
+# Check numerically
+rowSums(res2$data[, RE]) # compare to rowSums(SrE.IR$data[,RE])
+
+</code></pre>
+
+
+</div>

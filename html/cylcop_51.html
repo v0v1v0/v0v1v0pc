@@ -1,0 +1,241 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fit_cylcop_cor</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate Copula Parameters from Correlation Measures</h2>
+
+<h3>Description</h3>
+
+<p>This function implements a simple search of the parameter space of a
+'<code>cyl_copula</code>' object to find the
+parameter values that lead to a correlation that is closest to the correlation
+in the data (<code>theta</code> and <code>x</code>). In some special cases of
+'<code>cyl_rect_combine</code>' copulas, the parameter can be
+obtained analytically from Kendall's tau of the data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fit_cylcop_cor(copula, theta, x, acc = NULL, n = 10000, method, ...)
+
+## S4 method for signature 'cyl_vonmises'
+fit_cylcop_cor(copula, theta, x, acc, n, method = "cor_cyl")
+
+## S4 method for signature 'cyl_quadsec'
+fit_cylcop_cor(copula, theta, x, acc, n, method = "cor_cyl")
+
+## S4 method for signature 'cyl_cubsec'
+fit_cylcop_cor(
+  copula,
+  theta,
+  x,
+  acc,
+  n,
+  method = "cor_cyl",
+  parameter = "both"
+)
+
+## S4 method for signature 'cyl_rot_combine'
+fit_cylcop_cor(copula, theta, x, acc, n, method = "mi_cyl")
+
+## S4 method for signature 'cyl_rect_combine'
+fit_cylcop_cor(copula, theta, x, acc, n, method = "tau", background = FALSE)
+
+optCor(copula, theta, x, acc = NULL, n = 10000, method, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>copula</code></td>
+<td>
+<p><span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> object of class '<code>cyl_copula</code>'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+<p>numeric vector of angles
+(measurements of a circular variable).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>numeric vector of step lengths
+(measurements of a linear variable).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>acc</code></td>
+<td>
+<p>numeric value, the interval of the copula parameter
+at which to evaluate the correlation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>numeric value, the number of sample points at each
+optimization step.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>character string describing what correlation metric
+to use. Either a rank-based circular-linear correlation coefficient (<code>"cor_cyl"</code>),
+mutual information (<code>"mi_cyl"</code>), or Kendall's tau (<code>"tau"</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional parameters (see individual methods).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parameter</code></td>
+<td>
+<p>For '<code>cyl_cubsec</code>' copulas: A character
+string specifying which parameter of the copula to optimize,
+<code>"a"</code>, <code>"b"</code>, or <code>"both"</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>background</code></td>
+<td>
+<p>For '<code>cyl_rect_combine</code>' copulas :
+A logical value describing whether to optimize
+the parameter of the background copula, (<code>background = TRUE</code>) or
+the one of the copula in the rectangles (<code>background = FALSE</code>).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The code assumes that the correlation captured by the copula increases
+monotonously with the copula parameter values. It starts with a parameter value close
+to the minimum for that copula and calculates the correlation for a sample of size <code>n</code>
+from that copula. Next, the parameter is doubled and again the correlation for a sample
+of size <code>n</code> calculated. After this exponential search pattern, a binary search
+is implemented similarly between the bounds found with the exponential search. For this
+binary search, the interval between those bounds is split into small intervals of length
+<code>acc</code>. Thus, smaller values of <code>acc</code> lead to higher accuracy.
+</p>
+<p>If a '<code>cyl_rect_combine</code>' copula has rectangles spanning
+the entire unit square and as background the independence copula, Kendall's tau can be used
+to analytically calculate the parameter value leading to the correlation of the data.
+No search is necessary in this case. This makes it the recommended method to use
+for those '<code>cyl_rect_combine</code>' copulas.
+<code>optCor()</code> is an alias for <code>fit_cylcop_cor</code>.
+</p>
+<p>See also individual methods (below) for more detailed explanations.
+</p>
+
+
+<h3>Value</h3>
+
+<p>numeric vector containing the estimated
+parameter value(s).
+</p>
+
+
+<h3>Functions</h3>
+
+
+<ul>
+<li> <p><code>fit_cylcop_cor(cyl_vonmises)</code>: only parameter <code>"kappa"</code> can be optimized, since parameter
+<code>"mu"</code> does not influence the correlation.
+</p>
+</li>
+<li> <p><code>fit_cylcop_cor(cyl_quadsec)</code>: the absolute value of the parameter is optimized, positive
+and negative values give the same correlation.
+</p>
+</li>
+<li> <p><code>fit_cylcop_cor(cyl_cubsec)</code>: optimization of parameters, <code>"a"</code> and <code>"b"</code>,
+can be done separately or simultaneously.
+</p>
+</li>
+<li> <p><code>fit_cylcop_cor(cyl_rot_combine)</code>: the circular-linear correlation coefficient will give a
+value close to 0 for any parameter value. It therefore only makes sense to
+use <code>method = "mi_cyl"</code> for the optimization.
+</p>
+</li>
+<li> <p><code>fit_cylcop_cor(cyl_rect_combine)</code>: if the rectangles span the entire unit square and the background
+is the independence copula, it is recommended to use <code>method = "tau"</code>, since this
+calculates the copula parameter analytically. If there is a background copula,
+other than the independence copula, its parameter can be optimized by setting
+<code>background=TRUE</code>.
+</p>
+</li>
+</ul>
+<h3>References</h3>
+
+<p>Hodel FH, Fieberg JR (2022).
+“Circular-Linear Copulae for Animal Movement Data.”
+<em>Methods in Ecology and Evolution</em>.
+<a href="https://doi.org/10.1111/2041-210X.13821">doi:10.1111/2041-210X.13821</a>.
+</p>
+<p>Hodel FH, Fieberg JR (2021).
+“Cylcop: An R Package for Circular-Linear Copulae with Angular Symmetry.”
+<em>bioRxiv</em>.
+<a href="https://doi.org/10.1101/2021.07.14.452253">doi:10.1101/2021.07.14.452253</a>, <a href="https://www.biorxiv.org/content/10.1101/2021.07.14.452253v3/">https://www.biorxiv.org/content/10.1101/2021.07.14.452253v3/</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>mi_cyl()</code>, <code>cor_cyl()</code>, <code>fit_cylcop_ml()</code>,
+<code>opt_auto()</code>, <code>copula::fitCopula()</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(123)
+
+sample &lt;- rcylcop(100, cyl_rect_combine(copula::frankCopula(2)))
+fit_cylcop_cor(cyl_rect_combine(copula::frankCopula()),
+  theta = sample[,1],
+  x = sample[,2],
+  method = "tau"
+)
+
+fit_cylcop_cor(cyl_rect_combine(copula::frankCopula()),
+  theta = sample[,1],
+  x = sample[,2],
+  method = "mi_cyl",
+  n = 100
+)
+
+fit_cylcop_cor(cyl_rect_combine(copula::claytonCopula()),
+  theta = sample[,1],
+  x = sample[,2],
+  method = "tau"
+)
+
+fit_cylcop_cor(cyl_quadsec(), theta = sample[,1], x = sample[,2], method = "mi_cyl")
+fit_cylcop_cor(cyl_quadsec(), theta = sample[,1], x = sample[,2], method = "cor_cyl")
+fit_cylcop_cor(cyl_quadsec(),
+  theta = sample[,1],
+  x = sample[,2],
+  method = "cor_cyl",
+  n = 100,
+  acc = 0.001
+)
+
+optCor(cyl_quadsec(),
+ theta = sample[,1],
+ x = sample[,2],
+ method = "mi_cyl")
+
+</code></pre>
+
+
+</div>

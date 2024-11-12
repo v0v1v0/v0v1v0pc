@@ -1,0 +1,185 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>add_probs.survreg</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Confidence Intervals for the Survivor Function of Accelerated
+Failure Time Models</h2>
+
+<h3>Description</h3>
+
+<p>This function is one of the methods of <code>add_probs</code> and is
+automatically called when an object of class <code>survreg</code> is
+passed to <code>add_probs</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'survreg'
+add_probs(
+  df,
+  fit,
+  q,
+  name = NULL,
+  yhatName = "median_pred",
+  comparison = "&lt;",
+  confint = TRUE,
+  alpha = 0.05,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>A data frame of new data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fit</code></td>
+<td>
+<p>An object of class <code>survreg</code>. Predictions are made
+with this object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>q</code></td>
+<td>
+<p>A double. A quantile of the survival time distribution. In
+survival applications this is the time of event.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p><code>NULL</code> or a string. If <code>NULL</code>, probabilities
+automatically will be named by <code>add_probs()</code>, otherwise,
+the probabilities will be named <code>name</code> in the returned
+data frame.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>yhatName</code></td>
+<td>
+<p>A string. Name of the vector of predictions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>comparison</code></td>
+<td>
+<p>A character vector of length one. If
+<code>comparison = "&lt;"</code>, then <code class="reqn">Pr(Y|X &lt; q)</code> is
+calculated. If <code>comparison = "&gt;"</code>, the survivor function
+at time <code>q</code> is calculated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>confint</code></td>
+<td>
+<p>A logical. If <code>TRUE</code>, confidence intervals for
+the estimated probabilities will be calculated and appended to
+<code>df</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>A number. Control the confidence level of the
+confidence intervals if <code>confint = TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Confidence intervals may be produced for estimated probabilities of
+accelerated failure time models. Presently, confidence intervals
+may be computed for lognormal, weibull, exponential, and
+loglogistic failure time models. If <code>comparison = "&lt;"</code>,
+confidence intervals are made for the probability that a failure
+will be observed before <code>q</code>. Similarly, if <code>comparison =
+"&gt;"</code>, confidence intervals will be formed for the probability that
+a unit fails after <code>q</code>. In the survival literature,
+<code>comparison = "&gt;"</code> corresponds to estimating the survivor
+function, <em>S(q)</em>.
+</p>
+<p>Confidence intervals are produced parametrically via the Delta
+Method. Simulations show that under a mild
+to moderate amount of censoring, this method performs
+adequately.
+</p>
+<p>The logistic transformation is applied to ensure
+that confidence interval bounds lie between <code class="reqn">0</code> and <code class="reqn">1</code>.
+</p>
+<p>Note: Due to a limitation, the <code>Surv</code> object must be specified in
+<code>survreg</code> function call. See the examples section for one way
+to do this.
+</p>
+<p>Note: <code>add_probs.survreg</code> cannot inspect the convergence of
+<code>fit</code>. Poor maximum likelihood estimates will result in poor
+confidence intervals. Inspect any warning messages given from
+<code>survreg</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A dataframe, <code>df</code>, with predicted medians, probabilities,
+and confidence intervals for predicted probabilities attached.
+</p>
+
+
+<h3>References</h3>
+
+<p>For the logistic transformation of estimated probabilities and error bounds:
+Meeker, William Q., and Luis A. Escobar. Statistical methods for reliability data. John Wiley &amp; Sons, 2014. (Chapter 8)
+</p>
+<p>For a discussion of forming confidence intervals for survival probabilities:
+Harrell, Frank E. Regression modeling strategies. Springer, 2015. (Chapter 17)
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>add_ci.survreg</code> for confidence intervals for
+<code>survreg</code> objects, <code>add_pi.survreg</code> for
+prediction intervals of <code>survreg</code> objects, and
+<code>add_quantile.survreg</code> for response quantiles of
+<code>survreg</code> objects.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Define a data set.
+df &lt;- survival::stanford2
+## remove a covariate with missing values.
+df &lt;- df[, 1:4]
+## next, create the Surv object inside the survreg call:
+fit &lt;- survival::survreg(survival::Surv(time, status) ~ age + I(age^2),
+                         data = df, dist = "lognormal")
+## Calculate the level 0.75 quantile wit CIs for that quantile
+add_probs(df, fit, q = 500, name = c("Fhat", "lwr", "upr"))
+
+## Try a weibull model for the same data:
+fit2 &lt;- survival::survreg(survival::Surv(time, status) ~ age + I(age^2),
+                          data = df, dist = "weibull")
+## Calculate the level 0.75 quantile with CIs for the quantile
+add_probs(df, fit2, q = 500, name = c("Fhat", "lwr", "upr"))
+
+
+</code></pre>
+
+
+</div>

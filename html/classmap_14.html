@@ -1,0 +1,177 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>vcr.forest.newdata</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Prepare for visualization of a random forest classification on new data.
+</h2>
+
+<h3>Description</h3>
+
+<p>Produces output for the purpose of constructing graphical displays such as the <code>classmap</code> on new data. Requires the output of
+<code>vcr.forest.train</code> as an argument.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">vcr.forest.newdata(Xnew, ynew = NULL, vcr.forest.train.out,
+                   LOO = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Xnew</code></td>
+<td>
+<p>data matrix of the new data, with the same
+number of columns <code>d</code> as in the training data.
+Missing values are not allowed.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ynew</code></td>
+<td>
+<p>factor with class membership of each new case. Can be <code>NA</code> for some or all cases. If <code>NULL</code>, is assumed to be <code>NA</code> everywhere.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vcr.forest.train.out</code></td>
+<td>
+<p>output of <code>vcr.forest.train</code> on the training data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>LOO</code></td>
+<td>
+<p>leave one out. Only used when testing this function on a subset of the training data. Default is <code>LOO=FALSE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list with components: <br></p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>yintnew</code></td>
+<td>
+<p>number of the given class of each case. Can contain <code>NA</code>'s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ynew</code></td>
+<td>
+<p>given class label of each case. Can contain <code>NA</code>'s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>levels</code></td>
+<td>
+<p>levels of the response, from <code>vcr.forest.train.out</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predint</code></td>
+<td>
+<p>predicted class number of each case. Always exists.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pred</code></td>
+<td>
+<p>predicted label of each case.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>altint</code></td>
+<td>
+<p>number of the alternative class. Among the classes different from the given class, it is the one with the highest posterior probability. Is <code>NA</code> for cases whose <code>ynew</code> is missing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>altlab</code></td>
+<td>
+<p>alternative label if yintnew was given, else <code>NA</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PAC</code></td>
+<td>
+<p>probability of the alternative class. Is <code>NA</code> for cases whose <code>ynew</code> is missing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fig</code></td>
+<td>
+<p>distance of each case <code class="reqn">i</code> from each class <code class="reqn">g</code>. Always exists.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>farness</code></td>
+<td>
+<p>farness of each case from its given class. Is <code>NA</code> for cases whose <code>ynew</code> is missing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ofarness</code></td>
+<td>
+<p>for each case <code class="reqn">i</code>, its lowest <code>fig[i,g]</code> to any class <code class="reqn">g</code>. Always exists.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Raymaekers J., Rousseeuw P.J.
+</p>
+
+
+<h3>References</h3>
+
+<p>Raymaekers J., Rousseeuw P.J.(2021). Silhouettes and quasi residual plots for neural nets and tree-based classifiers. <a href="https://arxiv.org/abs/2106.08814">(link to open access pdf)</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>vcr.forest.train</code>, <code>classmap</code>, <code>silplot</code>, <code>stackedplot</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(randomForest)
+data("data_instagram")
+traindata &lt;- data_instagram[which(data_instagram$dataType == "train"), -13]
+set.seed(71) # randomForest is not deterministic
+rfout &lt;- randomForest(y ~ ., data = traindata, keep.forest = TRUE)
+mytype &lt;- list(symm = c(1, 5, 7, 8)) # These 4 columns are
+# (symmetric) binary variables. The variables that are not
+# listed are interval-scaled by default.
+x_train &lt;- traindata[, -12]
+y_train &lt;- traindata[, 12]
+vcrtrain &lt;- vcr.forest.train(X = x_train, y = y_train,
+                            trainfit = rfout, type = mytype)
+testdata &lt;- data_instagram[which(data_instagram$dataType == "test"), -13]
+Xnew &lt;- testdata[, -12]
+ynew &lt;- testdata[, 12]
+vcrtest &lt;- vcr.forest.newdata(Xnew, ynew, vcrtrain)
+confmat.vcr(vcrtest)
+stackedplot(vcrtest, classCol = c(4, 2))
+silplot(vcrtest, classCols = c(4, 2))
+classmap(vcrtest, "genuine", classCols = c(4, 2))
+classmap(vcrtest, "fake", classCols = c(4, 2))
+
+# For more examples, we refer to the vignette:
+## Not run: 
+vignette("Random_forest_examples")
+
+## End(Not run)
+</code></pre>
+
+
+</div>

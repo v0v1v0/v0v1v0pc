@@ -1,0 +1,129 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>unpack_results</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Parse output from a solver and updates problem state</h2>
+
+<h3>Description</h3>
+
+<p>Updates problem status, problem value, and primal and dual variable values
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">unpack_results(object, solution, chain, inverse_data)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>A Problem object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>solution</code></td>
+<td>
+<p>A Solution object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>chain</code></td>
+<td>
+<p>The corresponding solving Chain.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inverse_data</code></td>
+<td>
+<p>A InverseData object or list containing data necessary for the inversion.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list containing the solution to the problem:
+</p>
+
+<dl>
+<dt><code>status</code></dt>
+<dd>
+<p>The status of the solution. Can be "optimal", "optimal_inaccurate", "infeasible", "infeasible_inaccurate", "unbounded", "unbounded_inaccurate", or "solver_error".</p>
+</dd>
+<dt><code>value</code></dt>
+<dd>
+<p>The optimal value of the objective function.</p>
+</dd>
+<dt><code>solver</code></dt>
+<dd>
+<p>The name of the solver.</p>
+</dd>
+<dt><code>solve_time</code></dt>
+<dd>
+<p>The time (in seconds) it took for the solver to solve the problem.</p>
+</dd>
+<dt><code>setup_time</code></dt>
+<dd>
+<p>The time (in seconds) it took for the solver to set up the problem.</p>
+</dd>
+<dt><code>num_iters</code></dt>
+<dd>
+<p>The number of iterations the solver had to go through to find a solution.</p>
+</dd>
+<dt><code>getValue</code></dt>
+<dd>
+<p>A function that takes a Variable object and retrieves its primal value.</p>
+</dd>
+<dt><code>getDualValue</code></dt>
+<dd>
+<p>A function that takes a Constraint object and retrieves its dual value(s).</p>
+</dd>
+</dl>
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+x &lt;- Variable(2)
+obj &lt;- Minimize(x[1] + cvxr_norm(x, 1))
+constraints &lt;- list(x &gt;= 2)
+prob1 &lt;- Problem(obj, constraints)
+# Solve with ECOS.
+ecos_data &lt;- get_problem_data(prob1, "ECOS")
+# Call ECOS solver interface directly
+ecos_output &lt;- ECOSolveR::ECOS_csolve(
+                           c = ecos_data[["c"]],
+                           G = ecos_data[["G"]],
+                           h = ecos_data[["h"]],
+                           dims = ecos_data[["dims"]],
+                           A = ecos_data[["A"]],
+                           b = ecos_data[["b"]]
+                         )
+# Unpack raw solver output.
+res1 &lt;- unpack_results(prob1, "ECOS", ecos_output)
+# Without DCP validation (so be sure of your math), above is equivalent to:
+# res1 &lt;- solve(prob1, solver = "ECOS")
+X &lt;- Variable(2,2, PSD = TRUE)
+Fmat &lt;- rbind(c(1,0), c(0,-1))
+obj &lt;- Minimize(sum_squares(X - Fmat))
+prob2 &lt;- Problem(obj)
+scs_data &lt;- get_problem_data(prob2, "SCS")
+scs_output &lt;- scs::scs(
+                      A = scs_data[['A']],
+                      b = scs_data[['b']],
+                      obj = scs_data[['c']],
+                      cone = scs_data[['dims']]
+                  )
+res2 &lt;- unpack_results(prob2, "SCS", scs_output)
+# Without DCP validation (so be sure of your math), above is equivalent to:
+# res2 &lt;- solve(prob2, solver = "SCS")
+
+## End(Not run)
+</code></pre>
+
+
+</div>

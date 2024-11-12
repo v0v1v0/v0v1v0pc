@@ -1,0 +1,89 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>seasonalsex</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simulated data of seasonal mortality data for two sex groups</h2>
+
+<h3>Description</h3>
+
+<p>See examples below for the process of simulating and visualizing these data 
+using <code>simulate_cycloSurv</code>, and an example of analyzing these 
+data with <code>factorfit_cyclomort</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">data(seasonalsex)
+</code></pre>
+
+
+<h3>Format</h3>
+
+<p>Simulated data of single-season mortalities for two sex groups:
+</p>
+
+<dl>
+<dt>sex</dt>
+<dd>
+<p>female (F) or male (M)</p>
+</dd>
+<dt>event</dt>
+<dd>
+<p><code>cycloSurv</code> object of (censored) survival data</p>
+</dd>
+</dl>
+<h3>Examples</h3>
+
+<pre><code class="language-R"># useful packages
+require(ggplot2); require(magrittr); require(plyr)
+
+# Example of simulating multi-factor data:
+## Not run:** 
+n &lt;- 100
+T.male = simulate_cycloSurv(n, period = 1, meanhazard = 0.3, peaks = .25, durations = .3)
+T.female = simulate_cycloSurv(n, period = 1, meanhazard = 0.3, peaks = .75, durations = .3)
+T.joint &lt;- with(rbind(T.male, T.female) %&gt;% data.frame,
+          create_cycloSurv(start = start, end = stop, 
+                           event = status, period = 1))
+seasonalsex &lt;- data.frame( sex = rep(c("M","F"), each = n), T = T.joint)
+## End(**Not run**)
+
+# load and visualize simulated sex-specific survival data
+data("seasonalsex")
+
+seasonsex.df &lt;- cbind(seasonalsex, as.matrix(seasonalsex$event) %&gt;% as.data.frame) %&gt;%
+  arrange(sex,stop) %&gt;% mutate(id = 1:length(start) %&gt;% factor, 
+                               status = c("Dead", "Censored")[2-status])
+
+require(ggplot2)
+ggplot(seasonsex.df, aes(x = start, y = id, col = status)) + 
+  geom_errorbarh(aes(xmin = start, xmax = stop)) + 
+  facet_wrap(.~sex, scales = "free_y", ncol = 1) + 
+  ggtitle("Simulated sex-specific mortality data")
+
+seasonsex.df$time.trunc &lt;- with(seasonsex.df, stop - floor(stop))
+with(seasonsex.df, {
+  hist(time.trunc[sex == "M"], col = rgb(0,0,1,.3), breaks = seq(0,1,.1), 
+       bor = NA, freq = FALSE, xlab = "Time (within period)", 
+       main = "Male vs. Female (simulated) mortalities")  
+  hist(time.trunc[sex == "F"], col = rgb(1,0,0,.3), breaks = seq(0,1,.1), 
+       bor = NA, add = TRUE, freq = FALSE)  
+  lines(density(time.trunc[sex == "M"], from = 0, to = 1), col = "darkblue", lwd = 2)
+  lines(density(time.trunc[sex == "F"], from = 0, to = 1), col = "darkred", lwd = 2)
+  legend("topleft", fill = c("blue", "red"), legend = c("M","F"), title = "Sex")
+})
+
+# test differences
+
+sex.fit &lt;- factorfit_cyclomort(event ~ sex, data = seasonalsex, n.seasons = 1)
+summary(sex.fit)
+
+plot(sex.fit, ymax = 1.3)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,115 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>minimalize</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Eliminate logical redundancies from Boolean expressions
+</h2>
+
+<h3>Description</h3>
+
+<p><code>minimalize</code> eliminates logical redundancies from a Boolean expression <code>cond</code> based on all configurations of the factors in <code>cond</code> that are possible according to classical Boolean logic. That is, <code>minimalize</code> performs logical (i.e. not data-driven) redundancy elimination. The output is a set of redundancy-free DNFs that are logically equivalent to <code>cond</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">minimalize(cond, x = NULL, maxstep = c(4, 4, 12))
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cond</code></td>
+<td>
+
+<p>Character vector specifying Boolean expressions; the acceptable syntax is the same as that of <code>condition</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A data frame, a <code>configTable</code>, or a list determining the possible values for each factor in <code>cond</code>; <code>x</code> has no effect for a <code>cond</code> with only binary factors but is mandatory for a <code>cond</code> with multi-value factors (see details).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxstep</code></td>
+<td>
+
+<p>Maximal complexity of the returned redundancy-free DNFs (see <code>cna</code>).
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+ 
+<p>The regularity theory of causation underlying CNA conceives of causes as parts of redundancy-free Boolean dependency structures. Boolean dependency structures tend to contain a host of redundancies. 
+Redundancies may obtain relative to an analyzed set of empirical data, which, typically, are fragmented and do not feature all logically possible configurations, or they may obtain for principled logical reasons, that is, relative to all configurations that are possible according to Boolean logic.
+Whether a Boolean expression (in disjunctive normal form) contains the latter type of logical redundancies can be checked with the function <code>is.inus</code>. 
+</p>
+<p><code>minimalize</code> eliminates logical redundancies from <code>cond</code> and outputs all redundancy-free disjunctive normal forms (DNF) (within some complexity range given by <code>maxstep</code>) that are logically equivalent with <code>cond</code>.
+If <code>cond</code> is redundancy-free, no reduction is possible and <code>minimalize</code> returns <code>cond</code> itself (possibly as an element of multiple logically equivalent redundancy-free DNFs). If <code>cond</code> is not redundancy-free, a <code>cna</code> with <code>con = 1</code> and <code>cov = 1</code> is performed relative to <code>full.ct(x)</code> (relative to <code>full.ct(cond)</code> if <code>x</code> is <code>NULL</code>). The output is the set of all redundancy-free DNFs in the complexity range given by <code>maxstep</code> that are logically equivalent to <code>cond</code>.
+</p>
+<p>The purpose of the optional argument <code>x</code> is to determine the space of possible values of the factors in <code>cond</code>. If all factors in <code>cond</code> are binary, <code>x</code> is optional and without influence on the output of <code>minimalize</code>. If some factors in <code>cond</code> are multi-value, <code>minimalize</code> needs to be given the range of these values. <code>x</code> can be a data frame or <code>configTable</code> listing all possible value configurations or simply a list of the possible values for each factor in <code>cond</code> (see examples).
+</p>
+<p>The argument <code>maxstep</code>, which is identical to the corresponding argument in <code>cna</code>, specifies the maximal complexity of the returned DNF. <code>maxstep</code> expects a vector of three integers <code>c(i, j, k)</code>  determining that the generated DNFs have maximally <code>j</code> disjuncts with maximally <code>i</code> conjuncts each and a total of maximally <code>k</code> factor values. The default is <code>maxstep = c(4, 4, 12)</code>.
+If the complexity range of the search space given by <code>maxstep</code> is too low, it may happen that nothing is returned (accompanied by a corresponding warning message). In that case, the <code>maxstep</code> values need to be increased. 
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of character vectors of the same length as <code>cond</code>. Each list element contains one or several redundancy-free disjunctive normal forms (DNFs) that are logically equivalent to <code>cond</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>condition</code>, <code>is.inus</code>, <code>cna</code>, <code>full.ct</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Binary expressions
+# ------------------
+# DNFs as input.
+minimalize(c("A", "A+B", "A + a*B", "A + a", "A*a"))
+minimalize(c("F + f*G", "F*G + f*H + G*H", "F*G + f*g + H*F + H*G"))
+
+# Any Boolean expressions (with variable syntax) are admissible inputs.
+minimalize(c("!(A*B*C + a*b*c)", "A*!(B*d+E)-&gt;F", "-(A+-(E*F))&lt;-&gt;H"))
+
+# Proper redundancy elimination may require increasing the maxstep values.
+minimalize("!(A*B*C*D*E+a*b*c*d*e)")  
+minimalize("!(A*B*C*D*E+a*b*c*d*e)", maxstep = c(3, 5, 15))
+
+
+# Multi-value expressions
+# -----------------------
+# In case of expressions with multi-value factors, the relevant range of factor 
+# values must be specified by means of x. x can be a list or a configTable:
+values &lt;- list(C = 0:3, F = 0:2, V = 0:4)
+minimalize(c("C=1 + F=2*V=0", "C=1 + C=0*V=1"), values)
+minimalize("C=1 + F=2 &lt;-&gt; V=1", values, maxstep=c(3,10,20))
+minimalize(c("C=1 + C=0 * C=2", "C=0 + C=1 + C=2"), configTable(d.pban))
+
+
+# Eliminating logical redundancies from non-INUS asf inferred from real data
+# --------------------------------------------------------------------------
+fsdata &lt;- configTable(d.jobsecurity)
+conds &lt;- asf(cna(fsdata, con = 0.8, cov = 0.8, inus.only = FALSE))$condition
+conds &lt;- lhs(conds)
+noninus.conds &lt;- conds[-which(is.inus(conds, fsdata))]
+minimalize(noninus.conds)
+</code></pre>
+
+
+</div>

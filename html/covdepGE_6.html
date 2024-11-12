@@ -1,0 +1,161 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>matViz</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Visualize a matrix</h2>
+
+<h3>Description</h3>
+
+<p>Create a visualization of a matrix
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">matViz(
+  x,
+  color1 = "white",
+  color2 = "#500000",
+  grid_color = "black",
+  incl_val = FALSE,
+  prec = 2,
+  font_size = 3,
+  font_color1 = "black",
+  font_color2 = "white",
+  font_thres = mean(x)
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>matrix; matrix to be visualized</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>color1</code></td>
+<td>
+<p>color; color for low entries. <code>"white"</code> by default</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>color2</code></td>
+<td>
+<p>color; color for high entries. <code>"#500000"</code> by default</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grid_color</code></td>
+<td>
+<p>color; color of grid lines. <code>"black"</code> by default</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>incl_val</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, the value for each entry will be
+displayed. <code>FALSE</code> by default</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prec</code></td>
+<td>
+<p>positive integer; number of decimal places to round entries to if
+<code>incl_val</code> is <code>TRUE</code>. <code>2</code> by default</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>font_size</code></td>
+<td>
+<p>positive numeric; size of font if <code>incl_val</code> is <code>TRUE</code>. <code>3</code>
+by default</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>font_color1</code></td>
+<td>
+<p>color; color of font for low entries if <code>incl_val</code> is
+<code>TRUE</code>. <code>"black"</code> by default</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>font_color2</code></td>
+<td>
+<p>color; color of font for high entries if <code>incl_val</code> is
+<code>TRUE</code>. <code>"white"</code> by default</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>font_thres</code></td>
+<td>
+<p>numeric; values less than <code>font_thres</code> will be displayed
+in <code>font_color1</code> if <code>incl_val</code> is <code>TRUE</code>. <code>mean(x)</code> by default</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Returns <code>ggplot2</code> visualization of matrix
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+library(ggplot2)
+
+# get the data
+set.seed(12)
+data &lt;- generateData()
+X &lt;- data$X
+Z &lt;- data$Z
+interval &lt;- data$interval
+prec &lt;- data$true_precision
+
+# get overall and within interval sample sizes
+n &lt;- nrow(X)
+n1 &lt;- sum(interval == 1)
+n2 &lt;- sum(interval == 2)
+n3 &lt;- sum(interval == 3)
+
+# visualize the distribution of the extraneous covariate
+ggplot(data.frame(Z = Z, interval = as.factor(interval))) +
+  geom_histogram(aes(Z, fill = interval), color = "black", bins = n %/% 5)
+
+# visualize the true precision matrices in each of the intervals
+
+# interval 1
+matViz(prec[[1]], incl_val = TRUE) +
+  ggtitle(paste0("True precision matrix, interval 1, observations 1,...,", n1))
+
+# interval 2 (varies continuously with Z)
+cat("\nInterval 2, observations ", n1 + 1, ",...,", n1 + n2, sep = "")
+int2_mats &lt;- prec[interval == 2]
+int2_inds &lt;- c(5, n2 %/% 2, n2 - 5)
+lapply(int2_inds, function(j) matViz(int2_mats[[j]], incl_val = TRUE) +
+         ggtitle(paste("True precision matrix, interval 2, observation", j + n1)))
+
+# interval 3
+matViz(prec[[length(prec)]], incl_val = TRUE) +
+  ggtitle(paste0("True precision matrix, interval 3, observations ",
+                 n1 + n2 + 1, ",...,", n1 + n2 + n3))
+
+# fit the model and visualize the estimated graphs
+(out &lt;- covdepGE(X, Z))
+plot(out)
+
+# visualize the posterior inclusion probabilities for variables (1, 3) and (1, 2)
+inclusionCurve(out, 1, 2)
+inclusionCurve(out, 1, 3)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

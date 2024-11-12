@@ -1,0 +1,124 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>univariate_associations</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Compute association statistics between columns of a data frame</h2>
+
+<h3>Description</h3>
+
+<p>Evaluate a <code>list</code> of scalar functions on any number of "response" columns by any number of "predictor" columns
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">univariate_associations(
+    data,
+    f,
+    responses,
+    predictors
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A <code>data.frame</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+<p>A function or a <code>list</code> of functions (preferably named) that take a vector as input in the first two arguments and return a scalar.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>responses</code></td>
+<td>
+<p>A vector of quoted/unquoted columns, positions, and/or <code>tidyselect::select_helpers</code> to be evaluated as the first argument. See the <code>left</code> argument in <code>dish</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predictors</code></td>
+<td>
+<p>A vector of quoted/unquoted columns, positions, and/or <code>tidyselect::select_helpers</code> to be evaluated as the second argument. See the <code>right</code> argument in <code>dish</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A <code>tibble::tibble</code> with the response/predictor columns down the rows and the results of the <code>f</code> across the columns. The names of the result columns will be the names provided in <code>f</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Alex Zajichek</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#Make a list of functions to evaluate
+f &lt;-
+  list(
+    
+    #Compute a univariate p-value
+    `P-value` =
+      function(y, x) {
+        if(some_type(x, c("factor", "character"))) {
+          
+          p &lt;- fisher.test(factor(y), factor(x), simulate.p.value = TRUE)$p.value
+          
+        } else {
+          
+          p &lt;- kruskal.test(x, factor(y))$p.value
+          
+        }
+        
+        ifelse(p &lt; 0.001, "&lt;0.001", as.character(round(p, 2)))
+        
+      },
+    
+    #Compute difference in AIC model between null model and one predictor model
+    `AIC Difference` =
+      function(y, x) {
+        
+        glm(factor(y)~1, family = "binomial")$aic -
+          glm(factor(y)~x, family = "binomial")$aic
+        
+      }
+  )
+
+#Choose a couple binary outcomes
+heart_disease %&gt;% 
+  univariate_associations(
+    f = f,
+    responses = c(ExerciseInducedAngina, HeartDisease)
+  )
+
+#Use a subset of predictors
+heart_disease %&gt;% 
+  univariate_associations(
+    f = f,
+    responses = c(ExerciseInducedAngina, HeartDisease),
+    predictors = c(Age, BP)
+  )
+
+#Numeric predictors only
+heart_disease %&gt;% 
+  univariate_associations(
+    f = f,
+    responses = c(ExerciseInducedAngina, HeartDisease),
+    predictors = is.numeric
+  )
+
+</code></pre>
+
+
+</div>

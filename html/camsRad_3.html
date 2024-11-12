@@ -1,0 +1,145 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cams_api</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>API client for
+<a href="http://www.soda-pro.com/web-services/radiation/cams-radiation-service">CAMS
+radiation service</a>
+</h2>
+
+<h3>Description</h3>
+
+<p>API client for
+<a href="http://www.soda-pro.com/web-services/radiation/cams-radiation-service">CAMS
+radiation service</a>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cams_api(lat, lng, date_begin, date_end, alt = -999, time_step = "PT01H",
+  time_ref = "UT", verbose = FALSE, service = "get_cams_radiation",
+  format = "application/csv", filename = "")
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>lat</code></td>
+<td>
+<p>Latitude, in decimal degrees. Required</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lng</code></td>
+<td>
+<p>Longitude, in decimal degrees. Required</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>date_begin</code></td>
+<td>
+<p>Start date as 'yyyy-mm-dd' string. Required</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>date_end</code></td>
+<td>
+<p>End date as 'yyyy-mm-dd' string. Required</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alt</code></td>
+<td>
+<p>Altitude in meters, use -999 to let CAMS decide. Default -99</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_step</code></td>
+<td>
+<p>Aggregation: 'PT01M' for minutes, 'PT15M' for 15 minutes,
+'PT01H' for hourly, 'P01D' for daily, 'P01M' for monthly. Deafult 'PT01H'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_ref</code></td>
+<td>
+<p>Time reference:'UT' for universal time, 'TST' for true solar
+time. Default 'UT'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>TRUE for verbose output. Default "FALSE"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>service</code></td>
+<td>
+<p>'get_mcclear' for CAMS McClear data, 'get_cams_radiation' for
+CAMS radiation data. Default 'get_cams_radiation'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>format</code></td>
+<td>
+<p>'application/csv', 'application/json', 'application/x-netcdf'
+or 'text/csv'. Default 'application/csv'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>filename</code></td>
+<td>
+<p>path to file on disk to write to. If empty, data is kept in
+memory. Default empty</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>list(ok=TRUE/FALSE, response=response). If ok=TRUE, response is the
+response from httr::GET. If ok=FALSE, response holds exception text
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+library(ncdf4)
+
+filename &lt;- paste0(tempfile(), ".nc")
+
+# API call to CAMS
+r &lt;- cams_api(
+  60, 15,                       # latitude=60, longitude=15
+  "2016-06-01", "2016-06-10",   # for 2016-06-01 to 2016-06-10
+  time_step="PT01H",            # hourly data
+  service="get_cams_radiation", # CAMS radiation
+  format="application/x-netcdf",# netCDF format
+  filename=filename)            # file to save to
+
+# Access the on disk stored ncdf4 file
+nc &lt;- nc_open(r$response$content)
+# list names of available variables
+names(nc$var)
+
+# create data.frame with timestamp and global horizontal irradiation
+df &lt;- data.frame(datetime=as.POSIXct(nc$dim$time$vals, "UTC",
+                                     origin="1970-01-01"),
+                 GHI = ncvar_get(nc, "GHI"))
+
+plot(df, type="l")
+
+nc_close(nc)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

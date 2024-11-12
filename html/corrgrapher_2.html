@@ -1,0 +1,185 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>calculate_cors</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate correlation coefficients</h2>
+
+<h3>Description</h3>
+
+<p>Calculate correlation coefficients between variables in a <code>data.frame</code>, <code>matrix</code> or <code>table</code> 
+using 3 different functions for 3 different possible pairs of vairables:
+</p>
+
+<ul>
+<li>
+<p>numeric - numeric
+</p>
+</li>
+<li>
+<p>numeric - categorical
+</p>
+</li>
+<li>
+<p>categorical - categorical</p>
+</li>
+</ul>
+<h3>Usage</h3>
+
+<pre><code class="language-R">calculate_cors(
+  x,
+  num_num_f = NULL,
+  num_cat_f = NULL,
+  cat_cat_f = NULL,
+  max_cor = NULL
+)
+
+## S3 method for class 'explainer'
+calculate_cors(
+  x,
+  num_num_f = NULL,
+  num_cat_f = NULL,
+  cat_cat_f = NULL,
+  max_cor = NULL
+)
+
+## S3 method for class 'matrix'
+calculate_cors(
+  x,
+  num_num_f = NULL,
+  num_cat_f = NULL,
+  cat_cat_f = NULL,
+  max_cor = NULL
+)
+
+## S3 method for class 'table'
+calculate_cors(
+  x,
+  num_num_f = NULL,
+  num_cat_f = NULL,
+  cat_cat_f = NULL,
+  max_cor = NULL
+)
+
+## Default S3 method:
+calculate_cors(
+  x,
+  num_num_f = NULL,
+  num_cat_f = NULL,
+  cat_cat_f = NULL,
+  max_cor = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>object used to select method. See more below.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>num_num_f</code></td>
+<td>
+<p>A <code>function</code> used to determine correlation coefficient between a pair of numeric variables</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>num_cat_f</code></td>
+<td>
+<p>A <code>function</code> used to determine correlation coefficient between a pair of numeric and categorical variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cat_cat_f</code></td>
+<td>
+<p>A <code>function</code> used to determine correlation coefficient between a pair of categorical variables</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_cor</code></td>
+<td>
+<p>A number used to indicate absolute correlation (like 1 in <code>cor</code>). Must be supplied if any of <code>*_f</code> arguments is supplied.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A symmetrical <code>matrix</code> A of size n x n, where n - amount of columns in <code>x</code> (or dimensions for <code>table</code>).
+The value at A(i,j) is the correlation coefficient between ith and jth variable.
+On the diagonal, values from <code>max_cor</code> are set.
+</p>
+
+
+<h3>X argument</h3>
+
+<p>When <code>x</code> is a <code>data.frame</code>, all columns of <code>numeric</code> type are treated as numeric variables and all columns of <code>factor</code> type are treated as categorical variables. Columns of other types are ignored.
+</p>
+<p>When <code>x</code> is a <code>matrix</code>, it is converted to <code>data.frame</code> using <code>as.data.frame.matrix</code>.
+</p>
+<p>When <code>x</code> is a <code>explainer</code>, the tests are performed on its <code>data</code> element.
+</p>
+<p>When <code>x</code> is a <code>table</code>, it is treated as contingency table. Its dimensions must be named, but none of them may be named <code>Frequency</code>.
+</p>
+
+
+<h3>Default functions</h3>
+
+<p>By default, the function calculates p_value of statistical tests ( <code>cor.test</code> for 2 <code>numeric</code>, <code>chisq.test</code> for <code>factor</code> and <code>kruskal.test</code> for mixed).
+</p>
+<p>Then, the correlation coefficients are calculated as <code>-log10(p_value)</code>. Any results above 100 are treated as absolute correlation and cut to 100. 
+</p>
+<p>The results are then divided by 100 to fit inside [0,1].
+</p>
+<p>If only <code>numeric</code> data was supplied, the function used is <code>cor.test</code>.
+</p>
+
+
+<h3>Custom functions</h3>
+
+<p>Creating consistent measures for correlation coefficients, which are comparable for different kinds of variables, is a non-trivial task.
+Therefore, if user wishes to use custom function for calculating correlation coefficients, he must provide <strong>all</strong> necessary functions.
+Using a custom function for one case and a default for the other is consciously not supported. 
+Naturally, user may supply copies of default functions at his own responsibility.
+</p>
+<p>Function <code>calculate_cors</code> chooses, which parameters of <code>*_f</code> are required based on data supported. 
+For example, for a <code>matrix</code> with <code>numeric</code> data only <code>num_num_f</code> is required. 
+On the other hand, for a <code>table</code> only <code>cat_cat_f</code> is required.
+</p>
+<p>All <code>*_f</code> parameters must be functions, which accept 2 parameters (<code>numeric</code> or <code>factor</code> vectors respectively)
+and return a single number from [0,max_num]. The <code>num_cat_f</code> must accept <code>numeric</code> argument as first and <code>factor</code> argument as second.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cor.test</code>, <code>chisq.test</code>, <code>kruskal.test</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data(mtcars)
+# Make sure, that categorical variables are factors
+mtcars$vs &lt;- factor(mtcars$vs, labels = c('V-shaped', 'straight'))
+mtcars$am &lt;- factor(mtcars$am, labels = c('automatic', 'manual'))
+calculate_cors(mtcars)
+
+# For a table:
+data(HairEyeColor)
+calculate_cors(HairEyeColor)
+
+# Custom functions:
+num_mtcars &lt;- mtcars[,-which(colnames(mtcars) %in% c('vs', 'am'))]
+my_f &lt;- function(x,y) cor.test(x, y, method = 'spearman', exact=FALSE)$estimate
+calculate_cors(num_mtcars, num_num_f = my_f, max_cor = 1)
+
+</code></pre>
+
+
+</div>

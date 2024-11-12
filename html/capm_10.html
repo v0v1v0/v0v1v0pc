@@ -1,0 +1,140 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>DesignSurvey</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Survey design</h2>
+
+<h3>Description</h3>
+
+<p>A wraper for <code>svydesign</code> function from the survey package, to define one of the following survey designs: two-stage cluster, simple (systematic) or stratified. In the first case, weights are calculated considering a sample with probability proportional to size and with replacement for the first stage and a simple random sampling for the second stage. Finite population correction is specified as the population size for each level of sampling.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">DesignSurvey(sample = NULL, psu.ssu = NULL, psu.col = NULL,
+  ssu.col = NULL, cal.col = NULL, N = NULL, strata = NULL,
+  cal.N = NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>sample</code></td>
+<td>
+<p><code>data.frame</code> with sample observations. for two-stage cluster designs, one of the columns must contain unique identifiers for PSU and another column must contain unique identifiers for Secondary Sampling Units (SSU).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>psu.ssu</code></td>
+<td>
+<p><code>data.frame</code> with all Primary Sampling Units (PSU). First column contains PSU unique identifiers. Second column contains <code>numeric</code> PSU sizes. It is used only for two-stage cluster designs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>psu.col</code></td>
+<td>
+<p>the column of <code>sample</code> containing the psu identifiers (for two-stage cluster designs). It is used only for two-stage cluster designs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ssu.col</code></td>
+<td>
+<p>the column of <code>sample</code> containing the ssu identifiers (for two-stage cluster designs). It is used only for two-stage cluster designs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cal.col</code></td>
+<td>
+<p>the column of <code>sample</code> with the variable to calibrate estimates. It must be used together with <code>cal.N</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>N</code></td>
+<td>
+<p>for simple designs, a <code>numeric</code> value representing the total of sampling units in the population. for a stratified design, it is a column of <code>sample</code> indicating, for each observation, the total of sampling units in its respective strata. <code>N</code> is ignored in two-stage cluster designs.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>strata</code></td>
+<td>
+<p>for stratified designs, a column of <code>sample</code> indicating the strata memebership of each observation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cal.N</code></td>
+<td>
+<p>population total for the variable to calibrate the estimates. It must be used togheter with <code>cal.col</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>further arguments passed to <code>svydesign</code> function.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For two-stage cluster designs, a PSU appearing in both <code>psu.ssu</code> and in <code>sample</code> must have the same identifier. SSU identifiers must be unique but can appear more than once if there is more than one observation per SSU. <code>sample</code> argument must have just the varibles to be estimated plus the variables required to define the design (two-stage cluster or stratified). <code>cal.col</code> and <code>cal.N</code> are needed only if estimates will be calibrated. The calibration is based on a population total.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class survey.design.
+</p>
+
+
+<h3>References</h3>
+
+<p>Lumley, T. (2011). Complex surveys: A guide to analysis using R (Vol. 565). Wiley.
+</p>
+<p>Baquero, O. S., Marconcin, S., Rocha, A., &amp; Garcia, R. D. C. M. (2018). Companion animal demography and population management in Pinhais, Brazil. Preventive Veterinary Medicine.
+</p>
+<p><a href="http://oswaldosantos.github.io/capm">http://oswaldosantos.github.io/capm</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data("cluster_sample")
+data("psu_ssu")
+
+## Calibrated two-stage cluster design
+design &lt;- DesignSurvey(na.omit(cluster_sample),
+                       psu.ssu = psu_ssu,
+                       psu.col = "census_tract_id",
+                       ssu.col = "interview_id",
+                       cal.col = "number_of_persons",
+                       cal.N = 129445)
+
+## Simple design
+# If data in cluster_sample were from a simple design:
+design &lt;- DesignSurvey(na.omit(cluster_sample), 
+                       N = sum(psu_ssu$hh),
+                       cal.N = 129445)
+
+## Stratified design
+# Simulate strata and assume that the data in cluster_design came
+# from a stratified design
+cluster_sample$strat &lt;- sample(c("urban", "rural"),
+                               nrow(cluster_sample),
+                               prob = c(.95, .05),
+                               replace = TRUE)
+cluster_sample$strat_size &lt;- round(sum(psu_ssu$hh) * .95)
+cluster_sample$strat_size[cluster_sample$strat == "rural"] &lt;-
+  round(sum(psu_ssu$hh) * .05)
+design &lt;- DesignSurvey(cluster_sample,
+                       N = "strat_size",
+                       strata = "strat",
+                       cal.N = 129445)
+
+</code></pre>
+
+
+</div>

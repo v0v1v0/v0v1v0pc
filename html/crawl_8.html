@@ -1,0 +1,495 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>crwMLE</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fit Continuous-Time Correlated Random Walk Models to Animal Telemetry Data</h2>
+
+<h3>Description</h3>
+
+<p>The function uses the Kalman filter to estimate movement parameters in a
+state-space version of the continuous-time movement model. Separate models
+are specified for movement portion and the location error portion. Each
+model can depend on time indexed covariates. A “haul out” model where
+movement is allowed to completely stop, as well as, a random drift model can
+be fit with this function.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">crwMLE(data, ...)
+
+## Default S3 method:
+crwMLE(
+  data,
+  mov.model = ~1,
+  err.model = NULL,
+  activity = NULL,
+  drift = FALSE,
+  coord = c("x", "y"),
+  proj = NULL,
+  Time.name = "time",
+  time.scale = NULL,
+  theta = NULL,
+  fixPar = NULL,
+  method = "Nelder-Mead",
+  control = NULL,
+  constr = list(lower = -Inf, upper = Inf),
+  prior = NULL,
+  need.hess = TRUE,
+  initialSANN = list(maxit = 200),
+  attempts = 1,
+  retrySD = 1,
+  skip_check = FALSE,
+  ...
+)
+
+## S3 method for class 'SpatialPoints'
+crwMLE(
+  data,
+  mov.model = ~1,
+  err.model = NULL,
+  activity = NULL,
+  drift = FALSE,
+  Time.name = "time",
+  time.scale = NULL,
+  theta = NULL,
+  fixPar = NULL,
+  method = "Nelder-Mead",
+  control = NULL,
+  constr = list(lower = -Inf, upper = Inf),
+  prior = NULL,
+  need.hess = TRUE,
+  initialSANN = list(maxit = 200),
+  attempts = 1,
+  retrySD = 1,
+  skip_check = FALSE,
+  coord = NULL,
+  ...
+)
+
+## S3 method for class 'sf'
+crwMLE(
+  data,
+  mov.model = ~1,
+  err.model = NULL,
+  activity = NULL,
+  drift = FALSE,
+  Time.name = "time",
+  time.scale = NULL,
+  theta = NULL,
+  fixPar = NULL,
+  method = "Nelder-Mead",
+  control = NULL,
+  constr = list(lower = -Inf, upper = Inf),
+  prior = NULL,
+  need.hess = TRUE,
+  initialSANN = list(maxit = 200),
+  attempts = 1,
+  retrySD = 1,
+  skip_check = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a data set of location observations as a data.frame, tibble,
+SpatialPointsDataFrame ('sp' package), or a data.frame of class 'sf' that
+contains a geometry column of type <code>sfc_POINT</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>further arguments passed to or from other methods</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mov.model</code></td>
+<td>
+<p>formula object specifying the time indexed covariates for
+movement parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>err.model</code></td>
+<td>
+<p>A 2-element list of formula objects specifying the time
+indexed covariates for location error parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>activity</code></td>
+<td>
+<p>formula object giving the covariate for the activity (i.e., stopped or fully moving)
+portion of the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drift</code></td>
+<td>
+<p>logical indicating whether or not to include a random
+drift component. For most data this is usually not necessary. See <code>northernFurSeal</code> for an example
+using a drift model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coord</code></td>
+<td>
+<p>A 2-vector of character values giving the names of the "X" and
+"Y" coordinates in <code>data</code>. Ignored if <code>data</code> inherits class
+'sf' or 'sp'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>proj</code></td>
+<td>
+<p>A valid epsg integer code or proj4string for <code>data</code> that does not
+inherit either 'sf' or 'sp'. A valid 'crs' list is also accepted. Otherwise, ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Time.name</code></td>
+<td>
+<p>character indicating name of the location time column. It is
+strongly preferred that this column be of type POSIXct and in UTC.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time.scale</code></td>
+<td>
+<p>character. Scale for conversion of POSIX time to numeric 
+for modeling. Defaults to "hours" and most users will not need to change this.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+<p>starting values for parameter optimization.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixPar</code></td>
+<td>
+<p>Values of parameters which are held fixed to the given value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Optimization method that is passed to <code>optim</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>Control list which is passed to <code>optim</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>constr</code></td>
+<td>
+<p>Named list with elements <code>lower</code> and <code>upper</code> that
+are vectors the same length as theta giving the box constraints for the
+parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior</code></td>
+<td>
+<p>A function returning the log-density function of the parameter
+prior distribution. THIS MUST BE A FUNCTION OF ONLY THE FREE PARAMETERS. Any 
+fixed parameters should not be included.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>need.hess</code></td>
+<td>
+<p>A logical value which decides whether or not to evaluate
+the Hessian for parameter standard errors</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>initialSANN</code></td>
+<td>
+<p>Control list for <code>optim</code> when simulated
+annealing is used for obtaining start values. See details</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>attempts</code></td>
+<td>
+<p>The number of times likelihood optimization will be
+attempted in cases where the fit does not converge or is otherwise non-valid</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>retrySD</code></td>
+<td>
+<p>optional user-provided standard deviation for adjusting
+starting values when attempts &gt; 1. Default value is 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>skip_check</code></td>
+<td>
+<p>Skip the likelihood optimization check and return the fitted values.
+Can be useful for debugging problem fits.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+
+<ul>
+<li>
+<p> A full model specification involves 4 components: a movement model, an
+activity model, 2 location error models, and a drift indication. The
+movement model (<code>mov.model</code>) specifies how the movement parameters
+should vary over time. This is a function of specified, time-indexed,
+covariates. The movement parameters (sigma for velocity variation and beta
+for velocity autocorrelation) are both modeled with a log link as par =
+exp(eta), where eta is the linear predictor based on the covariates. The
+<code>err.model</code> specification is a list of 2 such models, one for
+“X (longitude)” and one for “Y (latitude)” (in that order) location
+error. If only one location error model is given, it is used for both
+coordinates (parameter values as well). If <code>drift.model</code> is set to
+<code>TRUE</code>, then, 2 additional parameters are estimated for the drift
+process, a drift variance and a beta multiplier. 
+</p>
+</li>
+<li> <p><code>theta</code> and <code>fixPar</code> are vectors with the appropriate number or
+parameters. <code>theta</code> contains only those parameters which are to be
+estimated, while <code>fixPar</code> contains all parameter values with <code>NA</code>
+for parameters which are to be estimated.
+</p>
+</li>
+<li>
+<p> The data set specified by <code>data</code> must contain a numeric or POSIXct column which is
+used as the time index for analysis. The column name is specified by the
+<code>Time.name</code> argument and it is strongly suggested that this column be of
+POSIXct type and in UTC. If a POSIXct column is used it is internally converted to a
+numeric vector with units of <code>time.scale</code>. <code>time.scale</code> defaults to
+NULL and an appropriate option will be chosen ("seconds","minutes","days","weeks")
+based on the median time interval. The user can override this by specifying one
+of those time intervals directly. If a numeric time vector is used, then 
+the <code>time.scale</code> is ignored and there
+is no adjustment to the data. Also, for activity models, the
+activity covariate must be between 0 and 1 inclusive, with 0 representing complete stop
+of the animal (no true movement, however, location error can still occur) and 1 
+represent unhindered movement. The coordinate location should have <code>NA</code> where no
+location is recorded, but there is a change in the movement covariates.
+</p>
+</li>
+<li>
+<p> The CTCRW models can be difficult to provide good initial values for
+optimization. If <code>initialSANN</code> is specified then simulated annealing is
+used first to obtain starting values for the specified optimization method.
+If simulated annealing is used first, then the returned <code>init</code> list of
+the crwFit object will be a list with the results of the simulated annealing
+optimization.
+</p>
+</li>
+<li>
+<p> The <code>attempts</code> argument instructs <code>crwMLE</code> to attempt a fit
+multiple times. Each time, the fit is inspected for convergence, whether
+the covariance matrix could be calculated, negative values in the diag 
+of the covariance matrix, or NA values in the standard errors. If, after
+n attempts, the fit is still not valid a <code>simpleError</code> object is
+returned. Users should consider increasing the number of attempts OR
+adjusting the standard deviation value for each attempt by setting
+<code>retrySD</code>. The default value for <code>retrySD</code> is 1, but users may
+need to increase or decrease to find a valid fit. Adjusting other
+model parameters may also be required.
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p>A list with the following elements:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>par</code></td>
+<td>
+<p>Parameter maximum likelihood estimates (including fixed parameters)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estPar</code></td>
+<td>
+<p>MLE without fixed parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>se</code></td>
+<td>
+<p>Standard error of MLE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ci</code></td>
+<td>
+<p>95% confidence intervals for parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Cmat</code></td>
+<td>
+<p>Parameter covariance matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>loglik</code></td>
+<td>
+<p>Maximized log-likelihood value</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aic</code></td>
+<td>
+<p>Model AIC value</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coord</code></td>
+<td>
+<p>Coordinate names provided for fitting</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixPar</code></td>
+<td>
+<p>Fixed parameter values provided</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>convergence</code></td>
+<td>
+<p>Indicator of convergence (0 = converged)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>message</code></td>
+<td>
+<p>Messages given by <code>optim</code> during parameter optimization</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>activity</code></td>
+<td>
+<p>Model provided for stopping variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drift</code></td>
+<td>
+<p>Logical value indicating random drift model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mov.model</code></td>
+<td>
+<p>Model description for movement component</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>err.model</code></td>
+<td>
+<p>Model description for location error component</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.par</code></td>
+<td>
+<p>number of parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nms</code></td>
+<td>
+<p>parameter names</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.mov</code></td>
+<td>
+<p>number of movement parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.errX</code></td>
+<td>
+<p>number or location error parameters for “longitude” error model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.errY</code></td>
+<td>
+<p>number or location error parameters for “latitude” error model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stop.mf</code></td>
+<td>
+<p>covariate for stop indication in stopping models</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>polar.coord</code></td>
+<td>
+<p>Logical indicating coordinates are polar latitude and longitude</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>init</code></td>
+<td>
+<p>Initial values for parameter optimization</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>Original data.frame used to fit the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lower</code></td>
+<td>
+<p>The lower parameter bounds</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>upper</code></td>
+<td>
+<p>The upper parameter bounds</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>need.hess</code></td>
+<td>
+<p>Logical value</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>runTime</code></td>
+<td>
+<p>Time used to fit model</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Devin S. Johnson, Josh M. London
+</p>
+
+
+</div>

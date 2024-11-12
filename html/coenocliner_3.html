@@ -1,0 +1,170 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>species-response</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Species response models for coenocline simulation</h2>
+
+<h3>Description</h3>
+
+<p>Parameterise species response curves along one or two gradients according to a Gaussian or generalised beta response model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">Gaussian(x, y = NULL, px, py = NULL, corr = 0)
+
+Beta(x, y = NULL, px, py = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>numeric; locations of observations on the primary gradient.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>numeric; locations of observations on the secondary gradient. Can be missing is only a single gradient is required.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>px</code></td>
+<td>
+<p>a list of named elements, each of which is a vector of numeric parameter values for the species response on the primary gradient <code>x</code>. See Details for further information on the required parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>py</code></td>
+<td>
+<p>a list of named elements, each of which is a vector of numeric parameter values for the species response on the secondary gradient <code>y</code>. See Details for further information on the required parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>corr</code></td>
+<td>
+<p>numeric; the correlation between gradients <code>x</code> and <code>y</code>. Only applies to <code>Gaussian()</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>Gaussian()</code> and <code>Beta()</code> return values from appropriately parameterised Gaussian or generalised beta response models respectively. Parameters for the primary (<code>x</code>) and secondary (<code>y</code>) gradients are supplied as lists via arguments <code>px</code> and <code>py</code>. Parameters are supplied in the form of vectors, one per parameter. These vectors must be supplied to named components in the respective lists. The names of the components must match the parameters of the required response model.
+</p>
+<p>For <code>Gaussian()</code> the following named components must be supplied:
+</p>
+
+<dl>
+<dt>opt</dt>
+<dd>
+<p>the species optima</p>
+</dd>
+<dt>tol</dt>
+<dd>
+<p>the species tolerances</p>
+</dd>
+<dt>h</dt>
+<dd>
+<p>the heights of the response curves at the optima. This parameter should only be supplied to <code>px</code>; in the case of simulations along two gradients, the height of the response curve applies to both gradients and is the hieght of a bivariate Guassian distribution at the bivariate optima.</p>
+</dd>
+</dl>
+<p>For <code>Beta()</code> the following named components must be supplied:
+</p>
+
+<dl>
+<dt>A0</dt>
+<dd>
+<p>The heights of the species response curves at their modes. Like the parameter <code>h</code> for the Gaussian response, this parameter should only be passed via <code>px</code>; in the case of simulations along two gradients, the height of the response curve applies to both gradients and is the height of a bivariate generalised beta distribution at the bivariate mode.</p>
+</dd>
+<dt>m</dt>
+<dd>
+<p>the locations on the gradient of the modal abundance (the species optima)</p>
+</dd>
+<dt>r</dt>
+<dd>
+<p>the ranges of occurrence of species on the gradient</p>
+</dd>
+<dt>alpha</dt>
+<dd>
+<p>a shape parameter. With <code>gamma</code>, <code>alpha</code> informs the shape of the response curve and control the skewness and kurtosis of the curve. Only positive values are allowed, which lead to unimodal response curves. If <code>alpha</code> is equal to <code>gamma</code>, the species response curve is symmetric, otherwise an asymmetric curve is generated.</p>
+</dd>
+<dt>gamma</dt>
+<dd>
+<p>a shape parameter. With <code>alpha</code>, <code>gamma</code> informs the shape of the response curve and control the skewness and kurtosis of the curve. Only positive values are allowed, which lead to unimodal response curves. If <code>gamma</code> is equal to <code>alpha</code>, the species response curve is symmetric, otherwise an asymmetric curve is generated.</p>
+</dd>
+</dl>
+<p>See the examples here and in <code>coenocline</code> for details on how to set up calls to these species response functions.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A numeric vector of species "abundances" of length equal to <code>length(x)</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Gavin L. Simpson
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# A simple example with a single species
+x &lt;- seq(from = 4, to = 6, length = 100)
+px &lt;- list(opt = 4.5, tol = 0.25, h = 20)
+G &lt;- Gaussian(x, px = px)
+head(G)
+length(G)
+
+# A more complex example with 6 species, which needs the parameters
+# repeating for each gradient location:
+
+# Recreate Fig. 2 of Minchin (1987)
+# Parameters for each of 6 six species
+A0 &lt;- c(5,4,7,5,9,8) * 10
+m &lt;- c(25,85,10,60,45,60)
+r &lt;- c(3,3,4,4,6,5) * 10
+alpha &lt;- c(0.1,1,2,4,1.5,1)
+gamma &lt;- c(0.1,1,2,4,0.5,4)
+# Gradient locations
+x &lt;- 1:100
+
+# expand parameter set
+pars &lt;- expand(x, m = m, A0 = A0, r = r, alpha = alpha,
+gamma = gamma)
+head(pars)
+
+xvec &lt;- pars[, "x"]
+px &lt;- as.list(data.frame(pars[, -1]))
+spprc &lt;- Beta(xvec, px = px)
+matplot(matrix(spprc, ncol = 6), ## 6 species
+        type = "l", lty = "solid")
+
+# Bivariate beta, single species
+xx &lt;- 1:100
+yy &lt;- 1:100
+xy &lt;- expand.grid(x = xx, y = yy)
+parx &lt;- expand(xy[, "x"], A0 = 50, m = 60, r = 40, alpha = 4, gamma = 4)
+pary &lt;- expand(xy[, "y"], m = 60, r = 40, alpha = 4, gamma = 4)
+
+x &lt;- parx[,1]
+px &lt;- as.list(as.list(data.frame(parx[, -1])))
+y &lt;- pary[,1]
+py &lt;- as.list(as.list(data.frame(pary[, -1])))
+
+spprc &lt;- Beta(x, y, px = px, py = py)
+persp(xx, yy, matrix(spprc, ncol = length(xx)))
+</code></pre>
+
+
+</div>

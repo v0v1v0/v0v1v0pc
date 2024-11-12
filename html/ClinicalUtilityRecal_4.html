@@ -1,0 +1,213 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cvRepWtTuning</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Repeated Cross Validation for Weight Tuning Parameter Selection
+</h2>
+
+<h3>Description</h3>
+
+<p>Calibration weights require specification of tuning parameter <code class="reqn">delta</code> or <code class="reqn">lambda</code>. Since a single round of cross-validation can be noisy, cross-validation can be repeated multiple times with independent random partitions and the results be averaged. This function implements a repeated K-fold cross-validation where tuning parameter <code class="reqn">labmda</code> or <code class="reqn">delta</code> is selected by maximizing standardized net benefit (sNB) (i.e. repeated <code>cvWtTuning</code> procedure).
+</p>
+<p>A a "one-standard error" rule can be used for selecting tuning parameters. Under the “one-standard error" rule the calibration weight tuning parameter (<code class="reqn">lambda</code> or <code class="reqn">delta</code>) is selected such that corresponding cross-validated sNB is within one-standard deviation of the maximum cross-validated sNB. This provides protection against overfitting the data and selecting a tuning parameter that is too extreme. If the "one-standard error" rule is not implemented, then the tuning parameter with the larged average cross-validted sNB (across folds and repetition) will be selected.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cvRepWtTuning(y,p,r,rl,ru,kFold=5,cvRep=25,cvParm,tuneSeq,stdErrRule=TRUE,int.seed=11111)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+
+<p>Vector of binary outcomes, with 1 indicating event (cases) and 0 indicating no event (controls)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+
+<p>Vector of risk score values</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>r</code></td>
+<td>
+
+<p>Clinically relevant risk threshold</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rl</code></td>
+<td>
+
+<p>Lower bound of clinically relevant region</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ru</code></td>
+<td>
+
+<p>Upper bound of clinically relevant region</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>kFold</code></td>
+<td>
+
+<p>Number of folds for cross-validation</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cvRep</code></td>
+<td>
+
+<p>Number of cross-validation repititions</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cvParm</code></td>
+<td>
+
+<p>Parameter to be selected via cross-validation. Can be either <code class="reqn">delta</code> the weight assigned to observations outside the clinically relevant region [R_l,R_u], or the <code class="reqn">lambda</code> tuning parameter controlling exponential decay within the clinically relevant region [R_l,R_u]</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tuneSeq</code></td>
+<td>
+
+<p>Sequence of values of tuning parameters to perform cross-validation over</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stdErrRule</code></td>
+<td>
+
+<p>Use "one-standard" error rule selecting tuning parameter</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>int.seed</code></td>
+<td>
+
+<p>Intial seed set for random splitting of data into K folds</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>To estimate the standard deviation of the cross-validated sNV, the dependence between the different partitions of cross-validation needs to be accounted for. Gelman (1992) give a variance estimator of convergence diagnostic statistic used when Markov Chain Monte Carlo with multiple chains are performed. The variance estimator accounts for both the variability of the statistic “within" a single chain, and the variance of the statistic across, or “between", chains. Analogously, we can use this framework to estimate the “within" repetition variance (i.e. variation in sNB from a single round of K-fold cross-validation) and the “between" repetition variance. We denote the ‘within" repetition variance as W and the “between" repetition variance as B . We augment this formula slightly from that given in Gelman (1992) to account for the fact that as the number of cross-validation repetitions increases, the between-repetition variability should decrease. See Mishra et al (2020) for full expressions of B and W.</p>
+
+
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cv.sNB</code></td>
+<td>
+<p>Standardized net benefit (sNB) of tuning parameter selected via cross-validatoin </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cv.RAW</code></td>
+<td>
+<p>Corresponding RAW value given cross-valiated selected tuning parameter</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cv.lambda</code></td>
+<td>
+<p><code class="reqn">lambda</code> value selected via cross-validation if <code class="reqn">cvParm=lambda</code>, otherwise user specified <code class="reqn">lambda</code> value</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cv.delta</code></td>
+<td>
+<p><code class="reqn">delta</code> value selected via cross-validation if <code class="reqn">cvParm=delta</code>, otherwise user specified <code class="reqn">lambda</code> value</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>avgCV.res</code></td>
+<td>
+<p>Averaged (across-replications) cross-validated sNB for sequence of tuning parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>W</code></td>
+<td>
+<p>Estimate of "with-in" repetition variance. Will only return if stdErrRule==TRUE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p>Estimate of "between" repetition variance. Will only return if stdErrRule==TRUE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fullList</code></td>
+<td>
+<p>List of cross-valiation results for all fold and repititions</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Anu Mishra</p>
+
+
+<h3>References</h3>
+
+<p>Mishra, A. (2019). Methods for Risk Markers that Incorporate Clinical Utility (Doctoral dissertation). (Available Upon Request)
+</p>
+<p>Friedman, J., Hastie, T., &amp; Tibshirani, R. (2001). The elements of statistical learning (Vol. 1, No. 10). New York: Springer series in statistics.
+</p>
+<p>Gelman, A., &amp; Rubin, D. B. (1992). Inference from iterative simulation using multiple sequences. Statistical science, 7(4), 457-472.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>calWt</code>,
+<code>RAWgrid</code>,
+<code>nb</code>,
+<code>cvWtTuning</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">### Load data ##
+## Not run: 
+data(fakeData)
+
+### Get grid of tuning parameters  ###
+grid &lt;- RAWgrid(r = 0.3,rl = -Inf,ru = Inf,p = fakeData$p,y = fakeData$y,
+                cvParm = "lambda",rl.raw = 0.25,ru.raw = 0.35)
+
+### Implement repeated k-fold cross validation
+repCV &lt;- cvRepWtTuning(y = fakeData$y,p = fakeData$p,rl = -Inf,ru = Inf,r = 0.3,
+                       kFold = 5,cvRep = 25,cvParm = "lambda",tuneSeq = grid,stdErrRule = TRUE)
+
+## cross-validation results
+repCV$avgCV.res
+
+## cross-validation selected lambda, RAW, and sNV
+cv.lambda &lt;- repCV$cv.lambda
+cv.RAW &lt;- repCV$cv.RAW
+cv.RAW &lt;- repCV$cv.sNB
+
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,302 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>mleCOP</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Maximum Pseudo-Log-Likelihood Estimation for Copula Parameter Estimation</h2>
+
+<h3>Description</h3>
+
+<p>Perform maximum pseudo-log-likelihood estimation (pMLE) for copula parameters by maximizing the function:
+</p>
+<p style="text-align: center;"><code class="reqn">\mathcal{L}(\Theta_p) = \sum_{i=1}^n \log\bigl[ c(F_x(x_i), F_y(y_i); \Theta_p)\bigr]\mbox{,}</code>
+</p>
+
+<p>where <code class="reqn">\mathcal{L}(\Theta_p)</code> is the log-likelihood for parameter vector <code class="reqn">\Theta_p</code> of dimension <code class="reqn">p</code>, and <code class="reqn">c(u,v; \Theta_p)</code> is the bivariate copula density. The <code class="reqn">u</code> and <code class="reqn">v</code> are estimated by the respective empirical cumulative distribution functions <code class="reqn">u = F_x(\cdots)</code> and <code class="reqn">v = F_y(\cdots)</code> for each of the joint realizations of a sample of size <code class="reqn">n</code>. The <code class="reqn">c(u,v)</code> is numerically estimated by the copula using the <code>densityCOP</code> function.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">mleCOP(u, v=NULL, cop=NULL, parafn=function(k) return(k),
+          interval=NULL, init.para=NULL, verbose=FALSE, control=list(),
+          the.zero=.Machine$double.eps^0.25, s=0, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>u</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">u</code> in the <code class="reqn">X</code> direction;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>v</code></td>
+<td>
+<p>Nonexceedance probability <code class="reqn">v</code> in the <code class="reqn">Y</code> direction and if <code>NULL</code> then <code>u</code> is treated as a two column <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> <code>data.frame</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cop</code></td>
+<td>
+<p>A copula function;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parafn</code></td>
+<td>
+<p>A function responsible for generating the parameters. This is often just a simple return of a parameter vector as <span class="pkg">copBasic</span> uses this style of parameterization, but this function can take over parameter remapping to handle boundary conditions to benefit the search or provide an interface into other copula packages in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> (see <b>Examples</b>);</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interval</code></td>
+<td>
+<p>The search interval for root finding, by <code>stats::optimise()</code>, if the parameter dimension of the copula is <code class="reqn">p = 1</code>. The interval is not used for <code class="reqn">p \ge 2</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>init.para</code></td>
+<td>
+<p>The initial guesses for the parameters for the <code class="reqn">p</code>-dimensional optimization for <code class="reqn">p \ge 2</code>. The initial guess is used, by <code>stats::optim()</code>, if the parameter dimension of the copula is <code class="reqn">p = 1</code> and <code>interval</code> is <code>NULL</code> (see <b>Examples</b>);</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>A logical that internally is converted to integer to trigger 1 (sum of logs of <code>densityCOP</code> shown), 2 (add reporting of the copula parameter on each iteration), or more levels of verbose reporting scheme within the objective function. This is independent from the <code>control$trace</code> of function <code>optim()</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>This argument is the argument of the same name for <code>optim()</code>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>the.zero</code></td>
+<td>
+<p>The value for “the zero” of the copula density function. This argument is the argument of the same name for <code>densityCOP</code>. The default here is intended to suggest that a tiny nonzero value for density will trap the numerical zero densities;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>s</code></td>
+<td>
+<p>A vector of at least two presumably uniformly distributed or regular sequence of nonexceedance probabilities in <code class="reqn">U</code> for simulation of <code class="reqn">V</code> by <code>simCOPv</code> and plotting of these <code class="reqn">U</code> and <code class="reqn">V</code>. This plotting is only made if the length of <code class="reqn">s</code> is nonzero and <code>verbose</code> is greater than or equal to 2. This plotting feature for the <code>s</code> is pedagogical  and intended for demonstration or teaching opportunities. This feature has no utility for the optimization itself; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass, see source code for the internally used functions that can pick these additional arguments up.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The value(s) for the estimated parameters are returned within an <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> <code>list</code> where the elements listed below are populated unique to this package. The other elements of the returned list are generated from either the <code>optimise()</code> (1D, <code class="reqn">p = 1</code>) or <code>optim()</code> (pD, <code class="reqn">p \ge 2</code>) functions of <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>.
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>para</code></td>
+<td>
+<p>The parameter(s) in a canonical element after the one-dimensional root finding (<code class="reqn">p = 1</code>) or multi-dimensional optimization (<code class="reqn">p \ge 2</code>) solutions are passed through <code>parafn</code> so that these are in the parameter units of the copula and not necessarily those transformed for the optimization;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>packagetext</code></td>
+<td>
+<p>A helpful message unique to the <span class="pkg">copBasic</span> package;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>loglik</code></td>
+<td>
+<p>The maximum of the log-likelihood matching the name for the same quantity by the function <code>fitCopula</code> in package <span class="pkg">copula</span> though a separate implementation is used in <span class="pkg">copBasic</span>;</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>AIC</code></td>
+<td>
+<p>Akaike information criterion (AIC) (see also <code>aicCOP</code>): <code class="reqn">\mathrm{AIC} = 2p - 2\mathcal{L}(\Theta_p)</code>; and</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>BIC</code></td>
+<td>
+<p>Bayesian information criterion (BIC) (see also <code>bicCOP</code>): <code class="reqn">\mathrm{BIC} = p\log(n) - 2\mathcal{L}(\Theta_p)</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>This section provides for a more thorough assessment of pMLE than shown in the <b>Examples</b>.
+</p>
+<p><em>INTERFACE TO THE <span class="pkg">COPULA</span> PACKAGE</em>—A not uncommon question to the author is how can <span class="pkg">copBasic</span> support copulas from other packages?  A <span class="pkg">copBasic</span> pMLE implementation to the <em>Gaussian copula</em> from the <span class="pkg">copula</span> package is thus useful for instruction.
+</p>
+<p>Two interface functions are required for the pMLE situation. First, interface the <span class="pkg">copula</span> package in a generic form for the <span class="pkg">copBasic</span> package:
+</p>
+<pre>
+  "cB2copula" &lt;-  # pCoupla() from package copula is analogous to COP()
+  function(u,v, para=NULL, ...) {
+    if(length(u) == 1) u &lt;- rep(u, length(v)) # see asCOP() for reasoning of
+    if(length(v) == 1) v &lt;- rep(v, length(u)) # this "vectorization" hack
+    return(copula::pCopula(matrix(c(u,v), ncol=2), para))
+  }
+</pre>
+<p>where the <code>para</code> argument above must be built by the features of the <span class="pkg">copula</span> package. The following function then provides for parameter setup specific to the <em>Gaussian copula</em> having parameter <code class="reqn">\rho</code>:
+</p>
+<pre>
+  copula2cBpara &lt;- function(rho) return(copula::normalCopula(rho, dim = 2))
+</pre>
+<p>Now, let us perform a parameter estimate for a sample of size <code class="reqn">n=900</code>:
+</p>
+<pre>
+  set.seed(162); UV &lt;- simCOP(n=900, cop=cB2copula, para=copula2cBpara(0.45))
+  mleCOP(UV, cop=cB2copula, parafn=copula2cBpara, interval=c(-1,1))$para
+  #   rho.1  =  0.4248822
+</pre>
+<p>The search interval for the <em>Gaussian copula</em> is <code class="reqn">\rho \in [-1, 1]</code>, and the final result is <code class="reqn">\rho = 0.4458822</code>.
+</p>
+<p><em>MULTI-DIMENSIONAL EXAMPLE OF pMLE</em>—Consider a 2-parameter <em>Gumbel–Hougaard copula</em> (<code class="reqn">\mathbf{GH}(\Theta_1, \Theta_2)</code>) but now use the <code>parafn</code> argument to provide boundary condition assistance through function <code>GH2pfunc</code> to the <code>optim()</code> function that performs the maximization.
+</p>
+<pre>
+  set.seed(162); UV &lt;- simCOP(n=890, cop=GHcop, para=c(2.4, .06))
+  GH2pfunc &lt;- function(p) { return(c(exp(p[1])+1, exp(p[2]))) }
+  ML &lt;- mleCOP(UV$U, UV$V, cop=GHcop, init.para=c(1,1), parafn=GH2pfunc)
+  print(ML$para) # [1] 2.2755018 0.1194788
+</pre>
+<p>and the result is <code class="reqn">\Theta_{1,2} = (2.2755018, 0.1194788)</code>. Next, consider now a 3-parameter <code class="reqn">\mathbf{GH}(\Theta, \pi_1, \pi_2)</code> copula and again use the <code>parafn</code> argument through function <code>GH3pfunc</code>  but notice that the 2nd and 3rd parameters are now mapped into <code class="reqn">0 \le \pi_1, \pi_2 \le 1</code> domain using the <code>pnorm()</code> function.
+</p>
+<pre>
+  set.seed(162); UV &lt;- simCOP(n=500, cop=GHcop, para=c(5.5, .6, .9))
+  GH3pfunc &lt;- function(p) { return(c(exp(p[1])+1, pnorm(p[2]), pnorm(p[3]))) }
+  ML &lt;- mleCOP(UV$U, UV$V, cop=GHcop, init.para=c(1, .5, .5), parafn=GH3pfunc)
+  print(ML$para) # [1] 5.3742229 0.6141652 0.9382638
+</pre>
+<p>and the result is <code class="reqn">\Theta = 5.3742229</code> and <code class="reqn">\pi_{1,2} = (0.6141652, 0.9382638)</code>.
+</p>
+<p><em>ANOTHER MULTI-DIMENSIONAL EXAMPLE OF pMLE</em>—Finally, an experiment can be made fitting a 3-parameter <code class="reqn">\mathbf{GH}(\Theta, \pi_1, \pi_2)</code> to a simulation from a 2-parameter <code class="reqn">\mathbf{GH}(\beta_1, \beta_2)</code>, where the seed is just arbitrary and the <em>Vuong Procedure</em> (<code>vuongCOP</code>) is used to compare fits and make inference. The parameter functions <code>GH2pfunc</code> and <code>GH3pfunc</code> are as before.
+</p>
+<pre>
+  set.seed(10); UV &lt;- simCOP(n=500, cop=GHcop, para=c(1.7, 1.86))
+  GH2pfunc &lt;- function(p) { return(c(exp(p[1])+1,   exp(p[2])              )) }
+  GH3pfunc &lt;- function(p) { return(c(exp(p[1])+1, pnorm(p[2]), pnorm(p[3]) )) }
+  para1 &lt;- mleCOP(UV, cop=GHcop, init.para=c(1,1),     parafn=GH2pfunc)$para
+  para2 &lt;- mleCOP(UV, cop=GHcop, init.para=c(1,.5,.5), parafn=GH3pfunc)$para
+  vuongCOP(UV, cop1=GHcop, para1=para1, cop2=GHcop, para2=para2)$message
+  #[1] "Copula 1 has better fit than Copula 2 at 100 x (1-alpha) level"
+</pre>
+<p>The results show the 2-p <code class="reqn">\mathbf{GH}</code> is a better fit to the simulated data than the 3-p <code class="reqn">\mathbf{GH}</code>, which seems a bit self evident?  Plot some same-seeded simulations just to confirm.
+</p>
+<pre>
+  set.seed(67) # First the estimated parameters but with the correct model.
+  UV &lt;- simCOP(n=200, GHcop, para=para1, snv=TRUE, pch=16, col=2)
+  set.seed(67) # Second, the estimated incorrect model.
+  UV &lt;- simCOP(n=200, GHcop, para=para2, snv=TRUE, ploton=FALSE)
+</pre>
+<p>Yes, differences in form are manifest in the produced graphic. Now, let us try another set of parameters and again an arbitrarily-chosen seed.
+</p>
+<pre>
+  set.seed(10); UV &lt;- simCOP(n=500, cop=GHcop, para=c(1.91, 0.16))
+  para1 &lt;- mleCOP(UV, cop=GHcop, init.para=c(1,1),     parafn=GH2pfunc)$para
+  para2 &lt;- mleCOP(UV, cop=GHcop, init.para=c(1,.5,.5), parafn=GH3pfunc)$para
+  vuongCOP(UV, cop1=GHcop, para1=para1, cop2=GHcop, para2=para2)$message
+  #[1] "Copulas 1 and 2 are not significantly different at 100 x (1-alpha)"
+</pre>
+<p>The results show equivalence, let us now check a graphic.
+</p>
+<pre>
+  set.seed(67); z &lt;- simCOP(n=200, GHcop, para=para1, snv=TRUE, pch=16, col=2)
+  set.seed(67); z &lt;- simCOP(n=200, GHcop, para=para2, snv=TRUE, ploton=FALSE)
+</pre>
+<p>The differences are small but the differences might be inflating into the lower left corner. What sample size could conceivably begin to distinguish between the copula?
+</p>
+<pre>
+  kullCOP(cop1=GHcop, cop2=GHcop, para1=para1, para2=para2) # 625 on this run
+
+  nsim &lt;- 20; set.seed(67)
+  Results &lt;- sapply(1:nsim, function(i) {
+    UV &lt;- simCOP(n=625, cop=GHcop, para=c(1.91, .16), graphics=FALSE)
+    p1 &lt;- mleCOP(UV, cop=GHcop, init.para=c(1,1),     parafn=GH2pfunc)$para
+    p2 &lt;- mleCOP(UV, cop=GHcop, init.para=c(1,.5,.5), parafn=GH3pfunc)$para
+    vuongCOP(UV, cop1=GHcop, para1=p1, cop2=GHcop, para2=p2)$result })
+  sum(Results)
+</pre>
+<p>The summation yields 6 of 20 for which copula 1 has the better fit, but with <code class="reqn">n=1{,}000</code> instead of <code class="reqn">n=625</code>, the sum of the <code>Results</code> is 13 of 20 (so better than half the time). This seems to be in conflict with what the <code class="reqn">n_{fg}</code> sample size from <code>kullCOP</code> should be telling. The author thinks it should be 18 to 19 of 20 (95th percentile) based on what the <code>kullCOP</code> is reported to do (NEED TO LOOK INTO THIS).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>W.H. Asquith</p>
+
+
+<h3>References</h3>
+
+<p>Joe, H., 2014, Dependence modeling with copulas: Boca Raton, CRC Press, 462 p.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>densityCOP</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# See also extended code listings and discussion in the Note section
+
+## Not run: 
+  # Here, we study the trajectory of the objective function in a simple
+  # 1-dimensional optimization. See how we must provide the interval.
+  set.seed(162); UV &lt;- simCOP(n=188, cop=PLcop, para=5.6)
+  ML &lt;- mleCOP(UV$U, UV$V, cop=PLcop, interval=c(0.1, 40)) # 5.225459 estimated
+
+  Thetas &lt;- 10^(seq(log10(0.001), log10(100), by=0.005))
+  MLs &lt;- sapply(Thetas, function(k)
+                densityCOP(UV$U, UV$V, cop=PLcop, para=k, sumlogs=TRUE))
+  plot(Thetas, MLs, log="x", type="l", # draw the pMLE solution process
+       xlab="Plackett Theta", ylab="sum of log densities")
+  lines(rep(ML$para, 2), c(ML$objective, par()$usr[3]), col="red")
+  points(ML$para, ML$objective, pch=16, col="red") #
+## End(Not run)
+
+## Not run: 
+  # Here, we study again 1-dimensional optimization but use the
+  # multidimensional version with an alert issued.
+  set.seed(149); UV &lt;- simCOP(1000, cop=CLcop, para=pi)
+  # Warning messages about using optim() for 1D solution
+  mleCOP(UV, cop=CLcop, init.para=2)$para          # 3.082031
+  # No warning message, optimise() called instead.
+  mleCOP(UV, cop=CLcop, interval=c(0,1E2))$para    # 3.081699 
+## End(Not run)
+
+## Not run: 
+  # Here, we evaluate a 2-dimensional problem using a Plackett again but with
+  # the addition of asymmetry towards high V outliers from the Plackett cloud.
+  # This example also adds the internal verbose and graphic diagnostics for
+  # the iterations of the optimizer. Here, we learn that we need on a time have
+  # some idea where the solution might lay so that we can provide a suitable
+  # set of initial parameters for the algorithm.
+  para &lt;- list(beta=-0.1, cop=PLcop, para1=1000)
+  UV &lt;- simCOP(2000, cop=breveCOP, para=para); abline(0, 1, col="red", lwd=3)
+  PL2pfunc &lt;- function(p) { # see here example of parameter transform
+    list(beta=2*pnorm(p[1])-1, para=exp(p[2]), cop=PLcop) # [-1,+1], &gt;=0
+  }
+  init.para &lt;- c(0.2535, log(0.02)) # These will not find a solution with this
+  # guess of negative association, but the next works by using an external
+  # estimate of the Plackett parameters and here we test with a positive
+  # skewness (beta for breveCOP &gt; 0) although we know the parent had negative.
+  init.para &lt;- c(0.2535, log(PLACKETTpar(UV$U, UV$V, byrho=TRUE))) # beta=0.200
+  rt &lt;- mleCOP(u=UV$U, v=UV$V, init.para=init.para, cop=breveCOP,
+               parafn=PL2pfunc, verbose=2, s=seq(0,1, by=0.005)) #
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,144 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fndistinct</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fast (Grouped) Distinct Value Count for Matrix-Like Objects</h2>
+
+<h3>Description</h3>
+
+<p><code>fndistinct</code> is a generic function that (column-wise) computes the number of distinct values in <code>x</code>, (optionally) grouped by <code>g</code>. It is significantly faster than <code>length(unique(x))</code>. The <code>TRA</code> argument can further be used to transform <code>x</code> using its (grouped) distinct value count.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fndistinct(x, ...)
+
+## Default S3 method:
+fndistinct(x, g = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+           use.g.names = TRUE, nthreads = .op[["nthreads"]], ...)
+
+## S3 method for class 'matrix'
+fndistinct(x, g = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+           use.g.names = TRUE, drop = TRUE, nthreads = .op[["nthreads"]], ...)
+
+## S3 method for class 'data.frame'
+fndistinct(x, g = NULL, TRA = NULL, na.rm = .op[["na.rm"]],
+           use.g.names = TRUE, drop = TRUE, nthreads = .op[["nthreads"]], ...)
+
+## S3 method for class 'grouped_df'
+fndistinct(x, TRA = NULL, na.rm = .op[["na.rm"]],
+           use.g.names = FALSE, keep.group_vars = TRUE, nthreads = .op[["nthreads"]], ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a vector, matrix, data frame or grouped data frame (class 'grouped_df').</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>g</code></td>
+<td>
+<p>a factor, <code>GRP</code> object, atomic vector (internally converted to factor) or a list of vectors / factors (internally converted to a <code>GRP</code> object) used to group <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>TRA</code></td>
+<td>
+<p>an integer or quoted operator indicating the transformation to perform:
+0 - "na"     |     1 - "fill"     |     2 - "replace"     |     3 - "-"     |     4 - "-+"     |     5 - "/"     |     6 - "%"     |     7 - "+"     |     8 - "*"     |     9 - "%%"     |     10 - "-%%". See <code>TRA</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.rm</code></td>
+<td>
+<p>logical. <code>TRUE</code>: Skip missing values in <code>x</code> (faster computation). <code>FALSE</code>: Also consider 'NA' as one distinct value.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use.g.names</code></td>
+<td>
+<p>logical. Make group-names and add to the result as names (default method) or row-names (matrix and data frame methods). No row-names are generated for <em>data.table</em>'s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nthreads</code></td>
+<td>
+<p>integer. The number of threads to utilize. Parallelism is across groups for grouped computations and at the column-level otherwise. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>drop</code></td>
+<td>
+<p><em>matrix and data.frame method:</em> Logical. <code>TRUE</code> drops dimensions and returns an atomic vector if <code>g = NULL</code> and <code>TRA = NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep.group_vars</code></td>
+<td>
+<p><em>grouped_df method:</em> Logical. <code>FALSE</code> removes grouping variables after computation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments to be passed to or from other methods. If <code>TRA</code> is used, passing <code>set = TRUE</code> will transform data by reference and return the result invisibly.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>fndistinct</code> implements a pretty fast C-level hashing algorithm inspired by the <em>kit</em> package to find the number of distinct values.
+
+</p>
+<p>If <code>na.rm = TRUE</code> (the default), missing values will be skipped yielding substantial performance gains in data with many missing values. If <code>na.rm = FALSE</code>, missing values will simply be treated as any other value and read into the hash-map. Thus with the former, a numeric vector <code>c(1.25,NaN,3.56,NA)</code> will have a distinct value count of 2, whereas the latter will return a distinct value count of 4.
+</p>
+
+<p><code>fndistinct</code> preserves all attributes of non-classed vectors / columns, and only the 'label' attribute (if available) of classed vectors / columns (i.e. dates or factors). When applied to data frames and matrices, the row-names are adjusted as necessary.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Integer. The number of distinct values in <code>x</code>, grouped by <code>g</code>, or (if <code>TRA</code> is used) <code>x</code> transformed by its distinct value count, grouped by <code>g</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>fnunique</code>, <code>fnobs</code>, Fast Statistical Functions, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## default vector method
+fndistinct(airquality$Solar.R)                   # Simple distinct value count
+fndistinct(airquality$Solar.R, airquality$Month) # Grouped distinct value count
+
+## data.frame method
+fndistinct(airquality)
+fndistinct(airquality, airquality$Month)
+fndistinct(wlddev)                               # Works with data of all types!
+head(fndistinct(wlddev, wlddev$iso3c))
+
+## matrix method
+aqm &lt;- qM(airquality)
+fndistinct(aqm)                                  # Also works for character or logical matrices
+fndistinct(aqm, airquality$Month)
+
+## method for grouped data frames - created with dplyr::group_by or fgroup_by
+airquality |&gt; fgroup_by(Month) |&gt; fndistinct()
+wlddev |&gt; fgroup_by(country) |&gt;
+             fselect(PCGDP,LIFEEX,GINI,ODA) |&gt; fndistinct()
+</code></pre>
+
+
+</div>

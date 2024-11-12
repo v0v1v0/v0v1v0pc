@@ -1,0 +1,97 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>with_config</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Run code using a temporary config file.</h2>
+
+<h3>Description</h3>
+
+<p>This function takes inspiration from <code>withr::with_envvar()</code> and may be useful
+for testing purposes.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">with_config(
+  config_yml,
+  code,
+  .active_config = c(R_CONFIG_ACTIVE = "default"),
+  .extra_env_vars = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>config_yml</code></td>
+<td>
+<p>Either the path to a config file, or a character string
+representing a yaml configuration.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>code</code></td>
+<td>
+<p>Code to execute in a temporary environment.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.active_config</code></td>
+<td>
+<p>Either a string representing a configuration, e.g.
+<code>default</code>, or a named character representing an environment variable, e.g.
+<code>c(R_CONFIG_ACTIVE = "default")</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.extra_env_vars</code></td>
+<td>
+<p>Additional environment variables to set.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>The result of running the <code>code</code>, after having temporarily set the
+necessary environment variables.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+yaml &lt;- '
+default:
+  db_name: dbase
+  databases:
+    db1: !expr paste0(db_name, "/one")
+    db2: !expr paste0(db_name, "/two")
+
+staging:
+  staging_postfix: _staging
+  db_name: dbase
+  databases:
+    db1: !expr paste0(db_name, staging_postfix, "/one")
+    db2: !expr paste0(db_name, staging_postfix, "/two")
+'
+
+# Ensure that base::get() doesn't get masked, for tests on CRAN
+get &lt;- base::get
+
+with_config(yaml, config::get() )
+with_config(yaml, config::get("databases", config = "default") )
+with_config(yaml, config::get("databases", config = "staging") )
+
+config_file &lt;- system.file("tests/testthat/config.yml", package = "config")
+if (file.exists(config_file)) {
+  with_config(config_file, config::get())
+}
+</code></pre>
+
+
+</div>

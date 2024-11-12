@@ -1,0 +1,213 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>barycentric_projection</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Barycentric Projection outcome estimation</h2>
+
+<h3>Description</h3>
+
+<p>Barycentric Projection outcome estimation
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">barycentric_projection(
+  formula,
+  data,
+  weights,
+  separate.samples.on = "z",
+  penalty = NULL,
+  cost_function = NULL,
+  p = 2,
+  debias = FALSE,
+  cost.online = "auto",
+  diameter = NULL,
+  niter = 1000L,
+  tol = 1e-07,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>A formula object specifying the outcome and covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data.frame of the data to use in the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>Either a vector of weights, one for each observations, or an object of class causalWeights.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>separate.samples.on</code></td>
+<td>
+<p>The variable in the data denoting the treatment indicator. How to separate samples for the optimal transport calculation</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>penalty</code></td>
+<td>
+<p>The penalty parameter to use in the optimal transport calculation. By default it is <code class="reqn">1/\log(n)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cost_function</code></td>
+<td>
+<p>A user supplied cost function. If supplied, must take arguments <code>x1</code>, <code>x2</code>, and <code>p</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p>The power to raise the cost function. Default is 2.0. For user supplied cost functions, the cost will not be raised by this power unless the user so specifies.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>debias</code></td>
+<td>
+<p>Should debiased barycentric projections be used? See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cost.online</code></td>
+<td>
+<p>Should an online cost algorithm be used? Default is "auto", which selects an online cost algorithm when the sample size in each group specified by <code>separate.samples.on</code>, <code class="reqn">n_0</code> and <code class="reqn">n_1</code>, is such that <code class="reqn">n_0 \cdot n_1 \geq 5000^2</code> Must be one of "auto", "online", or "tensorized". The last of these is the offline option.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>diameter</code></td>
+<td>
+<p>The diameter of the covariate space, if known.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>niter</code></td>
+<td>
+<p>The maximum number of iterations to run the optimal transport problems</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol</code></td>
+<td>
+<p>The tolerance for convergence of the optimal transport problems</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Not used at this time.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The barycentric projection uses the dual potentials from the optimal transport distance between the two samples to calculate projections from one sample into another. For example, in the sample of controls, we may wish to know their outcome had they been treated. In general, we then seek to minimize
+</p>
+<p style="text-align: center;"><code class="reqn">\text{argmin}_{\eta} \sum_{ij} cost(\eta_i, y_j) \pi_{ij} </code>
+</p>
+
+<p>where <code class="reqn">\pi_{ij}</code> is the primal solution from the optimal transport problem.
+</p>
+<p>These values can also be de-biased using the solutions from running an optimal transport problem of one sample against itself. Details are listed in Pooladian et al. (2022) <a href="https://arxiv.org/abs/2202.08919">https://arxiv.org/abs/2202.08919</a>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class "bp" which is a list with slots:
+</p>
+
+<ul>
+<li> <p><code>potentials</code> The dual potentials from calculating the optimal transport distance
+</p>
+</li>
+<li> <p><code>penalty</code> The value of the penalty parameter used in calculating the optimal transport distance
+</p>
+</li>
+<li> <p><code>cost_function</code> The cost function used to calculate the distances between units.
+</p>
+</li>
+<li> <p><code>cost_alg</code> A character vector denoting if an <code class="reqn">L_1</code> distance, a squared euclidean distance, or other distance metric was used.
+</p>
+</li>
+<li> <p><code>p</code> The power to which the cost matrix was raised if not using a user supplied cost function.
+</p>
+</li>
+<li> <p><code>debias</code> Whether barycentric projections should be debiased.
+</p>
+</li>
+<li> <p><code>tensorized</code> TRUE/FALSE denoting wether to use offline cost matrices.
+</p>
+</li>
+<li> <p><code>data</code> An object of class dataHolder with the data used to calculate the optimal transport distance.
+</p>
+</li>
+<li> <p><code>y_a</code> The outcome vector in the first sample.
+</p>
+</li>
+<li> <p><code>y_b</code> The outcome vector in the second sample.
+</p>
+</li>
+<li> <p><code>x_a</code> The covariate matrix in the first sample.
+</p>
+</li>
+<li> <p><code>x_b</code> The covariate matrix in the second sample.
+</p>
+</li>
+<li> <p><code>a</code> The empirical measure in the first sample.
+</p>
+</li>
+<li> <p><code>b</code> The empirical measure in the second sample.
+</p>
+</li>
+<li> <p><code>terms</code> The terms object from the formula.
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">if(torch::torch_is_installed()) {
+set.seed(23483)
+n &lt;- 2^5
+pp &lt;- 6
+overlap &lt;- "low"
+design &lt;- "A"
+estimate &lt;- "ATT"
+power &lt;- 2
+data &lt;- causalOT::Hainmueller$new(n = n, p = pp,
+design = design, overlap = overlap)
+
+data$gen_data()
+
+weights &lt;- causalOT::calc_weight(x = data,
+  z = NULL, y = NULL,
+  estimand = estimate,
+  method = "NNM")
+  
+ df &lt;- data.frame(y = data$get_y(), z = data$get_z(), data$get_x())
+  
+ fit &lt;- causalOT::barycentric_projection(y ~ ., data = df, 
+    weight = weights,
+    separate.samples.on = "z",
+    niter = 2)
+ inherits(fit, "bp")
+ }
+</code></pre>
+
+
+</div>

@@ -1,0 +1,175 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>qtab</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fast (Weighted) Cross Tabulation
+</h2>
+
+<h3>Description</h3>
+
+<p>A versatile and computationally more efficient replacement for <code>table</code>. Notably, it also supports tabulations with frequency weights, and computation of a statistic over combinations of variables.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">qtab(..., w = NULL, wFUN = NULL, wFUN.args = NULL,
+     dnn = "auto", sort = .op[["sort"]], na.exclude = TRUE,
+     drop = FALSE, method = "auto")
+
+qtable(...) # Long-form. Use set_collapse(mask = "table") to replace table()
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+
+<p>atomic vectors or factors spanning the table dimensions, (optionally) with tags for the dimension names, or a data frame / list of these. See Examples.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>w</code></td>
+<td>
+
+<p>a single vector to aggregate over the table dimensions e.g. a vector of frequency weights.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wFUN</code></td>
+<td>
+
+<p>a function used to aggregate <code>w</code> over the table dimensions. The default <code>NULL</code> computes the sum of the non-missing weights via an optimized internal algorithm. Fast Statistical Functions also receive vectorized execution.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wFUN.args</code></td>
+<td>
+
+<p>a list of (optional) further arguments passed to <code>wFUN</code>. See Examples.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dnn</code></td>
+<td>
+
+<p>the names of the table dimensions. Either passed directly as a character vector or list (internally <code>unlist</code>'ed), a function applied to the <code>...</code> list (e.g. <code>names</code>, or <code>vlabels</code>), or one of the following options:
+</p>
+
+<ul>
+<li> <p><code>"auto"</code> constructs names based on the <code>...</code> arguments, or calls <code>names</code> if a single list is passed as input.
+</p>
+</li>
+<li> <p><code>"namlab"</code> does the same as <code>"auto"</code>, but also calls <code>vlabels</code> on the list and appends the names by the variable labels.
+</p>
+</li>
+</ul>
+<p><code>dnn = NULL</code> will return a table without dimension names.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sort, na.exclude, drop, method</code></td>
+<td>
+
+<p>arguments passed down to <code>qF</code>:
+</p>
+
+<ul>
+<li> <p><code>sort = FALSE</code> orders table dimensions in first-appearance order of items in the data (can be more efficient if vectors are not factors already). Note that for factors this option will both recast levels in first-appearance order and drop unused levels.
+</p>
+</li>
+<li> <p><code>na.exclude = FALSE</code> includes <code>NA</code>'s in the table (equivalent to <code>table</code>'s <code>useNA = "ifany"</code>).
+</p>
+</li>
+<li> <p><code>drop = TRUE</code> removes any unused factor levels (= zero frequency rows or columns).
+</p>
+</li>
+<li> <p><code>method %in% c("radix", "hash")</code> provides additional control over the algorithm used to convert atomic vectors to factors.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An array of class 'qtab' that inherits from 'table'. Thus all 'table' methods apply to it.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>descr</code>, Summary Statistics, Fast Statistical Functions, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Basic use
+qtab(iris$Species)
+with(mtcars, qtab(vs, am))
+qtab(mtcars[.c(vs, am)])
+
+library(magrittr)
+iris %$% qtab(Sepal.Length &gt; mean(Sepal.Length), Species)
+iris %$% qtab(AMSL = Sepal.Length &gt; mean(Sepal.Length), Species)
+
+## World after 2015
+wlda15 &lt;- wlddev |&gt; fsubset(year &gt;= 2015) |&gt; collap(~ iso3c)
+
+# Regions and income levels (country frequency)
+wlda15 %$% qtab(region, income)
+wlda15 %$% qtab(region, income, dnn = vlabels)
+wlda15 %$% qtab(region, income, dnn = "namlab")
+
+# Population (millions)
+wlda15 %$% qtab(region, income, w = POP) |&gt; divide_by(1e6)
+
+# Life expectancy (years)
+wlda15 %$% qtab(region, income, w = LIFEEX, wFUN = fmean)
+
+# Life expectancy (years), weighted by population
+wlda15 %$% qtab(region, income, w = LIFEEX, wFUN = fmean,
+                  wFUN.args = list(w = POP))
+
+# GDP per capita (constant 2010 US$): median
+wlda15 %$% qtab(region, income, w = PCGDP, wFUN = fmedian,
+                  wFUN.args = list(na.rm = TRUE))
+
+# GDP per capita (constant 2010 US$): median, weighted by population
+wlda15 %$% qtab(region, income, w = PCGDP, wFUN = fmedian,
+                  wFUN.args = list(w = POP))
+
+# Including OECD membership
+tab &lt;- wlda15 %$% qtab(region, income, OECD)
+tab
+
+# Various 'table' methods
+tab |&gt; addmargins()
+tab |&gt; marginSums(margin = c("region", "income"))
+tab |&gt; proportions()
+tab |&gt; proportions(margin = "income")
+as.data.frame(tab) |&gt; head(10)
+ftable(tab, row.vars = c("region", "OECD"))
+
+# Other options
+tab |&gt; fsum(TRA = "%")    # Percentage table (on a matrix use fsum.default)
+tab %/=% (sum(tab)/100)    # Another way (division by reference, preserves integers)
+tab
+
+rm(tab, wlda15)
+</code></pre>
+
+
+</div>

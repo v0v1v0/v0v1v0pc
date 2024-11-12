@@ -1,0 +1,332 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ST.CARadaptive</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Fit a spatio-temporal generalised linear mixed model to data, with a spatio-temporal
+autoregressive process that has an adaptive autocorrelation stucture.
+</h2>
+
+<h3>Description</h3>
+
+<p>Fit a spatio-temporal generalised linear mixed model to areal unit data, where 
+the response variable can be binomial, Gaussian or Poisson. The linear predictor 
+is modelled by known covariates and a vector of random effects. The latter follows 
+a multivariate first order autoregressive time series process, where spatial 
+autocorrelation is modelled via the precision matrix, which is based on a CAR type
+structure and a neighbourhood (adjacency) matrix W. The non-zero elements of W 
+associated with each pair of geographically adjacent areal units are treated as 
+random variables with ranges in the unit interval, which allows step changes to 
+be identified in the random effects surface between geographically adjacent 
+regions. The model is similar to that proposed by Rushworth et al. (2017). Further 
+details are given in the vignette accompanying this package. Inference is conducted 
+in a Bayesian setting using Markov chain Monte Carlo (MCMC) simulation. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ST.CARadaptive(formula, family, data=NULL, trials=NULL, W, burnin, n.sample, thin=1,  
+prior.mean.beta=NULL, prior.var.beta=NULL, prior.nu2=NULL, prior.tau2=NULL, 
+rho = NULL, epsilon = 0, MALA=TRUE, verbose=TRUE) 
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+
+<p>A formula for the covariate part of the model using the syntax of the lm() 
+function. Offsets can be included here using the offset() function. The response 
+and each covariate should be vectors of length (KN)*1, where K is the number of 
+spatial units and N is the number of time periods. Each vector should be ordered 
+so that the first K data points are the set of all K spatial locations at time 1, 
+the next K are the set of spatial locations for time 2 and so on. The response 
+must NOT contain missing (NA) values.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+
+<p>One of either "binomial", "gaussian", or "poisson", which respectively specify a 
+binomial likelihood model with a logistic link function, a Gaussian likelihood 
+model with an identity link function, or a Poisson likelihood model with a log 
+link function.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+
+<p>An optional data.frame containing the  variables in the formula.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trials</code></td>
+<td>
+
+<p>A vector the same length and in the same order as the response containing the 
+total number of trials for each area and time period. Only used if family="binomial". 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>W</code></td>
+<td>
+
+<p>A non-negative K by K neighbourhood matrix (where K is the number of spatial units). 
+Typically a binary specification is used, where the jkth element equals one if 
+areas (j, k) are spatially close (e.g. share a common border) and is zero otherwise. 
+For this model the matrix must be binary.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>burnin</code></td>
+<td>
+
+<p>The number of MCMC samples to discard as the burn-in period.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.sample</code></td>
+<td>
+
+<p>The number of MCMC samples to generate.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thin</code></td>
+<td>
+
+<p>The level of thinning to apply to the MCMC samples to reduce their temporal 
+autocorrelation. Defaults to 1 (no thinning).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.mean.beta</code></td>
+<td>
+
+<p>A vector of prior means for the regression parameters beta (Gaussian priors are 
+assumed). Defaults to a vector of zeros.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.var.beta</code></td>
+<td>
+
+<p>A vector of prior variances for the regression parameters beta (Gaussian priors 
+are assumed). Defaults to a vector with values 100,000.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.nu2</code></td>
+<td>
+
+<p>The prior shape and scale in the form of c(shape, scale) for an Inverse-Gamma(shape, scale) 
+prior for nu2. Defaults to c(1, 0.01) and only used if family="Gaussian".   
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prior.tau2</code></td>
+<td>
+
+<p>The prior shape and scale in the form of c(shape, scale) for an Inverse-Gamma(shape, scale) 
+prior for tau2. Defaults to c(1, 0.01).  
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rho</code></td>
+<td>
+
+<p>The value in the interval [0, 1] that the spatial dependence parameter rho is 
+fixed at if it should not be estimated. If this arugment is NULL then rho is
+estimated in the model. Setting rho=1, reduces the random effects prior to the 
+intrinsic CAR model but does require epsilon&gt;0.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>epsilon</code></td>
+<td>
+
+<p>Diagonal ridge parameter to add to the random effects prior precision matrix, only 
+required when rho = 1, and the prior precision is improper.  Defaults to 0.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MALA</code></td>
+<td>
+
+<p>Logical, should the function use Metropolis adjusted Langevin algorithm (MALA)
+updates (TRUE, default) or simple random walk (FALSE) updates for the regression 
+parameters. Not applicable if family="gaussian".     
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+
+<p>Logical, should the function update the user on its progress.  
+</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>summary.results </code></td>
+<td>
+<p>A summary table of the parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>samples </code></td>
+<td>
+<p>A list containing the MCMC samples from the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitted.values </code></td>
+<td>
+<p>A vector of fitted values for each area and time period.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>residuals </code></td>
+<td>
+<p>A matrix with 2 columns where each column is a type of 
+residual and each row relates to an area and time period. The types are "response" 
+(raw), and "pearson".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelfit </code></td>
+<td>
+<p>Model fit criteria including the Deviance Information Criterion 
+(DIC) and its corresponding estimated effective number of parameters (p.d), the Log 
+Marginal Predictive Likelihood (LMPL), the Watanabe-Akaike Information Criterion 
+(WAIC) and its corresponding estimated number of effective parameters (p.w), and
+the loglikelihood.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>accept </code></td>
+<td>
+<p>The acceptance probabilities for the parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>localised.structure </code></td>
+<td>
+<p>A list with 2 K*K matrices, Wmedian and W99 summarising 
+the estimated adjacency relationships. Wmedian contains the posterior median for 
+each w_ij element estimated in the model for adjacent areal units, while W99 
+contains binary indicator variables for whether Prob(w_ij &lt; 0.5|data)&gt;0.99. 
+For both matrices, elements corresponding to non-adjacent pairs of areas have 
+NA values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula </code></td>
+<td>
+<p>The formula (as a text string) for the response, covariate and 
+offset parts of the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model </code></td>
+<td>
+<p>A text string describing the model fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X </code></td>
+<td>
+<p>The design matrix of covariates.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Alastair Rushworth
+</p>
+
+
+<h3>References</h3>
+
+<p>Rushworth, A., Lee, D., and Sarran, C (2017).  An adaptive spatio-temporal smoothing 
+model for estimating trends and step changes in disease risk. Journal of the Royal 
+Statistical Society Series C, 66, 141-157.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#################################################
+#### Run the model on simulated data on a lattice
+#################################################
+#### set up the regular lattice    
+x.easting &lt;- 1:10
+x.northing &lt;- 1:10
+Grid &lt;- expand.grid(x.easting, x.northing)
+K &lt;- nrow(Grid)
+N &lt;- 10
+N.all &lt;- N * K
+  
+    
+#### set up spatial neighbourhood matrix W
+distance &lt;- as.matrix(dist(Grid))
+W &lt;-array(0, c(K,K))
+W[distance==1] &lt;-1 	
+
+
+#### Simulate the elements in the linear predictor and the data
+Q.W &lt;- 0.99 * (diag(apply(W, 2, sum)) - W) + 0.01 * diag(rep(1,K))
+Q.W.inv &lt;- solve(Q.W)
+phi.temp &lt;- mvrnorm(n=1, mu=rep(0,K), Sigma=(0.1 * Q.W.inv))
+phi &lt;- phi.temp
+    for(i in 2:N)
+    {
+    phi.temp2 &lt;- mvrnorm(n=1, mu=(0.8 * phi.temp), Sigma=(0.1 * Q.W.inv))
+    phi.temp &lt;- phi.temp2
+    phi &lt;- c(phi, phi.temp)
+    }
+jump &lt;- rep(c(rep(2, 70), rep(4, 30)),N)
+LP &lt;- jump + phi
+fitted &lt;- exp(LP)
+Y &lt;- rpois(n=N.all, lambda=fitted)
+
+
+#### Run the model     
+## Not run: model &lt;- ST.CARadaptive(formula=Y~1, family="poisson", W=W, burnin=10000,
+n.sample=50000)
+## End(Not run)
+
+
+#### Toy example for checking    
+model &lt;- ST.CARadaptive(formula=Y~1, family="poisson", W=W, burnin=10,
+n.sample=50)
+</code></pre>
+
+
+</div>

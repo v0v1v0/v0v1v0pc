@@ -1,0 +1,131 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Region class</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Class "region" for storing the result of the region procedure</h2>
+
+<h3>Description</h3>
+
+<p>The class region is the output of a call to <code>regionmethod</code>. It stores which region hypotheses have been rejected and can be used to calculate confidence sets for the number of true and/or false hypotheses among a selected region.</p>
+
+
+<h3>Slots</h3>
+
+<p>These slots are not meant to be directly accessed by the user.
+</p>
+
+<dl>
+<dt>
+<code>weights</code>:</dt>
+<dd>
+<p>Object of class "numeric". Stores the weights of elementary hypotheses.</p>
+</dd>
+<dt>
+<code>isadjusted</code>:</dt>
+<dd>
+<p>Object of class "logical". Stores whether adjusted p-values are calculated.</p>
+</dd>
+<dt>
+<code>allpvalues</code>:</dt>
+<dd>
+<p>Object of class "matrix". Stores (adjusted) p-values for all possible region hypotheses. Has value NA if adjusted p-value is larger than alpha. Corresponds to a 0x0 matrix if <code>all_pvalues</code> is set to FALSE (by default).</p>
+</dd>
+<dt>
+<code>implications</code>:</dt>
+<dd>
+<p>Object of class "matrix". Stores implications includinge (adjusted) p-values at chosen alpha-level</p>
+</dd>
+<dt>
+<code>alpha</code>:</dt>
+<dd>
+<p>Object of class "numeric". The type I error level chosen.</p>
+</dd>
+<dt>
+<code>totalrejected</code>:</dt>
+<dd>
+<p>Object of class "numeric". Stores the total number of rejected region hypotheses.</p>
+</dd>
+</dl>
+<h3>Methods</h3>
+
+
+<dl>
+<dt>show</dt>
+<dd>
+<p>(region): Prints how many region hypotheses were tested and how many of them were rejected.</p>
+</dd>
+<dt>summary</dt>
+<dd>
+<p>(region): Prints the test results (as <code>show</code>).</p>
+</dd>
+<dt>alpha</dt>
+<dd>
+<p>(region): Retrieves the maximal alpha_value from the region object.</p>
+</dd>
+<dt>implications</dt>
+<dd>
+<p>(region,alpha): Retrieves the implications from a given region object. By default, the alpha-level is set to <code>alpha_max</code>, but the alpha level can be varied, if the supporting information is present in the region object.</p>
+</dd>
+<dt>pvalue</dt>
+<dd>
+<p>(region,left,right): Retrieves pvalues for all possible region hypotheses (indicated with left and right bound) from the region object. Only able to return the value if the allpvalues matrix is stored in the region object.</p>
+</dd>
+</dl>
+<h3>Author(s)</h3>
+
+<p>Rosa Meijer: <a href="mailto:r.j.meijer@lumc.nl">r.j.meijer@lumc.nl</a></p>
+
+
+<h3>See Also</h3>
+
+<p><code>regionmethod</code>, <code>regionpick</code>.</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#generate data, where the response Y is associated with certain groups of covariates
+#namely cov 3-6, 9-12, 15-18
+set.seed(1)
+n=100
+p=20
+X &lt;- matrix(rnorm(n*p),n,p)
+beta &lt;- c(rep(0,2),rep(1,4),rep(0,2),rep(1,4),rep(0,2),rep(1,4),rep(0,2))
+Y &lt;- X %*% beta + rnorm(n)
+
+# Define the local test to be used in the closed testing procedure
+mytest &lt;- function(left,right)
+{
+  X &lt;- X[,(left:right),drop=FALSE]
+  lm.out &lt;- lm(Y ~ X)
+  x &lt;- summary(lm.out)
+  return(pf(x$fstatistic[1],x$fstatistic[2],x$fstatistic[3],lower.tail=FALSE))  
+}
+
+# perform the region procedure
+reg &lt;- regionmethod(rep(1,p), mytest, isadjusted=TRUE, all_pvalues=TRUE)
+summary(reg)
+
+#what are the smallest regions that are found to be significant? 
+implications(reg)
+
+#what are the smallest regions that are found to be significant at an alpha-level of 0.03? 
+implications(reg, alpha=0.03)
+
+#what is the adjusted p-value of the overall null-hypothesis 
+#(corresponding to the region ranging from 1 to 20)?
+pvalue(reg,1,20)
+
+#how many covariates within the full region of length 20 are at least associated with the response?
+regionpick(reg, list(c(1,p)), alpha=0.05)
+
+#visualize the results by either plotting a polygon corresponding to the underlying graph
+regionplot(reg)
+
+#or by plotting the graph itself
+regionplot2(reg)
+</code></pre>
+
+
+</div>

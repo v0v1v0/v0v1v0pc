@@ -1,0 +1,136 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>clustOptimal</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate optimal clustering</h2>
+
+<h3>Description</h3>
+
+<p>Takes a clue output and generate the optimal clustering of the time-course data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">clustOptimal(
+  clueObj,
+  rep = 5,
+  user.maxK = NULL,
+  effectiveSize = NULL,
+  pvalueCutoff = 0.05,
+  visualize = TRUE,
+  universe = NULL,
+  mfrow = c(1, 1)
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>clueObj</code></td>
+<td>
+<p>the output from runClue.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rep</code></td>
+<td>
+<p>number of times (default is 5) the clustering is to be repeated to find the best clustering result.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>user.maxK</code></td>
+<td>
+<p>user defined optimal k value for generating optimal clustering. If not provided, the optimal k that is identified by clue will be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>effectiveSize</code></td>
+<td>
+<p>the size of kinase-substrate groups to be considered for calculating enrichment. Groups that are too small
+or too large will be removed from calculating overall enrichment of the clustering.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pvalueCutoff</code></td>
+<td>
+<p>a pvalue cutoff for determining which kinase-substrate groups to be included in calculating overall enrichment of the clustering.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>visualize</code></td>
+<td>
+<p>a boolean parameter indicating whether to visualize the clustering results.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>universe</code></td>
+<td>
+<p>the universe of genes/proteins/phosphosites etc. that the enrichment is calculated against. The default are the row names of the dataset.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mfrow</code></td>
+<td>
+<p>control the subplots in graphic window.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>return a list containing optimal clustering object and enriched kinases or gene sets.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># simulate a time-series data with 4 distinctive profile groups and each group with
+# a size of 50 phosphorylation sites.
+simuData &lt;- temporalSimu(seed=1, groupSize=50, sdd=1, numGroups=4)
+
+# create an artificial annotation database. Generate 20 kinase-substrate groups each
+# comprising 10 substrates assigned to a kinase.
+# among them, create 4 groups each contains phosphorylation sites defined to have the
+# same temporal profile.
+kinaseAnno &lt;- list()
+groupSize &lt;- 50
+for (i in 1:4) {
+ kinaseAnno[[i]] &lt;- paste("p", (groupSize*(i-1)+1):(groupSize*(i-1)+10), sep="_")
+}
+
+for (i in 5:20) {
+ set.seed(i)
+ kinaseAnno[[i]] &lt;- paste("p", sample.int(nrow(simuData), size = 10), sep="_")
+}
+names(kinaseAnno) &lt;- paste("KS", 1:20, sep="_")
+
+# run CLUE with a repeat of 2 times and a range from 2 to 7
+set.seed(1)
+clueObj &lt;- runClue(Tc=simuData, annotation=kinaseAnno, rep=5, kRange=2:7)
+
+# visualize the evaluation outcome
+xl &lt;- "Number of clusters"
+yl &lt;- "Enrichment score"
+boxplot(clueObj$evlMat, col=rainbow(ncol(clueObj$evlMat)), las=2, xlab=xl, ylab=yl, main="CLUE")
+abline(v=(clueObj$maxK-1), col=rgb(1,0,0,.3))
+
+# generate optimal clustering results using the optimal k determined by CLUE
+best &lt;- clustOptimal(clueObj, rep=3, mfrow=c(2, 3))
+
+# list enriched clusters
+best$enrichList
+
+# obtain the optimal clustering object
+
+  best$clustObj
+
+
+
+</code></pre>
+
+
+</div>

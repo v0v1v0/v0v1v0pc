@@ -1,0 +1,116 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>dhs</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Read and recode Demographic and Health Surveys (DHS) individual data</h2>
+
+<h3>Description</h3>
+
+<p>Read and recode Demographic and Health Surveys (DHS) individual data
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">dhs(files, extra.vars = NULL, survey = FALSE, progress = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>files</code></td>
+<td>
+<p>vector: a character vector containing the paths for one or more Individual Recode DHS data files (see details)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extra.vars</code></td>
+<td>
+<p>vector: a character vector containing the names of variables to be retained from the raw data</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>survey</code></td>
+<td>
+<p>boolean: returns an unweighted data.frame if <code>FALSE</code>, or a weighted svydesign object if <code>TRUE</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>progress</code></td>
+<td>
+<p>boolean: display a progress bar</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <a href="https://www.dhsprogram.com/">Demographic and Health Surveys</a> (DHS) program regularly collects
+health data from population-representative samples in many countries using standardized surveys since 1984. The
+"individual recode" data files contain women's responses, while the "men recode" files contain men's responses. These
+files are available in SPSS, SAS, and Stata formats from <a href="https://www.dhsprogram.com/">https://www.dhsprogram.com/</a>,
+however access requires a <a href="https://dhsprogram.com/data/Access-Instructions.cfm">free application</a>. The <code>dhs()</code> function
+reads one or more of these files, extracts and recodes selected variables useful for studying childfree adults and other
+family statuses, then returns either an unweighted data frame, or a weighted svydesign object that can be analyzed using the
+<code>survey</code> package.
+</p>
+<p>Although access to DHS data requires an application, the DHS program provides a <a href="https://dhsprogram.com/data/Download-Model-Datasets.cfm">model dataset</a>
+for practice. The example provided below uses the model data file "ZZIR62FL.SAV", which contains fictitious women's data,
+but has the same structure as a real DHS data file. The example can be run without prior application for data access.
+</p>
+<p><strong>Known issues</strong>
+</p>
+
+<ul>
+<li>
+<p> The SPSS-formatted files containing data from Gabon Recode 4 (GAIR41FL.SAV, GAMR41FL.SAV) and Turkey Recode 4 (TRIR41FL.SAV, TRMR41FL.SAV)
+contain encoding errors. Use the SAS-formatted files (GAIR41FL.SAS7BDAT, GAMR41FL.SAS7BDAT, TRIR41FL.SAS7BDAT, TRMR41FL.SAS7BDAT) instead.
+</p>
+</li>
+<li>
+<p> In some cases, DHS makes available individual recode data files for specific regions. For example, women's data from individual states
+in India from 1999 are contained in files named XXIR42FL.SAV, where the "XX" is a two-letter state code. The <code>dhs()</code> function has only
+been tested using whole-country files, and may not perform as expected for regional files.
+</p>
+</li>
+<li>
+<p> Variables containing women's responses in the individual recode files begin with <code>v</code>, while variables containing men's responses in the
+men recode files begin with <code>mv</code>. When applying <code>dhs()</code> to both female and male data, these are automatically harmonized. However, if
+extra variables are requested using the <code>extra.vars</code> option, be sure to specify both names (e.g. <code>extra.vars = c("v201", "mv201")</code>).
+</p>
+</li>
+<li>
+<p> If <code>survey = TRUE</code>, then <code>(m)v021</code> and <code>(m)v023</code> are used as the cluster and strata indicators, respectively. This is
+appropriate for most surveys, however there are a few exceptions. Additional information about analyzing DHS data using weights is
+available <a href="https://dhsprogram.com/data/Guide-to-DHS-Statistics/Analyzing_DHS_Data.htm">here</a> and in the documentation provided
+with the downloaded data files.
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p>A data frame or weighted svydesign object containing variables described in the codebook available using <code>vignette("codebooks")</code>
+If you are offline, or if the requested data are otherwise unavailable, NULL is returned.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+unweighted &lt;- dhs(files = c("ZZIR62FL.SAV"), extra.vars = c("v201"))  #Request unweighted data
+if (!is.null(unweighted)) {  #If data was available...
+round(table(unweighted$famstat)/nrow(unweighted),3)  #Fraction of respondents w/ each family status
+}
+
+weighted &lt;- dhs(files = c("ZZIR62FL.SAV"), survey = TRUE)  #Request weighted (example) data
+if (!is.null(weighted)) {  #If dtaa was available...
+survey::svymean(~famstat, weighted, na.rm = TRUE)  #Estimated prevalence of each family status
+}
+
+</code></pre>
+
+
+</div>

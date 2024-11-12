@@ -1,0 +1,329 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>probeOptimalColors</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>compute optimal colors by ray tracing</h2>
+
+<h3>Description</h3>
+
+<p>Consider a <b>colorSpec</b> object <code>x</code> with <code>type</code> 
+equal to <code>'responsivity.material'</code>.
+The set of all possible material reflectance functions (or transmittance functions) 
+is convex, closed, and bounded (in any reasonable function space),
+and this implies that the set of all possible output responses 
+from <code>x</code> is also convex, closed, and bounded.
+The latter set is called the <em>object-color solid</em> or <em>Rösch Farbkörper</em> for <code>x</code>.
+A color on the boundary of the <em>object-color solid</em> is called an <em>optimal color</em>.
+The special points <b>W</b> (the response to the perfect reflecting diffuser)
+and <b>0</b> are on the boundary of this set.
+The interior of the line segment of neutrals joining <b>0</b> to <b>W</b> is in the interior of the
+<em>object-color solid</em>.
+It is natural to parameterize this segment from 0 to 1 (from <b>0</b> to <b>W</b>).
+</p>
+<p>A ray <code class="reqn">r</code> that is based at a point on the interior of the neutral line segment
+must intersect the boundary of the <em>object-color solid</em> in a unique optimal color.
+The purpose of the function <code>probeOptimalColors()</code> is to compute that intersection point.
+</p>
+<p>Currently the function only works if the number of spectra in 
+<code>x</code> is 3 (e.g. RGB or XYZ).
+</p>
+<p>Before <span class="pkg">colorSpec</span> v 0.8-1 this function used a 2D root-finding
+method that could only find
+optimal colors whose spectra contain 0, 1, or 2 transitions.
+But starting with v0.8-1, we have switched to zonohedral representation
+of the object-color solid, which makes it possible to discover more than 2 transitions.
+The inspiration for this change is the article by <cite>Centore</cite>.
+To <em>inspect</em> these computed spectra, the argument <code>spectral</code> must be set
+to <code>TRUE</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'colorSpec'
+probeOptimalColors( x, gray, direction, aux=FALSE, spectral=FALSE, tol=1.e-6 )
+
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a <b>colorSpec</b> object with <code>type</code>
+equal to <code>'responsivity.material'</code> and 3 spectra</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gray</code></td>
+<td>
+<p>vector of numbers in the open interval (0,1) that define neutral grays on the
+line segment from black to white; this neutral gray point is the basepoint of a probe ray</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>direction</code></td>
+<td>
+<p>a numeric Nx3 matrix with directions of the probe rays in the rows,
+or a numeric vector that can be converted to such a matrix, by row.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aux</code></td>
+<td>
+<p>a logical that specifies whether to return extra performance and diagnostic data; see <b>Details</b></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>spectral</code></td>
+<td>
+<p>if <code>TRUE</code>, the function returns a <b>colorSpec</b> object
+with the optimal spectra, see <b>Value</b>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol</code></td>
+<td>
+<p>error tolerance for the intersection of probe and object-color boundary</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Each gray level and each direction defines a ray.
+So the total number of rays traced is <code>length(gray)</code> * <code>nrow(direction)</code>.
+The 3 responsivities are regarded not as continuous functions, 
+but as step functions.
+This implies that the color solid is a zonohedron.
+In the preprocessing phase the zonohedral representation is calculated.
+The faces of the zonohedron are either parallelograms,
+or <em>compound faces</em> that can be partitioned into parallelograms.
+The centers of all these parallelograms are computed, along with their normals
+and plane constants.
+<br>
+This representation of the color solid is very strict regarding the
+2-transition assumption.
+During use, one can count on there being some spectra with more than two transitions.
+Forcing the best 2-transition spectrum is a possible topic for the future.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If argument <code>spectral=FALSE</code>,
+<code>probeOptimalColors()</code> returns a <code>data.frame</code> with a row for each traced ray.
+There are <code>length(gray)</code> * <code>nrow(direction)</code> rays.
+The columns in the output are:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>gray</code></td>
+<td>
+<p>the graylevel defining the <code class="reqn">basepoint</code> of the ray. 
+<code class="reqn">basepoint = gray*W</code> 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>direction</code></td>
+<td>
+<p>the <code class="reqn">direction</code> of the ray</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>s</code></td>
+<td>
+<p>computed scalar so that <code class="reqn">basepoint + s*direction</code> is optimal</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optimal</code></td>
+<td>
+
+<p>the optimal color on the boundary; <code class="reqn">optimal = basepoint + s*direction</code> 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+
+<p>lambda.1 and lambda.2 at the 2 transitions, in nm. 
+lambda.1 &lt; lambda.2 =&gt; bandpass,
+and lambda.1 &gt; lambda.2 =&gt; bandstop.
+It will happen that the optimal spectrum has more than 2 transitions;
+in this case both lambdas are set to <code>NA</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dol</code></td>
+<td>
+
+<p><code>delta</code> and <code>omega</code> - the Logvinenko parameters <code class="reqn">(\delta,\omega)</code> for optimal colors, plus <code>lambda</code> (<code class="reqn">\lambda</code>) in nm. 
+<code class="reqn">\omega</code> is the reparameterization of <code class="reqn">\lambda</code> ;  see <cite>Logvinenko</cite>.
+If there are more than 2 transistions, these are set to <code>NA</code>.
+</p>
+</td>
+</tr>
+</table>
+<p>If aux is <code>TRUE</code>, these auxiliary columns related to performance and diagnostics are added:   
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>timetrace</code></td>
+<td>
+<p>time to trace the ray, in seconds</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallelograms</code></td>
+<td>
+
+<p># of parallelograms in the (possibly compound) face. 1 means just a single parallelogram.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tested</code></td>
+<td>
+
+<p># of parallelograms actually tested for ray intersection. This only has meaning for compound faces.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>the 2 coordinates of the intersection point inside the parallelogram</p>
+</td>
+</tr>
+</table>
+<p>If argument <code>spectral=TRUE</code>,
+<code>probeOptimalColors()</code> returns a <b>colorSpec</b> object with quantity 
+<code>'reflectance'</code>.
+This object contains the optimal spectra, and can be used to inspect the spectra
+with more than 2 transitions, which will happen.
+The above-mentioned <code>data.frame</code> can then be obtained by applying
+<code>extradata()</code> to the returned object.
+</p>
+<p>If an individual ray could not be traced (which should be rare), 
+the row contains <code>NA</code> in appropriate columns.<br>
+In case of global error, the function returns <code>NULL</code>.
+</p>
+
+
+<h3>WARNING</h3>
+
+<p>The preprocessing calculation of the zonohedron dominates the total time.
+And this time goes up rapidly with the number of wavelengths.
+We recommend using a wavelength step of 5nm, as in the <b>Examples</b>.
+For best results, batch a lot of rays into a single function call
+and then process the output.
+<br>
+Moreover, the preprocessing time is dominated by the partitioning
+of the compound faces into parallelograms.
+This is made worse by spectral responses with little overlap,
+as in <code>scanner.ACES</code>.
+In these cases, try a larger step size, and then reduce.
+Optimizing these compound faces is a possible topic for the future.
+</p>
+
+
+<h3>References</h3>
+
+<p>Centore, Paul.
+<em>A zonohedral approach to optimal colours</em>.
+<b>Color Research &amp; Application</b>.
+Vol. 38.
+No. 2.
+pp. 110-119.
+April 2013.
+</p>
+<p>Logvinenko, A. D.
+An object-color space. 
+<b>Journal of Vision</b>.
+9(11):5, 1-23, (2009).<br><code>https://jov.arvojournals.org/article.aspx?articleid=2203976</code>.
+doi:10.1167/9.11.5.
+</p>
+<p>Schrödinger, E. (1920). 
+Theorie der Pigmente von grösster Leuchtkraft. 
+<b>Annalen der Physik</b>.
+62, 603-622.
+</p>
+<p>West, G. and M. H. Brill.
+Conditions under which Schrödinger object colors are optimal.
+<b>Journal of the Optical Society of America</b>.
+73. pp. 1223-1225. 1983.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>type</code>,
+vignette <a href="../doc/optimals.pdf"><b>Plotting Chromaticity Loci of Optimal Colors</b></a>,
+<code>scanner.ACES</code>,
+<code>extradata()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">wave    = seq(400,700,by=5)
+D50.eye = product( D50.5nm, 'material', xyz1931.1nm, wavelength=wave )
+probeOptimalColors( D50.eye, c(0.2,0.5,0.9), c(1,2,1, -1,-2,-1) )
+
+##    gray direction.1 direction.2 direction.3         s  optimal.1  optimal.2
+##  1  0.2           1           2           1 32.306207  52.533143  85.612065
+##  2  0.2          -1          -2          -1  8.608798  11.618138   3.782055
+##  3  0.5           1           2           1 20.993144  71.560483  94.485416
+##  4  0.5          -1          -2          -1 20.993144  29.574196  10.512842
+##  5  0.9           1           2           1  4.333700  95.354911 103.165832
+##  6  0.9          -1          -2          -1 35.621938  55.399273  23.254556
+
+##     optimal.3 lambda.1 lambda.2    dol.delta    dol.omega   dol.lambda
+##  1  49.616046 451.8013 598.9589   0.63409966   0.48287469 536.97618091
+##  2   8.701041 636.3031 429.4659   0.08458527   0.99624955 674.30015903
+##  3  64.267740 441.9105 615.0822   0.78101041   0.49048222 538.73234859
+##  4  22.281453 615.0822 441.9105   0.21898959   0.99048222 662.20606601
+##  5  82.227974 422.9191 648.7404   0.95800430   0.49825407 540.49590064
+##  6  42.272337 593.2415 455.2425   0.42035428   0.97962398 650.57382749
+
+
+# create a 0-1 spectrum with 2 transitions
+rectspec = rectangularMaterial( lambda=c(579.8697,613.7544), alpha=1, wave=wave )
+
+# compute the corresponding color XYZ
+XYZ = product( rectspec, D50.eye )
+XYZ
+##                             X        Y          Z
+##  BP_[579.87,613.754] 33.42026 21.96895 0.02979764
+
+# trace a ray from middle gray through XYZ
+white.XYZ   = product( neutralMaterial(1,wave=wave), D50.eye )
+direction   = XYZ - white.XYZ/2
+
+res = probeOptimalColors( D50.eye, 0.5, direction, aux=FALSE )
+res$s         
+##  1.00004   the ray has gone past the original color to the boundary
+
+res$optimal
+##              X        Y          Z
+##  [1,] 33.41958 21.96774 0.02808178
+
+res$lambda    
+##  NA NA     because there are more than 2 transitions in the true optimal
+
+# since s=1.00004 &gt; 1,
+# XYZ is actually in the interior of the color solid, and not on the boundary.
+# The boundary is a little-bit further along the ray,
+# and the corresponding spectrum has more than 2 transitions.
+</code></pre>
+
+
+</div>

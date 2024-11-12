@@ -1,0 +1,217 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>predict.garch1c1</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Prediction for GARCH(1,1) time series</h2>
+
+<h3>Description</h3>
+
+<p>Predict GARCH(1,1) time series.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'garch1c1'
+predict(object, n.ahead = 1, Nsim = 1000, eps, sigmasq, seed = NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>an object from class <code>"garch1c1"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.ahead</code></td>
+<td>
+<p>maximum horizon (lead time) for prediction.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Nsim</code></td>
+<td>
+<p>number of Monte Carlo simulations for simulation based quantities.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eps</code></td>
+<td>
+<p>the time series to predict, only the last value is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sigmasq</code></td>
+<td>
+<p>the (squared) volatilities, only the last value is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>an integer, seed for the random number generator.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>currently not used.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Plug-in prediction intervals and predictive distributions are obtained by
+inserting the predicted volatility in the conditional densities. For
+predictions more than one lag ahead these are not the real predictive
+distributions but the prediction intervals are usually adequate.
+</p>
+<p>For simulation prediction intervals we generate a (large) number of
+continuations of the given time series. Prediction intervals can be based on
+sample quantiles. The generated samples are stored in the returned object and
+can be used for further exploration of the predictive
+distributions. <code>dist_sim$eps</code> contains the simulated future values of
+the time series and <code>dist_sim$h</code> the corresponding (squared)
+volatilities.  Both are matrices whose <code>i</code>-th rows contain the predicted
+quantities for horizon <code>i</code>.
+</p>
+<p>The random seed at the start of the simulations is saved in the returned
+object.  A speficific seed can be requested with argument <code>seed</code>. In
+that case the simulations are done with the specified seed and the old state
+of the random number generator is restored before the function returns.
+This setup is similar to <code>sim_garch1c1</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>an object from S3 class <code>"predict_garch1c1"</code> containing
+the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>eps</code></td>
+<td>
+<p>point predictions (conditional expectations) of the time series (equal
+to zero for pure GARCH).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>h</code></td>
+<td>
+<p>point predictions (conditional expectations)of the squared volatilities.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the call.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pi_plugin</code></td>
+<td>
+<p>Prediction intervals for the time series, based on plug-in
+distributions, see Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pi_sim</code></td>
+<td>
+<p>Simulation based prediction intervals for the time series, see Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist_sim</code></td>
+<td>
+<p>simulation samples from the predictive distributions of the time
+series and the volatilties. </p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>This function is under development and may be changed.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">op &lt;- options(digits = 4)
+
+## set up a model and simulate a time series
+mo &lt;- GarchModel(omega = 0.4, alpha = 0.3, beta = 0.5)
+a1 &lt;- sim_garch1c1(mo, n = 1000, n.start = 100, seed = 20220305)
+
+## predictions for T+1,...,T+5 (T = time of last value)
+## Nsim is small to reduce the load on CRAN, usually Nsim is larger.
+a.pred &lt;- predict(mo, n.ahead = 5, Nsim = 1000, eps = a1$eps,
+  sigmasq = a1$h, seed = 1234)
+
+## preditions for the time series
+a.pred$eps
+
+## PI's for eps - plug-in and simulated
+a.pred$pi_plugin
+a.pred$pi_sim
+
+## a DIY calculation of PI's using the simulated sample paths
+t(apply(a.pred$dist_sim$eps, 1, function(x) quantile(x, c(0.025, 0.975))))
+
+## further investigate the predictive distributions
+t(apply(a.pred$dist_sim$eps, 1, function(x) summary(x)))
+
+## compare predictive densities for horizons 2 and 5:
+h2 &lt;- a.pred$dist_sim$eps[2, ]
+h5 &lt;- a.pred$dist_sim$eps[5, ]
+main &lt;- "Predictive densities: horizons 2 (blue) and 5 (black)"
+plot(density(h5), main = main)
+lines(density(h2), col = "blue")
+
+## predictions of sigma_t^2
+a.pred$h
+
+## plug-in predictions of sigma_t
+sqrt(a.pred$h)
+
+## simulation predictive densities (PD's) of sigma_t for horizons 2 and 5:
+h2 &lt;- sqrt(a.pred$dist_sim$h[2, ])
+h5 &lt;- sqrt(a.pred$dist_sim$h[5, ])
+main &lt;- "PD's of sigma_t for horizons 2 (blue) and 5 (black)"
+plot(density(h2), col = "blue", main = main)
+lines(density(h5))
+
+## VaR and ES for different horizons
+cbind(h = 1:5,
+      VaR = apply(a.pred$dist_sim$eps, 1, function(x) VaR(x, c(0.05))),
+      ES = apply(a.pred$dist_sim$eps, 1, function(x) ES(x, c(0.05))) )
+
+## fit a GARCH(1,1) model to exchange rate data and predict
+gmo1 &lt;- fGarch::garchFit(formula = ~garch(1, 1), data = fGarch::dem2gbp,
+  include.mean = FALSE, cond.dist = "norm", trace = FALSE)
+mocoef &lt;- gmo1@fit$par
+mofitted &lt;- GarchModel(omega = mocoef["omega"], alpha = mocoef["alpha1"],
+  beta = mocoef["beta1"])
+gmo1.pred &lt;- predict(mofitted, n.ahead = 5, Nsim = 1000, eps = gmo1@data,
+  sigmasq = gmo1@h.t, seed = 1234)
+gmo1.pred$pi_plugin
+gmo1.pred$pi_sim
+
+op &lt;- options(op) # restore options(digits)
+
+</code></pre>
+
+
+</div>

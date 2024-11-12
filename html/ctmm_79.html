@@ -1,0 +1,173 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>periodogram</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate the Lomb-Scargle periodogram of animal-tracking data</h2>
+
+<h3>Description</h3>
+
+<p>This function calculates isotropic Lomb-Scargle periodogram (LSP, Scargle, 1982) from a telemetry object. One of two algorithms is used. The slow <code class="reqn">O(n^2)</code> algorithm vectorizes the exact relations of Scargle (1982), while the fast <code class="reqn">O(n \log n)</code> algorithm uses the FFT method described in Péron &amp; Fleming et al (2016). The latter method is exact if the data are evenly scheduled, permitting gaps, and otherwise it can be made arbitrarily precise via the <code>res.time</code> option.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">periodogram(data,CTMM=NULL,dt=NULL,res.freq=1,res.time=1,fast=NULL,axes=c("x","y"))
+
+## S3 method for class 'periodogram'
+plot(x,max=FALSE,diagnostic=FALSE,col="black",transparency=0.25,grid=TRUE,...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+ <p><code>telemetry</code> data object or list of such objects. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CTMM</code></td>
+<td>
+<p> An optional <code>ctmm</code> model object for specifying the mean. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dt</code></td>
+<td>
+<p>Sampling interval for frequency cutoff.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>res.freq</code></td>
+<td>
+<p>Multiplier to inflate the frequency resolution.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>res.time</code></td>
+<td>
+<p>Integer multiplier to inflate the temporal resolution. Useful when <code>fast</code>&gt;0 and the sampling rate is variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fast</code></td>
+<td>
+<p>Use the exact algorithm if FALSE, the FFT algorithm if TRUE, and further inflate the frequency resolution to a power of two sample size if <code>fast=2</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>axes</code></td>
+<td>
+<p>Array of axes to calculate an average (isotropic) variogram for.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Output object of <code>periodogram</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max</code></td>
+<td>
+<p>Plot only the local maxima of the periodogram. Use only with <code>res&gt;1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>diagnostic</code></td>
+<td>
+<p>Plot the sampling schedule's periodogram to check for spurious periodicities.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>col</code></td>
+<td>
+<p>Color of periodogram.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>transparency</code></td>
+<td>
+<p>Adds transparency to clustered data if greater than zero. Should be less than one.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grid</code></td>
+<td>
+<p>Whether or not to plot gridlines at common periodicities.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Optional arguments fed to <code>plot</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If no <code>dt</code> is specified, the median sampling interval is used. This is typically a good assumption for most data, even when there are gaps and this choice corresponds to the discrete Fourier transform (DFT) periodogram for evenly-sampled data.
+
+</p>
+<p>At default resolution the frequency grid interval is given by <code>1/(2*(range(data$t)+dt))</code> and the frequency cutoff is given by <code>1/(2*dt)</code>, both in accordance with the DFT periodogram. Increasing <code>res.freq</code> beyond <code>res.freq=1</code> will make for a smooth periodogram, but sequential frequencies will be highly correlated. The <code>max=TRUE</code> option to <code>plot.periodogram</code> may be useful for <code>res.freq&gt;1</code>. Increasing <code>res.time</code> beyond <code>res.time=1</code> is helpful if there is variability in the sampling rate and <code>fast&gt;0</code>.
+</p>
+<p>If a <code>CTMM</code> argument is provided, the ML mean will be detrended from the data prior to calculating the periodogram. Otherwise, the sample mean will be detrended.
+</p>
+<p>If a list of <code>telemetry</code> objects are fed into <code>periodogram</code>, then a mean <code>periodogram</code> object will be returned with the default <code>dt</code> and base frequency resolution selected on a worst case basis according to the method described by Péron &amp; Fleming et al (2016).
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a periodogram object (class <code>periodogram</code>) which is a dataframe containing the frequency, <code>f</code> and the Lomb-Scargle periodogram at that frequency, <code>LSP</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p> The LSP is totally inappropriate if you in any way alter the sampling rate within the dataset. Stick with variograms in that case. There is a <code>diagnostic</code> option in <code>plot.periodogram</code> that can check for spurious periodicities that result from an autocorrelated sampling schedule. This plot will not contain any periodicities if the LSP is appropriate.
+</p>
+<p><code>res.time&gt;1</code> relies on Lagrange interpolation of the sinusoids (not the data), which can suffer from Runge's phenomena. <code>periodogram</code> tests for an invalid result and can fail with an error message. For whatever reason, this more frequently seems to happen when <code>res.time=3</code>. </p>
+
+
+<h3>Author(s)</h3>
+
+<p> C. H. Fleming and G. Péron </p>
+
+
+<h3>References</h3>
+
+<p>J. D. Scargle,
+“Studies in astronomical time-series analysis. II. Statistical aspects of spectral analysis of unevenly-sampled data”,
+The Astrophysical Journal, 263, 835-853 (1952) <a href="https://doi.org/10.1086/160554">doi:10.1086/160554</a>.
+</p>
+<p>G. Péron, C. H. Fleming,  R. C. de Paula, J. M. Calabrese,
+“Uncovering periodic patterns of space use in animal tracking data with periodograms, including a new algorithm for the Lomb-Scargle periodogram and improved randomization tests”,
+Movement Ecology, 4:19 (2016) <a href="https://doi.org/10.1186/s40462-016-0084-7">doi:10.1186/s40462-016-0084-7</a>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#Load package and data
+library(ctmm)
+data(wolf)
+
+#Extract movement data for a single animal
+DATA &lt;- wolf$Tay
+
+#Calculate periodogram (fast==2 for a speedy example)
+#There is some variability in the sampling frequency, so we increase res.time
+LSP &lt;- periodogram(DATA,fast=2,res.time=2)
+
+#Plot the periodogram
+plot(LSP,max=TRUE)
+</code></pre>
+
+
+</div>

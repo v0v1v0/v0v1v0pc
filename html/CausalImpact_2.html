@@ -1,0 +1,403 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CausalImpact</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Inferring causal impact using structural time-series models</h2>
+
+<h3>Description</h3>
+
+<p><code>CausalImpact()</code> performs causal inference through
+counterfactual predictions using a Bayesian structural
+time-series model.
+</p>
+<p>See the package documentation
+(http://google.github.io/CausalImpact/) to understand the
+underlying assumptions. In particular, the model assumes
+that the time series of the treated unit can be explained
+in terms of a set of covariates which were themselves not
+affected by the intervention whose causal effect we are
+interested in.
+</p>
+<p>The easiest way of running a causal analysis is to call
+<code>CausalImpact()</code> with <code>data</code>, <code>pre.period</code>,
+<code>post.period</code>, <code>model.args</code> (optional), and
+<code>alpha</code> (optional). In this case, a time-series model
+is automatically constructed and estimated. The argument
+<code>model.args</code> offers some control over the model. See
+Example 1 below.
+</p>
+<p>An alternative is to supply a custom model. In this case,
+the function is called with <code>bsts.model</code>,
+<code>post.period.response</code>, and <code>alpha</code> (optional).
+See Example 3 below.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">  CausalImpact(data = NULL, pre.period = NULL,
+    post.period = NULL, model.args = NULL,
+    bsts.model = NULL, post.period.response = NULL,
+    alpha = 0.05)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>Time series of response variable and any
+covariates. This can be a <code>zoo</code> object, a
+<code>vector</code>, a <code>matrix</code>, or a <code>data.frame</code>.
+In any of these cases, the response variable must be in
+the first column, and any covariates in subsequent
+columns. A <code>zoo</code> object is recommended, as its time
+indices will be used to format the x-axis in
+<code>plot()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pre.period</code></td>
+<td>
+<p>A vector specifying the first and the last time point of the
+pre-intervention period in the response vector <code>y</code>. This
+period can be thought of as a training period, used to
+determine the relationship between the response variable and
+the covariates. If <code>data</code> is a <code>zoo</code> object with
+a <code>time</code> attribute, <code>pre.period</code> must be indicated
+using the same time scale (i.e. using the same class as
+<code>time(data)</code>, see Example 2 below). If <code>data</code> doesn't have
+a <code>time</code> attribute, <code>post.period</code> is indicated with
+indices.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>post.period</code></td>
+<td>
+<p>A vector specifying the first and the last day of the
+post-intervention period we wish to study. This is the period
+after the intervention has begun whose effect we are
+interested in. The relationship between response variable and
+covariates, as determined during the pre-period, will be used
+to predict how the response variable should have evolved
+during the post-period had no intervention taken place. If
+<code>data</code> is a <code>zoo</code> object with a <code>time</code>
+attribute, <code>post.period</code> must be indicated using the
+same time scale. If <code>data</code> doesn't have a <code>time</code>
+attribute, <code>post.period</code> is indicated with indices.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model.args</code></td>
+<td>
+<p>Further arguments to adjust the default
+construction of the state-space model used for inference.
+One particularly important parameter is
+<code>prior.level.sd</code>, which specifies our a priori
+knowledge about the volatility of the data. For even more
+control over the model, you can construct your own model
+using the <code>bsts</code> package and feed the fitted model
+into <code>CausalImpact()</code>, as shown in Example 3.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bsts.model</code></td>
+<td>
+<p>Instead of passing in <code>data</code> and
+having <code>CausalImpact()</code> construct a model, it is
+possible to create a custom model using the
+<code>bsts</code> package. In this case, omit <code>data</code>,
+<code>pre.period</code>, and <code>post.period</code>. Instead only
+pass in <code>bsts.model</code>, <code>post.period.response</code>,
+and <code>alpha</code> (optional). The model must have been
+fitted on data where the response variable was set to
+<code>NA</code> during the post-treatment period. The actual
+observed data during this period must then be passed to
+the function in <code>post.period.response</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>post.period.response</code></td>
+<td>
+<p>Actual observed data during
+the post-intervention period. This is required if and
+only if a fitted <code>bsts.model</code> is provided instead
+of <code>data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>Desired tail-area probability for posterior
+intervals. Defaults to 0.05, which will produce central
+95% intervals.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>CausalImpact()</code> returns a <code>CausalImpact</code>
+object containing the original observed response, its
+counterfactual predictions, as well as pointwise and
+cumulative impact estimates along with posterior credible
+intervals. Results can summarised using <code>summary()</code>
+and visualized using <code>plot()</code>. The object is a list
+with the following fields:
+</p>
+
+<ul>
+<li> <p><code>series</code>. Time-series object (<code>zoo</code>)
+containing the original response <code>response</code> as
+well as the computed inferences. The added columns are
+listed in the table below.
+</p>
+</li>
+<li> <p><code>summary</code>. Summary statistics for the
+post-intervention period. This includes the posterior
+expectation of the overall effect, the corresponding
+posterior credible interval, and the posterior
+probability that the intervention had any effect,
+expressed in terms of a one-sided p-value. Note that
+checking whether the posterior interval includes zero
+corresponds to a two-sided hypothesis test. In contrast,
+checking whether the p-value is below <code>alpha</code>
+corresponds to a one-sided hypothesis test.
+</p>
+</li>
+<li> <p><code>report</code>. A suggested verbal
+interpretation of the results.
+</p>
+</li>
+<li> <p><code>model</code>. A list with four elements <code>pre.period</code>,
+<code>post.period</code>, <code>bsts.model</code> and <code>alpha</code>. <code>pre.period</code>
+and <code>post.period</code> indicate the first and last time point of
+the time series in the respective period, <code>bsts.model</code> is
+the fitted model returned by <code>bsts()</code>, and <code>alpha</code>
+is the user-specified tail-area probability.
+</p>
+</li>
+</ul>
+<p>The field <code>series</code> is a
+<code>zoo</code> time-series object with the following columns:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+      <code>response</code> </td>
+<td style="text-align: left;">
+      Observed response as supplied to <code>CausalImpact()</code>. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+      <code>cum.response</code> </td>
+<td style="text-align: left;">
+      Cumulative response during the modeling period. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+      <code>point.pred</code> </td>
+<td style="text-align: left;">
+      Posterior mean of counterfactual predictions. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+      <code>point.pred.lower</code> </td>
+<td style="text-align: left;">
+      Lower limit of a (<code>1 - alpha</code>) posterior interval. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+      <code>point.pred.upper</code> </td>
+<td style="text-align: left;">
+      Upper limit of a (<code>1 - alpha</code>) posterior interval. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+      <code>cum.pred</code> </td>
+<td style="text-align: left;">
+      Posterior cumulative counterfactual predictions. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+      <code>cum.pred.lower</code> </td>
+<td style="text-align: left;">
+      Lower limit of a (<code>1 - alpha</code>) posterior interval.
+      </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+      <code>cum.pred.upper</code> </td>
+<td style="text-align: left;">
+      Upper limit of a (<code>1 - alpha</code>) posterior interval.
+      </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+      <code>point.effect</code> </td>
+<td style="text-align: left;">
+      Point-wise posterior causal effect. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+      <code>point.effect.lower</code> </td>
+<td style="text-align: left;">
+      Lower limit of the posterior interval (as above). </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+      <code>point.effect.lower</code> </td>
+<td style="text-align: left;"> Upper limit of the
+      posterior interval (as above). </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+      <code>cum.effect</code> </td>
+<td style="text-align: left;">
+      Posterior cumulative effect. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+      <code>cum.effect.lower</code> </td>
+<td style="text-align: left;">
+      Lower limit of the posterior interval (as above). </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+      <code>cum.effect.upper</code> </td>
+<td style="text-align: left;">
+      Upper limit of the posterior interval (as above). </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+    </td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>Optional arguments can be passed as a list in <code>model.args</code>,
+providing additional control over model construction:
+</p>
+
+<ul>
+<li> <p><code>niter</code>. Number of MCMC samples to draw. Higher numbers
+yield more accurate inferences. Defaults to 1000.
+</p>
+</li>
+<li> <p><code>standardize.data</code>. Whether to standardize all columns of the
+data using moments estimated from the pre-intervention period before fitting
+the model. This is equivalent to an empirical Bayes approach to setting the
+priors. It ensures that results are invariant to linear transformations of
+the data. Defaults to <code>TRUE</code>.
+</p>
+</li>
+<li> <p><code>prior.level.sd</code>. Prior standard deviation of the Gaussian random
+walk of the local level, expressed in terms of data standard deviations.
+Defaults to 0.01, a typical choice for well-behaved and stable datasets
+with low residual volatility after regressing out known predictors (e.g.,
+web searches or sales in high quantities). When in doubt, a safer option is
+to use 0.1, as validated on synthetic data, although this may sometimes give
+rise to unrealistically wide prediction intervals.
+</p>
+</li>
+<li> <p><code>nseasons</code>. Period of the seasonal components. In order to
+include a seasonal component, set this to a whole number greater than 1. For
+example, if the data represent daily observations, use 7 for a day-of-week
+component. This interface currently only supports up to one seasonal
+component. To specify multiple seasonal components, use <code>bsts</code> to
+specify the model directly, then pass the fitted model in as
+<code>bsts.model</code>. Defaults to 1, which means no seasonal component is used.
+</p>
+</li>
+<li> <p><code>season.duration</code>. Duration of each season, i.e., number of data
+points each season spans. For example, to add a day-of-week component to
+data with daily granularity, supply the arguments
+<code>model.args = list(nseasons = 7, season.duration = 1)</code>.
+Alternatively, use
+<code>model.args = list(nseasons = 7, season.duration = 24)</code>
+to add a day-of-week component to data with hourly granularity.
+Defaults to 1.
+</p>
+</li>
+<li> <p><code>dynamic.regression</code>. Whether to include time-varying regression
+coefficients. In combination with a time-varying local trend or even a
+time-varying local level, this often leads to overspecification, in which
+case a static regression is safer. Defaults to <code>FALSE</code>.
+</p>
+</li>
+<li> <p><code>max.flips</code>. By default, each iteration tries to flip each
+predictor in or out of the model.  Setting <code>max.flips</code> tells the
+algorithm to randomly choose that many variables to explore flipping. Useful
+to set (e.g. 100) when you have a large number of controls (e.g. 10000); in
+such cases, a lower <code>max.flips</code> can speed up computation. Defaults to
+-1.
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Kay H. Brodersen <a href="mailto:kbrodersen@google.com">kbrodersen@google.com</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Example 1
+#
+# Example analysis on a simple artificial dataset
+# consisting of a response variable y and a
+# single covariate x1.
+set.seed(1)
+x1 &lt;- 100 + arima.sim(model = list(ar = 0.999), n = 52)
+y &lt;- 1.2 * x1 + rnorm(52)
+y[41:52] &lt;- y[41:52] + 10
+data &lt;- cbind(y, x1)
+pre.period &lt;- c(1, 40)
+post.period &lt;- c(41, 52)
+impact &lt;- CausalImpact(data, pre.period, post.period)
+
+# Print and plot results
+summary(impact)
+summary(impact, "report")
+plot(impact)
+plot(impact, "original")
+plot(impact$model$bsts.model, "coefficients")
+
+# For further output, type:
+names(impact)
+
+## Not run: 
+# Example 2
+#
+# Weekly time series: same data as in example 1, annotated
+# with dates.
+times &lt;- seq.Date(as.Date("2016-01-03"), by = 7, length.out = 52)
+data &lt;- zoo(cbind(y, x1), times)
+
+impact &lt;- CausalImpact(data, times[pre.period], times[post.period])
+
+summary(impact)  # Same as in example 1.
+plot(impact)  # The plot now shows dates on the x-axis.
+
+# Example 3
+#
+# For full flexibility, specify a custom model and pass the
+# fitted model to CausalImpact(). To run this example, run
+# the code for Example 1 first.
+post.period.response &lt;- y[post.period[1] : post.period[2]]
+y[post.period[1] : post.period[2]] &lt;- NA
+ss &lt;- AddLocalLevel(list(), y)
+bsts.model &lt;- bsts(y ~ x1, ss, niter = 1000)
+impact &lt;- CausalImpact(bsts.model = bsts.model,
+                       post.period.response = post.period.response)
+plot(impact)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

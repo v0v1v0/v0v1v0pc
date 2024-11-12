@@ -1,0 +1,234 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>clime</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>solve for the inverse matrix</h2>
+
+<h3>Description</h3>
+
+<p>Solve for a series of the inverse covariance matrix estimates at a grid of
+values for the constraint lambda.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">clime(x, lambda=NULL, nlambda=ifelse(is.null(lambda),100,length(lambda)),
+      lambda.max=0.8, lambda.min=ifelse(nrow(x)&gt;ncol(x), 1e-4, 1e-2),
+      sigma=FALSE, perturb=TRUE, standardize=TRUE, logspaced=TRUE,
+      linsolver=c("primaldual", "simplex"), pdtol=1e-3, pdmaxiter=50)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Input matrix of size n (observations) times p (variables).
+Each column is a variable of length n. Alternatively, the sample
+covariance matrix may be set here with the next option <code>sigma</code>
+set to be TRUE.  When the input is the sample covariance matrix,
+<code>cv.clime</code> can not be used for this object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>Grid of non-negative values for the constraint
+parameter lambda. If missing, <code>nlambda</code>  values from <code>lambda.min</code> to
+<code>lambda.max</code> will be generated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>standardize</code></td>
+<td>
+<p>Whether the  variables will be
+standardized to have mean zero and unit standard deviation.
+Default
+TRUE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nlambda</code></td>
+<td>
+<p>Number of values for program generated <code>lambda</code>.  Default 100.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.max</code></td>
+<td>
+<p>Maximum value of program generated <code>lambda</code>.
+Default 0.8.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda.min</code></td>
+<td>
+<p>Minimum value of program generated <code>lambda</code>.
+Default 1e-4(<code class="reqn">n &gt; p</code>) or 1e-2(<code class="reqn">n &lt; p</code>).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sigma</code></td>
+<td>
+<p>Whether <code>x</code> is the sample covariance matrix.
+Default FALSE. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>perturb</code></td>
+<td>
+<p>Whether a perturbed <code>Sigma</code> should be used or
+the positive perturbation added if it is numerical.  Default TRUE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logspaced</code></td>
+<td>
+<p>Whether program generated lambda should be
+log-spaced or linear spaced.  Default TRUE.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>linsolver</code></td>
+<td>
+<p>Whether <code>primaldual</code> (default) or <code>simplex</code> method
+should be employed. Rule of thumb: <code>primaldual</code> for large p,
+<code>simplex</code> for small p.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pdtol</code></td>
+<td>
+<p>Tolerance for the duality gap, ignored if <code>simplex</code>
+is employed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pdmaxiter</code></td>
+<td>
+<p>Maximum number of iterations for <code>primaldual</code>,
+ignored if <code>simplex</code> is employed.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>A constrained <code class="reqn">\ell_1</code>
+minimization approach for sparse precision matrix estimation (details
+in references) is implemented here using linear programming (revised
+simplex or primal-dual interior point method).  It solves  a sequence of
+<code>lambda</code> values on the following objective function<br></p>
+<p style="text-align: center;"><code class="reqn">
+    \min | \Omega |_1 \quad \textrm{subject to: } || \Sigma_n
+  \Omega - I ||_\infty \le \lambda
+  </code>
+</p>
+<p><br>
+where <code class="reqn">\Sigma_n</code> is the sample covariance matrix and <code class="reqn">\Omega</code>
+is the inverse we want to estimate.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object with S3 class <code>"clime"</code>.   You can also use it as a
+regular R list with the following fields:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>Omega</code></td>
+<td>
+<p>List of estimated inverse covariance matrix for a grid of
+values for   <code>lambda</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>Actual sequence of <code>lambda</code> used in the program
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>perturb</code></td>
+<td>
+<p>Actual perturbation used in the program.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>standardize</code></td>
+<td>
+<p>Whether standardization is applied to the columns
+of <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Actual <code>x</code> used in the program.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lpfun</code></td>
+<td>
+<p>Linear programming solver used.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>T. Tony Cai, Weidong Liu and Xi (Rossi) Luo<br>
+Maintainer: Xi (Rossi) Luo <a href="mailto:xi.rossi.luo@gmail.com">xi.rossi.luo@gmail.com</a> </p>
+
+
+<h3>References</h3>
+
+<p>Cai, T.T., Liu, W., and Luo, X. (2011).   <em>
+A constrained <code class="reqn">\ell_1</code>
+minimization approach for sparse precision matrix estimation.
+</em> Journal of the American Statistical Association 106(494): 594-607.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## trivial example
+n &lt;- 50
+p &lt;- 5
+X &lt;- matrix(rnorm(n*p), nrow=n)
+re.clime &lt;- clime(X)
+
+## tridiagonal matrix example
+bandMat &lt;- function(p, k) {
+  cM &lt;- matrix(rep(1:p, each=p), nrow=p, ncol=p)
+  return((abs(t(cM)-cM)&lt;=k)*1)
+}
+## tridiagonal Omega with diagonal 1 and off-diagonal 0.5
+Omega &lt;- bandMat(p, 1)*0.5
+diag(Omega) &lt;- 1
+Sigma &lt;- solve(Omega)
+X &lt;- matrix(rnorm(n*p), nrow=n)%*%chol(Sigma)
+re.clime &lt;- clime(X, standardize=FALSE, linsolver="simplex")
+re.cv &lt;- cv.clime(re.clime)
+re.clime.opt &lt;- clime(X, standardize=FALSE, re.cv$lambdaopt)
+
+## Compare Frobenius norm loss
+## clime estimator
+sqrt( sum( (Omega-re.clime.opt$Omegalist[[1]])^2 ) )
+## Not run: 0.3438533
+## Sample covariance matrix inversed
+sqrt( sum( ( Omega-solve(cov(X)*(1-1/n)) )^2 ) )
+## Not run: 0.874041
+sqrt( sum( ( Omega-solve(cov(X)) )^2 ) )
+## Not run: 0.8224296
+</code></pre>
+
+
+</div>

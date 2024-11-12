@@ -1,0 +1,154 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>estimate_ancestral_states</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Ancestral Character State Estimation</h2>
+
+<h3>Description</h3>
+
+<p>Given a tree and a cladistic matrix uses likelihood to estimate the ancestral states for every character.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">estimate_ancestral_states(
+  cladistic_matrix,
+  time_tree,
+  estimate_all_nodes = FALSE,
+  estimate_tip_values = FALSE,
+  inapplicables_as_missing = FALSE,
+  polymorphism_behaviour = "equalp",
+  uncertainty_behaviour = "equalp",
+  threshold = 0.01,
+  all_missing_allowed = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cladistic_matrix</code></td>
+<td>
+<p>A character-taxon matrix in the format imported by read_nexus_matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time_tree</code></td>
+<td>
+<p>A tree (phylo object) with branch lengths that represents the relationships of the taxa in <code>cladistic_matrix</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estimate_all_nodes</code></td>
+<td>
+<p>Logical that allows the user to make estimates for all ancestral values. The default (<code>FALSE</code>) will only make estimates for nodes that link coded terminals (recommended).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estimate_tip_values</code></td>
+<td>
+<p>Logical that allows the user to make estimates for tip values. The default (<code>FALSE</code>) will only makes estimates for internal nodes (recommended).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inapplicables_as_missing</code></td>
+<td>
+<p>Logical that decides whether or not to treat inapplicables as missing (TRUE) or not (FALSE, the default and recommended option).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>polymorphism_behaviour</code></td>
+<td>
+<p>One of either "equalp" or "treatasmissing".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>uncertainty_behaviour</code></td>
+<td>
+<p>One of either "equalp" or "treatasmissing".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold</code></td>
+<td>
+<p>The threshold value to use when collapsing marginal likelihoods to discrete state(s).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>all_missing_allowed</code></td>
+<td>
+<p>Logical to allow all missing character values (generally not recommended, hence default is FALSE).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>At its' core the function uses either the rerootingMethod (Yang et al. 1995) as implemented in the phytools package (for discrete characters) or the ace function in the ape package (for continuous characters) to make ancestral state estimates. For discrete characters these are collapsed to the most likely state (or states, given equal likelihoods or likelihood within a defined <code>threshold</code> value). In the latter case the resulting states are represented as an uncertainty (i.e., states separated by a slash, e.g., 0/1). This is the method developed for Brusatte et al. (2014).
+</p>
+<p>The function can deal with ordered or unordered characters and does so by allowing only indirect transitions (from 0 to 2 must pass through 1) or direct transitions (from 0 straight to 2), respectively. However, more complex costmatrix transitions are not currently supported.
+</p>
+<p>Ancestral state estimation is complicated where polymorphic or uncertain tip values exist. These are not currently well handled here, although see the <code>fitpolyMk</code> function in phytools for a way these could be dealt with in future. The only available options right now are to either treat multiple states as being equally probable of the "true" tip state (i.e., a uniform prior) or to avoid dealing with them completely by treating them as missing (NA) values.
+</p>
+<p>It is also possible to try to use phylogenetic information to infer missing states, both for internal nodes (e.g., those leading to missing tip states) and for tips. This is captured by the <code>estimate_all_nodes</code> and <code>estimate_tip_values</code> options. These have been partially explored by Lloyd (2018), who cuationed against their use.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The function will return the same <code>cladistic_matrix</code>, but with two key additions: 1. Internal nodes (numbered by ape formatting) will appear after taxa in each matrix block with estimated states coded for them, and 2. The time-scaled tree used will be added to <code>cladistic_matrix</code> as <code>cladistic_matrix$topper$tree</code>. Note that if using the <code>estimate_tip_values = TRUE</code> option then tip values may also be changed from those provided as input.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Graeme T. Lloyd <a href="mailto:graemetlloyd@gmail.com">graemetlloyd@gmail.com</a> and Thomas Guillerme <a href="mailto:guillert@tcd.ie">guillert@tcd.ie</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Brusatte, S. L., Lloyd, G. T., Wang, S. C. and Norell, M. A., 2014. Gradual assembly of avian body plan culminated in rapid rates of evolution across dinosaur-bird transition. <em>Current Biology</em>, 24, 2386-2392.
+</p>
+<p>Lloyd, G. T., 2018. Journeys through discrete-character morphospace: synthesizing phylogeny, tempo, and disparity. <em>Palaeontology</em>, <b>61</b>, 637-645.
+</p>
+<p>Yang, Z., Kumar, S. and Nei, M., 1995. A new method of inference of ancestral nucleotide and amino acid sequences. <em>Genetics</em>, <b>141</b>, 1641-1650.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Set random seed:
+set.seed(4)
+
+# Generate a random tree for the Day data set:
+time_tree &lt;- ape::rtree(n = nrow(day_2016$matrix_1$matrix))
+
+# Update taxon names to match those in the data matrix:
+time_tree$tip.label &lt;- rownames(x = day_2016$matrix_1$matrix)
+
+# Set root time by making youngest taxon extant:
+time_tree$root.time &lt;- max(diag(x = ape::vcv(phy = time_tree)))
+
+# Use Day matrix as cladistic matrix:
+cladistic_matrix &lt;- day_2016
+
+# Prune most characters out to make example run fast:
+cladistic_matrix &lt;- prune_cladistic_matrix(cladistic_matrix,
+  characters2prune = c(2:3, 5:37)
+)
+
+# Estimate ancestral states:
+estimate_ancestral_states(
+  cladistic_matrix = cladistic_matrix,
+  time_tree = time_tree
+)
+</code></pre>
+
+
+</div>

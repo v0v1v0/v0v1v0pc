@@ -1,0 +1,176 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>estimation.CumBH</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>estimation.CumBH</h2>
+
+<h3>Description</h3>
+
+<p>Estimates the log-relative hazard, baseline hazards at each unique event time
+and cumulative baseline hazard in a given time interval [Tau1, Tau2].
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">estimation.CumBH(mod, Tau1 = NULL, Tau2 = NULL, missing.data = FALSE,
+riskmat.phase2 = NULL, dNt.phase2 = NULL, status.phase2 = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>mod</code></td>
+<td>
+<p>a Cox model object, result of function coxph.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Tau1</code></td>
+<td>
+<p>left bound of the time interval considered for the cumulative
+baseline hazard. Default is the first event time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Tau2</code></td>
+<td>
+<p>right bound of the time interval considered for the cumulative
+baseline hazard. Default is the last event time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>missing.data</code></td>
+<td>
+<p>was data on the <code class="reqn">p</code> covariates missing for certain individuals
+in the phase-two data (i.e., was a third phase of sampling performed)? If
+<code>missing.data = TRUE</code>, the arguments below need to be provided.
+Default is FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>riskmat.phase2</code></td>
+<td>
+<p>at risk matrix for the phase-two data at all of the case
+event times, even those with missing covariate data. Needs to be provided if
+<code>missing.data = TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dNt.phase2</code></td>
+<td>
+<p>counting process matrix for failures in the phase-two data.
+Needs to be provided if <code>missing.data = TRUE</code> and <code>status.phase2 = NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>status.phase2</code></td>
+<td>
+<p>vector indicating the case status in the phase-two data.
+Needs to be provided if <code>missing.data = TRUE</code> and <code>dNt.phase2 = NULL</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>estimation.CumBH</code> returns the log-relative hazard estimates provided by
+<code>mod</code>, and estimates the baseline hazard point mass at any event time
+non-parametrically.
+</p>
+<p><code>estimation.CumBH</code> works for estimation from a case-cohort with design weights
+or calibrated weights, when the case-cohort consists of the subcohort and cases
+not in the subcohort (i.e., case-cohort obtained from two phases of sampling),
+as well as with design weights when covariate data was missing for certain
+individuals in the phase-two data (i.e., case-cohort obtained from three phases
+of sampling).
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>beta.hat</code>: vector of length <code class="reqn">p</code> with log-relative hazard estimates.
+</p>
+<p><code>lambda0.t.hat</code>: vector with baseline hazards estimates at each unique event time.
+</p>
+<p><code>Lambda0.Tau1Tau2.hat</code>: cumulative baseline hazard estimate in [Tau1, Tau2].
+</p>
+
+
+<h3>References</h3>
+
+<p>Breslow, N. (1974). Covariance Analysis of Censored Survival Data. Biometrics, 30, 89-99.
+</p>
+<p>Etievant, L., Gail, M. H. (2024). Cox model inference for relative hazard and pure risk from stratified weight-calibrated case-cohort data. Lifetime Data Analysis, 30, 572-599.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>estimation</code>, <code>estimation.PR</code>, <code>influences</code>, <code>influences.RH</code>,
+<code>influences.CumBH</code>, <code>influences.PR</code>,
+<code>influences.missingdata</code>, <code>influences.RH.missingdata</code>, <code>influences.CumBH.missingdata</code>,
+and <code>influences.PR.missingdata</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+  data(dataexample.missingdata.stratified, package="CaseCohortCoxSurvival")
+
+  cohort &lt;- dataexample.missingdata.stratified$cohort
+  phase2 &lt;- cohort[which(cohort$phase2 == 1),] # the phase-two sample
+  casecohort &lt;- cohort[which(cohort$phase3 == 1),] # the stratified case-cohort
+
+  B.phase2 &lt;- cbind(1 * (phase2$W3 == 0), 1 * (phase2$W3 == 1))
+  rownames(B.phase2)  &lt;- cohort[cohort$phase2 == 1, "id"]
+  B.phase3 &lt;- cbind(1 * (casecohort$W3 == 0), 1 * (casecohort$W3 == 1))
+  rownames(B.phase3)  &lt;- cohort[cohort$phase3 == 1, "id"]
+  total.B.phase2 &lt;- colSums(B.phase2)
+  J3 &lt;- ncol(B.phase3)
+  n &lt;- nrow(cohort)
+
+  # Quantities needed for estimation of the cumulative baseline hazard when
+  # covariate data is missing
+  mod.cohort &lt;- coxph(Surv(event.time, status) ~ X2, data = cohort,
+                      robust = TRUE) # X2 is available on all cohort members
+  mod.cohort.detail &lt;- coxph.detail(mod.cohort, riskmat = TRUE)
+
+  riskmat.phase2 &lt;- with(cohort, mod.cohort.detail$riskmat[phase2 == 1,])
+  rownames(riskmat.phase2) &lt;- cohort[cohort$phase2 == 1, "id"]
+  observed.times.phase2 &lt;- apply(riskmat.phase2, 1,
+                                 function(v) {which.max(cumsum(v))})
+  dNt.phase2 &lt;- matrix(0, nrow(riskmat.phase2), ncol(riskmat.phase2))
+  dNt.phase2[cbind(1:nrow(riskmat.phase2), observed.times.phase2)] &lt;- 1
+  dNt.phase2 &lt;- sweep(dNt.phase2, 1, phase2$status, "*")
+  colnames(dNt.phase2) &lt;- colnames(riskmat.phase2)
+  rownames(dNt.phase2) &lt;- rownames(riskmat.phase2)
+
+  Tau1 &lt;- 0 # given time interval for the pure risk
+  Tau2 &lt;- 8
+  x &lt;- c(-1, 1, -0.6) # given covariate profile for the pure risk
+
+  # Estimation using the stratified case cohort with true known design weights
+  mod.true &lt;- coxph(Surv(event.time, status) ~ X1 + X2 + X3, data = casecohort,
+                    weight = weight.true, id = id, robust = TRUE)
+
+  est.true &lt;- estimation(mod.true, Tau1 = Tau1, Tau2 = Tau2, x = x,
+                         missing.data = TRUE,
+                         riskmat.phase2 = riskmat.phase2,
+                         dNt.phase2 = dNt.phase2)
+
+  est.true &lt;- estimation.CumBH(mod.true, Tau1 = Tau1, Tau2 = Tau2,
+                                            missing.data = TRUE,
+                                            riskmat.phase2 = riskmat.phase2,
+                                            dNt.phase2 = dNt.phase2)
+
+  # print the cumulative baseline hazard estimate
+  est.true$Lambda0.Tau1Tau2.hat
+</code></pre>
+
+
+</div>

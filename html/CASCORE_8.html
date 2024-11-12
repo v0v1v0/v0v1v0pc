@@ -1,0 +1,105 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>SCORE</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Spectral Clustering On Ratios-of-Eigenvectors.</h2>
+
+<h3>Description</h3>
+
+<p>Using ratios-of-eigenvectors to detect underlying communities.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">SCORE(G, K, itermax = NULL, startn = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>G</code></td>
+<td>
+<p>A 0/1 adjacency matrix of a connected graph.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K</code></td>
+<td>
+<p>A positive integer, indicating the number of underlying communities in graph <code>G</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>itermax</code></td>
+<td>
+<p><code>k-means</code> parameter, indicating the maximum number of
+iterations allowed. The default value is 100.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>startn</code></td>
+<td>
+<p><code>k-means</code> parameter. If centers is a number, how many
+random sets should be chosen? The default value is 10.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><em>SCORE</em> is fully established in <em>Fast community detection by
+SCORE</em> of Jin (2015). <em>SCORE</em> uses the entry-wise ratios between the
+first leading eigenvector and each of the other <code class="reqn">K-1</code> leading eigenvectors for
+clustering. It is noteworthy that SCORE only works on connected graphs,
+in other words, it does not allow for isolated vertices.
+</p>
+
+
+<h3>Value</h3>
+
+<table><tr style="vertical-align: top;">
+<td><code>estall</code></td>
+<td>
+<p>A lavel vector.</p>
+</td>
+</tr></table>
+<h3>References</h3>
+
+<p>Jin, J. (2015). <em>Fast community detection by score</em>.
+<em>The Annals of Statistics 43 (1), 57–89.</em><br><a href="https://doi.org/10.1214/14-AOS1265">doi:10.1214/14-AOS1265</a><br></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Simulate the Network
+n = 10; K = 2;
+theta = 0.4 + (0.45-0.05)*(seq(1:n)/n)^2; Theta = diag(theta);
+P  = matrix(c(0.8, 0.2, 0.2, 0.8), byrow = TRUE, nrow = K)
+set.seed(2022)
+l = sample(1:K, n, replace=TRUE); # node labels
+Pi = matrix(0, n, K) # label matrix
+for (k in 1:K){
+  Pi[l == k, k] = 1
+}
+Omega = Theta %*% Pi %*% P %*% t(Pi) %*% Theta;
+Adj = matrix(runif(n*n, 0, 1), nrow = n);
+Adj = Omega - Adj;
+Adj = 1*(Adj &gt;= 0)
+diag(Adj) = 0
+Adj[lower.tri(Adj)] = t(Adj)[lower.tri(Adj)]
+library(igraph)
+is.igraph(Adj) # [1] FALSE
+ix = components(graph.adjacency(Adj))
+componentLabel = ix$membership
+giantLabel = which(componentLabel == which.max(ix$csize))
+Giant = Adj[giantLabel, giantLabel]
+SCORE(Giant, 2)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,92 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>globtemp</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Annual Average Global Surface Temperature</h2>
+
+<h3>Description</h3>
+
+<p>Time Series of length 113 of annual average global surface temperature
+deviations from 1880 to 1992.
+
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">data(globtemp)</code></pre>
+
+
+<h3>Details</h3>
+
+<p>This is Example 1 of the COBS paper, where the hypothesis of a
+monotonely increasing trend is considered; Koenker and Schorfheide
+(1994) consider modeling the autocorrelations.
+</p>
+
+
+<h3>Source</h3>
+
+<p>‘<span class="file">temp.data</span>’ in file ‘<span class="file">cobs.shar</span>’ available from
+<a href="https://www2.nau.edu/PinNg/cobs.html">https://www2.nau.edu/PinNg/cobs.html</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>He, X. and Ng, P. (1999)
+COBS: Qualitatively Constrained Smoothing via Linear Programming;
+<em>Computational Statistics</em> <b>14</b>, 315–337.
+</p>
+<p>Koenker, R. and Schorfheide F. (1994)
+Quantile Spline Models for Global Temperature Change;
+<em>Climate Change</em> <b>28</b>, 395–404.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(globtemp)
+plot(globtemp, main = "Annual Global Temperature Deviations")
+str(globtemp)
+## forget about time-series, just use numeric vectors:
+year &lt;- as.vector(time(globtemp))
+temp &lt;- as.vector(globtemp)
+
+
+
+##---- Code for Figure 1a of He and Ng (1999) ----------
+
+a50 &lt;- cobs(year, temp, knots.add = TRUE, degree = 1, constraint = "increase")
+summary(a50)
+## As suggested in the warning message, we increase the number of knots to 9
+a50 &lt;- cobs(year, temp, nknots = 9, knots.add = TRUE, degree = 1,
+            constraint = "increase")
+summary(a50)
+## Here, we use the same knots sequence chosen for the 50th percentile
+a10 &lt;- cobs(year, temp, nknots = length(a50$knots), knots = a50$knot,
+            degree = 1, tau = 0.1, constraint = "increase")
+summary(a10)
+a90 &lt;- cobs(year, temp, nknots = length(a50$knots), knots = a50$knot,
+            degree = 1, tau = 0.9, constraint = "increase")
+summary(a90)
+
+which(hot.idx  &lt;- temp &gt;= a90$fit)
+which(cold.idx &lt;- temp &lt;= a10$fit)
+normal.idx &lt;- !hot.idx &amp; !cold.idx
+
+plot(year, temp, type = "n", ylab = "Temperature (C)", ylim = c(-.7,.6))
+lines(predict(a50, year, interval = "both"), col = 2)
+lines(predict(a10, year, interval = "both"), col = 3)
+lines(predict(a90, year, interval = "both"), col = 3)
+points(year, temp, pch = c(1,3)[2 - normal.idx])
+
+## label the "hot" and "cold" days
+text(year[hot.idx], temp[hot.idx] + .03, labels = year[hot.idx])
+text(year[cold.idx],temp[cold.idx]- .03, labels = year[cold.idx])
+</code></pre>
+
+
+</div>

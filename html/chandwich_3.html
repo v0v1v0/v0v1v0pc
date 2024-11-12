@@ -1,0 +1,167 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>anova.chandwich</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Comparison of nested models</h2>
+
+<h3>Description</h3>
+
+<p><code>anova</code> method for objects of class <code>"chandwich"</code>.
+Compares two or more nested models using the adjusted likelihood ratio
+test statistic (ALRTS) described in Section 3.5 of Chandler and Bate (2007).
+The nesting must result from the simple constraint that a subset of the
+parameters of the larger model is held fixed.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'chandwich'
+anova(object, object2, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>An object of class <code>"chandwich"</code>, returned by
+<code>adjust_loglik</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>object2</code></td>
+<td>
+<p>An object of class <code>"chandwich"</code>, returned by
+<code>adjust_loglik</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further objects of class <code>"chandwich"</code> and/or arguments
+to be passed to <code>compare_models</code>.  The name of any object
+of class <code>"chandwich"</code> passed via ... must not match any argument of
+<code>compare_models</code> or any argument of
+<code>optim</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For details the adjusted likelihood ratio test see
+<code>compare_models</code> and Chandler and Bate (2007).
+</p>
+<p>The objects of class <code>"chandwich"</code> need not be provided in nested
+order: they will be ordered inside <code>anova.chandwich</code> based on the
+values of <code>attr(., "p_current")</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>"anova"</code> inheriting from class
+<code>"data.frame"</code>, with four columns:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>Model.Df</code></td>
+<td>
+<p>The number of parameters in the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Df</code></td>
+<td>
+<p>The decrease in the number of parameter compared the model
+in the previous row</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ALRTS</code></td>
+<td>
+<p>The adjusted likelihood ratio test statistic</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Pr(&gt;ALRTS)</code></td>
+<td>
+<p>The p-value associated with the test that the
+model is a valid simplification of the model in the previous row.</p>
+</td>
+</tr>
+</table>
+<p>The row names are the names of the model objects.
+</p>
+
+
+<h3>References</h3>
+
+<p>Chandler, R. E. and Bate, S. (2007). Inference for clustered
+data using the independence loglikelihood. <em>Biometrika</em>,
+<strong>94</strong>(1), 167-183. <a href="https://doi.org/10.1093/biomet/asm015">doi:10.1093/biomet/asm015</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>compare_models</code> for an adjusted likelihood ratio test
+of two models.
+</p>
+<p><code>adjust_loglik</code> to adjust a user-supplied
+loglikelihood function.
+</p>
+<p><code>conf_intervals</code> for confidence intervals for
+individual parameters.
+</p>
+<p><code>conf_region</code> for a confidence region for
+pairs of parameters.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># -------------------------- GEV model, owtemps data -----------------------
+# ------------ following Section 5.2 of Chandler and Bate (2007) -----------
+
+gev_loglik &lt;- function(pars, data) {
+  o_pars &lt;- pars[c(1, 3, 5)] + pars[c(2, 4, 6)]
+  w_pars &lt;- pars[c(1, 3, 5)] - pars[c(2, 4, 6)]
+  if (isTRUE(o_pars[2] &lt;= 0 | w_pars[2] &lt;= 0)) return(-Inf)
+  o_data &lt;- data[, "Oxford"]
+  w_data &lt;- data[, "Worthing"]
+  check &lt;- 1 + o_pars[3] * (o_data - o_pars[1]) / o_pars[2]
+  if (isTRUE(any(check &lt;= 0))) return(-Inf)
+  check &lt;- 1 + w_pars[3] * (w_data - w_pars[1]) / w_pars[2]
+  if (isTRUE(any(check &lt;= 0))) return(-Inf)
+  o_loglik &lt;- log_gev(o_data, o_pars[1], o_pars[2], o_pars[3])
+  w_loglik &lt;- log_gev(w_data, w_pars[1], w_pars[2], w_pars[3])
+  return(o_loglik + w_loglik)
+}
+
+# Initial estimates (method of moments for the Gumbel case)
+sigma &lt;- as.numeric(sqrt(6 * diag(var(owtemps))) / pi)
+mu &lt;- as.numeric(colMeans(owtemps) - 0.57722 * sigma)
+init &lt;- c(mean(mu), -diff(mu) / 2, mean(sigma), -diff(sigma) / 2, 0, 0)
+
+# Log-likelihood adjustment of the full model
+par_names &lt;- c("mu[0]", "mu[1]", "sigma[0]", "sigma[1]", "xi[0]", "xi[1]")
+large &lt;- adjust_loglik(gev_loglik, data = owtemps, init = init,
+         par_names = par_names)
+
+# Log-likelihood adjustment of some smaller models: xi[1] = 0 etc
+
+medium &lt;- adjust_loglik(larger = large, fixed_pars = "xi[1]")
+small &lt;- adjust_loglik(larger = medium, fixed_pars = c("sigma[1]", "xi[1]"))
+tiny &lt;- adjust_loglik(larger = small,
+                      fixed_pars = c("mu[1]", "sigma[1]", "xi[1]"))
+
+anova(large, medium, small, tiny)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,246 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>testChaos01</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Function to compute 0-1 test for chaos</h2>
+
+<h3>Description</h3>
+
+<p>This function computes results of the 0-1 test for chaos from the numeric vector (time series).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">testChaos01(TS, c.rep = 100, alpha = 0, out = FALSE,
+  c.int = c(pi/5, 4 * pi/5), c.gen = "random", par = "seq",
+  num.threads = NA, include.TS = FALSE, approach = "cor",
+  window.size = NA, control.set.point = NA, threshold = NA)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>TS</code></td>
+<td>
+<p>the input vector. This should be a numeric vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>c.rep</code></td>
+<td>
+<p>integer, defines how many different parameters "c" should be used for the computation. Default is 100.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>numeric, the noise dampening parameter. If 0, no noise dampening is done. For more details see the Gottwald and Melbourne (2004). This variable is not used in "bounding box" and "centre of gravity" approaches. Default is 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>out</code></td>
+<td>
+<p>logical, if TRUE return the list of class "chaos01.res". This list contain lists of "chaos01" list with values of pc, qc, Mc, Dc, Kc and c. These can be then easily plotted by the plot function. Default is FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>c.int</code></td>
+<td>
+<p>set the interval from which the parameter "c" should be chosen. The input is numeric vector. The minimal and maximal value in the vector is then chosen as the minimum and maximum for the generation of parameters "c". Generally it is not needed to change this value. Default is c(pi/5, 4*pi/5).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>c.gen</code></td>
+<td>
+<p>character string, which defines how the parameter "c" should be generated from the interval defined by c.int.
+</p>
+
+<ul>
+<li>
+<p> "random" - draws from uniform distribution
+</p>
+</li>
+<li>
+<p> "equal" - equidistant distribution
+</p>
+</li>
+</ul>
+<p>Default is "random". Note: If there is unrecognized input, it will use default.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>par</code></td>
+<td>
+<p>character string, determine whether make the computation for every parameter "c" sequentially or in parallel. Parallelization is provided by the package "parallel" for one machine, or the cluster option using package "Rmpi" is available.
+</p>
+
+<ul>
+<li>
+<p> "seq" - sequential run
+</p>
+</li>
+<li>
+<p> "parallel" - parallel on one machine
+</p>
+</li>
+<li>
+<p> "MPI" - run parallel using Rmpi. </p>
+</li>
+</ul>
+<p>When the work with MPI is finished, the Rmpi::mpi.finalize(), must be used to properly close the MPI. After that command, it is impossible to run MPI until restarting the R session, therefore use it after all runs of the test.
+</p>
+<p>Default is "seq".
+Note: If there is unrecognized input, it will use default.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>num.threads</code></td>
+<td>
+<p>integer, number of threads use for the computation. When the computation is sequential, this is ignored. Default is NA.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>include.TS</code></td>
+<td>
+<p>logical, if TRUE and out is TRUE input time series will be added to the list of outputs. Default is FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>approach</code></td>
+<td>
+<p>character string, determine which computational approach to use.
+</p>
+
+<ul>
+<li>
+<p> "cor" - mean square displacement method with correlation proposed by Gottwald and Melbourne.
+</p>
+</li>
+<li>
+<p> "bb"  - bounding box method proposed by Martinovic.
+</p>
+</li>
+<li>
+<p> "cog" - centre of gravity method proposed by Martinovic.
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>window.size</code></td>
+<td>
+<p>integer, window size used for the bounding box or the centre of gravity computation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control.set.point</code></td>
+<td>
+<p>integer, point where the bounding box size should be checked, when the approach = "bb".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold</code></td>
+<td>
+<p>numeric, a threshold value for the bounding box computation and centre of gravity computation. For more information see Martinovic (2019).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Note that this test does not work in several cases.
+</p>
+
+<ul>
+<li>
+<p> In general, time series have to approach steady state, that is it's attractor. E.g. if the time series corresponds
+to homoclinic trajectory, the output of the test should not be close to 0 or 1.
+</p>
+</li>
+<li>
+<p> The time series contain too much noise. See examples.
+</p>
+</li>
+<li>
+<p> The time series is behaving like a white noise.
+</p>
+</li>
+</ul>
+<p>In these cases you may receive unclear results, or in special cases the false results.
+You can find more on the validity of the test in Gottwald and Melbourne (2009).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A numeric from the interval (0,1). 0 stands for the regular dynamics and 1 for the chaotic dynamics. If the parameter out = TRUE, the output is list of list of all the computed variables. This is mainly for research and testing purposes.
+</p>
+
+
+<h3>References</h3>
+
+<p>Gottwald G.A. and Melbourne I. (2004) On the implementation of the 0-1 Test for Chaos, SIAM J. Appl. Dyn. Syst., 8(1), 129–145.
+</p>
+<p>Gottwald G.A. and Melbourne I. (2009) On the validity of the 0-1 Test for Chaos, Nonlinearity, 22, 6
+</p>
+<p>Martinovic T. (2019)  Alternative approaches of evaluating the 0-1 test for chaos, Int. J. Comput. Math.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>plot.chaos01</code>, <code>plot.chaos01.res</code>, <code>getVal</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">TS &lt;- gen.logistic(mu = 3.55, iter = 2000)
+
+# The median of Kc
+res &lt;- testChaos01(TS)
+print(res)
+
+# Output for each value of c
+res2 &lt;- testChaos01(TS, out = TRUE)
+
+summary(res2[[1]])
+head(res2[[1]]$pc)
+print(res2[[1]]$Kc)
+
+class(res2)
+class(res2[[1]])
+
+## Not run: 
+# Introducing noise
+TS2 &lt;- TS + runif(2000, 0, 0.1)
+
+res.orig &lt;- testChaos01(TS2, alpha = 0)
+res.damp &lt;- testChaos01(TS2, alpha = 2.5)
+
+sprintf(Original test result %s\n Dampened test result %s, res.orig, res.damp)
+
+# Parallel
+res &lt;- testChaos01(TS, par = "parallel", num.treads = 2)
+
+# Parallel cluster, remember to initialize and finalize the MPI
+# Needs to be run inside a script and run from a command line interface (CLI)
+# e.g. mpirun Rscript test_chaos01_mpi.R
+pbdMPI::init()
+res &lt;- testChaos01(TS, par = "MPI", num.treads = 2)
+pbdMPI::finalize()
+
+
+# Different interval for generating c
+res &lt;- testChaos01(TS, c.int = c(0, pi))
+
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,393 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>geeDREstimation</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Doubly Robust Inverse Probability Weighted Augmented GEE Estimator</h2>
+
+<h3>Description</h3>
+
+<p>This function implements a GEE estimator. It implements classical GEE, IPW-GEE, augmented GEE and IPW-Augmented GEE (Doubly robust). <br></p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">geeDREstimation(formula, id, data = parent.frame(), family = gaussian,
+  corstr = "independence", Mv = 1, weights = NULL, aug = NULL,
+  pi.a = 1/2, corr.mat = NULL, init.beta = NULL, init.alpha = NULL,
+  init.phi = 1, scale.fix = FALSE, sandwich = TRUE, maxit = 20,
+  tol = 1e-05, print.log = FALSE, typeweights = "VW", nameTRT = "TRT",
+  model.weights = NULL, model.augmentation.trt = NULL,
+  model.augmentation.ctrl = NULL, stepwise.augmentation = FALSE,
+  stepwise.weights = FALSE, nameMISS = "MISSING", nameY = "OUTCOME",
+  sandwich.nuisance = FALSE, fay.adjustment = FALSE, fay.bound = 0.75)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>an object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id</code></td>
+<td>
+<p>a vector which identifies the clusters. The length of "id" should be the same as the number of observations. Data are assumed to be sorted so that observations on a cluster are contiguous rows for all entities in the formula.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>an optional data frame, list or environment (or object coercible by as.data.frame to a data frame) containing the variables in the model. If not found in data, the variables are taken from environment(formula), typically the environment from which CRTgeeDR is called.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>a description of the error distribution and link function to be used in the model. This can be a character string naming a family function, a family function or the result of a call to a family function. (See family for details of family functions.)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>corstr</code></td>
+<td>
+<p>a character string specifying the correlation structure. The following are permitted: '"independence"', '"exchangeable"', '"ar1"', '"unstructured"' and '"userdefined"'</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Mv</code></td>
+<td>
+<p>for "m-dependent", the value for m</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>A vector of weights for each observation. If an observation has weight 0, it is excluded from the calculations of any parameters. Observations with a NA anywhere (even in variables not included in the model) will be assigned a weight of 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aug</code></td>
+<td>
+<p>A list of vector (one for A=1 treated, one for A=0 control) for each observation representing E(Y|X,A=a).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pi.a</code></td>
+<td>
+<p>A number, Probability of treatment attribution P(A=1)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>corr.mat</code></td>
+<td>
+<p>The correlation matrix for "fixed". Matrix should be symmetric with dimensions &gt;= the maximum cluster size. If the correlation structure is "userdefined", then this is a matrix describing which correlations are the same.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>init.beta</code></td>
+<td>
+<p>an optional vector with the initial values of beta. If not specified, then the intercept will be set to InvLink(mean(response)). init.beta must be specified if not using an intercept.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>init.alpha</code></td>
+<td>
+<p>an optional scalar or vector giving the initial values for the correlation. If provided along with Mv&gt;1 or unstructured correlation, then the user must ensure that the vector is of the appropriate length.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>init.phi</code></td>
+<td>
+<p>an optional initial overdispersion parameter. If not supplied, initialized to 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scale.fix</code></td>
+<td>
+<p>if set to TRUE, then the scale parameter is fixed at the value of init.phi.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sandwich</code></td>
+<td>
+<p>if set to TRUE, the sandwich variance is provided together with the naive estimator of variance.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxit</code></td>
+<td>
+<p>maximum number of iterations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol</code></td>
+<td>
+<p>tolerance in calculation of coefficients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>print.log</code></td>
+<td>
+<p>if set to TRUE, a report is printed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>typeweights</code></td>
+<td>
+<p>a character string specifying the weights implementation. The following are permitted: "GENMOD" for <code class="reqn">W^{1/2}V^{-1}W^{1/2}</code>, "WV" for <code class="reqn">V^{-1}W</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nameTRT</code></td>
+<td>
+<p>Name of the variable containing information for the treatment</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model.weights</code></td>
+<td>
+<p>an object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted for the propensity score. Must model the probability of being observed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model.augmentation.trt</code></td>
+<td>
+<p>an object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted for the ouctome model for the treated group (A=1).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model.augmentation.ctrl</code></td>
+<td>
+<p>an object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted for the ouctome model for the control group (A=0).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stepwise.augmentation</code></td>
+<td>
+<p>if set to TRUE, a stepwise for the augmentation model is performed during the fit of the augmentation model for the OM</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stepwise.weights</code></td>
+<td>
+<p>if set to TRUE, a stepwise for the propensity score is performed during the fit of the augmentation model for the OM</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nameMISS</code></td>
+<td>
+<p>Name of the variable containing information for the Missing indicator</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nameY</code></td>
+<td>
+<p>Name of the variable containing information for the outcome</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sandwich.nuisance</code></td>
+<td>
+<p>if set to TRUE, the nuisance adjusted sandwich variance is provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fay.adjustment</code></td>
+<td>
+<p>if set to TRUE, the small-sample nuisance adjusted sandwich variance with Fay's adjustement is provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fay.bound</code></td>
+<td>
+<p>if set to 0.75 by default, bound value used for Fay's adjustement.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The estimator is founds by solving:
+</p>
+<p style="text-align: center;"><code class="reqn"> 0= \sum_{i=1}^M \Bigg[ \boldsymbol D_i^T \boldsymbol V_i^{-1} \boldsymbol  W_i(\boldsymbol X_i, A_i, \boldsymbol \eta_W) \left( \boldsymbol Y_i - \boldsymbol B(\boldsymbol X_i, A_i, \boldsymbol \eta_B) \right) </code>
+</p>
+
+<p style="text-align: center;"><code class="reqn"> \qquad + \sum_{a=0,1} p^a(1-p)^{1-a} \boldsymbol D_i^T \boldsymbol V_i^{-1}  \Big( \boldsymbol B(\boldsymbol X_i,A_i=a, \boldsymbol \eta_B) -\boldsymbol \mu_i(\boldsymbol \beta,A_i=a)\Big) \Bigg]</code>
+</p>
+
+<p>where <code class="reqn">\boldsymbol D_i=\frac{\partial \boldsymbol \mu_i(\boldsymbol \beta,A_i)}{\partial \boldsymbol \beta^T}</code> is the design matrix, <code class="reqn">\boldsymbol V_i</code> is the covariance matrix equal to <code class="reqn">\boldsymbol U_i^{1/2} \boldsymbol C(\boldsymbol \alpha)\boldsymbol U_i^{1/2}</code> with <code class="reqn">\boldsymbol U_i</code> a diagonal matrix with elements <code class="reqn">{\rm var}(y_{ij})</code> and <code class="reqn">\boldsymbol C(\boldsymbol \alpha)</code> is the working correlation structure with non-diagonal terms <code class="reqn">\boldsymbol \alpha</code>.
+Parameters <code class="reqn">\boldsymbol \alpha</code> are estimated using simple moment estimators from the Pearson residuals.
+The matrix of weights <code class="reqn">\boldsymbol W_i(\boldsymbol X_i, A_i, \boldsymbol \eta_W)=diag\left[R_{ij}/\pi_{ij}(\boldsymbol X_i, A_i, \boldsymbol \eta_W)\right]_{j=1,\dots,n_{i}}</code>, where <code class="reqn">\pi_{ij}(\boldsymbol X_i, A_i, \boldsymbol \eta_W)=P(R_{ij}|\boldsymbol X_i, A_i)</code> is the Propensity score (PS).
+The function <code class="reqn">\boldsymbol B(\boldsymbol X_i,A_i=a,\boldsymbol \eta_B)</code>, which is called the Outcome Model (OM), is a function linking <code class="reqn">Y_{ij}</code> with <code class="reqn">\boldsymbol X_i</code> and <code class="reqn">A_i</code>.
+The <code class="reqn">\boldsymbol \eta_B</code> are nuisance parameters that are estimated.
+The estimator is most efficient if the OM is equal to <code class="reqn">E(\boldsymbol Y_i|\boldsymbol X_i,A_i=a)</code>
+The estimator denoted <code class="reqn">\hat{\beta}_{aug}</code> is found by solving the estimating equation.
+Although  analytic solutions sometimes exist, coefficient estimates are generally obtained using an iterative procedure such as the Newton-Raphson method.
+Automatic implementation is such that, <code class="reqn">\hat{ \boldsymbol \eta}_W</code> in <code class="reqn">\boldsymbol W_i(\boldsymbol X_i, A_i, \hat{ \boldsymbol \eta}_W)</code> are obtained using a logistic regression and <code class="reqn">\hat{ \boldsymbol \eta}_B</code> in <code class="reqn">\boldsymbol B(\boldsymbol X_i,A_i,\hat{ \boldsymbol \eta}_B)</code> are obtained using a linear regression.
+</p>
+<p>The variance of <code class="reqn">\hat{\boldsymbol \beta}_{aug}</code> is estimated by the sandwich variance estimator.
+There are two external sources of variability that need to be accounted for: estimation of <code class="reqn">\boldsymbol \eta_W</code> for the PS and of <code class="reqn">\boldsymbol \eta_B</code> for the OM.
+We denote <code class="reqn">\boldsymbol \Omega=(\boldsymbol \beta, \boldsymbol \eta_W,\boldsymbol \eta_B)</code> the estimated parameters of interest and nuisance parameters.
+We can stack estimating functions and score functions for <code class="reqn">\boldsymbol \Omega</code>:
+</p>
+<p style="text-align: center;"><code class="reqn">\small \boldsymbol U_i(\boldsymbol \Omega)= \left( \begin{array}{c} \boldsymbol \Phi_i(\boldsymbol Y_i,\boldsymbol X_i,A_i,\boldsymbol \beta, \boldsymbol \eta_W, \boldsymbol \eta_B) \\ \boldsymbol S^W_i(\boldsymbol X_i, A_i, \boldsymbol \eta_W)\\ \boldsymbol S^B_i(\boldsymbol X_i, A_i, \boldsymbol \eta_B)\\ \end{array} \right)</code>
+</p>
+
+<p>where <code class="reqn">\boldsymbol S^W_i</code> and <code class="reqn">\boldsymbol S^B_i</code> represent the score equations for patients in cluster <code class="reqn">i</code> for the estimation of <code class="reqn">\boldsymbol \eta_W</code> and <code class="reqn">\boldsymbol \eta_B</code>  in the PS and the OM.
+A standard Taylor expansion paired with Slutzky's theorem and the central limit theorem give the sandwich estimator adjusted for nuisance parameters estimation in the OM and PS:
+</p>
+<p style="text-align: center;"><code class="reqn">Var(\boldsymbol \Omega)={{E\left[\frac{\partial   \boldsymbol U_i(\boldsymbol \Omega)}{\partial \boldsymbol \Omega}\right]}^{-1}}^{T} \underbrace{{E\left[ \boldsymbol U_i(\boldsymbol \Omega)\boldsymbol U_i^T(\boldsymbol \Omega) \right]}}_{\boldsymbol \Delta_{adj}} \underbrace{E\left[\frac{\partial   \boldsymbol U_i(\boldsymbol \Omega)}{\partial \boldsymbol \Omega}\right]^{-1} }_{\boldsymbol \Gamma^{-1}_{adj}}.</code>
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>An object of type 'CRTgeeDR' <br></p>
+<p>$beta Final values for regressors estimates <br></p>
+
+<ul>
+<li>
+<p> $phi scale parameter estimate<br></p>
+</li>
+<li>
+<p> $alpha Final values for association parameters in the working correlation structure when exchangeable<br></p>
+</li>
+<li>
+<p> $coefnames Name of the regressors in the main regression <br></p>
+</li>
+<li>
+<p> $niter Number of iteration done by the algorithm before convergence
+</p>
+</li>
+<li>
+<p> $converged convergence status
+</p>
+</li>
+<li>
+<p> $var.naiv Variance of the estimates model based (naive)<br></p>
+</li>
+<li>
+<p> $var Variance of the estimates sandwich<br></p>
+</li>
+<li>
+<p> $var.nuisance Variance of the estimates nuisance adjusted sandwich<br></p>
+</li>
+<li>
+<p> $var.fay Variance of the estimates nuisance adjusted sandwich with Fay correction for small samples
+</p>
+</li>
+<li>
+<p> $call Call function
+</p>
+</li>
+<li>
+<p> $corr Correlation structure used
+</p>
+</li>
+<li>
+<p> $clusz Number of unit in each cluster
+</p>
+</li>
+<li>
+<p> $FunList List of function associated with the family
+</p>
+</li>
+<li>
+<p> $X design matrix for the main regression
+</p>
+</li>
+<li>
+<p> $offset Offset specified in the regression
+</p>
+</li>
+<li>
+<p> $eta predicted values
+</p>
+</li>
+<li>
+<p> $weights Weights vector used in the diagonal term for the IPW
+</p>
+</li>
+<li>
+<p> $ps.model Summary of the regression fitted for the PS if computed internally
+</p>
+</li>
+<li>
+<p> $om.model.trt Summary of the regression fitted for the OM for treated if computed internally
+</p>
+</li>
+<li>
+<p> $om.model.ctrl Summary of the regression fitted for the OM for control if computed internally
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Melanie Prague [based on R packages 'geeM' L. S. McDaniel, N. C. Henderson, and P. J. Rathouz.  Fast Pure R Implementation of GEE: Application of the Matrix Package. The R Journal, 5(1):181-188, June 2013.]
+</p>
+
+
+<h3>References</h3>
+
+<p>Details regarding implementation can be found in
+</p>
+
+<ul>
+<li>
+<p> 'Augmented GEE for improving efficiency and validity of estimation in cluster randomized trials by leveraging cluster-and individual-level covariates' - 2012 - Stephens A., Tchetgen Tchetgen E. and De Gruttola V. : Stat Med 31(10) - 915-930.
+</p>
+</li>
+<li>
+<p> 'Accounting for interactions and complex inter-subject dependency for estimating treatment effect in cluster randomized trials with missing at random outcomes' - 2015 - Prague M., Wang R., Stephens A., Tchetgen Tchetgen E. and De Gruttola V. : in revision.
+</p>
+</li>
+<li>
+<p> 'Fast Pure R Implementation of GEE: Application of the Matrix Package' - 2013 - McDaniel, Lee S and Henderson, Nicholas C and Rathouz, Paul J : The R Journal 5(1) - 181-197.
+</p>
+</li>
+<li>
+<p> 'Small-Sample Adjustments for Wald-Type Tests Using Sandwich Estimators' - 2001 - Fay, Michael P and Graubard, Barry I : Biometrics 57(4) - 1198-1206.
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(data.sim)
+ ## Not run: 
+ #### STANDARD GEE
+ geeresults&lt;-geeDREstimation(formula=OUTCOME~TRT,
+                               id="CLUSTER" , data = data.sim,
+                               family = "binomial", corstr = "independence")
+ summary(geeresults)
+ #### IPW GEE
+ ipwresults&lt;-geeDREstimation(formula=OUTCOME~TRT,
+                               id="CLUSTER" , data = data.sim,
+                               family = "binomial", corstr = "independence",
+                               model.weights=I(MISSING==0)~TRT*AGE)
+ summary(ipwresults)
+ #### AUGMENTED GEE
+ augresults&lt;-geeDREstimation(formula=OUTCOME~TRT,
+                               id="CLUSTER" , data = data.sim,
+                               family = "binomial", corstr = "independence",
+                               model.augmentation.trt=OUTCOME~AGE,
+                               model.augmentation.ctrl=OUTCOME~AGE, stepwise.augmentation=FALSE)
+ summary(augresults)
+ 
+## End(Not run)
+ #### DOUBLY ROBUST
+ drresults&lt;-geeDREstimation(formula=OUTCOME~TRT,
+                               id="CLUSTER" , data = data.sim,
+                               family = "binomial", corstr = "independence",
+                               model.weights=I(MISSING==0)~TRT*AGE,
+                               model.augmentation.trt=OUTCOME~AGE,
+                               model.augmentation.ctrl=OUTCOME~AGE, stepwise.augmentation=FALSE)
+ summary(drresults)
+</code></pre>
+
+
+</div>

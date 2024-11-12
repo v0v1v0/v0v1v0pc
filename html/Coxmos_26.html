@@ -1,0 +1,157 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>eval_Coxmos_model_per_variable</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>eval_Coxmos_model_per_variable</h2>
+
+<h3>Description</h3>
+
+<p>The <code>eval_Coxmos_model_per_variable</code> function offers a granular evaluation of a specific Coxmos
+model, focusing on the influence of individual variables or components on the model's predictive
+performance. It computes the Area Under the Curve (AUC) for each variable at designated time
+points, providing insights into the relative importance of each variable in the model's predictions.
+For a visual representation of the results, it is advisable to utilize the <code>plot_evaluation()</code>
+function post-evaluation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">eval_Coxmos_model_per_variable(
+  model,
+  X_test,
+  Y_test,
+  pred.method = "cenROC",
+  pred.attr = "mean",
+  times = NULL,
+  max_time_points = 15,
+  PARALLEL = FALSE,
+  verbose = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>Coxmos model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X_test</code></td>
+<td>
+<p>Numeric matrix or data.frame. Explanatory variables for test data (raw format).
+Qualitative variables must be transform into binary variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Y_test</code></td>
+<td>
+<p>Numeric matrix or data.frame. Response variables for test data. Object must have two
+columns named as "time" and "event". For event column, accepted values are: 0/1 or FALSE/TRUE for
+censored and event observations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pred.method</code></td>
+<td>
+<p>Character. AUC evaluation algorithm method for evaluate the model performance.
+Must be one of the following: "risksetROC", "survivalROC", "cenROC", "nsROC", "smoothROCtime_C",
+"smoothROCtime_I" (default: "cenROC").</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pred.attr</code></td>
+<td>
+<p>Character. Way to evaluate the metric selected. Must be one of the following:
+"mean" or "median" (default: "mean").</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>times</code></td>
+<td>
+<p>Numeric vector. Time points where the AUC will be evaluated. If NULL, a maximum of
+'max_time_points' points will be selected equally distributed (default: NULL).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_time_points</code></td>
+<td>
+<p>Numeric. Maximum number of time points to use for evaluating the model
+(default: 15).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PARALLEL</code></td>
+<td>
+<p>Logical. Run the cross validation with multicore option. As many cores as your
+total cores - 1 will be used. It could lead to higher RAM consumption (default: FALSE).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Logical. If verbose = TRUE, extra messages could be displayed (default: FALSE).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Upon invocation, the function initiates by verifying the consistency between test times and the
+training times of the provided model. Subsequently, linear predictors for each variable are derived
+using the <code>predict.Coxmos</code> function. These linear predictors serve as the foundation for the AUC
+computation, which is executed for each variable across the specified time points.
+</p>
+<p>The function employs various evaluation methods, as determined by the <code>pred.method</code> parameter, to
+calculate the AUC values. These methods encompass options such as "risksetROC", "survivalROC", and
+"cenROC", among others. The results are systematically organized into a structured data frame,
+segregating AUC values for each variable at different time points. This structured output not only
+facilitates easy interpretation but also sets the stage for subsequent visualization or further analysis.
+</p>
+<p>It's noteworthy that the function is equipped to handle parallel processing, contingent on the user's
+preference, which can expedite the evaluation process, especially when dealing with extensive datasets
+or multiple time points.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of two objects:
+<code>df</code>: A data.frame which the predictions for the specific model split into the full model (LP)
+and each component individually. This data.frame is used to plot the information by the
+function <code>plot_evaluation()</code>.
+<code>lst_AUC</code>: A list of the full model prediction and its components where the user can check
+the linear predictors used, the global AUC, the AUC per time point and the predicted time points
+selected.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Pedro Salguero Garcia. Maintainer: pedsalga@upv.edu.es
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data("X_proteomic")
+data("Y_proteomic")
+set.seed(123)
+index_train &lt;- caret::createDataPartition(Y_proteomic$event, p = .5, list = FALSE, times = 1)
+X_train &lt;- X_proteomic[index_train,1:50]
+Y_train &lt;- Y_proteomic[index_train,]
+
+X_test &lt;- X_proteomic[-index_train,1:50]
+Y_test &lt;- Y_proteomic[-index_train,]
+
+model_icox &lt;- splsicox(X_train, Y_train, n.comp = 2)
+eval_Coxmos_model_per_variable(model_icox, X_test, Y_test, pred.method = "cenROC")
+</code></pre>
+
+
+</div>

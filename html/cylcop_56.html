@@ -1,0 +1,139 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fit_steplength</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fit a Linear Univariate Distribution</h2>
+
+<h3>Description</h3>
+
+<p>This function finds parameter estimates of the marginal linear
+distribution, or gives a kernel density estimate using
+a Gaussian smoothing kernel.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fit_steplength(
+  x,
+  parametric = c("beta", "cauchy", "chi-squared", "chisq", "exponential", "exp", "gamma",
+    "lognormal", "lnorm", "lognorm", "logistic", "normal", "t", "weibull", "normalmix",
+    "weibullmix", "gammamix", "lnormmix", FALSE),
+  start = NULL,
+  bandwidth = NULL,
+  ncomp = 2
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>numeric vector of measurements of a linear
+random variable in <code class="reqn">[0,\infty)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parametric</code></td>
+<td>
+<p>either a character string describing what distribution
+should be fitted (<code>"beta"</code>, <code>"cauchy"</code>, <code>"chi-squared"</code>,
+<code>"exponential"</code>, <code>"gamma"</code>, <code>"lognormal"</code>, <code>"logistic"</code>,
+<code>"normal"</code>, <code>"t"</code>, <code>"weibull"</code>,<code>"normalmix"</code>,
+<code>"weibullmix"</code>, <code>"gammamix"</code>, or <code>"lnormmix"</code>),
+or the logical
+<code>FALSE</code> if a non-parametric estimation (kernel density) should be made.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start</code></td>
+<td>
+<p>(optional, except when <code>parametric = "chi-squared"</code>)
+named list containing the parameters to be optimized with initial
+values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bandwidth</code></td>
+<td>
+<p>numeric value for the kernel density bandwidth.
+Default is  <code>cylcop::opt_lin_bw(x, "nrd")</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ncomp</code></td>
+<td>
+<p>integer, number of components of the mixed distribution.
+Only has an effect if <code>parametric %in% c("normalmix", "weibullmix", "gammamix",
+"lnormmix")</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>If a parametric estimate is made, a list is returned
+containing the estimated parameters, their standard errors,
+the log-likelihood, the AIC and the name of the distribution.
+If a non-parametric estimate is made, the output is a a '<code>density</code>' object,
+which is obtained with the function
+<code>GoFKernel::density.reflected()</code> of the '<span class="pkg">GoFKernel</span>'
+package.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>GoFKernel::density.reflected()</code>,
+<code>fit_angle()</code>, <code>opt_lin_bw()</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">require(graphics)
+set.seed(123)
+
+silent_curr &lt;- cylcop_get_option("silent")
+cylcop_set_option(silent = TRUE)
+
+n &lt;- 100 #n (number of samples) is set small for performance.
+
+x &lt;- rweibull(n, shape = 10)
+
+dens_non_param &lt;- fit_steplength(x = x, parametric = FALSE)
+weibull &lt;- fit_steplength(x = x, parametric = "weibull")
+gamma &lt;- fit_steplength(x = x, parametric = "gamma")
+chisq &lt;- fit_steplength(x = x, parametric = "chi-squared", start = list(df = 1))
+
+true_dens &lt;- dweibull(seq(0, max(x), length.out = 200),
+  shape = 10
+)
+dens_weibull &lt;- dweibull(seq(0, max(x),length.out = 200),
+  shape = weibull$coef$shape,
+  scale = weibull$coef$scale
+)
+dens_gamma &lt;- dgamma(seq(0, max(x),length.out = 200),
+  shape = gamma$coef$shape,
+  rate = gamma$coef$rate
+)
+dens_chisq &lt;- dchisq(seq(0, max(x),length.out = 200),
+  df = chisq$coef$df
+)
+
+plot(seq(0,max(x),length.out = 200), true_dens, type = "l")
+lines(dens_non_param$x, dens_non_param$y, col = "red")
+lines(seq(0,max(x),length.out = 200), dens_weibull, col = "green")
+lines(seq(0,max(x),length.out = 200), dens_gamma, col = "blue")
+lines(seq(0,max(x),length.out = 200), dens_chisq, col = "cyan")
+
+cylcop_set_option(silent = silent_curr)
+
+</code></pre>
+
+
+</div>

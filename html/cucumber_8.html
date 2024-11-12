@@ -1,0 +1,106 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>step</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Define a step</h2>
+
+<h3>Description</h3>
+
+<p>Provide a description that matches steps in feature files and the implementation function that will be run.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">given(description, implementation)
+
+when(description, implementation)
+
+then(description, implementation)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>description</code></td>
+<td>
+<p>A description of the step.
+</p>
+<p>A simple version of a <a href="https://github.com/cucumber/cucumber-expressions">Cucumber expression</a>.
+The description is used by the <code>cucumber::test</code> function to find an implementation of a step
+from a feature file.
+The description can contain placeholders in curly braces, e.g. <code>"I have {int} cucumbers in my basket"</code>.
+If no step definition is found an error will be thrown. If multiple steps definitions for a single step
+are found an error will be thrown. Make sure the description is unique for each step.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>implementation</code></td>
+<td>
+<p>A function that will be run when the step is executed.
+The implementation function should always have the last parameter named <code>context</code>.
+It holds the environment where state should be stored to be passed to the next step.
+</p>
+<p>If a step has a description <code>"I have {int} cucumbers in my basket"</code> then the implementation
+function should be a <code>function(n_cucumbers, context)</code>. The <code>{int}</code> value will be passed to
+<code>n_cucumbers</code>, this parameter can have any name.
+</p>
+<p>If a table or a docstring is defined for a step, it will be passed as an argument after plceholder parameters
+and before <code>context</code>. The function should be a <code>function(n_cucumbers, table, context)</code>.
+See
+<a href="https://github.com/jakubsob/cucumber/blob/main/inst/examples/table/tests/testthat/steps/steps.R">an example</a>
+on how to write implementation that uses tables or docstrings.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Placeholders in expressions are replaced with regular expressions that match values in the feature file.
+The regular expressions are generated during runtime based on defined parameter types.
+The expression <code>"I have {int} cucumbers in my basket"</code> will be converted to
+<code>"I have [+-]?(?&lt;![.])[:digit:]+(?![.]) cucumbers in my basket"</code>. The extracted value of <code>{int}</code>
+will be passed to the implementation function after being transformed with <code>as.integer</code>.
+</p>
+<p>To define your own parameter types use <code>define_parameter_type</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A function of class <code>step</code>, invisibly. Function should be called for side effects.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>define_parameter_type()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">given("I have {int} cucumbers in my basket", function(n_cucumbers, context) {
+  context$n_cucumbers &lt;- n_cucumbers
+})
+
+given("I have {int} cucumbers in my basket and a table", function(n_cucumbers, table, context) {
+  context$n_cucumbers &lt;- n_cucumbers
+  context$table &lt;- table
+})
+
+when("I eat {int} cucumbers", function(n_cucumbers, context) {
+  context$n_cucumbers &lt;- context$n_cucumbers - n_cucumbers
+})
+
+then("I should have {int} cucumbers in my basket", function(n_cucumbers, context) {
+  expect_equal(context$n_cucumbers, n_cucumbers)
+})
+
+</code></pre>
+
+
+</div>

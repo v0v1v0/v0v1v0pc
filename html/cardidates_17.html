@@ -1,0 +1,187 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>peakwindow</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Identify Peaks in Time Series</h2>
+
+<h3>Description</h3>
+
+<p>This function identifies peaks in time series and helps to identify the time window of
+the first maximum according to given rules.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">peakwindow(x, y = NULL, xstart = 0, xmax = max(x), minpeak = 0.1, mincut = 0.382)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x, y</code></td>
+<td>
+<p>the x (in day of year) and y coordinates of a set of points.
+Alternatively, a single argument x can be provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xstart</code></td>
+<td>
+<p>x value (e.g. time of ice-out) before the maximum value
+of the searched peak (this is a “weak” limit),</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xmax</code></td>
+<td>
+<p>maximum of the end of the searched peak (this is a “hard” maximum,</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minpeak</code></td>
+<td>
+<p>minimum value of the total maximum which is regarded as peak,</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mincut</code></td>
+<td>
+<p>minimum relative height of a pit compared to the lower of the
+two neighbouring maxima at which these maxima are regarded as separate peaks
+(default value is derived from golden section).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This is a heuristic peak detection algorithm. It can be used for two related
+purposes, (i) to identify all relevant peaks within a time-series and (ii)
+to identify the time window which belongs to one single peak (smd = specified mass 
+development, e.g. spring maximum in phytoplankton time series).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with the following elements:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>peaks</code></td>
+<td>
+<p>a data frame with the characteristics (index, xleft, x, xright and y)
+of all identified peaks,</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>the original data set (<code>x</code>, <code>y</code>),</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smd.max.index</code></td>
+<td>
+<p>index of the maximum value of the “specified” peak,</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smd.max.x</code></td>
+<td>
+<p>x-value of the maximum of the “specified” peak,</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smd.indices</code></td>
+<td>
+<p>indices (data window) of all data belonging to the “specified” peak,</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smd.x</code></td>
+<td>
+<p>x-values (time window) of all data belonging to the “specified” peak,</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smd.y</code></td>
+<td>
+<p>corresponding y-values of all data belonging to the “specified” peak,</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>peakid</code></td>
+<td>
+<p>vector with peak-id-numbers for all data.</p>
+</td>
+</tr>
+</table>
+<h3>See Also</h3>
+
+
+<p><code>weibull4</code>,
+<code>weibull6</code>,
+<code>fitweibull</code>,
+<code>CDW</code>
+<code>plot.cardiPeakwindow</code>
+<code>cardidates</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## generate test data with 3 peaks
+set.seed(123)
+x &lt;- seq(0, 360, length = 20)
+y &lt;- abs(rnorm(20, mean = 1, sd = 0.1))
+y[5:10] &lt;- c(2, 4, 7, 3, 4, 2)
+y &lt;- c(y, 0.8 * y, 1.2 * y)
+x &lt;- seq(0, 360, along = y)
+y[6] &lt;- y[7]   # test case with 2 neighbouring equal points
+
+## plot the test data
+plot(x, y, type="b")
+
+## identify the "spring mass development"
+peaks &lt;- peakwindow(x, y)
+ind &lt;- peaks$smd.indices
+lines(x[ind], y[ind], col="red", lwd=2)
+
+## now fit the cardinal dates
+fit &lt;- fitweibull6(peaks$smd.x, peaks$smd.y)
+CDW(fit)
+plot(fit)
+
+## some more options ...
+peaks &lt;- peakwindow(x, y, xstart=150, mincut = 0.455)
+ind &lt;- peaks$smd.indices
+lines(x[ind], y[ind], col = "blue")
+points(x, y, col = peaks$peakid +1, pch = 16) # all peaks
+
+## work with indices only
+peaks &lt;- peakwindow(y)
+
+## test case with disturbed sinus
+x&lt;- 1:100
+y &lt;- sin(x/5) +1.5 + rnorm(x, sd = 0.2)
+peaks &lt;- peakwindow(x, y)
+plot(x, y, type = "l", ylim = c(0, 3))
+points(x, y, col = peaks$peakid + 2, pch = 16)
+
+## test case: only one peak
+yy &lt;- c(1:10, 11:1)
+peakwindow(yy)
+
+## error handling test case: no turnpoints
+# yy &lt;- rep(1, length(x))
+# peakwindow(x, yy)
+
+</code></pre>
+
+
+</div>

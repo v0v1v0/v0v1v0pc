@@ -1,0 +1,113 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>estimate_ascertainment</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Estimate the ascertainment ratio of a disease</h2>
+
+<h3>Description</h3>
+
+<p>Estimates the proportion of cases or infections that have been
+ascertained, given a time-series of cases and deaths, a delay distribution
+and a baseline severity estimate. The resulting ascertainment estimate is
+calculated as the ratio of the baseline severity estimate, which is assumed
+to be the 'true' disease severity, and the delay-adjusted severity estimate.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">estimate_ascertainment(data, severity_baseline, delay_density = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A <code style="white-space: pre;">⁠&lt;data.frame&gt;⁠</code> containing the outbreak data. A daily time
+series with dates or some other absolute indicator of time (e.g. epiday or
+epiweek) and the numbers of new cases and new deaths at each time point.
+Note that the required columns are "date" (for the date), "cases" (for the
+number of reported cases), and "deaths" (for the number of reported deaths)
+on each day of the outbreak.
+</p>
+<p>Note that the <code style="white-space: pre;">⁠&lt;data.frame&gt;⁠</code> is required to have an unbroken sequence of
+dates with no missing dates in between. The "date" column must be of class
+<code>Date</code> (see <code>as.Date()</code>).
+</p>
+<p>Note also that the total number of cases must be greater than the total
+number of reported deaths.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>severity_baseline</code></td>
+<td>
+<p>A single number in the range 0.0 – 1.0 for the
+assumed true baseline severity estimate used to estimate the overall
+ascertainment ratio. Missing by default, which causes the function to error;
+must be supplied by the user.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delay_density</code></td>
+<td>
+<p>An optional argument that controls whether delay
+correction is applied in the severity estimation.
+May be <code>NULL</code>, for no delay correction, or a function that returns the
+density function of a distribution to evaluate
+density at user-specified values, e.g.
+<code>function(x) stats::dgamma(x = x, shape = 5, scale = 1)</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>estimate_ascertainment()</code> uses <code>cfr_static()</code> internally to obtain a
+severity estimate that is compared against the user-specified baseline
+severity. The profile likelihood method used to obtain the severity estimate
+is decided by the internal function <code>.estimate_severity()</code> as used in
+<code>cfr_static()</code>, when delay correction is applied. See the <code>cfr_static()</code>
+documentation for an explanation of the methods used depending on outbreak
+size and initial severity guess.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code style="white-space: pre;">⁠&lt;data.frame&gt;⁠</code> containing the maximum likelihood estimate estimate
+and 95% confidence interval of the corrected severity, named
+"ascertainment_estimate" (for the central estimate), and "ascertainment_low"
+and "ascertainment_high" for the lower and upper interval limits.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># get data pre-loaded with the package
+data("covid_data")
+df_covid_uk &lt;- covid_data[covid_data$country == "United Kingdom", ]
+
+df_covid_uk_subset &lt;- subset(df_covid_uk, date &lt;= "2020-05-31")
+
+# use a severity baseline of 1.4% (0.014) taken from Verity et al. (2020)
+# Lancet Infectious Diseases: &lt;https://doi.org/10.1016/S1473-3099(20)30243-7&gt;
+
+# use onset-to-death distribution from Linton et al. (2020)
+# J. Clinical Medicine: &lt;https://doi.org/10.3390/jcm9020538&gt;
+
+# subset data until 30th June 2020
+data &lt;- df_covid_uk[df_covid_uk$date &lt;= "2020-06-30", ]
+estimate_ascertainment(
+  data = data,
+  delay_density = function(x) dlnorm(x, meanlog = 2.577, sdlog = 0.440),
+  severity_baseline = 0.014
+)
+
+</code></pre>
+
+
+</div>

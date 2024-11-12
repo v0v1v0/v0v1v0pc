@@ -1,0 +1,428 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>renewalCount</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fit renewal count processes regression models</h2>
+
+<h3>Description</h3>
+
+<p>Fit renewal regression models for count data via maximum likelihood.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">renewalCount(
+  formula,
+  data,
+  subset,
+  na.action,
+  weights,
+  offset,
+  dist = c("weibull", "weibullgam", "custom", "gamma", "gengamma"),
+  anc = NULL,
+  convPars = NULL,
+  link = NULL,
+  time = 1,
+  control = renewal.control(...),
+  customPars = NULL,
+  seriesPars = NULL,
+  weiMethod = NULL,
+  computeHessian = TRUE,
+  standardise = FALSE,
+  standardise_scale = 1,
+  model = TRUE,
+  y = TRUE,
+  x = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>a formula object. If it is a standard formula object, the left
+hand side specifies the response variable and the right hand sides
+specifies the regression equation for the first parameter of the
+conditional distribution. <code>formula</code> can also be used to specify the
+ancilliary regressions, using the operator '|', see Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data, subset, na.action, </code></td>
+<td>
+<p>arguments controlling formula processing via
+<code>model.frame</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>optional numeric vector of weights.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>offset</code></td>
+<td>
+<p>optional numeric vector with an a priori known component to be
+included in the linear predictor of the count model. Currently not used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dist</code></td>
+<td>
+<p>character, built-in distribution to be used as the inter-arrival
+time distribution or <code>"custom"</code> for a user defined distribution, see
+Details. Currently the built-in distributions are <code>"weibull"</code>,
+<code>"weibullgam"</code>, <code>"gamma"</code>, <code>"gengamma"</code>
+(generalized-gamma) and <code>"burr"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>anc</code></td>
+<td>
+<p>a named list of formulas for ancillary regressions, if any,
+otherwise <code>NULL</code>. The formulas associated with the (exact) parameter
+names are used. The left-hand sides of the formulas in <code>anc</code> are
+ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>convPars</code></td>
+<td>
+<p>a list of convolution parameters arguments with slots
+<code>nsteps</code>, <code>extrap</code> and <code>convMethod</code>, see
+<code>dCount_conv_bi</code>. If NULL, default parameters will be applied.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link</code></td>
+<td>
+<p>named list of character strings specifying the name of the link
+functions to be used in the regression. If <code>NULL</code>, the canonical
+link function will be used, i.e, <code>log</code> if the parameter is supposed
+to be positive, identity otherwise.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>numeric, time at which the count is observed; default to unity
+(1).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>a list of control arguments specified via
+<code>renewal.control</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>customPars</code></td>
+<td>
+<p>list, user inputs if <code>dist = "custom"</code>, see details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seriesPars</code></td>
+<td>
+<p>list, series expansion input parameters with slots
+<code>terms</code> (number of terms in the series expansion), <code>iter</code>
+(number of iteration in the accelerated series expansion algorithm) and
+<code>eps</code> (tolerance in the accelerated series expansion algorithm),
+Only used if <code>dist = "weibull"</code> and <code>weiMethod =
+c("series_mat", "series_acc")</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weiMethod</code></td>
+<td>
+<p>character, computation method to be used if <code>dist =
+"weibull"</code> or <code>"weibullgam"</code>, see <code>dWeibullCount</code> and
+<code>dWeibullgammaCount</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>computeHessian</code></td>
+<td>
+<p>logical, should the hessian (and hence the covariance
+matrix) be computed numerically at the fitted values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>standardise</code></td>
+<td>
+<p>logical should the covariates be standardised using
+<code>standardize::standardize()</code> function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>standardise_scale</code></td>
+<td>
+<p>numeric the desired scale for the covariates;
+default to 1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model, y, x</code></td>
+<td>
+<p>logicals. If <code>TRUE</code> the corresponding components of the
+fit (model frame, response, model matrix) are returned.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments passed to <code>renewal.control</code> in the default setup.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>renewal</code> re-uses design and functionality of the basic R tools for
+fitting regression model (<code>lm</code>, <code>glm</code>) and is highly inspired by
+<code>hurdle()</code> and <code>zeroinfl()</code> from package <code>pscl</code>. Package
+<code>Formula</code> is used to handle formulas.
+</p>
+<p>Argument <code>formula</code> is a <code>formula</code> object. In the simplest case its
+left-hand side (lhs) designates the response variable and the right-hand side
+the covariates for the first parameter of the distribution (as reported by
+<code>getParNames</code>. In this case, covariates for the ancilliary
+parameters are specified using argument <code>anc</code>.
+</p>
+<p>The ancilliary regressions, can also be specified in argument <code>formula</code>
+by adding them to the righ-hand side, separated by the operator ‘|’.
+For example <code>Y | shape ~ x + y | z</code> can be used in place of the pair
+<code>Y ~ x + y</code> and <code>anc = list(shape = ~z)</code>. In most cases, the name
+of the second parameter can be omitted, which for this example gives the
+equivalent <code>Y ~ x + y | z</code>. The actual rule is that if the parameter is
+missing from the left-hand side, it is inferred from the default parameter
+list of the distribution.
+</p>
+<p>As another convenience, if the parameters are to to have the same covariates,
+it is not necessary to repeat the rhs. For example, <code>Y | shape ~ x + y</code>
+is equivalent to <code>Y | shape ~ x + y | x + y</code>. Note that this is applied
+only to parameters listed on the lhs, so <code>Y ~ x + y</code> specifies
+covariates only for the response variable and not any other parameters.
+</p>
+<p>Distributions for inter-arrival times supported internally by this package
+can be chosen by setting argument <code>"dist"</code> to a suitable character
+string.  Currently the built-in distributions are <code>"weibull"</code>,
+<code>"weibullgam"</code>, <code>"gamma"</code>, <code>"gengamma"</code> (generalized-gamma)
+and <code>"burr"</code>.
+</p>
+<p>Users can also provide their own inter-arrival distribution.  This is done by
+setting argument <code>"dist"</code> to <code>"custom"</code>, specifying the initial
+values and giving argument <code>customPars</code> as a list with the following
+components:
+</p>
+
+<dl>
+<dt>parNames</dt>
+<dd>
+<p>character, the names of the parameters of the distribution.
+The location parameter should be the first one.</p>
+</dd>
+<dt>survivalFct</dt>
+<dd>
+<p>function object containing the survival function. It
+should have signature <code>function(t, distPars)</code> where <code>t</code> is the
+point where the survival function is evaluated and <code>distPars</code> is the
+list of the distribution parameters. It should return a double value.</p>
+</dd>
+<dt>extrapolFct</dt>
+<dd>
+<p>function object computing the extrapolation values
+(numeric of length 2) from the value of the distribution parameters (in
+<code>distPars</code>). It should have signature <code>function(distPars)</code> and
+return a numeric vector of length 2. Only required if the extrapolation
+is set to <code>TRUE</code> in <code>convPars</code>.</p>
+</dd>
+</dl>
+<p>Some checks are done to validate <code>customPars</code> but it is user's
+responsibility to make sure the the functions have the appropriate
+signatures.
+</p>
+<p><strong>Note:</strong> The Weibull-gamma distribution is an experimental version and
+should be used with care! It is very sensitive to initial values and there is no
+guarantee of convergence. It has also been reparameterized in terms of
+<code class="reqn">(1/r, 1/\alpha, c)</code> instead of <code class="reqn">(r, \alpha,
+c)</code>, where <code class="reqn">r</code> and <code class="reqn">\alpha</code> are the shape
+and scale of the gamma distribution and <code class="reqn">c</code> is the shape of the Weibull
+distribution.
+</p>
+<p><strong>(2017-08-04(Georgi) experimental feature:</strong> probability residuals in
+component 'probResiduals'. I also added type 'prob' to the method for
+residuals() to extract them.
+</p>
+<p>probResiduals[i] is currently 1 - Prob(Y[i] given the
+covariates). "one minus", so that values close to zero are "good".  On its
+own this is probably not very useful but when comparing two models, if one of
+them has mostly smaller values than the other, there is some reason to claim
+that the former is superior. For example (see below), gamModel &lt; poisModel in
+3:1
+</p>
+
+
+<h3>Value</h3>
+
+<p>An <code>S3</code> object of class "renewal", which is a list with
+components including:
+</p>
+
+<dl>
+<dt>coefficients</dt>
+<dd>
+<p>values of the fitted coefficients.</p>
+</dd>
+<dt>residuals</dt>
+<dd>
+<p>vector of weighted residuals <code class="reqn">\omega * (observed -
+    fitted)</code>.</p>
+</dd>
+<dt>fitted.values</dt>
+<dd>
+<p>vector of fitted means.</p>
+</dd>
+<dt>optim</dt>
+<dd>
+<p>data.frame output of <code>optimx</code>.</p>
+</dd>
+<dt>method</dt>
+<dd>
+<p>optimisation algorithm.</p>
+</dd>
+<dt>control</dt>
+<dd>
+<p>the control arguments, passed to <code>optimx</code>.</p>
+</dd>
+<dt>start</dt>
+<dd>
+<p>starting values, passed to <code>optimx</code>.</p>
+</dd>
+<dt>weights</dt>
+<dd>
+<p>weights to apply, if any.</p>
+</dd>
+<dt>n</dt>
+<dd>
+<p>number of observations (with weights &gt; 0).</p>
+</dd>
+<dt>iterations</dt>
+<dd>
+<p>number of iterations in the optimisation algorithm.</p>
+</dd>
+<dt>execTime</dt>
+<dd>
+<p>duration of the optimisation.</p>
+</dd>
+<dt>loglik</dt>
+<dd>
+<p>log-likelihood of the fitted model.</p>
+</dd>
+<dt>df.residual</dt>
+<dd>
+<p>residuals' degrees of freedom for the fitted model.</p>
+</dd>
+<dt>vcoc</dt>
+<dd>
+<p>convariance matrix of all coefficients, computed numerically
+from the hessian at the fitted coefficients (if <code>computeHessian</code> is
+<code>TRUE</code>).</p>
+</dd>
+<dt>dist</dt>
+<dd>
+<p>name of the inter-arrival distribution.</p>
+</dd>
+<dt>link</dt>
+<dd>
+<p>list, inverse link function corresponding to each parameter in
+the inter-arrival distribution.</p>
+</dd>
+<dt>converged</dt>
+<dd>
+<p>logical, did the optimisation algorithm converge?</p>
+</dd>
+<dt>data</dt>
+<dd>
+<p>data used to fit the model.</p>
+</dd>
+<dt>formula</dt>
+<dd>
+<p>the original formula.</p>
+</dd>
+<dt>call</dt>
+<dd>
+<p>the original function call.</p>
+</dd>
+<dt>anc</dt>
+<dd>
+<p>named list of formulas to model regression on ancillary
+parameters.</p>
+</dd>
+<dt>score_fct</dt>
+<dd>
+<p>function to compute the vector of scores defined in
+Cameron(2013) equation 2.94.</p>
+</dd>
+<dt>convPars</dt>
+<dd>
+<p>convolution inputs used.</p>
+</dd>
+<dt>customPars</dt>
+<dd>
+<p>named list, user passed distribution inputs, see
+Details.</p>
+</dd>
+<dt>time</dt>
+<dd>
+<p>observed window used, default is 1.0 (see inputs).</p>
+</dd>
+<dt>model</dt>
+<dd>
+<p>the full model frame (if <code>model = TRUE</code>).</p>
+</dd>
+<dt>y</dt>
+<dd>
+<p>the response count vector (if <code>y = TRUE</code>).</p>
+</dd>
+<dt>x</dt>
+<dd>
+<p>the model matrix (if <code>x = TRUE</code>).</p>
+</dd>
+</dl>
+<h3>References</h3>
+
+<p>Kharrat T, Boshnakov GN, McHale I, Baker R (2019).
+“Flexible Regression Models for Count Data Based on Renewal Processes: The Countr Package.”
+<em>Journal of Statistical Software</em>, <b>90</b>(13), 1–35.
+<a href="https://doi.org/10.18637/jss.v090.i13">doi:10.18637/jss.v090.i13</a>.
+</p>
+<p>Cameron AC, Trivedi PK (2013).
+<em>Regression Analysis of Count Data</em>, volume 53.
+Cambridge University Press.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+## may take some time to run depending on your CPU
+data(football)
+wei = renewalCount(formula = homeTeamGoals ~ 1,
+                    data = football, dist = "weibull", weiMethod = "series_acc",
+                    computeHessian = FALSE, control = renewal.control(trace = 0, 
+                    method = "nlminb"))
+
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,279 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CVR</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fit canonical variate regression with tuning parameters selected by cross validation.</h2>
+
+<h3>Description</h3>
+
+<p>This function fits the solution path of canonical variate regression, 
+with tuning parameters selected by  cross validation. The tuning parameters 
+include the rank, the  <code class="reqn">\eta</code> and the <code class="reqn">\lambda</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CVR(Y, Xlist, rankseq = 2, neta = 10, etaseq = NULL, nlam = 50, 
+     Lamseq = NULL, family = c("gaussian", "binomial", "poisson"),  
+     Wini = NULL, penalty = c("GL1", "L1"), nfold = 10, foldid = NULL,  
+     opts = list(), type.measure = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Y</code></td>
+<td>
+<p>A univariate response variable.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Xlist</code></td>
+<td>
+<p>A list of two covariate matrices as in <code>cvrsolver</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rankseq</code></td>
+<td>
+<p>A sequence of candidate ranks. The default is a single value 2.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>neta</code></td>
+<td>
+<p>Number of <code class="reqn">\eta</code> values. The default is 10.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>etaseq</code></td>
+<td>
+<p>A sequence of  length <code>neta</code> containing candidate <code class="reqn">\eta</code> values between 0 and 1. 
+The default is 10^seq(-2, log10(0.9), length = neta).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nlam</code></td>
+<td>
+<p>Number of  <code class="reqn">\lambda</code> values. The default is 50.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Lamseq</code></td>
+<td>
+<p>A matrix of   <code class="reqn">\lambda</code>  values. The column number is the number of sets in <code>Xlist</code>,
+and the row number is <code>nlam</code>. The default is 10^(seq(-2, 2, length = nlam)) for each column.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>Type of response as in <code>cvrsolver</code>. The default is <code>"gaussian"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Wini</code></td>
+<td>
+<p>A list of initial loading W's. The default is from the SparseCCA solution. See <code>SparseCCA</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>penalty</code></td>
+<td>
+<p>Type of penalty on loading matrices W's as in <code>cvrsolver</code>. The default is <code>"GL1"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nfold</code></td>
+<td>
+<p>Number of folds in cross validation. The default is 10.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>foldid</code></td>
+<td>
+<p>Specifying training and testing sets in cross validation; random generated if not supplied. 
+It remains the same across different rank and <code class="reqn">\eta</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>opts</code></td>
+<td>
+<p>A list of options for controlling the algorithm. The default of <code>opts$spthresh</code> is 0.4, which means 
+we only search sparse models with at most 40% nonzero entries in W1 and W2. See the other options 
+(<code>standardization</code>, <code>maxIters</code> and <code>tol</code>) in <code>cvrsolver</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type.measure</code></td>
+<td>
+<p>Type of measurement used in cross validation. <code>"mse"</code> for Gaussian, <code>"auc"</code> for binomial,
+and <code>"deviance"</code> for binomial and Poisson.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>In this function, the rank, <code class="reqn">\eta</code> and <code class="reqn">\lambda</code> are tuned by  cross validation. CVR then is refitted with
+all  data using  the selected tuning parameters.  The <code>plot</code> function  shows the tuning of  <code class="reqn">\lambda</code>, 
+with selected rank and <code class="reqn">\eta</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object with S3 class "CVR" containing the following components
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>cverror</code></td>
+<td>
+<p>A matrix containing the CV errors. The number of rows is the length 
+of <code>etaseq</code> and the number of columns is the length of <code>rankseq</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>etahat</code></td>
+<td>
+<p>Selected <code class="reqn">\eta</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rankhat</code></td>
+<td>
+<p>Selected rank.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Lamhat</code></td>
+<td>
+<p>Selected  <code class="reqn">\lambda</code>'s.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Alphapath</code></td>
+<td>
+<p>An array containing  the fitted paths of the intercept term <code class="reqn">\alpha</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Betapath</code></td>
+<td>
+<p>An array containing the fitted paths of the regression coefficient <code class="reqn">\beta</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>W1path, W2path</code></td>
+<td>
+<p>Arrays containing the fitted paths of  W1 and W2.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>foldid</code></td>
+<td>
+<p><code>foldid</code> used in cross validation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cvout</code></td>
+<td>
+<p>Cross validation results using selected <code class="reqn">\eta</code> and rank.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>solution</code></td>
+<td>
+<p>A list including the solutions of <code class="reqn">\alpha</code>, <code class="reqn">\beta</code>, W1 and W2, by refitting all the data 
+using selected tuning parameters.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Chongliang Luo, Kun Chen.
+</p>
+
+
+<h3>References</h3>
+
+<p>Chongliang Luo, Jin Liu, Dipak D. Dey and Kun Chen (2016) Canonical variate regression. 
+Biostatistics, doi: 10.1093/biostatistics/kxw001.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cvrsolver</code>, <code>SparseCCA</code>, <code>SimulateCVR</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">############## Gaussian response ###################### 
+set.seed(42)   
+mydata &lt;- SimulateCVR(family = "g", n = 100, rank = 4, p1 = 50, p2 = 70,  
+                  pnz = 10, beta = c(2, 1, 0, 0))
+X1 &lt;- mydata$X1;
+X2 &lt;- mydata$X2
+Xlist &lt;- list(X1 = X1, X2 = X2); 
+Y &lt;- mydata$y
+## fix rank = 4, tune eta and lambda   
+##out_cvr &lt;- CVR(Y, Xlist, rankseq = 4, neta = 5, nlam = 25,  
+##               family = "g", nfold = 5)
+## out_cvr$solution$W[[1]];  
+## out_cvr$solution$W[[2]];     
+### uncomment to see plots 
+## plot.CVR(out_cvr)
+## 
+## Distance of subspaces 
+##U &lt;- mydata$U
+##Pj &lt;- function(U) U %*% solve(t(U) %*% U, t(U)) 
+##sum((Pj(U) - (Pj(X1 %*% out_cvr$sol$W[[1]]) + Pj(X2 %*% out_cvr$sol$W[[2]]))/2)^2) 
+## Precision/Recall rate
+## the first 10 rows of the true W1 and W2 are set to be nonzero
+##W12 &lt;- rbind(out_cvr$sol$W[[1]], out_cvr$sol$W[[1]])
+##W12norm &lt;- apply(W12, 1, function(a)sqrt(sum(a^2)))
+##prec &lt;- sum(W12norm[c(1:10, 51:60)] != 0)/sum(W12norm != 0); prec 
+##rec &lt;- sum(W12norm[c(1:10, 51:60)] != 0)/20; rec
+## sequential SparseCCA, compare the Distance of subspaces and Prec/Rec
+##W12s &lt;- SparseCCA(X1, X2, 4)
+## Distance larger than CVR's 
+##sum((Pj(U) - (Pj(X1 %*% W12s$W1) + Pj(X2 %*% W12s$W2))/2)^2) 
+##W12snorm &lt;- apply(rbind(W12s$W1, W12s$W2), 1, function(a)sqrt(sum(a^2)))
+## compare Prec/Rec 
+##sum(W12snorm[c(1:10, 51:60)] != 0)/sum(W12snorm != 0);  
+##sum(W12snorm[c(1:10, 51:60)] != 0)/20; 
+
+############## binary response ########################
+set.seed(12) 
+mydata &lt;- SimulateCVR(family = "binomial", n = 300, rank = 4, p1 = 50,  
+                       p2 = 70, pnz = 10, beta = c(2, 1, 0, 0))
+X1 &lt;- mydata$X1; X2 &lt;- mydata$X2
+Xlist &lt;- list(X1 = X1, X2 = X2); 
+Y &lt;- mydata$y
+## out_cvr &lt;- CVR(Y, Xlist, 4, neta = 5, nlam=25, family = "b", nfold = 5)  
+## out_cvr$sol$W[[1]];  
+## out_cvr$sol$W[[2]];    
+## plot.CVR(out_cvr)
+
+############## Poisson response ######################
+set.seed(34)
+mydata &lt;- SimulateCVR(family = "p", n = 100, rank = 4, p1 = 50,    
+                       p2 = 70, pnz = 10, beta = c(0.2, 0.1, 0, 0))
+X1 &lt;- mydata$X1; X2 &lt;- mydata$X2
+Xlist &lt;- list(X1 = X1, X2 = X2); 
+Y &lt;- mydata$y
+## etaseq &lt;- 10^seq(-3, log10(0.95), len = 10)
+## out_cvr &lt;- CVR(Y, Xlist, 4, neta = 5, nlam = 25, family = "p", nfold = 5)
+## out_cvr$sol$W[[1]];  
+## out_cvr$sol$W[[2]];    
+## plot.CVR(out_cvr)  
+</code></pre>
+
+
+</div>

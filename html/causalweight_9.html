@@ -1,0 +1,205 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>dyntreatDML</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Dynamic treatment effect evaluation with double machine learning</h2>
+
+<h3>Description</h3>
+
+<p>Dynamic treatment effect estimation for assessing the average effects of sequences of treatments (consisting of two sequential treatments). Combines estimation based on (doubly robust) efficient score functions with double machine learning to control for confounders in a data-driven way.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">dyntreatDML(
+  y2,
+  d1,
+  d2,
+  x0,
+  x1,
+  s = NULL,
+  d1treat = 1,
+  d2treat = 1,
+  d1control = 0,
+  d2control = 0,
+  trim = 0.01,
+  MLmethod = "lasso",
+  fewsplits = FALSE,
+  normalized = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y2</code></td>
+<td>
+<p>Dependent variable in the second period (=outcome period), must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d1</code></td>
+<td>
+<p>Treatment in the first period, must be discrete, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d2</code></td>
+<td>
+<p>Treatment in the second period, must be discrete, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x0</code></td>
+<td>
+<p>Covariates in the baseline period (prior to the treatment in the first period), must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x1</code></td>
+<td>
+<p>Covariates in the first period (prior to the treatment in the second period), must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>s</code></td>
+<td>
+<p>Indicator function for defining a subpopulation for whom the treatment effect is estimated as a function of the subpopulation's distribution of <code>x0</code>. Default is <code>NULL</code> (estimation of the treatment effect in the total population).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d1treat</code></td>
+<td>
+<p>Value of the first treatment in the treatment sequence. Default is 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d2treat</code></td>
+<td>
+<p>Value of the second treatment in the treatment sequence. Default is 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d1control</code></td>
+<td>
+<p>Value of the first treatment in the control sequence. Default is 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d2control</code></td>
+<td>
+<p>Value of the second treatment in the control sequence. Default is 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trim</code></td>
+<td>
+<p>Trimming rule for discarding observations with products of treatment propensity scores in the first and second period that are smaller than <code>trim</code> (to avoid too small denominators in weighting by the inverse of the propensity scores). Default is 0.01.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MLmethod</code></td>
+<td>
+<p>Machine learning method for estimating the nuisance parameters based on the <code>SuperLearner</code> package. Must be either  <code>"lasso"</code> (default) for lasso estimation,  <code>"randomforest"</code> for random forests, <code>"xgboost"</code> for xg boosting,  <code>"svm"</code> for support vector machines, <code>"ensemble"</code> for using an ensemble algorithm based on all previously mentioned machine learners, or <code>"parametric"</code> for linear or logit regression.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fewsplits</code></td>
+<td>
+<p>If set to <code>TRUE</code>, the same training data are used for estimating a nested model of conditional mean outcomes, namely <code>E[E[y2|d1,d2,x0,x1]|d1,x0]</code>. If <code>fewsplits</code> is <code>FALSE</code>, the training data are split for the sequential estimation of the nested model. Default of <code>fewsplits</code> is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>normalized</code></td>
+<td>
+<p>If set to <code>TRUE</code>, then the inverse probability-based weights are normalized such that they add up to 1 within treatment groups. Default is <code>TRUE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Estimation of the causal effects of sequences of two treatments under sequential conditional independence, assuming that all confounders of the treatment in either period and the outcome of interest are observed. Estimation is based on the (doubly robust) efficient score functions for potential outcomes, see e.g. Bodory, Huber, and Laffers (2020), in combination with double machine learning with cross-fitting, see Chernozhukov et al (2018). To this end, one part of the data is used for estimating the model parameters of the treatment and outcome equations based machine learning. The other part of the data is used for predicting the efficient score functions. The roles of the data parts are swapped (using 3-fold cross-fitting) and the average dynamic treatment effect is estimated based on averaging the predicted efficient score functions in the total sample.
+Standard errors are based on asymptotic approximations using the estimated variance of the (estimated) efficient score functions.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>dyntreatDML</code> object contains ten components, <code>effect</code>, <code>se</code>, <code>pval</code>, <code>ntrimmed</code>, <code>meantreat</code>, <code>meancontrol</code>, <code>psd1treat</code>, <code>psd2treat</code>, <code>psd1control</code>, and <code>psd2control</code> :
+</p>
+<p><code>effect</code>: estimate of the average effect of the treatment sequence.
+</p>
+<p><code>se</code>: standard error of the effect estimate.
+</p>
+<p><code>pval</code>: p-value of the effect estimate.
+</p>
+<p><code>ntrimmed</code>: number of discarded (trimmed) observations due to low products of propensity scores.
+</p>
+<p><code>meantreat</code>: Estimate of the mean potential outcome under the treatment sequence.
+</p>
+<p><code>meancontrol</code>: Estimate of the mean potential outcome under the control sequence.
+</p>
+<p><code>psd1treat</code>: P-score estimates for first treatment in treatment sequence.
+</p>
+<p><code>psd2treat</code>: P-score estimates for second treatment in treatment sequence.
+</p>
+<p><code>psd1control</code>: P-score estimates for first treatment in control sequence.
+</p>
+<p><code>psd2control</code>: P-score estimates for second treatment in control sequence.
+</p>
+
+
+<h3>References</h3>
+
+<p>Bodory, H., Huber, M., Laffers, L. (2020): "Evaluating (weighted) dynamic treatment effects by double machine learning", working paper, arXiv preprint arXiv:2012.00370.
+</p>
+<p>Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., Robins, J. (2018): "Double/debiased machine learning for treatment and structural parameters", The Econometrics Journal, 21, C1-C68.
+</p>
+<p>van der Laan, M., Polley, E., Hubbard, A. (2007): "Super Learner", Statistical Applications in Genetics and Molecular Biology, 6.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># A little example with simulated data (2000 observations)
+## Not run: 
+n=2000
+# sample size
+p0=10
+# number of covariates at baseline
+s0=5
+# number of covariates that are confounders at baseline
+p1=10
+# number of additional covariates in period 1
+s1=5
+# number of additional covariates that are confounders in period 1
+x0=matrix(rnorm(n*p0),ncol=p0)
+# covariate matrix at baseline
+beta0=c(rep(0.25,s0), rep(0,p0-s0))
+# coefficients determining degree of confounding for baseline covariates
+d1=(x0%*%beta0+rnorm(n)&gt;0)*1
+# equation of first treatment in period 1
+x1=matrix(rnorm(n*p1),ncol=p1)+matrix(0.1 * d1, nrow = n, ncol = p1)
+# covariate matrix for covariates of period 1 (affected by 1st treatment d1)
+beta1=c(rep(0.25,s1), rep(0,p1-s1))
+# coefficients determining degree of confounding for covariates of period 1
+d2=(x0%*%beta0+x1%*%beta1+0.5*d1+rnorm(n)&gt;0)*1
+# equation of second treatment in period 2
+y2=x0%*%beta0+x1%*%beta1+1*d1+0.5*d2+rnorm(n)
+# outcome equation in period 2
+output=dyntreatDML(y2=y2,d1=d1,d2=d2,x0=x0,x1=x1,
+       d1treat=1,d2treat=1,d1control=0,d2control=0)
+cat("dynamic ATE: ",round(c(output$effect),3),", standard error: ",
+    round(c(output$se),3), ", p-value: ",round(c(output$pval),3))
+output$ntrimmed
+# The true effect of the treatment sequence is 1.5
+## End(Not run)
+</code></pre>
+
+
+</div>

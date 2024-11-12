@@ -1,0 +1,165 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>gcd</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Greatest common divisor and smallest common multiple</h2>
+
+<h3>Description</h3>
+
+<p>Fast greatest common divisor and smallest common multiple
+using the Euclidean algorithm.
+</p>
+<p><code>gcd()</code> returns the greatest common divisor. <br><code>scm()</code> returns the smallest common multiple. <br><code>gcd2()</code> is a vectorised binary version of <code>gcd</code>. <br><code>scm2()</code> is a vectorised binary version of <code>scm</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">gcd(
+  x,
+  tol = sqrt(.Machine$double.eps),
+  na_rm = TRUE,
+  round = TRUE,
+  break_early = TRUE
+)
+
+scm(x, tol = sqrt(.Machine$double.eps), na_rm = TRUE)
+
+gcd2(x, y, tol = sqrt(.Machine$double.eps), na_rm = TRUE)
+
+scm2(x, y, tol = sqrt(.Machine$double.eps), na_rm = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A numeric vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol</code></td>
+<td>
+<p>Tolerance. This must
+be a single positive number strictly less than 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na_rm</code></td>
+<td>
+<p>If <code>TRUE</code> the default, <code>NA</code> values are ignored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>round</code></td>
+<td>
+<p>If <code>TRUE</code> the output is rounded as
+<code>round(gcd, digits)</code> where digits is
+<code>ceiling(abs(log10(tol))) + 1</code>. <br>
+This can potentially reduce floating point errors on
+further calculations. <br>
+The default is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>break_early</code></td>
+<td>
+<p>This is experimental and
+applies only to floating-point numbers.
+When <code>TRUE</code> the algorithm will end once <code>gcd &gt; 0 &amp;&amp; gcd &lt; 2 * tol</code>.
+This can offer a tremendous speed improvement.
+If <code>FALSE</code> the algorithm finishes once it has gone through all elements of <code>x</code>.
+The default is <code>TRUE</code>. <br>
+For integers, the algorithm always breaks early once <code>gcd &gt; 0 &amp;&amp; gcd &lt;= 1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>A numeric vector.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+
+
+<h4>Method</h4>
+
+
+
+<h5>GCD (Greatest Common Divisor)</h5>
+
+<p>The GCD is calculated using a binary function that takes input
+<code>GCD(gcd, x[i + 1])</code> where the output of this function is passed as input
+back into the same function iteratively along the length of <code>x</code>.
+The first gcd value is <code>x[1]</code>.
+</p>
+<p>Zeroes are handled in the following way: <br><code>GCD(0, 0) = 0</code> <br><code>GCD(a, 0) = a</code> <br></p>
+<p>This has the nice property that zeroes are essentially ignored.
+</p>
+
+
+
+<h5>SCM (Smallest Common Multiple)</h5>
+
+<p>This is calculated using the GCD and the formula is: <br><code>SCM(x, y) = (abs(x) / GCD(x, y) ) * abs(y)</code>
+</p>
+<p>If you want to calculate the gcd &amp; lcm for 2 values
+or across 2 vectors of values, use <code>gcd2</code> and <code>scm2</code>.
+</p>
+
+
+
+<h5>A note on performance</h5>
+
+<p>A very common solution to finding the GCD of a vector of values is to use
+<code>Reduce()</code> along with a binary function like <code>gcd2()</code>. <br>
+e.g. <code>Reduce(gcd2, seq(5, 20, 5))</code>. <br>
+This is exactly identical to <code>gcd(seq(5, 20, 5))</code>, with <code>gcd()</code> being much
+faster and overall cheaper as it is written in C++ and heavily optimised.
+Therefore it is recommended to always use <code>gcd()</code>.
+</p>
+<p>For example we can compare the two approaches below, <br><code>x &lt;- seq(5L, length = 10^6, by = 5L)</code> <br><code>bench::mark(Reduce(gcd2, x), gcd(x))</code> <br>
+This example code shows <code>gcd()</code> being ~200x faster on my machine than
+the <code>Reduce</code> + <code>gcd2</code> approach, even though <code>gcd2</code> itself is written in C++
+and has little overhead.
+</p>
+
+
+
+
+<h3>Value</h3>
+
+<p>A number representing the GCD or SCM.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(cheapr)
+library(bench)
+
+# Binary versions
+gcd2(15, 25)
+gcd2(15, seq(5, 25, 5))
+scm2(15, seq(5, 25, 5))
+scm2(15, 25)
+
+# GCD across a vector
+gcd(c(0, 5, 25))
+mark(gcd(c(0, 5, 25)))
+
+x &lt;- rnorm(10^5)
+gcd(x)
+gcd(x, round = FALSE)
+mark(gcd(x))
+</code></pre>
+
+
+</div>

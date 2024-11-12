@@ -1,0 +1,183 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>read_civis</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Read tables and files from Civis Platform</h2>
+
+<h3>Description</h3>
+
+<p><code>read_civis</code> loads a table from Redshift as a data frame if
+given a <code>"schema.table"</code> or <code>sql("query")</code> as the first argument, or
+loads a file from Amazon S3 (the files endpoint) if a file id is given.
+Run outputs from any Civis platform script
+are returned if a <code>civis_script</code> is given.
+</p>
+<p>A default database can be set using <code>options(civis.default_db = "my_database")</code>.
+If there is only one database available,
+this database will automatically be used as the default.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">read_civis(x, ...)
+
+## S3 method for class 'numeric'
+read_civis(x, using = read.csv, verbose = FALSE, ...)
+
+## S3 method for class 'character'
+read_civis(x, database = NULL, ...)
+
+## S3 method for class 'sql'
+read_civis(
+  x,
+  database = NULL,
+  using = utils::read.csv,
+  job_name = NULL,
+  hidden = TRUE,
+  verbose = FALSE,
+  ...
+)
+
+## S3 method for class 'civis_script'
+read_civis(x, using, regex = NULL, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p><code>"schema.table"</code>, <code>sql("query")</code>, or a file id.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments passed to <code>using</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>using</code></td>
+<td>
+<p>function, Function to convert the file to a data frame or to unserialize.
+the file (e.g. <code>read.csv</code> or <code>readRDS</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>bool, Set to TRUE to print intermediate progress indicators.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>database</code></td>
+<td>
+<p>string, Name of database where data frame is to be uploaded.
+If no database is specified, uses <code>options(civis.default_db)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>job_name</code></td>
+<td>
+<p>string, Name of the job (default: <code>"Civis Export Via R Client"</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hidden</code></td>
+<td>
+<p>bool, Whether the job is hidden.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>regex</code></td>
+<td>
+<p>Regex of matching run output names.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>By default, <code>read_civis.numeric</code> assumes the file is a CSV. For reading
+a serialized R object, set <code>using = readRDS</code> for example.
+</p>
+<p>If <code>using = NULL</code>, <code>read_civis.civis_script</code>
+will return all JSONValues with name matching <code>regex</code>.
+Otherwise all File run outputs matching <code>regex</code> will be read into memory
+with <code>using</code>.
+Results are always a named list.
+If the script has no outputs, an empty list will be returned.
+</p>
+
+
+<h3>Methods (by class)</h3>
+
+
+<ul>
+<li> <p><code>read_civis(numeric)</code>: Return a file as a data frame
+</p>
+</li>
+<li> <p><code>read_civis(character)</code>: Return all columns from a table as a data frame.
+</p>
+</li>
+<li> <p><code>read_civis(sql)</code>: Return a SQL query as a data frame.
+</p>
+</li>
+<li> <p><code>read_civis(civis_script)</code>: Return run outputs of a <code>civis_script</code> as a named list.
+</p>
+</li>
+</ul>
+<h3>See Also</h3>
+
+<p>Other io: 
+<code>download_civis()</code>,
+<code>query_civis_file()</code>,
+<code>query_civis()</code>,
+<code>write_civis_file()</code>,
+<code>write_civis()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+# Read all columns in a single table
+df &lt;- read_civis("schema.my_table", database = "my_database")
+
+# Read data from a SQL select statement
+query &lt;- sql("SELECT * FROM table JOIN other_table USING id WHERE var1 &lt; 23")
+df &lt;- read_civis(query, database = "my_database")
+
+# Read an R object from the files endpoint.
+id &lt;- write_civis_file(df)
+df &lt;- read_civis(id)
+
+# Read a text file or csv from the files endpoint.
+id &lt;- write_civis_file("my_csv.csv")
+df &lt;- read_civis(id)
+
+# Read JSONValues from a civis script
+vals &lt;- read_civis(civis_script(1234))
+
+# Read File run outputs from a civis script
+df &lt;- read_civis(civis_script(1234), regex = '.csv', using = read.csv)
+obj &lt;- read_civis(civis_script(1234), regex = '.rds', using = readRDS)
+
+# Gracefully handle when read_civis.sql returns no rows
+query &lt;- sql("SELECT * FROM table WHERE 1 = 2")
+mean_x &lt;- tryCatch({
+  df &lt;- read_civis(query, database = "my_database")
+  mean(df$x)
+}, empty_result_error = function(e) {
+   NA
+})
+
+## End(Not run)
+</code></pre>
+
+
+</div>

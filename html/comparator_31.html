@@ -1,0 +1,122 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>InVocabulary</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>In-Vocabulary Comparator</h2>
+
+<h3>Description</h3>
+
+<p>Compares a pair of strings <code class="reqn">x</code> and <code class="reqn">y</code> using a reference vocabulary.
+Different scores are returned depending on whether both/one/neither of
+<code class="reqn">x</code> and <code class="reqn">y</code> are in the reference vocabulary.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">InVocabulary(
+  vocab,
+  both_in_distinct = 0.7,
+  both_in_same = 1,
+  one_in = 1,
+  none_in = 1,
+  ignore_case = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>vocab</code></td>
+<td>
+<p>a vector containing in-vocabulary (known) strings. Any strings
+not in this vector are out-of-vocabulary (unknown).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>both_in_distinct</code></td>
+<td>
+<p>score to return if the pair of values being
+compared are both in <code>vocab</code> and distinct. Defaults to 0.7, which would
+is appropriate for multiplying by similarity scores. If multiplying
+by distance scores, a value greater than 1 is likely to be more
+appropriate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>both_in_same</code></td>
+<td>
+<p>score to return if the pair of values being
+compared are both in <code>vocab</code> and identical. Defaults to 1.0, which
+would leave another score unchanged when multiplied by this one.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>one_in</code></td>
+<td>
+<p>score to return if only one of the pair of values being
+compared is in <code>vocab</code>. Defaults to 1.0, which would leave another
+score unchanged when multiplied by this one.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>none_in</code></td>
+<td>
+<p>score to return if none of the pair of values being
+compared is in <code>vocab</code>. Defaults to 1.0, which would leave another
+score unchanged when multiplied by this one.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ignore_case</code></td>
+<td>
+<p>a logical. If TRUE, case is ignored when comparing the
+strings.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This comparator is not intended to produce useful scores on its own.
+Rather, it is intended to produce multiplicative factors which can be
+applied to other similarity/distance scores. It is particularly useful
+for comparing names when a reference list (vocabulary) of known names is
+available. For example, it can be configured to down-weight the similarity
+scores of distinct (known) names like "Roberto" and "Umberto" which are
+semantically very different, but deceptively similar in terms of edit
+distance. The normalized Levenshtein similarity for these two names is 75%,
+but their similarity can be reduced to 53% if multiplied by the score
+from this comparator using the default settings.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An <code>InVocabulary</code> instance is returned, which is an S4 class inheriting from
+<code>StringComparator</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Compare names with possible typos using a reference of known names
+known_names &lt;- c("Roberto", "Umberto", "Alberto", "Emberto", "Norberto", "Humberto")
+m1 &lt;- InVocabulary(known_names)
+m2 &lt;- Levenshtein(similarity = TRUE, normalize = TRUE)
+x &lt;- "Emberto"
+y &lt;- c("Enberto", "Umberto")
+# "Emberto" and "Umberto" are likely to refer to distinct people (since 
+# they are known distinct names) so their Levenshtein similarity is 
+# downweighted to 0.61. "Emberto" and "Enberto" may refer to the same 
+# person (likely typo), so their Levenshtein similarity of 0.87 is not 
+# downweighted.
+similarities &lt;- m1(x, y) * m2(x, y)
+
+</code></pre>
+
+
+</div>

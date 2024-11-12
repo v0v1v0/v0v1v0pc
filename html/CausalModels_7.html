@@ -1,0 +1,178 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>propensity_matching</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Propensity Matching</h2>
+
+<h3>Description</h3>
+
+<p>'propensity_matching' uses either stratification or standardization to model an outcome
+conditional on the propensity scores. In stratification, the model will break the propensity scores
+into groups and output a <code>glht</code> model based off a contrast matrix which
+estimates the change in average causal effect within groups of propensity scores. In standardization,
+the model will output a <code>standardization</code> model that conditions on the
+propensity strata rather than the covariates. The model can also predict the expected outcome.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">propensity_matching(
+  data,
+  f = NA,
+  simple = pkg.env$simple,
+  p.scores = NA,
+  p.simple = pkg.env$simple,
+  type = "strata",
+  grp.width = 0.1,
+  quant = TRUE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a data frame containing the variables in the model.
+This should be the same data used in <code>init_params</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+<p>(optional) an object of class "formula" that overrides the default parameter</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>simple</code></td>
+<td>
+<p>a boolean indicator to build default formula with interactions.
+If true, interactions will be excluded. If false, interactions will be included. By
+default, simple is set to false.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p.scores</code></td>
+<td>
+<p>(optional) use calculated propensity scores for matching. Otherwise, propensity scores
+will be automatically modeled.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p.simple</code></td>
+<td>
+<p>a boolean indicator to build default formula with interactions for the propensity models.
+If true, interactions will be excluded. If false, interactions will be included. By
+default, simple is set to false.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>a string representing the type of propensity model to be used. By default, the function will stratify. Standardization with
+propensity scores may also be used. The value given for <code>type</code> must be in <code>c("strata", "stdm")</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>grp.width</code></td>
+<td>
+<p>a decimal value to specify the range to stratify the propensity scores. If option <code>quant</code> is set to true,
+this will represent the spread of percentiles. If false, it will represent the spread of raw values of propensity
+scores. Must be a decimal between 0 and 1. By default, this is set to 0.1. This option is ignored for standardization.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quant</code></td>
+<td>
+<p>a boolean indicator to specify the type of stratification. If true (default), the model will stratify by
+percentiles. If false, the scores will be grouped by a range of their raw values. This option is ignored for standardization.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>additional arguments that may be passed to the underlying <code>propensity_scores</code> function.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>propensity_matching</code> returns an object of <code>class "propensity_matching"</code>
+</p>
+<p>The functions <code>print</code>, <code>summary</code>, and <code>predict</code> can be used to interact with the underlying <code>glht</code> or
+<code>standardization</code> model.
+</p>
+<p>An object of class <code>"propensity_matching"</code> is a list containing the following:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the matched call.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>the formula used in the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>model</code></td>
+<td>
+<p>either the underlying <code>glht</code> or <code>standardization</code> model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p.scores</code></td>
+<td>
+<p>the estimated propensity scores</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ATE</code></td>
+<td>
+<p>a data frame containing the ATE, SE, and 95% CI of the ATE. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ATE.summary</code></td>
+<td>
+<p>either a data frame containing the <code>glht</code> or <code>standardization</code> summary. </p>
+</td>
+</tr>
+</table>
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(causaldata)
+library(multcomp)
+
+data(nhefs)
+nhefs.nmv &lt;- nhefs[which(!is.na(nhefs$wt82)), ]
+nhefs.nmv$qsmk &lt;- as.factor(nhefs.nmv$qsmk)
+
+confounders &lt;- c(
+  "sex", "race", "age", "education", "smokeintensity",
+  "smokeyrs", "exercise", "active", "wt71"
+)
+
+init_params(wt82_71, qsmk,
+  covariates = confounders,
+  data = nhefs.nmv
+)
+
+pm.model &lt;- propensity_matching(nhefs.nmv)
+pm.model$ATE.summary
+summary(pm.model)
+head(data.frame(preds = predict(pm.model)))
+
+</code></pre>
+
+
+</div>

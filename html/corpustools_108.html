@@ -1,0 +1,152 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>tCorpus$replace_dictionary</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Replace tokens with dictionary match</h2>
+
+<h3>Description</h3>
+
+<p>Uses <code>search_dictionary</code>, and replaces tokens that match the dictionary lookup term with the dictionary code.
+Multi-token matches (e.g., "Barack Obama") will become single tokens. Multiple lookup terms per code can be used to deal with
+alternatives such as "Barack Obama", "president Obama" and "Obama".
+</p>
+<p>This method can also be use to concatenate ASCII symbols into emoticons, given a dictionary of emoticons.
+</p>
+<p><strong>Usage:</strong>
+</p>
+<p>## R6 method for class tCorpus. Use as tc$method (where tc is a tCorpus object).
+</p>
+<pre>replace_dictionary(...)</pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>dict</code></td>
+<td>
+<p>A dictionary. Can be either a data.frame or a quanteda dictionary. If a data.frame is given, it has to
+have a column named "string"  (or use string_col argument) that contains the dictionary terms, and a column "code" (or use code_col argument) that contains the
+label/code represented by this string. Each row has a single string, that can be
+a single word or a sequence of words seperated by a whitespace (e.g., "not bad"), and can have the common ? and * wildcards.
+If a quanteda dictionary is given, it is automatically converted to this type of data.frame with the
+<code>melt_quanteda_dict</code> function. This can be done manually for more control over labels.
+Finally, you can also just pass a character vector. All multi word strings (like emoticons) will then be
+collapsed into single tokens.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>token_col</code></td>
+<td>
+<p>The feature in tc that contains the token text.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>string_col</code></td>
+<td>
+<p>If dict is a data.frame, the name of the column in dict with the dictionary lookup string. Default is "string"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>code_col</code></td>
+<td>
+<p>The name of the column in dict with the dictionary code/label. Default is "code".
+If dict is a quanteda dictionary with multiple levels, "code_l2", "code_l3", etc. can be used to select levels.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>replace_cols</code></td>
+<td>
+<p>The names of the columns in tc$tokens that will be replaced by the dictionary code. Default is the column on which the dictionary is applied,
+but in some cases it might make sense to replace multiple columns (like token and lemma)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sep</code></td>
+<td>
+<p>A regular expression for separating multi-word lookup strings (default is " ", which is what quanteda dictionaries use).
+For example, if the dictionary contains "Barack Obama", sep should be " " so that it matches the consequtive tokens "Barack" and "Obama".
+In some dictionaries, however, it might say "Barack+Obama", so in that case sep = '\+' should be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>code_from_features</code></td>
+<td>
+<p>If TRUE, instead of replacing features with the matched code columnm, use the most frequent occuring string in the features.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>code_sep</code></td>
+<td>
+<p>If code_from_features is TRUE, the separator for pasting features together. Default is an underscore, which is recommended because it has special
+features in corpustools. Most importantly, if a query or dictionary search is performed, multi-word tokens concatenated with an underscore are treated
+as separate consecutive words. So, "Bob_Smith" would still match a lookup for the two consequtive words "bob smith"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>decrement_ids</code></td>
+<td>
+<p>If TRUE (default), decrement token ids after concatenating multi-token matches. So, if the tokens c(":", ")", "yay") have token_id c(1,2,3),
+then after concatenating ASCII emoticons, the tokens will be c(":)", "yay") with token_id c(1,2)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>case_sensitive</code></td>
+<td>
+<p>logical, should lookup be case sensitive?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use_wildcards</code></td>
+<td>
+<p>Use the wildcards * (any number including none of any character) and ? (one or none of any character). If FALSE, exact string matching is used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ascii</code></td>
+<td>
+<p>If true, convert text to ascii before matching</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>If true, report progress</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A vector with the id value (taken from dict$id) for each row in tc$tokens
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">tc = create_tcorpus('happy :) sad :( happy 8-)')
+tc$tokens   ## tokenization has broken up emoticons (as it should)
+
+# corpustools dictionary lookup automatically normalizes tokenization of 
+# tokens and dictionary strings. The dictionary string ":)" would match both
+# the single token ":)" and two consequtive tokens c(":", ")"). This 
+# makes it easy and foolproof to look for emoticons like this:
+emoticon_dict = data.frame(
+   code   = c('happy_emo','happy_emo', 'sad_emo'), 
+   string = c(':)',             '8-)',      ':(')) 
+   
+tc$replace_dictionary(emoticon_dict)
+tc$tokens
+
+# If a string is passed to replace dictionary, it will collapse multi-word
+# strings. .
+tc = create_tcorpus('happy :) sad :( Barack Obama')
+tc$tokens
+tc$replace_dictionary(c(':)', '8-)', 'Barack Obama'))
+tc$tokens
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,198 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>pkorner</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Carcass detection probability acording to Korner-Nievergelt et al. 2011
+</h2>
+
+<h3>Description</h3>
+
+<p>Calculates carcass detection probability based on persistence probability, searcher efficiency, search interval and duration of study.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">pkorner(s, s.lower=NA, s.upper=NA, f, f.lower=NA, f.upper=NA, d, n, k=0.25, 
+        search.efficiency.constant=TRUE, CI=FALSE, nsim=1000)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>s</code></td>
+<td>
+
+<p>persistence probability: Probability that a carcass remains on the study plot for one day (or another time unit). 
+Scalar in case of constant persistence probability, vector with probabilities to 
+persist until each day after death ('survivor function', i.e. proportion of remaining carcasses for
+each day after death) in case of non-constant persistence probabilities.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>s.lower</code></td>
+<td>
+
+<p>lower limit of 95% CI of persistence probability
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>s.upper</code></td>
+<td>
+
+<p>upper limit of 95% CI of persistence probability
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f</code></td>
+<td>
+
+<p>searcher efficiency: Probability that a carcass present on the study plot is detected by a searcher during a seach.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f.lower</code></td>
+<td>
+
+<p>lower limit of 95% CI of searcher efficiency
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f.upper</code></td>
+<td>
+
+<p>upper limit of 95% CI of searcher efficiency
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+
+<p>search interval: time (in days) between two searches
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+
+<p>number of searches: n*d = duration of study
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+
+<p>Factor by which the search efficiency is multiplied after each search for a specific carcass (see details).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>search.efficiency.constant</code></td>
+<td>
+
+<p>TRUE if search efficiency is constant over time, FALSE if it decreases by a factor k with each search.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CI</code></td>
+<td>
+
+<p>TRUE if 95% CI should be calculated based on a beta distribution and Monte Carlo simulations, FALSE otherwise.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nsim</code></td>
+<td>
+
+<p>number of Monte Carlo simulations
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Time measurements (search interval) and reference time units (persistence probability) should be given in the same unit.
+The argument k together with search.efficiency.constant=FALSE can be given to account for the fact that during the first search 
+carcasses with high detectability are found overproportionatedly, whereas carcasses hard to find remain on the study plot. Thus with each
+search, searcher efficiency decreases by the factor k. If search.efficiency.constant=TRUE the value given at the argument k is ignored (i.e. k=1). 
+If one assumes that persistence probability is not constant, the function <code>persistence.prob</code> could be used to provide the data for <code>s</code> (see examples below).
+An estimate for s should be provided for every day for a sufficient time span, e.g. 14 days. Missing estimates for intermediate days have to be interpolated. 
+After the last day with an s provided, the function assumes that the proportion of persisting carcasses is zero, e.g. s is assumed to be zero from day 15 and onwards if s is a vector of length 14.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a proportion: the probability that an animal that dies during the study period on the study plot is detected by a searcher
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Fraenzi Korner-Nievergelt
+</p>
+
+
+<h3>References</h3>
+
+<p>Korner-Nievergelt F, Korner-Nievergelt P, Behr O, Niermann I, Brinkmann R, Hellriegel B (2011) A new method to determine bird and bat fatality at wind energy turbines from carcass searches. Wildlife Biology 17: 350-363
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>phuso</code>,
+<code>perickson</code>,
+<code>persistence.prob</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+### Data
+  f &lt;- 0.72
+  s &lt;- 0.8
+  data(persistence)
+  attach(persistence)
+  sv &lt;- persistence.prob(turbineID, perstime, status)$persistence.prob[,1]
+  sv.lower &lt;- persistence.prob(turbineID, perstime, status)$lower[,1]
+  sv.upper &lt;- persistence.prob(turbineID, perstime, status)$upper[,1]
+  n &lt;- 4
+  d &lt;- 3
+  
+### Constant search efficiency and constant persistence probability
+  pkorner(s=s, f=f, d=d, n=n)
+  pkorner(s=s, s.lower=0.6, s.upper=0.9, f=f, f.lower=0.6, f.upper=0.8, 
+    d=d, n=n, CI=TRUE)
+
+### Decreasing search efficiency and constant persistence probability
+  pkorner(s=s, f=f, d=d, n=n, k=0.25, search.efficiency.constant=FALSE)
+
+### Constant search efficiency and decreasing persistence probability
+  pkorner(s=sv, f=f, d=d, n=n)
+
+### Decreasing search efficiency and decreasing persistence probability
+  pkorner(s=sv, f=f, d=d, n=n, search.efficiency.constant=FALSE)
+  pkorner(s=sv, s.lower=sv.lower, s.upper=sv.upper, f=f, f.lower=0.6, 
+    f.upper=0.8, d=d, n=n, search.efficiency.constant=FALSE, CI=TRUE)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,175 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>fastnmf</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Consensus clustering using non-negative matrix factorization</h2>
+
+<h3>Description</h3>
+
+<p>From a list of partitions <code>fastnmf</code> pools partition as proposed in Li and Ding (2007) &lt;doi:10.1109/ICDM.2007.98&gt;.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">fastnmf(
+  listpart,
+  nb.clust,
+  threshold = 10^(-5),
+  printflag = TRUE,
+  nstart = 100,
+  early_stop_iter = 10,
+  initializer = "random",
+  batch_size = NULL,
+  iter.max = 50
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>listpart</code></td>
+<td>
+<p>a list of partitions</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nb.clust</code></td>
+<td>
+<p>an integer specifying the number of clusters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold</code></td>
+<td>
+<p>a real specifying when the NMF algorithm is stoped. Default value is 10^(-5)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>printflag</code></td>
+<td>
+<p>a boolean. If TRUE, nmf will print messages on console. Default value is TRUE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nstart</code></td>
+<td>
+<p>how many random sets should be chosen for kmeans initalization. Default value is 100</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>early_stop_iter</code></td>
+<td>
+<p>continue that many iterations after calculation of the best within-cluster-sum-of-squared-error. Default value is 10. See MiniBatchKmeans help page.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>initializer</code></td>
+<td>
+<p>the method of initialization. One of, optimal_init, quantile_init, kmeans++ and random. See MiniBatchKmeans help page.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>batch_size</code></td>
+<td>
+<p>the size of the mini batches for kmeans clustering. Default value is NULL.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iter.max</code></td>
+<td>
+<p>the maximum number of iterations allowed for kmeans. Default value is 50</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>fastnmf performs consensus clustering using non-negative matrix factorization following Li and Ding (2007) &lt;doi:10.1109/ICDM.2007.98&gt;. The set of partitions that are aggregated needs to be given as a list where each element is a vector of numeric values. Note that the number of classes for each partition can vary. The number of classes for the consensus partition should be given using the nb.clust argument. The NMF algorithm is iterative and required an initial partition. This latter is based on kmeans clustering on the average of connectivity matrices. If batchsize is NULL, then kmeans clustering is performed using <code>nstart</code> initial values and <code>iter.max</code> iterations. Otherwise, Mini Batch Kmeans is used. This algorithm could be faster than kmeans if the number of invididuals is large.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a list of 5 objets
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>Htilde</code></td>
+<td>
+<p>A fuzzy disjunctive table</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>S</code></td>
+<td>
+<p>A positive matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Mtilde</code></td>
+<td>
+<p>The average of connectivity matrices</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>crit</code></td>
+<td>
+<p>A vector with the optimized criterion at each iteration</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cluster</code></td>
+<td>
+<p>the consensus partition in nb.clust classes</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>T. Li, C. Ding, and M. I. Jordan (2007) Solving consensus and semi-supervised clustering problems using nonnegative matrix factorization.  In Proceedings of the 2007 Seventh IEEE International Conference on Data Mining, ICDM'07, page 577-582, USA. IEEE Computer Society. &lt;doi:10.1109/ICDM.2007.98&gt;
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>kmeans</code> <code>MiniBatchKmeans</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">data(wine)
+require(clustrd)
+set.seed(123456)
+ref &lt;- wine$cult
+nb.clust &lt;- 3
+m &lt;- 3 # number of imputed data sets. Should be larger in practice
+wine.na &lt;- wine
+wine.na$cult &lt;- NULL
+wine.na &lt;- prodna(wine.na)
+
+#imputation
+res.imp &lt;- imputedata(data.na = wine.na, nb.clust = nb.clust, m = m)
+
+#analysis using reduced kmeans
+
+## apply the cluspca function on each imputed data set
+res.ana.rkm &lt;- lapply(res.imp$res.imp,
+                      FUN = cluspca,
+                      nclus = nb.clust,
+                      ndim = 2,
+                      method= "RKM")
+## extract the set of partitions (under "list" format)
+res.ana.rkm &lt;-lapply(res.ana.rkm,"[[","cluster")
+
+# pooling by NMF
+res.pool.rkm &lt;- fastnmf(res.ana.rkm, nb.clust = nb.clust)$clust
+
+</code></pre>
+
+
+</div>

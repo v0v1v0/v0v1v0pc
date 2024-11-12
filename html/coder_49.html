@@ -1,0 +1,243 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>codify</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Codify case data with external code data (within specified time frames)</h2>
+
+<h3>Description</h3>
+
+<p>This is the first step of <code>codify() %&gt;% classify() %&gt;% index()</code>.
+The function combines case data from one data set with related code data from
+a second source, possibly limited to codes valid at certain time points
+relative to case dates.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">codify(x, codedata, ..., id, code, date = NULL, code_date = NULL, days = NULL)
+
+## S3 method for class 'data.frame'
+codify(x, ..., id, date = NULL, days = NULL)
+
+## S3 method for class 'data.table'
+codify(
+  x,
+  codedata,
+  ...,
+  id,
+  code,
+  date = NULL,
+  code_date = NULL,
+  days = NULL,
+  alnum = FALSE,
+  .copy = NA
+)
+
+## S3 method for class 'codified'
+print(x, ..., n = 10)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>data set with mandatory character id column
+(identified by argument <code>id = "&lt;col_name&gt;"</code>),
+and optional <code>Date</code>  of interest
+(identified by argument <code>date = "&lt;col_name&gt;"</code>).
+Alternatively, the output from <code>codify()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>codedata</code></td>
+<td>
+<p>additional data with columns
+including case id (<code>character</code>), code and an optional date (Date) for
+each code. An optional column <code>condition</code> might distinguish codes/dates
+with certain characteristics (see example).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments passed between methods</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id, code, date, code_date</code></td>
+<td>
+<p>column names with case id
+(<code>character</code> from <code>x</code> and <code>codedata</code>), <code>code</code> (from <code>x</code>) and
+optional date (Date from <code>x</code>) and
+<code>code_date</code> (Date from <code>codedata</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>days</code></td>
+<td>
+<p>numeric vector of length two with lower and upper bound for range
+of relevant days relative to <code>date</code>. See "Relevant period".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alnum</code></td>
+<td>
+<p>Should codes be cleaned from all non alphanumeric characters?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.copy</code></td>
+<td>
+<p>Should the object be copied internally by <code>data.table::copy()</code>?
+<code>NA</code> (by default) means that objects smaller than 1 GB are copied.
+If the size is larger, the argument must be set explicitly. Set <code>TRUE</code>
+to make copies regardless of object size. This is recommended if enough RAM
+is available. If set to <code>FALSE</code>, calculations might be carried out
+but the object will be changed by reference.
+IMPORTANT! This might lead to undesired consequences and should only be used
+if absolutely necessary!</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n</code></td>
+<td>
+<p>number of rows to preview as tibble.
+The output is technically a data.table::data.table, which might be an
+unusual format to look at. Use <code>n = NULL</code> to print the object as is.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Object of class <code>codified</code> (inheriting from data.table::data.table).
+Essentially <code>x</code> with additional columns:
+<code style="white-space: pre;">⁠code, code_date⁠</code>: left joined from <code>codedata</code> or <code>NA</code>
+if no match within period. <code>in_period</code>: Boolean indicator if the case
+had at least one code within the specified period.
+</p>
+<p>The output has one row for each combination of "id" from <code>x</code> and
+"code" from <code>codedata</code>. Rows from <code>x</code> might be repeated
+accordingly.
+</p>
+
+
+<h3>Relevant period</h3>
+
+<p>Some examples for argument <code>days</code>:
+</p>
+
+<ul>
+<li> <p><code>c(-365, -1)</code>: window of one year prior to the <code>date</code>
+column of <code>x</code>. Useful for patient comorbidity.
+</p>
+</li>
+<li> <p><code>c(1, 30)</code>: window of 30 days after <code>date</code>.
+Useful for adverse events after a surgical procedure.
+</p>
+</li>
+<li> <p><code>c(-Inf, Inf)</code>: no limitation on non-missing dates.
+</p>
+</li>
+<li> <p><code>NULL</code>: no time limitation at all.
+</p>
+</li>
+</ul>
+<h3>See Also</h3>
+
+<p>Other verbs: 
+<code>categorize()</code>,
+<code>classify()</code>,
+<code>index_fun</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Codify all patients from `ex_people` with their ICD-10 codes from `ex_icd10`
+x &lt;- codify(ex_people, ex_icd10, id = "name", code = "icd10")
+x
+
+# Only consider codes if recorded at hospital admissions within one year prior
+# to surgery
+codify(
+  ex_people,
+  ex_icd10,
+  id        = "name",
+  code      = "icd10",
+  date      = "surgery",
+  code_date = "admission",
+  days      = c(-365, 0)   # admission during one year before surgery
+)
+
+# Only consider codes if recorded after surgery
+codify(
+  ex_people,
+  ex_icd10,
+  id        = "name",
+  code      = "icd10",
+  date      = "surgery",
+  code_date = "admission",
+  days      = c(1, Inf)     # admission any time after surgery
+)
+
+
+# Dirty code data ---------------------------------------------------------
+
+# Assume that codes contain unwanted "dirty" characters
+# Those could for example be a dot used by ICD-10 (i.e. X12.3 instead of X123)
+dirt &lt;- c(strsplit(c("!#%&amp;/()=?`,.-_"), split = ""), recursive = TRUE)
+rdirt &lt;- function(x) sample(x, nrow(ex_icd10), replace = TRUE)
+sub &lt;- function(i) substr(ex_icd10$icd10, i, i)
+ex_icd10$icd10 &lt;-
+  paste0(
+    rdirt(dirt), sub(1),
+    rdirt(dirt), sub(2),
+    rdirt(dirt), sub(3),
+    rdirt(dirt), sub(4),
+    rdirt(dirt), sub(5)
+  )
+head(ex_icd10)
+
+# Use `alnum = TRUE` to ignore non alphanumeric characters
+codify(ex_people, ex_icd10, id = "name", code = "icd10", alnum = TRUE)
+
+
+
+# Big data ----------------------------------------------------------------
+
+# If `data` or `codedata` are large compared to available
+# Random Access Memory (RAM) it might not be possible to make internal copies
+# of those objects. Setting `.copy = FALSE` might help to overcome such problems
+
+# If no copies are made internally, however, the input objects (if data tables)
+# would change in the global environment
+x2 &lt;- data.table::as.data.table(ex_icd10)
+head(x2) # Look at the "icd10" column (with dirty data)
+
+# Use `alnum = TRUE` combined with `.copy = FALSE`
+codify(ex_people, x2, id = "name", code = "icd10", alnum = TRUE, .copy = FALSE)
+
+# Even though no explicit assignment was specified
+# (neither for the output of codify(), nor to explicitly alter `x2`,
+# the `x2` object has changed (look at the "icd10" column!):
+head(x2)
+
+# Hence, the `.copy` argument should only be used if necessary
+# and if so, with caution!
+
+
+# print.codify() ----------------------------------------------------------
+
+x # Preview first 10 rows as a tibble
+print(x, n = 20) # Preview first 20 rows as a tibble
+print(x, n = NULL) # Print as data.table (ignoring the 'classified' class)
+</code></pre>
+
+
+</div>

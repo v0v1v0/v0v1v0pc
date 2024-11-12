@@ -1,0 +1,224 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>BootTOS</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Perform bootstrap stationarity test for time series</h2>
+
+<h3>Description</h3>
+
+<p>Given a time series this function runs a bootstrap hypothesis
+test to see whether it is stationary. The null hypothesis is that
+the series is stationary, the alternative is that it is not -
+and hence possesses a time-varying evolutionary wavelet spectrum
+if deemed non-stationary. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">BootTOS(x, Bsims = 100, WPsmooth = TRUE, verbose = FALSE, plot.avspec = FALSE,
+        plot.avsim = FALSE, theTS = TOSts, AutoReflect=TRUE, lapplyfn=lapply)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Time series to test. Must have a power of two length</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Bsims</code></td>
+<td>
+<p>Number of bootstrap simulations to carry out</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>WPsmooth</code></td>
+<td>
+<p>Whether or not to carry out wavelet periodogram smoothing</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>If <code>TRUE</code> informative messages are printed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot.avspec</code></td>
+<td>
+<p>If <code>TRUE</code> then the ‘average’ evolutionary
+wavelet spectrum (EWS) is plotted. This is called
+<code class="reqn">\bar{S}_j</code> in the Cardinali and Nason paper.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot.avsim</code></td>
+<td>
+<p>If <code>TRUE</code> for each bootstrap simulation
+plot the time series of the simulated time series from the
+average EWS (the one that might be plotted by <code>plot.avspec=TRUE</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theTS</code></td>
+<td>
+<p>Specifies the particular test statistic to be used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>AutoReflect</code></td>
+<td>
+<p>If TRUE then the series is reflected and augmented
+by its end point on the RH-side, and the spectral quantities
+are evaluated on that. Everything returned though applies only
+to the original series, the reflection is merely to ensure that
+the periodic wavelet algorithms can be used on non-periodic data</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lapplyfn</code></td>
+<td>
+<p>List processing function. Parallel processing of
+the bootstrap simulations can be achieved by using the <code>multicore</code>
+package and the <code>mclapply</code> function. Sequential processing
+can be achieved using the standard <code>lapply</code> function.
+So, if you can't run multicore then you should use <code>lapply</code>,
+otherwise try and use <code>mclapply</code> for
+faster execution times.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The details of our testing methodology are set out in the
+Cardinali and Nason paper referenced below.
+</p>
+<p>Essentially, the testing process works as follows. First, one
+has to define a test statistic. Given a time series this has
+return a statistic that measures ‘degree of nonstationarity’.
+For example, estimating the EWS, and then computing the
+sum of the sample variances of each scale is such as
+measure (and known as the <code class="reqn">T_{vS}</code> statistic).
+This statistic is zero for a constant spectrum and positive
+for non-constant spectrum (and generally larger for larger variations
+of the spectrum).
+</p>
+<p>Once a test statistic T is selected then a parametric Monte Carlo
+test can be used. First, T is computed on the series itself.
+Then, for statistical assessment of the ‘significance’ of the test
+statistic the following procedure is carried out. Assuming, for
+a moment that the time series is stationary, we estimate its
+evolutionary wavelet spectrum (EWS) and then average this over
+time (<code class="reqn">\bar{S}_j</code>). Then we use the function
+<code>LSWsim</code> to simulate a time series whose EWS is the
+constant, stationary, spectral estimate. Then we compute our
+test statistic, <code class="reqn">T_b</code>, on this simulated series. 
+</p>
+<p>Then we calculate <code class="reqn">T_b</code> for <code>Bsim-1</code> simulations. The function
+then returns <code>BSim</code> numbers. The first is the test statistic
+computed on the actual data. The remaining ones are the test
+statistic computed on the simulated stationary series.
+</p>
+<p>The idea being that if the time series is really stationary then
+the first value will be comparable to the ones obtained by simulation.
+If the time series is not stationary then the first test statistic
+will be much larger than the ones obtained by simulation (since
+the actual data T will have been computed on a time series with
+varying spectrum, whereas the simulated ones are all computed on
+constant spectra, and their variation is only due to sampling
+variation).
+</p>
+<p>The test statistic supplied to this function (as argument
+<code>theTS</code>) should take an EWS object as an argument.
+For example, the WaveThresh function <code>ewspec</code>
+produces a suitable spectral estimate in its <code>$S</code>
+argument (both objects are actually examples of a 
+non-decimated wavelet transform object, class <code>wd</code>).
+</p>
+<p>The function <code>plotBS</code> can be used the present the results
+of this function in an interpretable form and calculate the
+p-value of the test, although you should use the
+generic <code>plot</code> function to call this.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A vector of length <code>Bsim</code>. The first entry is the value
+of the test statistic computed on the data. The remaining
+entries are boostrap values computed on the ‘averaged’ EWS estimate
+with constant spectrum.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Guy Nason</p>
+
+
+<h3>References</h3>
+
+<p>Cardinali, A. and Nason, Guy P. (2013) Costationarity of
+Locally Stationary Time Series Using costat.
+<em>Journal of Statistical Software</em>, <b>55</b>, Issue 1.
+</p>
+<p>Cardinali, A. and Nason, G.P. (2010) Costationarity of locally stationary
+time series. <em>J. Time Series Econometrics</em>, <b>2</b>, Issue 2, Article 1.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>TOSts</code>, <code>plotBS</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#
+# Calculate test of stationarity on example we know to be stationary,
+# a series of iid values
+#
+plot(BootTOS(rnorm(64), Bsims=10), plot=FALSE)
+#
+# The following text is what gets printed
+#
+#Realized Bootstrap is  0.04543729 
+#p-value is  0.93 
+#Series was stationary
+#[1] 0.93
+#
+# The realized bootstrap value is the value of the test statistic on the
+# actual data (0.0454 here).
+#
+# The p-value is also printed (this is just the number of simulated series
+# test statistic values less than the actual test statistic) and returned.
+#
+# The text "Series is stationary" just means that the empirical p-value
+# was greater than the nominal test size (alpha=0.05, by default).
+#
+# Let's now try another example with the series sret: note that if you
+# have a slow single core machine, this can take a long time, so we don't
+# run it in the examples. However, on a fastish machine it is quick, on
+# a fast multicore machine it is really quick!
+#
+## Not run: plot(BootTOS(sret))
+#
+#Realized Bootstrap is  2.662611e-09 
+#p-value is  0 
+#Series was NOT stationary
+#[1] 0
+#
+# In contrast to the previous example, the p-value is 0, hence indicative
+# of non-stationarity.
+#
+</code></pre>
+
+
+</div>

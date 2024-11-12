@@ -1,0 +1,302 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cgaim</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Constrained groupwise additive index models</h2>
+
+<h3>Description</h3>
+
+<p>Fits constrained groupwise additive index models (CGAIM) to data. CGAIM fits indices subjected to constraints on their coefficients and shape of their association with the outcome. Such constraints can be specified in the formula through <code>g</code> for grouped terms and <code>s</code> for smooth covariates.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cgaim(formula, data, weights, subset, na.action, Cmat = NULL, bvec = NULL,
+  control = list())
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>A CGAIM formula with index terms <code>g</code>, smooth terms <code>s</code> and linear terms. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A data.frame containing the variables of the model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>An optional vector of observation weights.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subset</code></td>
+<td>
+<p>An optional vector specifying a subset of observations to be used in the fitting process.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.action</code></td>
+<td>
+<p>A function indicating how to treat NAs. The default is set by the <code>na.action</code> setting of <code>options</code>. See <code>na.fail</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Cmat</code></td>
+<td>
+<p>A constraint matrix for index coefficients alpha. Columns must match all variables entering any index through <code>g</code>. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bvec</code></td>
+<td>
+<p>A vector of lower bounds for the constraints in <code>Cmat</code>. Potentially recycled to match the number of constraints.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>A list of parameters controlling the fitting process. See <code>cgaim.control</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The CGAIM is expressed 
+</p>
+<p style="text-align: center;"><code class="reqn">y_{i} = \beta_{0} + \sum_{j} \beta_{j} g_{j}(\alpha_{j}^{T} x_{ij})
+   + \sum_{k} \gamma_{k} f_{k}(w_{ik}) + \sum_{l} \theta_{l} u_{il} + e_{i}</code>
+</p>
+
+<p>where the <code class="reqn">x_{ij}</code> are variables entering grouped indices, the <code class="reqn">w_{ik}</code> are smooth covariates and the <code class="reqn">u_{il}</code> are linear covariates.
+</p>
+<p>The formula interface considers <code>g</code> to identify index terms, <code>s</code> for smooth functions and can also include linear terms as usual. All smooth terms can be shape constrained.
+</p>
+<p>The CGAIM allows for linear constraints on the alpha coefficients. Such constraints can be specified through the <code>g</code> interface in the formula, or through <code>alpha.control$Cmat</code>. The <code>g</code> interface is used for constraints meant for a specific index only. In this case, common constraints can easily be specified through the <code>acons</code> argument (see <code>build_constraints</code>). Alternatively, more general constraint can be specified by passing a matrix to the <code>Cmat</code> argument. Constraints encompassing several indices can be specified through an element <code>Cmat</code> in <code>alpha.control</code>. Its number of columns must match the total number of index coefficients alpha to estimate. In all cases, arguments <code>bvec</code> are used to specify the bounds of constraints.
+</p>
+<p>Both indices (<code>g</code>) and smooth covariate terms (<code>s</code>) allow shape constraints. See dedicated help for the list of constraints allowed.
+</p>
+<p>The CGAIM is fitted through an iterative algorithm that alternates between estimating the ridge functions <code class="reqn">g_{j}</code> (and other non-index terms) and updating the coefficients <code class="reqn">\alpha_{j}</code>. The smoothing of ridge functions currently supports three methods: <code>scam</code> (the default), <code>cgam</code> and <code>scar</code>. The list <code>smooth.control</code> controls the smoothing with allowed parameters defined in <code>cgaim.control</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>cgaim</code> object, i.e. a list with components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>A named list of index coefficients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gfit</code></td>
+<td>
+<p>A matrix containing the ridge and smooth functions evaluated at the observations. Note that column ordering puts indices first and covariates after.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>indexfit</code></td>
+<td>
+<p>A matrix containing the indices evaluated at the observations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta</code></td>
+<td>
+<p>A vector containing the intercept and the scale coefficient of each ridge and smooth function. Includes the <code class="reqn">\gamma_{k}</code> of the CGAIM model above. Note that ordering puts indices first and covariates after.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>index</code></td>
+<td>
+<p>A vector identifying to which index the columns of the element <code>x</code> belong.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitted</code></td>
+<td>
+<p>A vector of fitted responses.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>residuals</code></td>
+<td>
+<p>A vector of residuals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rss</code></td>
+<td>
+<p>The residual sum of squares of the fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>flag</code></td>
+<td>
+<p>A flag indicating how the algorithm stopped. 1 for proper convergence, 2 when the algorithm stopped for failing to decrease the RSS and 3 when the maximum number of iterations has been reached.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>niter</code></td>
+<td>
+<p>Number of iterations performed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>edf</code></td>
+<td>
+<p>Effective degrees of freedom of the estimator.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gcv</code></td>
+<td>
+<p>Generalized cross validation score.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dg</code></td>
+<td>
+<p>A matrix containing derivatives of ridge and smooth functions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gse</code></td>
+<td>
+<p>A matrix containing standard errors of ridge and smooth functions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>active</code></td>
+<td>
+<p>A logical vector indicating which constraints are active at convergence.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Cmat</code></td>
+<td>
+<p>The constraint matrix used to fit index coefficients alpha. Will include all constraints given through <code>g</code> and the <code>Cmat</code> parameter.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bvec</code></td>
+<td>
+<p>The lower bound vector associated with <code>Cmat</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A matrix containing the variables entering the indices. The variables are mapped to each index through the element <code>index</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>The response vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>The weights used for estimation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sm_mod</code></td>
+<td>
+<p>A list of model elements for the smoothing step of the estimation. Notably includes the matrix <code>Xcov</code> that includes the covariates not entering any index. Other elements depend on the method chosen for smoothing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>The control list used to fit the cgaim.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>terms</code></td>
+<td>
+<p>The model terms.</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>A model without intercept can only be fitted when the smoothing step is performed with <code>scam</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>confint.cgaim</code> for confidence intervals,
+<code>predict.cgaim</code> to predict on new data,
+<code>plot.cgaim</code> to plot ridge functions.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Simulate some data
+n &lt;- 200
+x1 &lt;- rnorm(n)
+x2 &lt;- rnorm(n)
+x3 &lt;- rnorm(n)
+x4 &lt;- rnorm(n)
+mu &lt;- 4 * exp(8 * x1) / (1 + exp(8 * x1)) + exp(x3)
+y &lt;- mu + rnorm(n)
+df1 &lt;- data.frame(y, x1, x2, x3, x4)
+
+## Fit an unconstrained the model
+ans &lt;- cgaim(y ~ g(x1, x2) + g(x3, x4), data = df1)
+
+# Compute confidence intervals
+# In practice, higher B values are warranted
+cia &lt;- confint(ans, B = 100)
+cia$alpha
+cia$beta
+
+# Display ridge functions
+plot(ans, ci = cia)
+
+# Predict
+newdf &lt;- as.data.frame(matrix(rnorm(100), 25, 4))
+names(newdf) &lt;- sprintf("x%i", 1:4)
+yhat &lt;- predict(ans, newdf)
+
+## Fit constrained model
+ans2 &lt;- cgaim(y ~ g(x1, x2, acons = list(monotone = -1)) + 
+  g(x3, x4, fcons = "cvx"), data = df1)
+
+# Check results
+ans2
+plot(ans2)
+
+# Same result
+Cmat &lt;- as.matrix(Matrix::bdiag(list(build_constraints(2, monotone = -1), 
+  build_constraints(2, first = 1))))
+ans3 &lt;- cgaim(y ~ g(x1, x2) + g(x3, x4, fcons = "cvx"), data = df1,
+  Cmat = Cmat)
+
+## A mis-specified model
+ans4 &lt;- cgaim(y ~ g(x1, x2, acons = list(monotone = 1)) + 
+  g(x3, x4, fcons = "dec"), data = df1)
+
+</code></pre>
+
+
+</div>

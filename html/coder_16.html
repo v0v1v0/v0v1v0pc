@@ -1,0 +1,276 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>categorize</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Categorize cases based on external data and classification scheme</h2>
+
+<h3>Description</h3>
+
+<p>This is the main function of the package, which relies of a triad of objects:
+(1) <code>data</code> with unit id:s and possible dates of interest;
+(2) <code>codedata</code> for corresponding
+units and with optional dates of interest and;
+(3) a classification scheme (<code>classcodes</code> object; <code>cc</code>) with regular
+expressions to identify and categorize relevant codes.
+The function combines the three underlying steps performed by
+<code>codify()</code>, <code>classify()</code> and <code>index()</code>.
+Relevant arguments are passed to those functions by
+<code>codify_args</code> and <code>cc_args</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">categorize(x, ...)
+
+## S3 method for class 'data.frame'
+categorize(x, ...)
+
+## S3 method for class 'tbl_df'
+categorize(x, ...)
+
+## S3 method for class 'data.table'
+categorize(x, ..., codedata, id, code, codify_args = list())
+
+## S3 method for class 'codified'
+categorize(
+  x,
+  ...,
+  cc,
+  index = NULL,
+  cc_args = list(),
+  check.names = TRUE,
+  .data_cols = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>data set with mandatory character id column
+(identified by argument <code>id = "&lt;col_name&gt;"</code>),
+and optional <code>Date</code>  of interest
+(identified by argument <code>date = "&lt;col_name&gt;"</code>).
+Alternatively, the output from <code>codify()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments passed between methods</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>codedata</code></td>
+<td>
+<p>external code data with mandatory character id column
+(identified by <code>id = "&lt;col_name&gt;"</code>),
+code column (identified by argument <code>code = "&lt;col_name&gt;"</code>)
+and optional <code>Date</code> column
+(identified by <code>codify_args = list(code_date = "&lt;col_name&gt;")</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id</code></td>
+<td>
+<p>name of unique character id column found in
+both <code>x</code>and <code>codedata</code>.
+(where it must not be unique).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>code</code></td>
+<td>
+<p>name of code column in <code>codedata</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>codify_args</code></td>
+<td>
+<p>Lists of named arguments passed to <code>codify()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cc</code></td>
+<td>
+<p><code>classcodes</code> object (or name of a default object from
+<code>all_classcodes()</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>index</code></td>
+<td>
+<p>Argument passed to <code>index()</code>.
+A character vector of names of columns with index weights from the
+corresponding classcodes object (as supplied by the <code>cc</code>argument).
+See <code>attr(cc, "indices")</code> for available options.
+Set to <code>FALSE</code> if no index should be calculated.
+If <code>NULL</code>, the default, all available indices (from <code>attr(cc, "indices")</code>)
+are provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cc_args</code></td>
+<td>
+<p>List with named arguments passed to
+<code>set_classcodes()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>check.names</code></td>
+<td>
+<p>Column names are based on <code>cc$group</code>, which might include
+spaces. Those names are changed to syntactically correct names by
+<code>check.names = TRUE</code>. Syntactically invalid, but grammatically correct
+names might be preferred for presentation of the data as achieved by
+<code>check.names = FALSE</code>. Alternatively, if <code>categorize</code> is called repeatedly,
+longer informative names might be created by
+<code>cc_args = list(tech_names = TRUE)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>.data_cols</code></td>
+<td>
+<p>used internally</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Object of the same class as <code>x</code> with additional logical columns
+indicating membership of groups identified by the
+<code>classcodes</code> object (the <code>cc</code> argument).
+Numeric indices are also included if requested by the <code>index</code> argument.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other verbs: 
+<code>classify()</code>,
+<code>codify()</code>,
+<code>index_fun</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># For this example, 1 core would suffice:
+old_threads &lt;- data.table::getDTthreads()
+data.table::setDTthreads(1)
+
+# For some patient data (ex_people) and related hospital visit code data
+# with ICD 10-codes (ex_icd10), add the Elixhauser comorbidity
+# conditions based on all registered ICD10-codes
+categorize(
+   x            = ex_people,
+   codedata     = ex_icd10,
+   cc           = "elixhauser",
+   id           = "name",
+   code         = "icd10"
+)
+
+
+# Add Charlson categories and two versions of a calculated index
+# ("quan_original" and "quan_updated").
+categorize(
+   x            = ex_people,
+   codedata     = ex_icd10,
+   cc           = "charlson",
+   id           = "name",
+   code         = "icd10",
+   index        = c("quan_original", "quan_updated")
+)
+
+
+# Only include recent hospital visits within 30 days before surgery,
+categorize(
+   x            = ex_people,
+   codedata     = ex_icd10,
+   cc           = "charlson",
+   id           = "name",
+   code         = "icd10",
+   index        = c("quan_original", "quan_updated"),
+   codify_args  = list(
+      date      = "surgery",
+      days      = c(-30, -1),
+      code_date = "admission"
+   )
+)
+
+
+
+# Multiple versions -------------------------------------------------------
+
+# We can compare categorization by according to Quan et al. (2005); "icd10",
+# and Armitage et al. (2010); "icd10_rcs" (see `?charlson`)
+# Note the use of `tech_names = TRUE` to distinguish the column names from the
+# two versions.
+
+# We first specify some common settings ...
+ind &lt;- c("quan_original", "quan_updated")
+cd  &lt;- list(date = "surgery", days = c(-30, -1), code_date = "admission")
+
+# ... we then categorize once with "icd10" as the default regular expression ...
+categorize(
+   x            = ex_people,
+   codedata     = ex_icd10,
+   cc           = "charlson",
+   id           = "name",
+   code         = "icd10",
+   index        = ind,
+   codify_args  = cd,
+   cc_args      = list(tech_names = TRUE)
+) %&gt;%
+
+# .. and once more with `regex = "icd10_rcs"`
+categorize(
+   codedata     = ex_icd10,
+   cc           = "charlson",
+   id           = "name",
+   code         = "icd10",
+   index        = ind,
+   codify_args  = cd,
+   cc_args      = list(regex = "icd10_rcs", tech_names = TRUE)
+)
+
+
+
+# column names ------------------------------------------------------------
+
+# Default column names are based on row names from corresponding classcodes
+# object but are modified to be syntactically correct.
+default &lt;-
+   categorize(ex_people, codedata = ex_icd10, cc = "elixhauser",
+              id = "name", code = "icd10")
+
+# Set `check.names = FALSE` to retain original names:
+original &lt;-
+  categorize(
+    ex_people, codedata = ex_icd10, cc = "elixhauser",
+    id = "name", code = "icd10",
+    check.names = FALSE
+   )
+
+# Or use `tech_names = TRUE` for informative but long names (use case above)
+tech &lt;-
+  categorize(ex_people, codedata = ex_icd10, cc = "elixhauser",
+    id = "name", code = "icd10",
+    cc_args = list(tech_names = TRUE)
+  )
+
+# Compare
+tibble::tibble(names(default), names(original), names(tech))
+
+# Go back to original number of threads
+data.table::setDTthreads(old_threads)
+</code></pre>
+
+
+</div>

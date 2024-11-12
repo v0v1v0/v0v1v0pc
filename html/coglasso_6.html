@@ -1,0 +1,178 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>stars_coglasso</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Stability selection of the best <code>coglasso</code> network</h2>
+
+<h3>Description</h3>
+
+<p><code>stars_coglasso()</code> selects the combination of hyperparameters given to
+<code>coglasso()</code> yielding the most stable, yet sparse network. Stability is
+computed upon network estimation from subsamples of the multi-omics data set,
+allowing repetition. Subsamples are collected for a fixed amount of times
+(<code>rep_num</code>), and with a fixed proportion of the total number of samples
+(<code>stars_subsample_ratio</code>).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">stars_coglasso(
+  coglasso_obj,
+  stars_thresh = 0.1,
+  stars_subsample_ratio = NULL,
+  rep_num = 20,
+  max_iter = 10,
+  verbose = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>coglasso_obj</code></td>
+<td>
+<p>The object returned by <code>coglasso()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stars_thresh</code></td>
+<td>
+<p>The threshold set for variability of the explored
+networks at each iteration of the algorithm. The <code class="reqn">\lambda_w</code> or the <code class="reqn">\lambda_b</code>
+associated to the most stable network before the threshold is overcome is
+selected.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stars_subsample_ratio</code></td>
+<td>
+<p>The proportion of samples in the multi-omics
+data set to be randomly subsampled to estimate the variability of the
+network under the given hyperparameters setting. Defaults to 80% when the
+number of samples is smaller than 144, otherwise it defaults to
+<code class="reqn">\frac{10}{n}\sqrt{n}</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rep_num</code></td>
+<td>
+<p>The amount of subsamples of the multi-omics data set used to
+estimate the variability of the network under the given hyperparameters
+setting. Defaults to 20.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_iter</code></td>
+<td>
+<p>The greatest number of times the algorithm is allowed to
+choose a new best <code class="reqn">\lambda_w</code>. Defaults to 10.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Print information regarding the progress of the selection
+procedure on the console.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><em>StARS</em> for <em>collaborative graphical regression</em> is an adaptation of the method
+published by Liu, H. <em>et al.</em> (2010): Stability Approach to Regularization
+Selection (StARS). <em>StARS</em> was developed for network estimation regulated by
+a single penalty parameter, while collaborative graphical lasso needs to
+explore three different hyperparameters. In particular, two of these are
+penalty parameters with a direct influence on network sparsity, hence on
+stability. For every <code class="reqn">c</code> parameter, <code>stars_coglasso()</code> explores one of
+the two penalty parameters (<code class="reqn">\lambda_w</code> or <code class="reqn">\lambda_b</code>), keeping the other one
+fixed at its previous best estimate, using the normal, one-dimentional
+<em>StARS</em> approach, until finding the best couple. It then selects the <code class="reqn">c</code>
+parameter for which the best (<code class="reqn">\lambda_w</code>, <code class="reqn">\lambda_b</code>) couple yielded the most
+stable, yet sparse network.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>stars_coglasso()</code> returns a list containing the results of the
+selection procedure, built upon the list returned by <code>coglasso()</code>.
+</p>
+
+<ul>
+<li>
+<p> ... are the same elements returned by <code>coglasso()</code>.
+</p>
+</li>
+<li> <p><code>merge_lw</code> and <code>merge_lb</code> are lists with as many elements as the number of
+<code class="reqn">c</code> parameters explored. Every element is in turn a list of as many
+matrices as the number of <code class="reqn">\lambda_w</code> (or <code class="reqn">\lambda_b</code>) values explored. Each
+matrix is the "merged" adjacency matrix, the average of all the adjacency
+matrices estimated  for those specific <code class="reqn">c</code> and <code class="reqn">\lambda_w</code> (or <code class="reqn">\lambda_b</code>)
+values across all the subsampling in the last path explored before
+convergence, the one when the final combination of <code class="reqn">\lambda_w</code> and <code class="reqn">\lambda_b</code>
+is selected for the given <code class="reqn">c</code> value.
+</p>
+</li>
+<li> <p><code>variability_lw</code> and <code>variability_lb</code> are lists with as many elements as
+the number of <code class="reqn">c</code> parameters explored. Every element is a numeric vector
+of as many items as the number of <code class="reqn">\lambda_w</code> (or <code class="reqn">\lambda_b</code>) values explored.
+Each item is the variability of the network estimated for those specific
+<code class="reqn">c</code> and <code class="reqn">\lambda_w</code> (or <code class="reqn">\lambda_b</code>) values in the last path explored before
+convergence, the one when the final combination of <code class="reqn">\lambda_w</code> and <code class="reqn">\lambda_b</code>
+is selected for the given <code class="reqn">c</code> value.
+</p>
+</li>
+<li> <p><code>opt_adj</code> is a list of the adjacency matrices finally selected for each
+<code class="reqn">c</code> parameter explored.
+</p>
+</li>
+<li> <p><code>opt_variability</code> is a numerical vector containing the variabilities
+associated to the adjacency matrices in <code>opt_adj</code>.
+</p>
+</li>
+<li> <p><code>opt_index_lw</code> and <code>opt_index_lb</code> are integer vectors containing the
+index of the selected <code class="reqn">\lambda_w</code>s (or <code class="reqn">\lambda_b</code>s) for each <code class="reqn">c</code> parameters
+explored.
+</p>
+</li>
+<li> <p><code>opt_lambda_w</code> and <code>opt_lambda_b</code> are vectors containing the selected
+<code class="reqn">\lambda_w</code>s (or <code class="reqn">\lambda_b</code>s) for each <code class="reqn">c</code> parameters explored.
+</p>
+</li>
+<li> <p><code>sel_index_c</code>, <code>sel_index_lw</code> and <code>sel_index_lb</code> are the indexes of the
+final selected parameters <code class="reqn">c</code>, <code class="reqn">\lambda_w</code> and <code class="reqn">\lambda_b</code> leading to the
+most stable sparse network.
+</p>
+</li>
+<li> <p><code>sel_c</code>, <code>sel_lambda_w</code> and <code>sel_lambda_b</code> are the final selected
+parameters <code class="reqn">c</code>, <code class="reqn">\lambda_w</code> and <code class="reqn">\lambda_b</code> leading to the most stable
+sparse network.
+</p>
+</li>
+<li> <p><code>sel_adj</code> is the adjacency matrix of the final selected network.
+</p>
+</li>
+<li> <p><code>sel_density</code> is the density of the final selected network.
+</p>
+</li>
+<li> <p><code>sel_icov</code> is the inverse covariance matrix of the final selected network.
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">cg &lt;- coglasso(multi_omics_sd_micro, pX = 4, nlambda_w = 3, nlambda_b = 3, nc = 3, verbose = FALSE)
+
+# Takes around 20 seconds
+sel_cg &lt;- stars_coglasso(cg, verbose = FALSE)
+
+</code></pre>
+
+
+</div>

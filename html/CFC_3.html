@@ -1,0 +1,133 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cfc.pbasis</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Cause-specific competing-risk survival analysis in probability denomination
+</h2>
+
+<h3>Description</h3>
+
+<p>Constructing cumulative incidence and event-free probability functions from cause-specific survival times give for a fixed set of probabilities.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cfc.pbasis(t1, t2, probs, unity.tol = 1e-06, diff.tol = 0.01,
+  diff.tol.policy = c("all", "mean"))
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>t1</code></td>
+<td>
+<p>Multi-dimensional array containing survival times for cause 1 (i.e. exponential of the negative integral of hazard function). First dimension must correspond to probabilities at which times are calculated. Elements with same time, but distributed in the space of remaining dimensions, are treated independently. These diemensions can correspond, e.g., to observations or samples (in Bayesian frameworks). Survival times must be increasing along the first dimension.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>t2</code></td>
+<td>
+<p>Multi-dimensional array containing survival times for cause 2. See note for <code>t1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>probs</code></td>
+<td>
+<p>Probabilities for which survival times are provided in <code>t1</code> and <code>t2</code>. Must begin at 1.0 and be decreasing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>unity.tol</code></td>
+<td>
+<p>Tolerance for difference of survival probability from 1.0 at time=0.0. In other words, we require that <code>abs(probs[1] - 1.0) &lt; unity.tol</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>diff.tol</code></td>
+<td>
+<p>Tolerance for change in survival probabilities from one time point to the next. Large changes lead to higher errors during numerical integration.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>diff.tol.policy</code></td>
+<td>
+<p>If <code>"mean"</code>, then average change in survival probabilities are compared to <code>diff.tol</code>. If <code>"all"</code>, each values is compared. The latter is more strict.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For each 'row' of <code>t1</code>, and <code>t2</code>, all elements are processed independently. To combine the survival curves from corresponding elements of <code>t1</code> and <code>t2</code>, we first form a 'comon denominator' time vector by combining the two time vectors and sorting the results (after removing duplicates). We limit the maximum value in the combined time vector to minimum of the the two maxima from each cause. Next, we use interpolation to find survival probabilities of each cause at all the time points in the combined time vector. Finally, we call the function <code>cfc.tbasis</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If <code>t1</code> and <code>t2</code> are one-dimensional, a matrix with columns named <code>"time"</code>, <code>"ci1"</code>, <code>"ci2"</code> and <code>"efp"</code> is returned. For multi-dimensional arrays, a list is returned with one such matrix for each element of the consolidated dimension representing all but the first dimension of <code>t1</code> and <code>t2</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Mansour T.A. Sharabiani, Alireza S. Mahani
+</p>
+
+
+<h3>References</h3>
+
+<p>Mahani A.S. and Sharabiani M.T.A. (2019). Bayesian, and Non-Bayesian, Cause-Specific Competing-Risk Analysis for Parametric and Nonparametric Survival Functions: The R Package CFC. Journal of Statistical Software, 89(9), 1-29. doi:10.18637/jss.v089.i09
+</p>
+<p>Prentice et al (1978). The analysis of failure times in the presence of competing risks. Biometrics, 541-554.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cfc.tbasis</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+
+# prepare data for cause-specific competing-risk analysis
+data(bmt)
+bmt$status1 &lt;- 1*(bmt$cause==1)
+bmt$status2 &lt;- 1*(bmt$cause==2)
+f1 &lt;- Surv(time, status1) ~ platelet + age + tcell
+f2 &lt;- Surv(time, status2) ~ platelet + age + tcell
+
+# perform weibull regression on each cause independently
+library(survival)
+reg1 &lt;- survreg(f1, bmt)
+reg2 &lt;- survreg(f2, bmt)
+
+# predict times for given probabilities
+# transpose predictions so that first dimension
+# is time/probability (use first 50 observations for speed)
+pvec &lt;- seq(from=1.0, to = 0.1, length.out = 100)
+pred1 &lt;- t(predict(reg1, newdata = bmt[1:50,], p = 1-pvec, type = "quantile"))
+pred2 &lt;- t(predict(reg2, newdata = bmt[1:50,], p = 1-pvec, type = "quantile"))
+
+# cause-specific competing risk analysis - probability mode
+my.cfc &lt;- cfc.pbasis(pred1, pred2, probs = pvec)
+
+# calculating averages across observations (e.g. patients in the study)
+my.summ &lt;- summary(my.cfc)
+
+# plotting average CI and event-free probability curves
+plot(my.summ)
+
+
+## End(Not run)
+</code></pre>
+
+
+</div>

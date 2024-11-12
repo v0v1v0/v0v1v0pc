@@ -1,0 +1,199 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>significance.test</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Significance test</h2>
+
+<h3>Description</h3>
+
+<p>This function runs a permutation test to evaluate the effect of a subset of
+covariates on the covariance matrix estimates. Returns an estimated
+<em>p</em>-value.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">significance.test(
+  formula,
+  data,
+  params.rfsrc = list(ntree = 1000, mtry = ceiling(px/3), nsplit = max(round(n/50),
+    10)),
+  nodesize.set = round(0.5^(1:100) * round(0.632 * n))[round(0.5^(1:100) * round(0.632
+    * n)) &gt; py],
+  nperm = 500,
+  test.vars = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>Object of class <code>formula</code> or <code>character</code> describing
+the model to fit. Interaction terms are not supported.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>The multivariate data set which has <code class="reqn">n</code> observations and
+<code class="reqn">px+py</code> variables where <code class="reqn">px</code> and <code class="reqn">py</code> are the number of
+covariates (<code class="reqn">X</code>) and response variables (<code class="reqn">Y</code>), respectively. Should
+be a data.frame.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>params.rfsrc</code></td>
+<td>
+<p>List of parameters that should be passed to
+<code>randomForestSRC</code>. In the default parameter set, <code>ntree</code> = 1000,
+<code>mtry</code> = <code class="reqn">px/3</code>  (rounded up), <code>nsplit</code> =
+<code class="reqn">max(round(n/50), 10)</code>. See <code>randomForestSRC</code> for possible
+parameters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nodesize.set</code></td>
+<td>
+<p>The set of <code>nodesize</code> levels for tuning. Default set
+includes the power of two times the sub-sample size (<code class="reqn">.632n</code>) greater
+than the number of response variables (<code class="reqn">py</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nperm</code></td>
+<td>
+<p>Number of permutations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test.vars</code></td>
+<td>
+<p>Subset of covariates whose effect on the covariance matrix
+estimates will be evaluated. A character vector defining the names of the
+covariates. The default is <code>NULL</code>, which tests for the global effect
+of the whole set of covariates.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An object of class <code>(covregrf, significancetest)</code> which is a list
+with the following components:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>pvalue</code></td>
+<td>
+<p>Estimated *p*-value, see below for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>best.nodesize</code></td>
+<td>
+<p>Best <code>nodesize</code> value selected with the proposed
+tuning method using all covariates including the <code>test.vars</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>best.nodesize.control</code></td>
+<td>
+<p>Best <code>nodesize</code> value selected with the
+proposed tuning method using only the set of controlling covariates. If
+<code>test.vars</code> is <code>NULL</code>, returns <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>test.vars</code></td>
+<td>
+<p>Covariates whose effect on the covariance matrix estimates
+is evaluated.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control.vars</code></td>
+<td>
+<p>Controlling set of covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predicted.oob</code></td>
+<td>
+<p>OOB predicted covariance matrices for training
+observations using all covariates including the <code>test.vars</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predicted.perm</code></td>
+<td>
+<p>Predicted covariance matrices for the permutations
+using all covariates including the <code>test.vars</code>. A list of
+predictions for each permutation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predicted.oob.control</code></td>
+<td>
+<p>OOB predicted covariance matrices for training
+observations using only the set of controlling covariates. If
+<code>test.vars</code> is <code>NULL</code>, returns <code>NULL</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predicted.perm.control</code></td>
+<td>
+<p>Predicted covariance matrices for the
+permutations using only the set of controlling covariates. If
+<code>test.vars</code> is <code>NULL</code>, returns <code>NULL</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>We perform a hypothesis test to evaluate the effect of a subset of covariates
+on the covariance matrix estimates, while controlling for the rest of the
+covariates. Define the conditional covariance matrix of <code class="reqn">Y</code> given all
+<code class="reqn">X</code> variables as <code class="reqn">\Sigma_{X}</code>, and the conditional covariance
+matrix of <code class="reqn">Y</code> given only the set of controlling <code class="reqn">X</code> variables as
+<code class="reqn">\Sigma_{X}^{c}</code>. If a subset of covariates has an effect on the
+covariance matrix estimates obtained with the proposed method, then
+<code class="reqn">\Sigma_{X}</code> should be significantly different from <code class="reqn">\Sigma_{X}^{c}</code>.
+We conduct a permutation test for the null hypothesis
+</p>
+<p style="text-align: center;"><code class="reqn">H_0 : \Sigma_{X} = \Sigma_{X}^{c}</code>
+</p>
+<p> We estimate a
+<code class="reqn">p</code>-value with the permutation test. If the <code class="reqn">p</code>-value is less than the
+pre-specified significance level <code class="reqn">\alpha</code>, we reject the null
+hypothesis.
+</p>
+<p>Testing the global effect of the covariates on the conditional covariance
+estimates is a particular case of the proposed significance test. Define
+the unconditional covariance matrix estimate of <code class="reqn">Y</code> as
+<code class="reqn">\Sigma_{root}</code> which is computed as the sample covariance matrix of
+<code class="reqn">Y</code>, and the conditional covariance matrix of <code class="reqn">Y</code> given <code class="reqn">X</code> as
+<code class="reqn">\Sigma_{X}</code> which is obtained with <code>covregrf()</code>. If there is a
+global effect of <code class="reqn">X</code> on the covariance matrix estimates, the
+<code class="reqn">\Sigma_{X}</code> should be significantly different from <code class="reqn">\Sigma_{root}</code>.
+The null hypothesis for this particular case is
+</p>
+<p style="text-align: center;"><code class="reqn">H_0 : \Sigma_{X} = \Sigma_{root}</code>
+</p>
+
+
+
+<h3>See Also</h3>
+
+<p><code>covregrf</code>
+<code>predict.covregrf</code>
+<code>print.covregrf</code>
+</p>
+
+
+</div>

@@ -1,0 +1,160 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ComputeConfIntervals</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Pointwise Confidence Intervals under Current Status data</h2>
+
+<h3>Description</h3>
+
+<p>The function ComputeConfIntervals computes pointwise confidence intervals for the distribution function under current status data.
+The confidence intervals are based on the Smoothed Maximum likelihood Estimator and constructed using the nonparametric bootstrap.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ComputeConfIntervals(data, x, alpha, bw)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>Dataframe with three variables:
+</p>
+
+<dl>
+<dt>t</dt>
+<dd>
+<p>Observation points t sorted in ascending order. All observations need to be positive. The total number of unique observation points equals <code>length(t)</code>.</p>
+</dd>
+<dt>freq1</dt>
+<dd>
+<p>Frequency of observation t satisfying <code class="reqn">x \le t</code>.
+The total number of observations with censoring indicator <code class="reqn">\delta =1</code> equals <code>sum(freq1)</code>. </p>
+</dd>
+<dt>freq2</dt>
+<dd>
+<p>Frequency of observation t. The sample size equals <code>sum(freq2)</code>. If no tied observations are present in the data <code>length(t)</code> equals <code>sum(freq2)</code>. </p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>numeric vector containing the points where the confidence intervals are computed.
+This vector needs to be contained within the observation interval: <code class="reqn">t[1] &lt; min(x) \le max(x) &lt; t[n]</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>confidence level of pointwise confidence intervals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bw</code></td>
+<td>
+<p>numeric vector of size <code>length(x)</code>.
+This vector contains the pointwise bandwidth values for each point in the vector x.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>In the current status model, the variable of interest <code class="reqn">X</code> with distribution function <code class="reqn">F</code> is not observed directly.
+A censoring variable <code class="reqn">T</code> is observed instead together with the indicator <code class="reqn">\Delta = (X \le T)</code>.
+ComputeConfIntervals computes the pointwise <code>1-alpha</code> bootstrap confidence intervals around the SMLE of <code class="reqn">F</code> based on a sample of size <code>n &lt;- sum(data$freq2)</code>.
+</p>
+<p>The bandwidth parameter vector that minimizes the pointwise Mean Squared Error using the subsampling principle in combination with undersmoothing is returned by the function <code>ComputeBW</code>.
+</p>
+<p>The default method for constructing the confidence intervals in [Groeneboom &amp; Hendrickx (2017)] is based on estimating the asymptotic variance of the SMLE.
+When the bandwidth is small for some point in x, the variance estimate of the SMLE at this point might not exist.
+If this happens the Non-Studentized confidence interval is returned for this particular point in x.
+</p>
+
+
+<h3>Value</h3>
+
+<p>List with 5 variables:
+</p>
+
+<dl>
+<dt>MLE </dt>
+<dd>
+<p>Maximum Likelihood Estimator. This is a matrix of dimension (m+1)x2 where m is the number of jump points of the MLE.
+The first column consists of the point zero and the jump locations of the MLE. The second column contains the value zero and the values of the MLE at the jump points. </p>
+</dd>
+<dt>SMLE </dt>
+<dd>
+<p>Smoothed Maximum Likelihood Estimator. This is a vector of size <code>length(x)</code> containing the values of the SMLE for each point in the vector x. </p>
+</dd>
+<dt>CI </dt>
+<dd>
+<p>pointwise confidence interval. This is a matrix of dimension <code>length(x)</code>x2.
+The first resp. second column contains the lower resp. upper values of the confidence intervals for each point in x.</p>
+</dd>
+<dt>Studentized</dt>
+<dd>
+<p>points in x for which Studentized nonparametric bootstrap confidence intervals are computed. </p>
+</dd>
+<dt>NonStudentized</dt>
+<dd>
+<p>points in x for which classical nonparametric bootstrap confidence intervals are computed.</p>
+</dd>
+</dl>
+<h3>References</h3>
+
+<p>Groeneboom, P. and Hendrickx, K. (2017). The nonparametric bootstrap for the current status model. Electronic Journal of Statistics 11(2):3446-3848.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>vignette("curstatCI")</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(Rcpp)
+library(curstatCI)
+
+# sample size
+n &lt;- 1000
+
+# Uniform data  U(0,2)
+set.seed(2)
+y &lt;- runif(n,0,2)
+t &lt;- runif(n,0,2)
+delta &lt;- as.numeric(y &lt;= t)
+
+A&lt;-cbind(t[order(t)], delta[order(t)], rep(1,n))
+
+# x vector
+grid&lt;-seq(0.1,1.9 ,by = 0.1)
+
+# data-driven bandwidth vector
+bw &lt;- ComputeBW(data =A, x = grid)
+
+# pointwise confidence intervals at grid points:
+out&lt;-ComputeConfIntervals(data = A,x =grid,alpha = 0.05, bw = bw)
+
+left &lt;- out$CI[,1]
+right &lt;- out$CI[,2]
+
+plot(grid, out$SMLE,type ='l', ylim=c(0,1), main= "",ylab="",xlab="",las=1)
+points(grid, left, col = 4)
+points(grid, right, col = 4)
+segments(grid,left, grid, right)
+
+</code></pre>
+
+
+</div>

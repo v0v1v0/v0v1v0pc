@@ -1,0 +1,110 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cirls.control</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Parameters controlling CIRLS fitting</h2>
+
+<h3>Description</h3>
+
+<p>Internal function controlling the glm fit with linear constraints. Typically only used internally by cirls.fit, but may be used to construct a control argument.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cirls.control(epsilon = 1e-08, maxit = 25, trace = FALSE, Cmat = NULL,
+  lb = 0L, ub = Inf, qp_solver = "osqp", qp_pars = list())
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>epsilon</code></td>
+<td>
+<p>Positive convergence tolerance. The algorithm converges when the relative change in deviance is smaller than <code>epsilon</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxit</code></td>
+<td>
+<p>Integer giving the maximal number of CIRLS iterations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>Logical indicating if output should be produced for each iteration.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Cmat</code></td>
+<td>
+<p>Constraint matrix specifying the linear constraints applied to coefficients. Can also be provided as a list of matrices for specific terms.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lb, ub</code></td>
+<td>
+<p>Lower and upper bound vectors for the linear constraints. Identical values in <code>lb</code> and <code>ub</code> identify equality constraints. Recycled if length is different than the number of constraints defined by <code>Cmat</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>qp_solver</code></td>
+<td>
+<p>The quadratic programming solver. One of <code>"osqp"</code>, <code>"quadprog"</code> or <code>"coneproj"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>qp_pars</code></td>
+<td>
+<p>List of parameters specific to the quadratic programming solver. See respective packages help.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>control</code> argument of glm is by default passed to the <code>control</code> argument of cirls.fit, which uses its elements as arguments for cirls.control: the latter provides defaults and sanity checking. The control parameters can alternatively be passed through the <code>...</code> argument of glm. See glm.control for details on general GLM fitting control, and cirls.fit for details on arguments specific to constrained GLMs.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A named list containing arguments to be used in cirls.fit.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>the main function cirls.fit, and glm.control.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Simulate predictors and response with some negative coefficients
+set.seed(111)
+n &lt;- 100
+p &lt;- 10
+betas &lt;- rep_len(c(1, -1), p)
+x &lt;- matrix(rnorm(n * p), nrow = n)
+y &lt;- x %*% betas + rnorm(n)
+
+# Define constraint matrix (includes intercept)
+# By default, bounds are 0 and +Inf
+Cmat &lt;- cbind(0, diag(p))
+
+# Fit GLM by CIRLS
+res1 &lt;- glm(y ~ x, method = cirls.fit, Cmat = Cmat)
+coef(res1)
+
+# Same as passing Cmat through the control argument
+res2 &lt;- glm(y ~ x, method = cirls.fit, control = list(Cmat = Cmat))
+identical(coef(res1), coef(res2))
+</code></pre>
+
+
+</div>

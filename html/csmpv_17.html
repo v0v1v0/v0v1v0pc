@@ -1,0 +1,97 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>XGpred_predict</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Predicting Risk Group Classification for a New Data Set</h2>
+
+<h3>Description</h3>
+
+<p>The XGpred_predict function is designed to predict risk group classifications for a new data set. 
+This prediction is based on the assumption that an XGpred object is available from a training data set and
+that the new data set is comparable to the training data set.
+</p>
+<p>In scenarios where the new and training data sets are not directly comparable, a calibration cohort is required 
+to ensure accurate risk group predictions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">XGpred_predict(newdat = NULL, XGpredObj = NULL, scoreShift = 0)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>newdat</code></td>
+<td>
+<p>A data matrix or a data frame where samples are in rows and features/traits are in columns. 
+It should include all variables needed for the prediction model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>XGpredObj</code></td>
+<td>
+<p>An XGpred object returned by the XGpred function. Although not all items are needed for 
+prediction purposes, using the XGpred object as input is convenient.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scoreShift</code></td>
+<td>
+<p>A calibration value to subtract from the current model score if needed.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A data frame containing XGpred_score, XGpred_prob, and XGpred_prob_class
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Aixiang Jiang
+</p>
+
+
+<h3>References</h3>
+
+<p>Aoki T, Jiang A, Xu A et al.,(2023) Spatially Resolved Tumor Microenvironment Predicts Treatment Outcomes 
+in Relapsed/Refractory Hodgkin Lymphoma. J Clin Oncol. 2023 Dec 19:JCO2301115. doi: 10.1200/JCO.23.01115. Epub ahead of print. 
+PMID: 38113419.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Load in data sets:
+data("datlist", package = "csmpv")
+tdat = datlist$training
+vdat = datlist$validation
+
+# The function saves files locally. You can define your own temporary directory. 
+# If not, tempdir() can be used to get the system's temporary directory.
+temp_dir = tempdir()
+# As an example, let's define Xvars, which will be used later:
+Xvars = c("highIPI", "B.Symptoms", "MYC.IHC", "BCL2.IHC", "CD10.IHC", "BCL6.IHC")
+# For given time-to-event outcome and Xvars, we can build up a binary risk classification:
+ xgobj = XGpred(data = tdat, varsIn = Xvars, 
+               time = "FFP..Years.",
+                event = "Code.FFP", outfile = paste0(temp_dir, "/XGpred"))
+ tdat$XGpred_class = xgobj$XGpred_prob_class
+# You might save the files to the directory you want.
+
+# Now, we can predict the risk classification for a new data set:
+ xgNew = XGpred_predict(newdat = vdat, XGpredObj = xgobj)
+
+#' # To delete the "temp_dir", use the following:
+unlink(temp_dir)
+</code></pre>
+
+
+</div>

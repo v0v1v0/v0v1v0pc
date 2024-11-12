@@ -1,0 +1,171 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>get_PCA</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Perform PCA on a coin</h2>
+
+<h3>Description</h3>
+
+<p>Performs Principle Component Analysis (PCA) on a specified data set and subset of indicators or aggregation groups.
+This function has two main outputs: the output(s) of <code>stats::prcomp()</code>, and optionally the weights resulting from
+the PCA. Therefore it can be used as an analysis tool and/or a weighting tool. For the weighting aspect, please
+see the details below.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">get_PCA(
+  coin,
+  dset = "Raw",
+  iCodes = NULL,
+  Level = NULL,
+  by_groups = TRUE,
+  nowarnings = FALSE,
+  weights_to = NULL,
+  out2 = "list"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>coin</code></td>
+<td>
+<p>A coin</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dset</code></td>
+<td>
+<p>The name of the data set in <code>.$Data</code> to use.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iCodes</code></td>
+<td>
+<p>An optional character vector of indicator codes to subset the indicator data, passed to <code>get_data()</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Level</code></td>
+<td>
+<p>The aggregation level to take indicator data from. Integer from 1 (indicator level)
+to N (top aggregation level, typically the index).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>by_groups</code></td>
+<td>
+<p>If <code>TRUE</code> (default), performs PCA inside each aggregation group inside the specified level. If <code>FALSE</code>,
+performs a single PCA over all indicators/aggregates in the specified level.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nowarnings</code></td>
+<td>
+<p>If <code>FALSE</code> (default), will give warnings where missing data are found. Set to <code>TRUE</code> to suppress these warnings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights_to</code></td>
+<td>
+<p>A string to name the resulting set of weights. If this is specified, and <code>out2 = "coin"</code>,
+will write a new set of "PCA weights" to the <code>.$Meta$Weights</code> list. This is experimental - see details. If
+<code>NULL</code>, does not write any weights (default).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>out2</code></td>
+<td>
+<p>If the input is a coin object, this controls where to send the output. If <code>"coin"</code>, it
+sends the results to the coin object, otherwise if <code>"list"</code>, outputs to a separate list (default).</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>PCA must be approached with care and an understanding of what is going on. First, let's consider the PCA excluding
+the weighting component. PCA takes a set of data consisting of variables (indicators) and observations. It then
+rotates the coordinate system such that in the new coordinate system, the first axis (called the first principal
+component (PC)) aligns with the direction of maximum variance of the data set. The amount of variance explained by the
+first PC, and by the next several PCs, can help to understand whether the data can be explained by simpler set of
+variables. PCA is often used for dimensionality reduction in modelling, for example.
+</p>
+<p>In the context of composite indicators, PCA can be used first as an analysis tool. We can check for example, within
+an aggregation group, can the indicators mostly be explained by one PC? If so, this gives a little extra justification
+to aggregating the indicators because the information lost in aggregation will be less. We can also check this over
+the entire set of indicators.
+</p>
+<p>The complications are in a composite indicator, the indicators are grouped and arranged into a hierarchy. This means
+that when performing a PCA, we have to decide which level to perform it at, and which groupings to use, if any. The <code>get_PCA()</code>
+function, using the <code>by_groups</code> argument, allows to automatically apply PCA by group if this is required.
+</p>
+<p>The output of <code>get_PCA()</code> is a PCA object for each of the groups specified, which can then be examined using existing
+tools in R, see <code>vignette("analysis")</code>.
+</p>
+<p>The other output of <code>get_PCA()</code> is a set of "PCA weights" if the <code>weights_to</code> argument is specified. Here we also need
+to say some words of caution. First, what constitutes "PCA weights" in composite indicators is not very well-defined.
+In COINr, a simple option is adopted. That is, the loadings of the first principal component are taken as the weights.
+The logic here is that these loadings should maximise the explained variance - the implication being that if we use
+these as weights in an aggregation, we should maximise the explained variance and hence the information passed from
+the indicators to the aggregate value. This is a nice property in a composite indicator, where one of the aims is to
+represent many indicators by single composite. See <a href="https://doi.org/10.1016/j.envsoft.2021.105208">doi:10.1016/j.envsoft.2021.105208</a> for a
+discussion on this.
+</p>
+<p>But. The weights that result from PCA have a number of downsides. First, they can often include negative weights
+which can be hard to justify. Also PCA may arbitrarily flip the axes (since from a variance point of view the
+direction is not important). In the quest for maximum variance, PCA will also weight the strongest-correlating
+indicators the highest, which means that other indicators may be neglected. In short, it often results in a very
+unbalanced set of weights. Moreover, PCA can only be performed on one level at a time.
+</p>
+<p>All these considerations point to the fact: while PCA as an analysis tool is well-established, please use PCA weights
+with care and understanding of what is going on.
+</p>
+<p>This function replaces the now-defunct <code>getPCA()</code> from COINr &lt; v1.0.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If <code>out2 = "coin"</code>, results are appended to the coin object. Specifically:
+</p>
+
+<ul>
+<li>
+<p> A list is added to <code>.$Analysis</code> containing PCA weights (loadings) of the first principle component, and the output of stats::prcomp, for each
+aggregation group found in the targeted level.
+</p>
+</li>
+<li>
+<p> If <code>weights_to</code> is specified, a new set of PCA weights is added to <code>.$Meta$Weights</code>
+If <code>out2 = "list"</code> the same outputs are contained in a list.
+</p>
+</li>
+</ul>
+<h3>See Also</h3>
+
+
+<ul><li> <p>stats::prcomp Principle component analysis
+</p>
+</li></ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R"># build example coin
+coin &lt;- build_example_coin(up_to = "new_coin", quietly = TRUE)
+
+# PCA on "Sust" group of indicators
+l_pca &lt;- get_PCA(coin, dset = "Raw", iCodes = "Sust",
+                 out2 = "list", nowarnings = TRUE)
+
+# Summary of results for one of the sub-groups
+summary(l_pca$PCAresults$Social$PCAres)
+
+</code></pre>
+
+
+</div>

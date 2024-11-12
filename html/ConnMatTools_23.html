@@ -1,0 +1,194 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>optimalSplitConnMat</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Iteratively, optimally split a connectivity matrix</h2>
+
+<h3>Description</h3>
+
+<p>Algorithm for iteratively determining subpopulations of
+highly-connected sites.  Uses an iterative method described in
+Jacobi et al. (2012)
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">optimalSplitConnMat(
+  conn.mat,
+  normalize.cols = TRUE,
+  make.symmetric = "mean",
+  remove.diagonal = FALSE,
+  cycles = 2,
+  betas = betasVectorDefault(ifelse(normalize.cols, dim(conn.mat)[2],
+    prod(dim(conn.mat))/sum(conn.mat)), steps),
+  steps = 10,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>conn.mat</code></td>
+<td>
+<p>A square connectivity matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>normalize.cols</code></td>
+<td>
+<p>A boolean indicating if columns of conn.mat
+should be normalized by the sum of all elements in the column.
+Defaults to TRUE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>make.symmetric</code></td>
+<td>
+<p>A string indicating how to force conn.mat to
+be symmetric.  "mean" (the default) will replace C_ij by (C_ij +
+C_ji)/2.  "max" will replace C_ij by the maximum of C_ij and C_ji.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>remove.diagonal</code></td>
+<td>
+<p>A boolean indicating if the diagonal
+elements of conn.mat should be removed before determining the
+subpopulations.  Defaults to FALSE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cycles</code></td>
+<td>
+<p>Number of times to pass over values in betas.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>betas</code></td>
+<td>
+<p>Vector of beta values to try.  If not given, will
+default to <code>betasVectorDefault(dim(conn.mat)[2],steps)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>steps</code></td>
+<td>
+<p>Number of beta values to produce using
+betasVectorDefault.  Ignored if betas argument is explicitly
+given.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>further arguments to be passed to <code>splitConnMat</code></p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list with the following elements:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>betas</code></td>
+<td>
+<p>Vector of all beta values tested</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>num.subpops</code></td>
+<td>
+<p>Vector of number of subpopulations found for
+each value of beta</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>qualities</code></td>
+<td>
+<p>Vector of the quality statistic for each
+subpopulation division</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>subpops</code></td>
+<td>
+<p>A matrix with dimensions dim(conn.mat)[2] X
+length(betas) indicating which subpopulation each site belongs to</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>best.splits</code></td>
+<td>
+<p>A list indicating for each number of
+subpopulations, which column of subpops contains the division with
+the lowest quality statistic.  E.g.,
+<code>best.splits[["4"]]$index</code> contains the column index of the
+optimal division of the connectivity matrix into 4 subpopulations.</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>In Jacobi et al. (2012) paper, the connectivity matrix is
+oriented so that <code class="reqn">C_ij</code> is dispersal from i to j, whereas in this R
+package, the connectivity matrix is oriented so that <code class="reqn">C_ij</code> is
+dispersal from j to i.  This choice of orientation is arbitrary,
+but one must always be consistent.  From j to i is more common in
+population dynamics because it works well with matrix
+multiplication (e.g., <code>settlers = conn.mat %*% eggs</code>).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>David M. Kaplan <a href="mailto:dmkaplan2000@gmail.com">dmkaplan2000@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Jacobi, M. N., Andre, C., Doos, K., and Jonsson,
+P. R. 2012. Identification of subpopulations from connectivity
+matrices. Ecography, 35: 1004-1016.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>See also <code>splitConnMat</code>,
+<code>recSplitConnMat</code>, <code>mergeSubpops</code>,
+<code>qualitySubpops</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(ConnMatTools)
+data(chile.loco)
+
+num &lt;- prod(dim(chile.loco)) / sum(chile.loco)
+betas &lt;- betasVectorDefault(n=num,steps=4)
+chile.loco.split &lt;- optimalSplitConnMat(chile.loco,normalize.cols=FALSE,
+                                        betas=betas)
+
+# Extra 3rd division
+print(paste("Examining split with",names(chile.loco.split$best.splits)[1],
+            "subpopulations."))
+pops &lt;- subpopsVectorToList(chile.loco.split$subpops[,chile.loco.split$best.splits[[1]]$index])
+
+reduce.loco &lt;- reducedConnMat(pops,chile.loco)
+
+sr &lt;- selfRecruitment(reduce.loco)
+lr &lt;- localRetention(reduce.loco)
+rlr &lt;- relativeLocalRetention(reduce.loco)
+</code></pre>
+
+
+</div>

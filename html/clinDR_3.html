@@ -1,0 +1,172 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>checkMonoEmax</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Bayes posterior predictive test for Emax (monotone) model fit</h2>
+
+<h3>Description</h3>
+
+<p>Bayes posterior predictive test for an Emax (monotone) model  
+fit comparing the best response from lower doses to
+the response from the highest dose.  <code>checkMonoEmax</code> is deprecated.  
+See <code>bpchkMonoEmax</code>.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">checkMonoEmax(y, 
+      dose, 
+      parm, 
+      sigma2,
+      nvec=rep(1,length(dose)),
+      xbase=NULL,
+      modelFun=emaxfun,
+      trend='positive',
+      binary= FALSE,logit=binary)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Outcomes.  Continuous <code>y</code> can be individual data or group means.
+Binary <code>y</code> can be individual data, group proportions, or 0/1 data with
+correspondng counts, as is required by <code>fitEmaxB</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dose</code></td>
+<td>
+<p>Doses corresponding to outcomes </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parm</code></td>
+<td>
+<p>Matrix of simultated parameter values (each row is a
+simulated parameter vector).  The <code>parm</code> values
+must be constructed for use in the model function <code>modFun</code>.  The
+default is a 4-parameter Emax model with parameters
+(log(ED50),lambda,Emax,E0).  For a 3-parameter model, set lambda=1 for each
+simulated parameter vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sigma2</code></td>
+<td>
+<p>Simulated draws from the residual variance (assumed
+additive, homogeneous).  The length of <code>sigma2</code> must be the same
+as the number of rows of <code>parm</code>.  <code>sigma2</code> is ignored when
+<code>binary=TRUE</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nvec</code></td>
+<td>
+<p>The number of observations contributing to each <code>y</code>.  The default 
+is <code>1</code> for patient-level data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xbase</code></td>
+<td>
+<p>Optional covariates matching <code>y</code>.  <code>nvec</code> must be 1 (patient-level)
+data.  The coeficients for <code>xbase</code> are the final columns of <code>parm</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modelFun</code></td>
+<td>
+<p>The mean model function.  The first argument is a
+scalar dose, and the second argument is a matrix of parameter values.
+The rows of the matrix are random draws of parameter vectors for the
+model.  The default function is the 4-parameter Emax function <code>emaxfun</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trend</code></td>
+<td>
+<p>The default is 'positive', so high values for lower doses
+yield small Bayesian predictive probabilities.  Set <code>trend</code> to 'negative'
+for dose response curves with negative trends.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>binary</code></td>
+<td>
+<p>If TRUE, the inverse logit 
+transform is applied to the
+(Emax) function output for comparison to dose group sample proportions, and the
+predictive data are sampled from a binomial distribution.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>logit</code></td>
+<td>
+<p><code>logit</code> is deprecated, use <code>binary</code></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>A sample of parameters from the joint posterior distribution must be 
+supplied (typically produced by an MCMC program).  The Bayesian predictive p-value 
+is the posterior probability that a dose group
+sample mean in a new study with the same sample sizes would yield a 
+higher (or lower for negative trend) difference for one of the lower doses versus 
+the highest dose than was actually obtained from the real sample.  There must
+be at least two non-placebo dose groups (NA returned otherwise).  Placebo
+response is excluded from the comparisons.
+</p>
+<p>The function generates random numbers, so the random number generator/seed must
+be set before the function is called for exact reproducibility.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a scalar Bayesian predictive p-value.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Neal Thomas </p>
+
+
+<h3>See Also</h3>
+
+<p><code>plot.plotB</code>, <code>plotD</code>,  <code>plot.fitEmax</code> </p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+
+data("metaData")
+exdat&lt;-metaData[metaData$taid==6 &amp; metaData$poptype==1,]
+
+prior&lt;-emaxPrior.control(epmu=0,epsca=10,difTargetmu=0,difTargetsca=10,dTarget=80.0,
+        p50=3.75,sigmalow=0.01,sigmaup=20)
+mcmc&lt;-mcmc.control(chains=3)
+
+msSat&lt;-sum((exdat$sampsize-1)*(exdat$sd)^2)/(sum(exdat$sampsize)-length(exdat$sampsize))
+fitout&lt;-fitEmaxB(exdat$rslt,exdat$dose,prior,modType=4,
+				count=exdat$sampsize,msSat=msSat,mcmc=mcmc)
+parms&lt;-coef(fitout)[,1:4]  #use first intercept
+
+checkMonoEmax(y=exdat$rslt, dose=exdat$dose, parm=parms, sigma2=(sigma(fitout))^2,
+      nvec=exdat$sampsize, trend='negative')
+      
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

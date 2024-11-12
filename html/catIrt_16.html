@@ -1,0 +1,906 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>catIrt</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simulate Computerized Adaptive Tests (CATs)</h2>
+
+<h3>Description</h3>
+
+<p><code>catIrt</code> simulates Computerized Adaptive Tests (CATs) given a vector/matrix of
+responses or a vector of ability values, a matrix of item parameters, and several
+item selection mechanisms, estimation procedures, and termination criteria.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">catIrt( params, mod = c("brm", "grm"),
+        resp = NULL,
+        theta = NULL,
+        catStart = list( n.start = 5, init.theta = 0,
+                         select = c("UW-FI", "LW-FI", "PW-FI",
+                                    "FP-KL", "VP-KL", "FI-KL", "VI-KL",
+                                    "random"),
+                         at = c("theta", "bounds"),
+                         it.range = NULL, n.select = 1,
+                         delta = .1,
+                         score = c("fixed", "step", "random", "WLE", "BME", "EAP"),
+                         range = c(-1, 1),
+                         step.size = 3, leave.after.MLE = FALSE ),
+        catMiddle = list( select = c("UW-FI", "LW-FI", "PW-FI",
+                                     "FP-KL", "VP-KL", "FI-KL", "VI-KL",
+                                     "random"),
+                          at = c("theta", "bounds"),
+                          it.range = NULL, n.select = 1,
+                          delta = .1,
+                          score = c("MLE", "WLE", "BME", "EAP"),
+                          range = c(-6, 6),
+                          expos = c("none", "SH") ),
+        catTerm = list( term = c("fixed", "precision", "info", "class"),
+                        score = c("MLE", "WLE", "BME", "EAP"),
+                        n.min = 5, n.max = 50,
+                        p.term = list(method = c("threshold", "change"),
+                                      crit = .25),
+                        i.term = list(method = c("threshold", "change"),
+                                      crit = 2), 
+                        c.term = list(method = c("SPRT", "GLR", "CI"),
+                                      bounds = c(-1, 1),
+                                      categ = c(0, 1, 2),
+                                      delta = .1,
+                                      alpha = .05, beta = .05,
+                                      conf.lev = .95) ),
+        ddist = dnorm,
+        progress = TRUE, ... )
+## S3 method for class 'catIrt'
+summary( object, group = TRUE, ids = "none", ... )
+## S3 method for class 'catIrt'
+plot( x, which = "all", ids = "none", 
+      conf.lev = .95, legend = TRUE, ask = TRUE, ... )
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object, x</code></td>
+<td>
+<p>a <code>catIrt</code> object.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>params</code></td>
+<td>
+<p><b>numeric:</b> a matrix of item parameters.  If specified as a matrix,
+the rows must index the items, and the columns must designate the item
+parameters.  For the binary response model, <code>params</code> must either
+be a 3-column matrix (if not using item exposure control), a 4-5-column
+matrix (with Sympson-Hetter parameters as the last column if using item
+exposure control), or a 4-5-column matrix (if including the item number
+as the first column).  See <b>Details</b> for more information.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mod</code></td>
+<td>
+<p><b>character:</b> a character string indicating the IRT model.  Current support
+is for the 3-parameter binary response model (<span class="option">"brm"</span>),
+and Samejima's graded response model (<span class="option">"grm"</span>).  The contents
+of <code>params</code> must match the designation of <code>mod</code>.  If <code>mod</code> is
+left blank, it will be designated the class of <code>resp</code> (if <code>resp</code> inherits
+either <span class="option">"brm"</span> or <span class="option">"grm"</span>), and if that fails, it will ask the user (if in
+interactive mode) or error.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resp</code></td>
+<td>
+<p><b>numeric:</b> either a <code class="reqn">N \times J</code> matrix (where <code class="reqn">N</code> indicates the
+number of simulees and <code class="reqn">J</code> indicates the number of items), a <code class="reqn">J</code>
+length vector (if there is only one simulee), or NULL if specifying <code>thetas</code>.
+For the binary response model (<span class="option">"brm"</span>), <code>resp</code> must solely contain 0s
+and 1s.  For the graded response model (<span class="option">"grm"</span>), <code>resp</code> must solely contain
+integers <code class="reqn">1, \ldots, K</code>, where <code class="reqn">K</code> is the number of categories, as
+indicated by the dimension of <code>params</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta</code></td>
+<td>
+<p><b>numeric:</b> either a <code class="reqn">N</code>-dimensional vector (where <code class="reqn">N</code> indicates the
+number of simulees) or NULL if specifying <code>resp</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>catStart</code></td>
+<td>
+<p><b>list:</b> a list of options for starting the CAT including:
+</p>
+
+<ol>
+<li> <p><code>n.start</code>: a scalar indicating the number of items that are used for each 
+simulee at the beginning of the CAT.  After <span class="option">n.start</span> reaches the specified value,
+the CAT will shift to the middle set of parameters.
+</p>
+</li>
+<li> <p><code>init.theta</code>: a scalar or vector of initial starting estimates of <code class="reqn">\theta</code>.
+If <code>init.theta</code> is a scalar, every simulee will have the same starting value.
+Otherwise, simulees will have different starting values based on the respective element
+of <code>init.theta</code>.
+</p>
+</li>
+<li> <p><code>select</code>: a character string indicating the item selection method for the 
+first few items.  Items can be selected either through maximum Fisher information or
+Kullback-Leibler divergence methods or randomly.  The Fisher information methods include
+</p>
+
+<ul>
+<li> <p><span class="option">"UW-FI"</span>: unweighted Fisher information at a point.
+</p>
+</li>
+<li> <p><span class="option">"LW-FI"</span>: Fisher information weighted across the likelihood function.
+</p>
+</li>
+<li> <p><span class="option">"PW-FI"</span>: Fisher information weighted across the posterior distribution of
+<code class="reqn">\theta</code>.
+</p>
+</li>
+</ul>
+<p>And the Kullback-Leibler divergence methods include
+</p>
+
+<ul>
+<li> <p><span class="option">"FP-KL"</span>: pointwise KL divergence between [P +/- delta], where
+P is either the current <code class="reqn">\theta</code> estimate or a classification bound.
+</p>
+</li>
+<li> <p><span class="option">"VP-KL"</span>: pointwise KL divergence between [P +/- delta/sqrt(n)], where
+n is the number of items given to this point in the CAT.
+</p>
+</li>
+<li> <p><span class="option">"FI-KL"</span>: KL divergence integrated along [P -/+ delta] with respect to P
+</p>
+</li>
+<li> <p><span class="option">"VI-KL"</span>: KL divergence integrated along [P -/+ delta/sqrt(n)] with
+respect to P.
+</p>
+</li>
+</ul>
+<p>See <code>itChoose</code> for more information.
+</p>
+</li>
+<li> <p><code>at</code>: a character string indicating where to select items.  If <code>select</code>
+is <span class="option">"UW-FI"</span> and <code>at</code> is <span class="option">"theta"</span>, then items will be selected
+to maximize Fisher information at the proximate <code class="reqn">\theta</code> estimates.
+</p>
+</li>
+<li> <p><code>it.range</code>: Either a 2-element numeric vector indicating the minimum and maximum
+allowed difficulty parameters for items selected during the starting portion of the CAT
+(only if <code>mod</code> is equal to <span class="option">"brm"</span>) or NULL indicating no item parameter
+restrictions.  See <code>itChoose</code> for more information.
+</p>
+</li>
+<li> <p><code>n.select</code>: an <em>integer</em> indicating the number of items to select at one time.
+For instance, if <code>select</code> is <span class="option">"UW-FI"</span>, <code>at</code> is <span class="option">"theta"</span>, and
+<code>n.select</code> is 5, the item choosing function will randomly select between the top
+<em>5</em> items that maximize expected Fisher information at proximate <code class="reqn">\theta</code> estimates.
+</p>
+</li>
+<li> <p><code>delta</code>: a scalar indicating the multiplier used in initial item selection if
+a Kullback-Leibler method is chosen.
+</p>
+</li>
+<li> <p><code>score</code>: a character string indicating the <code class="reqn">\theta</code> estimation method.  As
+of now, the options for scoring the first few items are <span class="option">"fixed"</span> (at 
+<code>init.thet</code>), <span class="option">"step"</span> (by adding or subtracting <code>step.size</code> <code class="reqn">\theta</code>
+estimates after each item), Weighted Likelihood Estimation (<span class="option">"WLE"</span>), Bayesian Modal
+Estimation (<span class="option">"BME"</span>), and Expected A-Posteriori Estimation (<span class="option">"EAP"</span>).  The latter
+two allow user specified prior distributions through density (<code>d...</code>) functions.  See
+<code>mleEst</code> for more information.
+</p>
+</li>
+<li> <p><code>range</code>: a 2-element numeric vector indicating the minimum and maximum that
+<code class="reqn">\theta</code> should be estimated in the starting portion of the CAT.
+</p>
+</li>
+<li> <p><code>step.size</code>: a scalar indicating how much to increment or decrement the
+estimate of <code class="reqn">\theta</code> if <code>score</code> is set to <span class="option">"step"</span>.
+</p>
+</li>
+<li> <p><code>leave.after.MLE</code>: a logical indicating whether to skip the remainder of the starting
+items if the user has a mixed response pattern and/or a finite maximum likelihood estimate
+of <code class="reqn">\theta</code> can be achieved.
+</p>
+</li>
+</ol>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>catMiddle</code></td>
+<td>
+<p><b>list:</b> a list of options for selecting/scoring during the middle of the CAT,
+including:
+</p>
+
+<ol>
+<li> <p><code>select</code>: a character string indicating the item selection method for the 
+remaining items.  See <code>select</code> in <code>catStart</code> for an explanation
+of the options.
+</p>
+</li>
+<li> <p><code>at</code>: a character string indicating where to select items.  See <code>select</code> in
+<code>catStart</code> for an explanation of the options.
+</p>
+</li>
+<li> <p><code>it.range</code>: Either a 2-element numeric vector indicating the minimum and maximum
+allowed difficulty parameters for items selected during the middle portion of the CAT
+(only if <code>mod</code> is equal to <span class="option">"brm"</span>) or NULL indicating no item parameter
+restrictions.  See <code>itChoose</code> for more information.
+</p>
+</li>
+<li> <p><code>n.select</code>: an <em>integer</em> indicating the number of items to select at one time.
+</p>
+</li>
+<li> <p><code>delta</code>: a scalar indicating the multiplier used in middle item selection if
+a Kullback-Leibler method is chosen.
+</p>
+</li>
+<li> <p><code>score</code>: a character string indicating the <code class="reqn">\theta</code> estimation method.  As
+of now, the options for scoring the remaining items are Maximum Likelihood Estimation 
+(<span class="option">"MLE"</span>), Weighted Likelihood Estimation (<span class="option">"WLE"</span>), Bayesian Modal Estimation
+(<span class="option">"BME"</span>), and Expected A-Posteriori Estimation (<span class="option">"EAP"</span>).  The latter two allow
+user specified prior distributions through density (<code>d...</code>) functions.  See
+<code>mleEst</code> for more information.
+</p>
+</li>
+<li> <p><code>range</code>: a 2-element numeric vector indicating the minimum and maximum that
+<code class="reqn">\theta</code> should be estimated in the middle portion of the CAT.
+</p>
+</li>
+<li> <p><code>expos</code>: a character string indicating whether no item exposure controls should be
+implemented (<span class="option">"none"</span>) or whether the CAT should use Sympson-Hetter exposure
+controls (<span class="option">"SH"</span>).  If (and only if) <code>expos</code> is equal to <span class="option">"SH"</span>,
+the last column of the parameter matrix should indicate the probability of an item
+being administered given that it is selected.
+</p>
+</li>
+</ol>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>catTerm</code></td>
+<td>
+<p><b>list:</b> a list of options for stopping/terminating the CAT, including:
+</p>
+
+<ol>
+<li> <p><code>term</code>: a scalar/vector indicating the termination criterion/criteria. CATs can
+be terminated either through a fixed number of items (<span class="option">"fixed"</span>) declared
+through the <code>n.max</code> argument; related to SEM of a simulee (<span class="option">"precision"</span>)
+declared through the <code>p.term</code> argument; related to the test information of a
+simulee at a particular point in the cat (<span class="option">"info"</span>) declared through the
+<code>i.term</code> argument; and/or when a simulee falls into a category. If more than
+one termination criteria is selected, the CAT will terminate after successfully satisfying
+the <em>first</em> of those for a given simulee.
+</p>
+</li>
+<li> <p><code>score</code>: a character string indicating the <code class="reqn">\theta</code> estimation method for all
+of the responses in the bank.  <code>score</code> is used to estimate <code class="reqn">\theta</code> given
+the entire bank of item responses and parameter set.  If the theta estimated using
+all of the responses is far away from <code class="reqn">\theta</code>, the size of the item bank is probably
+too small.  The options for <code>score</code> in <code>catTerm</code> are identical to the
+options of <code>score</code> in <code>catMiddle</code>.
+</p>
+</li>
+<li> <p><code>n.min</code>: an <em>integer</em> indicating the minimum number of items that a simulee
+should "take" before <em>any</em> of the termination criteria are checked.
+</p>
+</li>
+<li> <p><code>n.max</code>: an <em>integer</em> indicating the maximum number of items to administer
+before terminating the CAT.
+</p>
+</li>
+<li> <p><code>p.term</code>: a list indicating the parameters of a precision-based stopping rule,
+only if <code>term</code> is <span class="option">"precision"</span>, including:
+</p>
+
+<ol>
+<li> <p><code>method</code>: a character string indicating whether to terminate the CAT when the
+SEM dips below a threshold (<span class="option">"threshold"</span>) or changes less than a particular
+amount (<span class="option">"change"</span>).
+</p>
+</li>
+<li> <p><code>crit</code>: a scalar indicating either the maximum SEM of a simulee before
+terminating the CAT or the maximum change in the simulee's SEM before terminating
+the CAT.
+</p>
+</li>
+</ol>
+</li>
+<li> <p><code>i.term</code>: a list indicating the parameters of a information-based stopping rule,
+only if <code>term</code> is <span class="option">"info"</span>, including:
+</p>
+
+<ol>
+<li> <p><code>method</code>: a character string indicating whether to terminate the CAT when FI
+exceeds a threshold (<span class="option">"threshold"</span>) or changes less than a particular
+amount (<span class="option">"change"</span>).
+</p>
+</li>
+<li> <p><code>crit</code>: a scalar indicating either the minimum FI of a simulee before
+terminating the CAT or the maximum change in the simulee's FI before terminating
+the CAT.
+</p>
+</li>
+</ol>
+</li>
+<li> <p><code>c.term</code>: a list indicating the parameters of a classification CAT, only if
+<code>term</code> is <span class="option">"class"</span> or any of the selection methods are <code>at</code>
+one or more <span class="option">"bounds"</span>, including:
+</p>
+
+<ol>
+<li> <p><code>method</code>: a scalar indicating the method used for a classification CAT.  As of
+now, the classification CAT options are the Sequential Probability Ratio Test
+(<span class="option">"SPRT"</span>), the Generalized Likelihood Ratio (<span class="option">"GLR"</span>), or the Confidence 
+Interval method (<span class="option">"CI"</span>).
+</p>
+</li>
+<li> <p><code>bounds</code>: a scalar, vector, or matrix of classification bounds.  If specified as a
+scalar, there will be one bound for each simulee at that value.  If specified as a
+<code class="reqn">N</code>-dimensional vector, there will be one bound for each simulee.  If specified as a
+<code class="reqn">k &lt; N</code>-dimensional vector, there will be <code class="reqn">k</code> bounds for each simulee at those values.
+And if specified as a <code class="reqn">N \times k</code>-element matrix, there will be <code class="reqn">k</code> bounds for each
+simulee.
+</p>
+</li>
+<li> <p><code>categ</code>: a vector indicating the names of the categories into which the simulees
+should be classified.  The length of <code>categ</code> should be one greater than the length
+of <code>bounds</code>.
+</p>
+</li>
+<li> <p><code>delta</code>: a scalar indicating the half-width of an indifference region when performing
+an SPRT-based classification CAT or selecting items by Kullback-Leibler divergence.  See
+Eggen (1999) and <code>KL</code> for more information.
+</p>
+</li>
+<li> <p><code>alpha</code>: a scalar indicating the specified Type I error rate for performing an SPRT-
+based classification CAT.
+</p>
+</li>
+<li> <p><code>beta</code>: a scalar indicating the specified Type II error rate for performing an SPRT-
+based classification CAT.
+</p>
+</li>
+<li> <p><code>conf.lev</code>: a scalar between 0 and 1 indicating the confidence level used when performing
+a confidence-based (<span class="option">"CI"</span>) classification CAT.
+</p>
+</li>
+</ol>
+</li>
+</ol>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ddist</code></td>
+<td>
+<p><b>function:</b> a function indicating how to calculate prior densities
+for Bayesian estimation or particular item selection methods.  For instance,
+if you wish to specify a normal prior, <code>ddist = dnorm</code>, and if you wish
+to specify a uniform prior, <code>ddist = dunif</code>.  Note that it is standard in
+R to use <code>d</code>... to indicate a density.  See <code>itChoose</code> for
+more information.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>which</code></td>
+<td>
+<p><b>numeric:</b> a scalar or vector of integers between 1 and 4, indicating
+which plots to include.  The plots are as follows:
+</p>
+
+<ol>
+<li>
+<p> Bank Information
+</p>
+</li>
+<li>
+<p> Bank SEM
+</p>
+</li>
+<li>
+<p> CAT Information
+</p>
+</li>
+<li>
+<p> CAT SEM
+</p>
+</li>
+</ol>
+<p><code>which</code> can also be "none", in which case <code>plot.catIrt</code> will
+not plot any information functions, or it can be "all", in which case
+<code>plot.catIrt</code> will plot all four information functions.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>group</code></td>
+<td>
+<p><b>logical:</b> TRUE or FALSE indicating whether to display a summary at the
+group level.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ids</code></td>
+<td>
+<p><b>numeric:</b> a scalar or vector of integers between 1 and the number of
+simulees indicating which simulees to plot and/or summarize their CAT
+process and <em>all</em> of their <code class="reqn">\theta</code> estimates.  <code>ids</code> can
+also be "none" (or, equivalently, NULL) or "all".
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conf.lev</code></td>
+<td>
+<p><b>numeric:</b> a scalar between 0 and 1 indicating the desired confidence
+level plotted for the individual <code class="reqn">\theta</code> estimates.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>legend</code></td>
+<td>
+<p><b>logical:</b> TRUE or FALSE indicating whether the plot function should
+display a legend on the plot.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ask</code></td>
+<td>
+<p><b>logical:</b> TRUE or FALSE indicating whether the plot function should ask
+between plots.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>progress</code></td>
+<td>
+<p><b>logical:</b> TRUE or FALSE indicating whether the <code>catIrt</code> function
+should display a progress bar during the CAT.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments passed to <code>ddist</code> or <code>plot.catIrt</code>, usually distribution
+parameters identified by name or graphical parameters.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function <code>catIrt</code> performs a post-hoc computerized adaptive test (CAT),
+with a variety of user specified inputs.  For a given person/simulee (e.g. simulee <code class="reqn">i</code>),
+a CAT represents a simple set of stages surrounded by a <code>while</code> loop
+(e.g. Weiss and Kingsbury, 1984):
+</p>
+
+<ul>
+<li>
+<p> Item Selection: The next item is chosen based on a pre-specified criterion/criteria.
+For example, the classic item selection mechanism is picking an item such that it
+maximizes Fisher Information at the current estimate of <code class="reqn">\theta_i</code>.  Frequently,
+content balancing, item constraints, or item exposure will be taken into consideration
+at this point (aside from solely picking the "best item" for a given person).
+See <code>itChoose</code> for current item selection methods.
+</p>
+</li>
+<li>
+<p> Estimation: <code class="reqn">\theta_i</code> is estimated based on updated information, usually relating
+to the just-selected item and the response associated with that item. In
+a post-hoc CAT, all of the responses already exist, but in a standard CAT, "item administration"
+would be between "item selection" and "estimation."  The classic estimation mechanism
+is estimating <code class="reqn">\theta_i</code> based off of maximizing the likelihood given parameters and a set
+of responses.  Other estimation mechanisms correct for bias in the maximum likelihood
+estimate or add a prior information (such as a prior distribution of <code class="reqn">\theta</code>).
+If an estimate is untenable (i.e. it returns a non-sensical value or <code class="reqn">\infty</code>), the estimation
+procedure needs to have an alternative estimation mechanism.  See <code>mleEst</code> for
+current estimation methods.
+</p>
+</li>
+<li>
+<p> Termination: Either the test is terminated based on a pre-specified criterion/critera,
+or no termination criteria is satisfied, in which case the loop repeats.  The standard
+termination criteria involve a fixed criterion (e.g. administering only 50 items),
+or a variable criterion (e.g. continuing until the observed SEM is below .3).  Other
+termination criteria relate to cut-point tests (e.g. certification tests, classification tests),
+that depend not solely on ability but on whether that ability is estimated to exceed a threshold.
+<code>catIrt</code> terminates classification tests based on either the Sequential Probability Ratio Test
+(SPRT) (see Eggen, 1999), the Generalized Likelihood Ratio (GLR) (see Thompson, 2009), or the
+Confidence Interval Method (see Kingsbury &amp; Weiss, 1983).  Essentially, the SPRT compares the ratio
+of two likelihoods (e.g. the likelihood of the data given being in one category vs the likelihood
+of the data given being in the other category, as defined by <code class="reqn">B + \delta</code> and
+<code class="reqn">B - \delta</code> (where <code class="reqn">B</code> separates the categories and <code class="reqn">\delta</code> is the halfwidth of the
+indifference region) and compares that ratio with a ratio of error rates (<code class="reqn">\alpha</code> and
+<code class="reqn">\beta</code>) (see Wald, 1945).  The GLR uses the maximum likelihood estimate in place of either
+<code class="reqn">B + \delta</code> or <code class="reqn">B - \delta</code>, and the confidence interval method terminates a CAT if the
+confidence interval surrounding an estimate of <code class="reqn">\theta</code> is fully within one of the categories.
+</p>
+</li>
+</ul>
+<p>The CAT estimates <code class="reqn">\theta_{i1}</code> (an initial point) based on <code>init.theta</code>, 
+and terminates the entire simulation after sequentially terminating each simulee's CAT.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The function <code>catIrt</code> returns a list (of class "catIrt") with the following elements:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>cat_theta</code></td>
+<td>
+<p>a vector of final CAT <code class="reqn">\theta</code> estimates.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cat_categ</code></td>
+<td>
+<p>a vector indicating the final classification of each simulee in the CAT.  If
+<code>term</code> is <em>not</em> <span class="option">"class"</span>, <code>cat_categ</code> will be a vector
+of NA values.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cat_info</code></td>
+<td>
+<p>a vector of observed Fisher information based on the final CAT <code class="reqn">\theta</code>
+estimates and the item responses.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cat_sem</code></td>
+<td>
+<p>a vector of observed SEM estimates (or posterior standard deviations) based on the
+final CAT <code class="reqn">\theta</code> estimates and the item responses.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cat_length</code></td>
+<td>
+<p>a vector indicating the number of items administered to each simulee in the CAT
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cat_term</code></td>
+<td>
+<p>a vector indicating how each CAT was terminated.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tot_theta</code></td>
+<td>
+<p>a vector of <code class="reqn">\theta</code> estimates given the entire item bank.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tot_categ</code></td>
+<td>
+<p>a vector indicating the classification of each simulee given the entire item bank.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tot_info</code></td>
+<td>
+<p>a vector of observed Fisher information based on the entire item bank worth
+of responses.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tot_sem</code></td>
+<td>
+<p>a vector of observed SEM estimates based on the entire item bank worth of responses.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>true_theta</code></td>
+<td>
+<p>a vector of true <code class="reqn">\theta</code> values if specified by the user.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>true_categ</code></td>
+<td>
+<p>a vector of true classification given <code class="reqn">\theta</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>full_params</code></td>
+<td>
+<p>the full item bank.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>full_resp</code></td>
+<td>
+<p>the full set of responses.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cat_indiv</code></td>
+<td>
+<p>a list of <code class="reqn">\theta</code> estimates, observed SEM, observed information, the responses
+and the parameters chosen for each simulee over the entire CAT.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mod</code></td>
+<td>
+<p>a list of model specifications, as designated by the user, so that the
+CAT can be easily reproduced.
+</p>
+</td>
+</tr>
+</table>
+<h3>Note</h3>
+
+<p>Both <code>summary.catIrt</code> and <code>plot.catIrt</code> return different objects than the original
+<code>catIrt</code> function.  <code>summary.catIrt</code> returns summary labeled summary statistics, and
+<code>plot.catIrt</code> returns evaluation points (<code class="reqn">x</code> values, information, and SEM) for each
+of the plots.  Moreover, if in interactive mode and missing parts of the <code>catStart</code>, <code>catMiddle</code>,
+or <code>catTerm</code> arguments, the <code>catIrt</code> function will interactively ask for each of those
+and return the set of arguments in the "catIrt" object.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Steven W. Nydick <a href="mailto:swnydick@gmail.com">swnydick@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Eggen, T. J. H. M.  (1999).  Item selection in adaptive testing with the sequential probability ratio test.  <em>Applied Psychological Measurement</em>, <em>23</em>, 249 – 261.
+</p>
+<p>Kingsbury, G. G., &amp; Weiss (1983).  A comparison of IRT-based adaptive mastery testing and a sequential mastery
+testing procedure.  In D. J. Weiss (Ed.), <em>New horizons in testing: Latent trait test theory and computerized adaptive testing</em> (pp. 257–283).  New York, NY: Academic Press.
+</p>
+<p>Thompson, N. A. (2009).  Using the generalized likelihood ratio as a termination criterion.  In D. J. Weiss (Ed.),
+<em>Proceedings of the 2009 GMAC conference on computerized adaptive testing</em>.
+</p>
+<p>Wainer, H. (Ed.). (2000). <em>Computerized Adaptive Testing: A Primer (2nd Edition)</em>. Mahwah, NJ: Lawrence Erlbaum Associates.
+</p>
+<p>Wald, A.  (1945).  Sequential tests of statistical hypotheses.  <em>Annals of Mathematical Statistics</em>, <em>16</em>, 117 – 186.
+</p>
+<p>Weiss, D. J., &amp; Kingsbury, G. G. (1984). Application of computerized adaptive testing to educational problems. <em>Journal of Educational Measurement</em>, <em>21</em>, 361-375.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>FI</code>, <code>itChoose</code>, <code>KL</code>, <code>mleEst</code>,
+<code>simIrt</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+
+#########################
+# Binary Response Model #
+#########################
+set.seed(888)
+# generating random theta:
+theta &lt;- rnorm(50)
+# generating an item bank under a 2-parameter binary response model:
+b.params &lt;- cbind(a = runif(100, .5, 1.5), b = rnorm(100, 0, 2), c = 0)
+# simulating responses:
+b.resp &lt;- simIrt(theta = theta, params = b.params, mod = "brm")$resp
+
+
+## CAT 1 ##
+# the typical, classic post-hoc CAT:
+catStart1 &lt;- list(init.theta = 0, n.start = 5,
+                  select = "UW-FI", at = "theta",
+                  n.select = 4, it.range = c(-1, 1),
+                  score = "step", range = c(-1, 1),
+                  step.size = 3, leave.after.MLE = FALSE)
+catMiddle1 &lt;- list(select = "UW-FI", at = "theta",
+                   n.select = 1, it.range = NULL,
+                   score = "MLE", range = c(-6, 6),
+                   expos = "none")
+catTerm1 &lt;- list(term = "fixed", n.min = 10, n.max = 50)
+
+cat1 &lt;- catIrt(params = b.params, mod = "brm",
+               resp = b.resp,
+               catStart = catStart1,
+               catMiddle = catMiddle1,
+               catTerm = catTerm1)
+
+# we can print, summarize, and plot:
+cat1                                        # prints theta because
+                                            # we have fewer than
+                                            # 200 simulees
+summary(cat1, group = TRUE, ids = "none")   # nice summary!
+
+summary(cat1, group = FALSE, ids = 1:4)     # summarizing people too! :)
+
+par(mfrow = c(2, 2))
+plot(cat1, ask = FALSE)               # 2-parameter model, so expected FI
+                                      # and observed FI are the same
+par(mfrow = c(1, 1))
+
+# we can also plot particular simulees:
+par(mfrow = c(2, 1))
+plot(cat1, which = "none", ids = c(1, 30), ask = FALSE)
+par(mfrow = c(1, 1))
+
+
+## CAT 2 ##
+# using Fixed Point KL info rather than Unweighted FI to select items:
+catStart2 &lt;- catStart1
+catMiddle2 &lt;- catMiddle1
+catTerm2 &lt;- catTerm1
+
+catStart2$leave.after.MLE &lt;- TRUE         # leave after mixed response pattern
+catMiddle2$select &lt;- "FP-KL"
+catMiddle2$at &lt;- "bounds"
+catMiddle2$delta &lt;- .2
+catTerm2$c.term &lt;- list(bounds = 0)
+cat2 &lt;- catIrt(params = b.params, mod = "brm",
+               resp = b.resp,
+               catStart = catStart2,
+               catMiddle = catMiddle2,
+               catTerm = catTerm2)
+cor(cat1$cat_theta, cat2$cat_theta)       # very close!
+
+summary(cat2, group = FALSE, ids = 1:4)   # rarely 5 starting items!
+
+
+## CAT 3/4 ##
+# using "precision" rather than "fixed" to terminate:
+catTerm1$term &lt;- catTerm2$term &lt;- "precision"
+catTerm1$p.term &lt;- catTerm2$p.term &lt;- list(method = "threshold", crit = .3)
+cat3 &lt;- catIrt(params = b.params, mod = "brm",
+               resp = b.resp,
+               catStart = catStart1,
+               catMiddle = catMiddle1,
+               catTerm = catTerm1)
+cat4 &lt;- catIrt(params = b.params, mod = "brm",
+			   resp = b.resp,
+			   catStart = catStart2,
+			   catMiddle = catMiddle2,
+			   catTerm = catTerm2)
+
+mean(cat3$cat_length - cat4$cat_length) # KL info results in slightly more items
+
+
+## CAT 5/6 ##
+# classification CAT with a boundary of 0 (with default classification stuff):
+catTerm5 &lt;- list(term = "class", n.min = 10, n.max = 50,
+                 c.term = list(method = "SPRT",
+                               bounds = 0, delta = .2,
+                               alpha = .10, beta = .10))
+cat5 &lt;- catIrt(params = b.params, mod = "brm",
+               resp = b.resp,
+               catStart = catStart1,
+               catMiddle = catMiddle1,
+               catTerm = catTerm5)
+cat6 &lt;- catIrt(params = b.params, mod = "brm",
+               resp = b.resp,
+               catStart = catStart1,
+               catMiddle = catMiddle2,
+               catTerm = catTerm5)
+
+# how many were classified correctly?
+mean(cat5$cat_categ == cat5$tot_categ)
+
+# using a different selection mechanism, we get the similar results:
+mean(cat6$cat_categ == cat6$tot_categ)
+
+
+## CAT 7 ##
+# we could change estimation to EAP with the default (normal) prior:
+catMiddle7 &lt;- catMiddle1
+catMiddle7$score &lt;- "EAP"
+cat7 &lt;- catIrt(params = b.params, mod = "brm", # much slower!
+               resp = b.resp,
+               catStart = catStart1,
+               catMiddle = catMiddle7,
+               catTerm = catTerm1)
+cor(cat1$cat_theta, cat7$cat_theta)            # pretty much the same
+
+
+## CAT 8 ##
+# let's specify the prior as something strange:
+cat8 &lt;- catIrt(params = b.params, mod = "brm",
+               resp = b.resp,
+               catStart = catStart1,
+               catMiddle = catMiddle7,
+               catTerm = catTerm1,
+               ddist = dchisq, df = 4)
+
+cat8   # all positive values of "theta"
+
+
+## CAT 9 ##
+# finally, we can have:
+#   - more than one termination criteria,
+#   - individual bounds per person,
+#   - simulating based on theta without a response matrix.
+catTerm9 &lt;- list(term = c("fixed", "class"),
+                 n.min = 10, n.max = 50,
+                 c.term = list(method = "SPRT",
+                               bounds = cbind(runif(length(theta), -1, 0),
+                                              runif(length(theta), 0, 1)),
+                               delta = .2,
+                               alpha = .1, beta = .1))
+cat9 &lt;- catIrt(params = b.params, mod = "brm",
+               resp = NULL, theta = theta,
+               catStart = catStart1,
+               catMiddle = catMiddle1,
+               catTerm = catTerm9)
+
+summary(cat9)   # see "... with Each Termination Criterion"
+
+
+#########################
+# Graded Response Model #
+#########################
+# generating random theta
+theta &lt;- rnorm(201)
+# generating an item bank under a graded response model:
+g.params &lt;- cbind(a = runif(100, .5, 1.5), b1 = rnorm(100), b2 = rnorm(100),
+                                           b3 = rnorm(100), b4 = rnorm(100))
+
+# the graded response model is exactly the same, only slower!
+cat10 &lt;- catIrt(params = g.params, mod = "grm",
+                resp = NULL, theta = theta,
+                catStart = catStart1,
+                catMiddle = catMiddle1,
+                catTerm = catTerm1)
+
+# warning because it.range cannot be specified for graded response models!
+
+# if there is more than 200 simulees, it doesn't print individual thetas:
+cat10
+
+
+## End(Not run)
+
+# play around with things - CATs are fun - a little frisky, but fun.
+</code></pre>
+
+
+</div>

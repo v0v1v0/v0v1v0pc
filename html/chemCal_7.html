@@ -1,0 +1,147 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>inverse.predict</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Predict x from y for a linear calibration</h2>
+
+<h3>Description</h3>
+
+<p>This function predicts x values using a univariate linear model that has
+been generated for the purpose of calibrating a measurement method.
+Prediction intervals are given at the specified confidence level.  The
+calculation method was taken from Massart et al. (1997). In particular,
+Equations 8.26 and 8.28 were combined in order to yield a general treatment
+of inverse prediction for univariate linear models, taking into account
+weights that have been used to create the linear model, and at the same time
+providing the possibility to specify a precision in sample measurements
+differing from the precision in standard samples used for the calibration.
+This is elaborated in the package vignette.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">inverse.predict(
+  object,
+  newdata,
+  ...,
+  ws = "auto",
+  alpha = 0.05,
+  var.s = "auto"
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>A univariate model object of class <code>lm</code> or
+<code>rlm</code> with model formula <code>y ~ x</code> or <code>y ~ x -
+1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdata</code></td>
+<td>
+<p>A vector of observed y values for one sample.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Placeholder for further arguments that might be needed by
+future implementations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ws</code></td>
+<td>
+<p>The weight attributed to the sample. This argument is obligatory
+if <code>object</code> has weights.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>The error tolerance level for the confidence interval to be
+reported.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var.s</code></td>
+<td>
+<p>The estimated variance of the sample measurements. The default
+is to take the residual standard error from the calibration and to adjust it
+using <code>ws</code>, if applicable. This means that <code>var.s</code> overrides
+<code>ws</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This is an implementation of Equation (8.28) in the Handbook of Chemometrics
+and Qualimetrics, Part A, Massart et al (1997), page 200, validated with
+Example 8 on the same page, extended as specified in the package vignette
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list containing the predicted x value, its standard error and a
+confidence interval.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The function was validated with examples 7 and 8 from Massart et al.
+(1997).  Note that the behaviour of inverse.predict changed with chemCal
+version 0.2.1. Confidence intervals for x values obtained from calibrations
+with replicate measurements did not take the variation about the means into
+account.  Please refer to the vignette for details.
+</p>
+
+
+<h3>References</h3>
+
+<p>Massart, L.M, Vandenginste, B.G.M., Buydens, L.M.C., De Jong,
+S., Lewi, P.J., Smeyers-Verbeke, J. (1997) Handbook of Chemometrics and
+Qualimetrics: Part A, p. 200
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# This is example 7 from Chapter 8 in Massart et al. (1997)
+m &lt;- lm(y ~ x, data = massart97ex1)
+inverse.predict(m, 15)        #  6.1 +- 4.9
+inverse.predict(m, 90)        # 43.9 +- 4.9
+inverse.predict(m, rep(90,5)) # 43.9 +- 3.2
+
+# For reproducing the results for replicate standard measurements in example 8,
+# we need to do the calibration on the means when using chemCal &gt; 0.2
+weights &lt;- with(massart97ex3, {
+  yx &lt;- split(y, x)
+  ybar &lt;- sapply(yx, mean)
+  s &lt;- round(sapply(yx, sd), digits = 2)
+  w &lt;- round(1 / (s^2), digits = 3)
+})
+
+massart97ex3.means &lt;- aggregate(y ~ x, massart97ex3, mean)
+
+m3.means &lt;- lm(y ~ x, w = weights, data = massart97ex3.means)
+
+inverse.predict(m3.means, 15, ws = 1.67)  # 5.9 +- 2.5
+inverse.predict(m3.means, 90, ws = 0.145) # 44.1 +- 7.9
+
+
+</code></pre>
+
+
+</div>

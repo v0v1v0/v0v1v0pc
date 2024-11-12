@@ -1,0 +1,126 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>CASC</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Covariate Assisted Spectral Clustering.</h2>
+
+<h3>Description</h3>
+
+<p><em>CASC</em> clusters graph nodes by applying spectral clustering with the assistance from
+node covariates.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">CASC(Adj, Covariate, K, alphan = 5, itermax = 100, startn = 10)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Adj</code></td>
+<td>
+<p>A 0/1 adjacency matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Covariate</code></td>
+<td>
+<p>A covariate matrix. The rows correspond to nodes and the columns correspond to covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K</code></td>
+<td>
+<p>A positive integer, indicating the number of underlying communities in graph <code>Adj</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alphan</code></td>
+<td>
+<p>A tuning parameter to balance between the contributions of the graph and the covariates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>itermax</code></td>
+<td>
+<p><code>k-means</code> parameter, indicating the maximum number of iterations allowed.
+The default value is 100.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>startn</code></td>
+<td>
+<p><code>k-means</code> parameter. If centers is a number, how many random sets should
+be chosen? The default value is 10.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><em>CASC</em> is a community detection algorithm for networks with node covariates, proposed
+in <em>Covariate-assisted spectral clustering</em> of Binkiewicz, et al. (2017). <em>CASC</em> applies
+<code>k-means</code> on the first <code>K</code> leading eigenvectors of the balanced matrix between the Laplacian
+matrix and the covariate matrix.
+</p>
+
+
+<h3>Value</h3>
+
+<table><tr style="vertical-align: top;">
+<td><code>estall</code></td>
+<td>
+<p>A lavel vector.</p>
+</td>
+</tr></table>
+<h3>References</h3>
+
+<p>Binkiewicz, N., Vogelstein, J. T., &amp; Rohe, K. (2017). <em>Covariate-assisted spectral clustering</em>.
+<em>Biometrika, 104(2), 361-377.</em><br><a href="https://doi.org/10.1093/biomet/asx008">doi:10.1093/biomet/asx008</a><br></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Simulate the Network
+n = 10; K = 2;
+theta = 0.4 + (0.45-0.05)*(seq(1:n)/n)^2; Theta = diag(theta);
+P  = matrix(c(0.8, 0.2, 0.2, 0.8), byrow = TRUE, nrow = K)
+set.seed(2022)
+l = sample(1:K, n, replace=TRUE); # node labels
+Pi = matrix(0, n, K) # label matrix
+for (k in 1:K){
+  Pi[l == k, k] = 1
+}
+Omega = Theta %*% Pi %*% P %*% t(Pi) %*% Theta;
+Adj = matrix(runif(n*n, 0, 1), nrow = n);
+Adj = Omega - Adj;
+Adj = 1*(Adj &gt;= 0)
+diag(Adj) = 0
+Adj[lower.tri(Adj)] = t(Adj)[lower.tri(Adj)]
+caseno = 4; Nrange = 10; Nmin = 10; prob1 = 0.9; p = n*4;
+Q = matrix(runif(p*K, 0, 1), nrow = p, ncol = K)
+Q = sweep(Q,2,colSums(Q),`/`)
+W = matrix(0, nrow = n, ncol = K);
+for(jj in 1:n) {
+  if(runif(1) &lt;= prob1) {W[jj, 1:K] = Pi[jj, ];}
+  else W[jj, sample(K, 1)] = 1;
+}
+W = t(W)
+D0 = Q %*% W
+X = matrix(0, n, p)
+N = switch(caseno, rep(100, n), rep(100, n), round(runif(n)*Nrange+ Nmin),
+  round(runif(n)* Nrange+Nmin))
+for (i in 1: ncol(D0)){
+  X[i, ] = rmultinom(1, N[i], D0[, i])
+}
+CASC(Adj, X, 2)
+</code></pre>
+
+
+</div>

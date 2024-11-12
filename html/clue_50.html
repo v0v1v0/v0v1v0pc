@@ -1,0 +1,189 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>l1_fit_ultrametric</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Least Absolute Deviation Fit of Ultrametrics to Dissimilarities</h2>
+
+<h3>Description</h3>
+
+<p>Find the ultrametric with minimal absolute distance (Manhattan
+dissimilarity) to a given dissimilarity object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">l1_fit_ultrametric(x, method = c("SUMT", "IRIP"), weights = 1,
+                   control = list())
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a dissimilarity object inheriting from or coercible to class
+<code>"dist"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>a character string indicating the fitting method to be
+employed.  Must be one of <code>"SUMT"</code> (default) or <code>"IRIP"</code>,
+or a unique abbreviation thereof.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>a numeric vector or matrix with non-negative weights
+for obtaining a weighted least squares fit.  If a matrix, its
+numbers of rows and columns must be the same as the number of
+objects in <code>x</code>, and the lower diagonal part is used.
+Otherwise, it is recycled to the number of elements in <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>a list of control parameters.  See <b>Details</b>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The problem to be solved is minimizing
+</p>
+<p style="text-align: center;"><code class="reqn">L(u) = \sum_{i,j} w_{ij} |x_{ij} - u_{ij}|</code>
+</p>
+
+<p>over all <code class="reqn">u</code> satisfying the ultrametric constraints (i.e., for all
+<code class="reqn">i, j, k</code>, <code class="reqn">u_{ij} \le \max(u_{ik}, u_{jk})</code>).  This problem
+is known to be NP hard (Krivanek and Moravek, 1986).
+</p>
+<p>We provide two heuristics for solving this problem.
+</p>
+<p>Method <code>"SUMT"</code> implements a <abbr><span class="acronym">SUMT</span></abbr> (Sequential
+Unconstrained Minimization Technique, see <code>sumt</code>) approach
+using the sign function for the gradients of the absolute value
+function.
+</p>
+<p>Available control parameters are <code>method</code>, <code>control</code>,
+<code>eps</code>, <code>q</code>, and <code>verbose</code>, which have the same roles as
+for <code>sumt</code>, and the following.
+</p>
+
+<dl>
+<dt><code>nruns</code></dt>
+<dd>
+<p>an integer giving the number of runs to be
+performed.  Defaults to 1.</p>
+</dd>
+<dt><code>start</code></dt>
+<dd>
+<p>a single dissimilarity, or a list of
+dissimilarities to be employed as starting values.</p>
+</dd>
+</dl>
+<p>Method <code>"IRIP"</code> implements a variant of the Iteratively
+Reweighted Iterative Projection approach of Smith (2001), which
+attempts to solve the <code class="reqn">L_1</code> problem via a sequence of weighted
+<code class="reqn">L_2</code> problems, determining <code class="reqn">u(t+1)</code> by minimizing the
+criterion function
+</p>
+<p style="text-align: center;"><code class="reqn">\sum_{i,j} w_{ij}
+    (x_{ij} - u_{ij})^2 / \max(|x_{ij} - u_{ij}(t)|, m)</code>
+</p>
+
+<p>with <code class="reqn">m</code> a “small” non-zero value to avoid zero divisors.
+We use the <abbr><span class="acronym">SUMT</span></abbr> method of <code>ls_fit_ultrametric</code>
+for solving the weighted least squares problems.
+</p>
+<p>Available control parameters are as follows.
+</p>
+
+<dl>
+<dt><code>maxiter</code></dt>
+<dd>
+<p>an integer giving the maximal number of
+iteration steps to be performed.
+Defaults to 100.</p>
+</dd>
+<dt><code>eps</code></dt>
+<dd>
+<p>a nonnegative number controlling the iteration,
+which stops when the maximal change in <code class="reqn">u</code> is less than
+<code>eps</code>.
+Defaults to <code class="reqn">10^{-6}</code>.</p>
+</dd>
+<dt><code>reltol</code></dt>
+<dd>
+<p>the relative convergence tolerance.  Iteration
+stops when the relative change in the <code class="reqn">L_1</code> criterion is less
+than <code>reltol</code>.
+Defaults to <code class="reqn">10^{-6}</code>.</p>
+</dd>
+<dt><code>MIN</code></dt>
+<dd>
+<p>the cutoff <code class="reqn">m</code>.  Defaults to <code class="reqn">10^{-3}</code>.</p>
+</dd>
+<dt><code>start</code></dt>
+<dd>
+<p>a dissimilarity object to be used as the
+starting value for <code class="reqn">u</code>.</p>
+</dd>
+<dt><code>control</code></dt>
+<dd>
+<p>a list of control parameters to be used by the
+method of <code>ls_fit_ultrametric</code> employed for solving
+the weighted <code class="reqn">L_2</code> problems.</p>
+</dd>
+</dl>
+<p>One may need to adjust the default control parameters to achieve
+convergence.
+</p>
+<p>It should be noted that all methods are heuristics which can not be
+guaranteed to find the global minimum.  
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>"cl_ultrametric"</code> containing the
+fitted ultrametric distances.
+</p>
+
+
+<h3>References</h3>
+
+<p>M. Krivanek and J. Moravek (1986).
+NP-hard problems in hierarchical tree clustering.
+<em>Acta Informatica</em>, <b>23</b>, 311–323.
+<a href="https://doi.org/10.1007/BF00289116">doi:10.1007/BF00289116</a>.
+</p>
+<p>T. J. Smith (2001).
+Constructing ultrametric and additive trees based on the <code class="reqn">L_1</code>
+norm.
+<em>Journal of Classification</em>, <b>18</b>, 185–207.
+<a href="https://link.springer.com/article/10.1007/s00357-001-0015-0">https://link.springer.com/article/10.1007/s00357-001-0015-0</a>.
+
+
+
+
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cl_consensus</code> for computing least absolute deviation
+(Manhattan) consensus hierarchies;
+<code>ls_fit_ultrametric</code>.
+</p>
+
+
+</div>

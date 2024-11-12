@@ -1,0 +1,171 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cbl</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Confounder blanket learner</h2>
+
+<h3>Description</h3>
+
+<p>This function performs the confounder blanket learner (CBL) algorithm for
+causal discovery.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cbl(
+  x,
+  z,
+  s = "lasso",
+  B = 50,
+  gamma = 0.5,
+  maxiter = NULL,
+  params = NULL,
+  parallel = FALSE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Matrix or data frame of foreground variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>Matrix or data frame of background variables.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>s</code></td>
+<td>
+<p>Feature selection method. Includes native support for sparse linear
+regression (<code>s = "lasso"</code>) and gradient boosting (<code>s = "boost"</code>).
+Alternatively, a user-supplied function mapping features <code>x</code> and
+outcome <code>y</code> to a bit vector indicating which features are selected.
+See Examples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p>Number of complementary pairs to draw for stability selection.
+Following Shah &amp; Samworth (2013), we recommend leaving this fixed at 50.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>gamma</code></td>
+<td>
+<p>Omission threshold. If either of two foreground variables is
+omitted from the model for the other with frequency <code>gamma</code> or higher,
+we infer that they are causally disconnected.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxiter</code></td>
+<td>
+<p>Maximum number of iterations to loop through if convergence
+is elusive.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>params</code></td>
+<td>
+<p>Optional list to pass to <code>lgb.train</code> if <code>s = "boost"</code>.
+See <code>lightgbm::lgb.train</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parallel</code></td>
+<td>
+<p>Compute stability selection subroutine in parallel? Must
+register backend beforehand, e.g. via <code>doMC</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Extra parameters to be passed to the feature selection subroutine.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The CBL algorithm (Watson &amp; Silva, 2022) learns a partial order over
+foreground variables <code>x</code> via relations of minimal conditional
+(in)dependence with respect to a set of background variables <code>z</code>. The
+method is sound and complete with respect to a so-called "lazy oracle", who
+only answers independence queries about variable pairs conditioned on the
+intersection of their respective non-descendants.
+</p>
+<p>For computational tractability, CBL performs conditional independence tests
+via supervised learning with feature selection. The current implementation
+includes support for sparse linear models (<code>s = "lasso"</code>) and gradient
+boosting machines (<code>s = "boost"</code>). For statistical inference, CBL uses
+complementary pairs stability selection (Shah &amp; Samworth, 2013), which bounds
+the probability of errors of commission.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A square, lower triangular ancestrality matrix. Call this matrix <code>m</code>.
+If CBL infers that <code class="reqn">X_i \prec X_j</code>, then <code>m[j, i] = 1</code>. If CBL
+infers that <code class="reqn">X_i \preceq X_j</code>, then <code>m[j, i] = 0.5</code>. If CBL infers
+that <code class="reqn">X_i \sim X_j</code>, then <code>m[j, i] = 0</code>. Otherwise,
+<code>m[j, i] = NA</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Watson, D.S. &amp; Silva, R. (2022). Causal discovery under a confounder blanket.
+To appear in <em>Proceedings of the 38th Conference on Uncertainty in
+Artificial Intelligence</em>. <em>arXiv</em> preprint, 2205.05715.
+</p>
+<p>Shah, R. &amp; Samworth, R. (2013). Variable selection with error control:
+Another look at stability selection. <em>J. R. Statist. Soc. B</em>,
+<em>75</em>(1):55–80, 2013.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Load data
+data(bipartite)
+x &lt;- bipartite$x
+z &lt;- bipartite$z
+
+# Set seed
+set.seed(123)
+
+# Run CBL
+cbl(x, z)
+
+# With user-supplied feature selection subroutine
+s_new &lt;- function(x, y) {
+  # Fit model, extract coefficients
+  df &lt;- data.frame(x, y)
+  f_full &lt;- lm(y ~ 0 + ., data = df)
+  f_reduced &lt;- step(f_full, trace = 0)
+  keep &lt;- names(coef(f_reduced))
+  # Return bit vector
+  out &lt;- ifelse(colnames(x) %in% keep, 1, 0)
+  return(out)
+}
+
+cbl(x, z, s = s_new)
+
+
+</code></pre>
+
+
+</div>

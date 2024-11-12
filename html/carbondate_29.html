@@ -1,0 +1,202 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>PlotPosteriorMeanRate</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Plot Posterior Mean Rate of Sample Occurrence for Poisson Process Model</h2>
+
+<h3>Description</h3>
+
+<p>Given output from the Poisson process fitting function PPcalibrate calculate
+and plot the posterior mean rate of sample occurrence (i.e., the underlying Poisson process
+rate <code class="reqn">\lambda(t)</code>) together with specified probability intervals, on a given calendar age grid
+(provided in cal yr BP).
+</p>
+<p>Will show the original set of radiocarbon determinations (those you are modelling/summarising),
+the chosen calibration curve, and the estimated posterior rate of occurrence <code class="reqn">\lambda(t)</code> on the same plot.
+Can also optionally show the posterior mean of each individual sample's calendar age estimate.
+</p>
+<p><strong>Note:</strong> If all you are interested in is the value of the posterior mean rate
+on a grid, without an accompanying plot, you can use
+FindPosteriorMeanRate instead.
+</p>
+<p>For more information read the vignette: <br><code>vignette("Poisson-process-modelling", package = "carbondate")</code>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">PlotPosteriorMeanRate(
+  output_data,
+  n_posterior_samples = 5000,
+  calibration_curve = NULL,
+  plot_14C_age = TRUE,
+  plot_cal_age_scale = "BP",
+  show_individual_means = TRUE,
+  show_confidence_intervals = TRUE,
+  interval_width = "2sigma",
+  bespoke_probability = NA,
+  denscale = 3,
+  resolution = 1,
+  n_burn = NA,
+  n_end = NA,
+  plot_pretty = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>output_data</code></td>
+<td>
+<p>The return value from the updating function
+PPcalibrate. Optionally, the output data can have an extra list item
+named <code>label</code> which is used to set the label on the plot legend.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_posterior_samples</code></td>
+<td>
+<p>Number of samples it will draw, after having removed <code>n_burn</code>,
+from the (thinned) MCMC realisations stored in <code>output_data</code> to estimate the
+rate <code class="reqn">\lambda(t)</code>. These samples may be repeats if the number of, post burn-in,
+realisations is less than <code>n_posterior_samples</code>. If not given, 5000 is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>calibration_curve</code></td>
+<td>
+<p>This is usually not required since the name of the
+calibration curve variable is saved in the output data. However, if the
+variable with this name is no longer in your environment then you should pass
+the calibration curve here. If provided, this should be a dataframe which
+should contain at least 3 columns entitled <code>calendar_age</code>, <code>c14_age</code> and <code>c14_sig</code>.
+This format matches intcal20.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot_14C_age</code></td>
+<td>
+<p>Whether to use the radiocarbon age (<code class="reqn">{}^{14}</code>C yr BP) as
+the units of the y-axis in the plot. Defaults to <code>TRUE</code>. If <code>FALSE</code> uses
+F<code class="reqn">{}^{14}</code>C concentration instead.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot_cal_age_scale</code></td>
+<td>
+<p>(Optional) The calendar scale to use for the x-axis. Allowed values are
+"BP", "AD" and "BC". The default is "BP" corresponding to plotting in cal yr BP.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>show_individual_means</code></td>
+<td>
+<p>(Optional) Whether to calculate and show the mean posterior
+calendar age estimated for each individual <code class="reqn">{}^{14}</code>C sample on the plot as a rug on
+the x-axis. Default is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>show_confidence_intervals</code></td>
+<td>
+<p>Whether to show the pointwise confidence intervals
+(at chosen probability level) on the plot. Default is <code>TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>interval_width</code></td>
+<td>
+<p>The confidence intervals to show for both the
+calibration curve and the predictive density. Choose from one of <code>"1sigma"</code> (68.3%),
+<code>"2sigma"</code> (95.4%) and <code>"bespoke"</code>. Default is <code>"2sigma"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bespoke_probability</code></td>
+<td>
+<p>The probability to use for the confidence interval
+if <code>"bespoke"</code> is chosen above. E.g., if 0.95 is chosen, then the 95% confidence
+interval is calculated. Ignored if <code>"bespoke"</code> is not chosen.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>denscale</code></td>
+<td>
+<p>(Optional) Whether to scale the vertical range of the Poisson process mean rate plot
+relative to the calibration curve plot. Default is 3 which means
+that the maximum of the mean rate will be at 1/3 of the height of the plot.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resolution</code></td>
+<td>
+<p>The distance between calendar ages at which to calculate the value of the rate
+<code class="reqn">\lambda(t)</code>. These ages will be created on a regular grid that automatically covers
+the calendar period specified in <code>output_data</code>. Default is 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_burn</code></td>
+<td>
+<p>The number of MCMC iterations that should be discarded as burn-in (i.e.,
+considered to be occurring before the MCMC has converged). This relates to the number
+of iterations (<code>n_iter</code>) when running the original update functions (not the thinned <code>output_data</code>).
+Any MCMC iterations before this are not used in the calculations. If not given, the first half of the
+MCMC chain is discarded. Note: The maximum value that the function
+will allow is <code>n_iter - 100 * n_thin</code> (where <code>n_iter</code> and <code>n_thin</code> are the arguments that were given to
+PPcalibrate) which would leave only 100 of the (thinned) values in <code>output_data</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_end</code></td>
+<td>
+<p>The last iteration in the original MCMC chain to use in the calculations. Assumed to be the
+total number of iterations performed, i.e. <code>n_iter</code>, if not given.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot_pretty</code></td>
+<td>
+<p>logical, defaulting to <code>TRUE</code>. If set <code>TRUE</code> then will select pretty plotting
+margins (that create sufficient space for axis titles and rotates y-axis labels). If <code>FALSE</code> will
+implement current user values.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list, each item containing a data frame of the <code>calendar_age_BP</code>, the <code>rate_mean</code>
+and the confidence intervals for the rate - <code>rate_ci_lower</code> and <code>rate_ci_upper</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># NOTE: All these examples are shown with a small n_iter and n_posterior_samples
+# to speed up execution.
+# Try n_iter and n_posterior_samples as the function defaults.
+
+pp_output &lt;- PPcalibrate(
+    pp_uniform_phase$c14_age,
+    pp_uniform_phase$c14_sig,
+    intcal20,
+    n_iter = 1000,
+    show_progress = FALSE)
+
+# Default plot with 2 sigma interval
+PlotPosteriorMeanRate(pp_output, n_posterior_samples = 100)
+
+# Specify an 80% confidence interval
+PlotPosteriorMeanRate(
+    pp_output,
+    interval_width = "bespoke",
+    bespoke_probability = 0.8,
+    n_posterior_samples = 100)
+</code></pre>
+
+
+</div>

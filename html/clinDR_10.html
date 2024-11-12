@@ -1,0 +1,254 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>emaxalt</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2> Fit 4- or 3-parameter Emax model substituting simpler curves
+if convergence not achieved.</h2>
+
+<h3>Description</h3>
+
+<p>ML estimation for 4- and 3-parmeter Emax model.  If the 4-parameter
+model is requested, it is estimated and the 3-parameter model is fit
+only if  the
+4-parameter estimation fails.  If 3-parameter estimation fails, the
+linear, log-linear, or exponential model producing the smallest
+residual SS is substituted. For binary data, the model 
+is fit on the logit scale and then back-transformed.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">emaxalt(y, dose, modType=3,binary=FALSE, 
+	iparm=NA,ed50cutoff=2.5*max(doselev), 
+	ed50lowcutoff=doselev[2]/1000,switchMod= TRUE,
+	truncLambda=6)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Response vector</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dose</code></td>
+<td>
+<p>Doses corresponding to <code>y</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>modType</code></td>
+<td>
+<p>When modType=4, the fitting begins with the 4
+parameter model.  If estimation fails or modType=3, the 3-parameter
+estimation is applied.  If it fails, a best-fitting model linear in
+its parameters is selected.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>binary</code></td>
+<td>
+<p>When specified, the Emax model is fit on the logit scale, and then
+the results are back-transformed to proportions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iparm</code></td>
+<td>
+<p> Vector of optional initial values for the Emax fit. Starting 
+values are computed if not specified. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ed50cutoff</code></td>
+<td>
+<p> Upper allowed limit for ED50 estimates. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ed50lowcutoff</code></td>
+<td>
+<p>Lower allowed limit for the ED50 estimates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>switchMod</code></td>
+<td>
+<p>If switchMod is TRUE, the algorithm substitutes a
+simpler model if (1) convergence is not achieved, (2) the information
+matrix is not positive definite at the converged values, (3) the ED50
+estimates are outside the cutoff bounds.  If switchMod is F, only
+conditions (1) or (2) cause a simpler model to be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>truncLambda</code></td>
+<td>
+<p>When <code>modType=4</code> and the converged estimate of
+the Hill parameter lambda exceeds <code>truncLambda</code>, the model fit
+is judged unstable and discarded.  Set <code>truncLambda=Inf</code> for 
+no truncation.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The partial linear method is used in nls.  If it fails, gauss-newton
+is attempted.  If both methods fail, the next simpler model is
+attempted.  For the 4-parameter model, the next step is the
+3-parameter model. For the 3-parameter model, a linear, log-linear
+log(dose+1.0), and exp(dose/max(dose)) are fit using lm, and the
+2-parm fit with the smallest residual SS is selected.  
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list assigned class "emaxalt" with the following elements:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>dm</code></td>
+<td>
+<p>Vector containing dose group means</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dsd</code></td>
+<td>
+<p>Vector containing dose group SDs</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Sparm</code></td>
+<td>
+<p>Vector of starting values for 3-parameter Emax fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitType</code></td>
+<td>
+<p>Character vector with "4", "3", "L", "LL", or "E" for
+4-Emax, 3-Emax, linear,
+log-linear, or exponential when an alternative model is selected.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vc</code></td>
+<td>
+<p>The variance-covariance matrix of the model parameters
+stored as a vector.  The length is 16, 9, 4 depending on fitType.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitpred</code></td>
+<td>
+<p>Dose groups means
+estimated from the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>residSD</code></td>
+<td>
+<p>The residual SD based on the selected model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sepred</code></td>
+<td>
+<p>SEs for estimates in
+fitpred</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sedif</code></td>
+<td>
+<p>SEs for model-based estimates of difference with
+placebo</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bigC</code></td>
+<td>
+<p>bigC= TRUE if the primary fit (from modType) yielded an 
+ED50 &gt;ED50 upper limit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>negC</code></td>
+<td>
+<p>negC= TRUE if the primary fit (from modType) yielded a
+ED50 estimate &lt; ED50 lower limit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>est4</code></td>
+<td>
+<p> 4-parmameter Emax fit (ed50,lambda,emax,e0).  NA if
+failed to converge or 3-parameter model requested.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>est3</code></td>
+<td>
+<p> 3-parmameter Emax fit (ed50,emax,e0).  NA if
+failed to converge or 4-parameter model successfully fit.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>estA</code></td>
+<td>
+<p>Alternative parameter estimates.  NA if
+Emax model fit successfully</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Neal Thomas </p>
+
+
+<h3>See Also</h3>
+
+ <p><code>emaxsim</code>, <code>nls </code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+save.seed&lt;-.Random.seed
+set.seed(12357)
+
+doselev&lt;-c(0,5,25,50,100)
+n&lt;-c(78,81,81,81,77)
+dose&lt;-rep(doselev,n)
+
+### population parameters for simulation
+e0&lt;-2.465375 
+ed50&lt;-67.481113 
+
+dtarget&lt;-100
+diftarget&lt;-9.032497
+emax&lt;-solveEmax(diftarget,dtarget,log(ed50),1,e0)
+
+sdy&lt;-7.967897
+pop&lt;-c(log(ed50),emax,e0)    
+meanresp&lt;-emaxfun(dose,pop)  
+y&lt;-rnorm(sum(n),meanresp,sdy)
+
+simout&lt;-emaxalt(y,dose)
+
+simout2&lt;-emaxalt(y,dose,modType=4)
+
+.Random.seed&lt;-save.seed
+</code></pre>
+
+
+</div>

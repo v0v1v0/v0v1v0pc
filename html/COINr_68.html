@@ -1,0 +1,154 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Impute.data.frame</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Impute a data frame</h2>
+
+<h3>Description</h3>
+
+<p>Impute a data frame using any function, either column-wise, row-wise or by the whole data frame in one
+shot.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'data.frame'
+Impute(
+  x,
+  f_i = NULL,
+  f_i_para = NULL,
+  impute_by = "column",
+  normalise_first = NULL,
+  directions = NULL,
+  warn_on_NAs = TRUE,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A data frame with only numeric columns.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f_i</code></td>
+<td>
+<p>A function to use for imputation. By default, imputation is performed by simply substituting
+the mean of non-<code>NA</code> values for each column at a time.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>f_i_para</code></td>
+<td>
+<p>Any additional parameters to pass to <code>f_i</code>, apart from <code>x</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>impute_by</code></td>
+<td>
+<p>Specifies how to impute: if <code>"column"</code>, passes each column separately as a numerical
+vector to <code>f_i</code>; if <code>"row"</code>, passes each <em>row</em> separately; and if <code>"df"</code> passes the entire data frame to
+<code>f_i</code>. The function called by <code>f_i</code> should be compatible with the type of data passed to it.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>normalise_first</code></td>
+<td>
+<p>Logical: if <code>TRUE</code>, each column is normalised using a min-max operation before
+imputation. By default this is <code>FALSE</code> unless <code>impute_by = "row"</code>. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>directions</code></td>
+<td>
+<p>A vector of directions: either -1 or 1 to indicate the direction of each column
+of <code>x</code> - this is only used if <code>normalise_first = TRUE</code>. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>warn_on_NAs</code></td>
+<td>
+<p>Logical: if <code>TRUE</code> will issue a warning if there are any <code>NA</code>s detected in the data frame
+after imputation has been applied. Set <code>FALSE</code> to suppress these warnings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments passed to or from other methods.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function only accepts data frames with all numeric columns. It imputes any <code>NA</code>s in the data frame
+by invoking the function <code>f_i</code> and any optional arguments <code>f_i_para</code> on each column at a time (if
+<code>impute_by = "column"</code>), or on each row at a time (if <code>impute_by = "row"</code>), or by passing the entire
+data frame to <code>f_i</code> if <code>impute_by = "df"</code>.
+</p>
+<p>Clearly, the function <code>f_i</code> needs to be able to accept with the data class passed to it - if
+<code>impute_by</code> is <code>"row"</code> or <code>"column"</code> this will be a numeric vector, or if <code>"df"</code> it will be a data
+frame. Moreover, this function should return a vector or data frame identical to the vector/data frame passed to
+it except for <code>NA</code> values, which can be replaced. The function <code>f_i</code> is not required to replace <em>all</em> <code>NA</code>
+values.
+</p>
+<p>COINr has several built-in imputation functions of the form <code style="white-space: pre;">⁠i_*()⁠</code> for vectors which can be called by <code>Impute()</code>. See the
+<a href="https://bluefoxr.github.io/COINr/articles/imputation.html#data-frames">online documentation</a> for more details.
+</p>
+<p>When imputing row-wise, prior normalisation of the data is recommended. This is because imputation
+will use e.g. the mean of the unit values over all indicators (columns). If the indicators are on
+very different scales, the result will likely make no sense. If the indicators are normalised first,
+more sensible results can be obtained. There are two options to pre-normalise: first is by setting
+<code>normalise_first = TRUE</code> - this is anyway the default if <code>impute_by = "row"</code>. In this case, you also
+need to supply a vector of directions. The data will then be normalised using a min-max approach
+before imputation, followed by the inverse operation to return the data to the original scales.
+</p>
+<p>Another approach which gives more control is to simply run <code>Normalise()</code> first, and work with the
+normalised data from that point onwards. In that case it is better to set <code>normalise_first = FALSE</code>,
+since by default if <code>impute_by = "row"</code> it will be set to <code>TRUE</code>.
+</p>
+<p>Checks are made on the format of the data returned by imputation functions, to ensure the
+type and that non-<code>NA</code> values have not been inadvertently altered. This latter check is allowed
+a degree of tolerance for numerical precision, controlled by the <code>sfigs</code> argument. This is because
+if the data frame is normalised, and/or depending on the imputation function, there may be a very
+small differences. By default <code>sfigs = 9</code>, meaning that the non-<code>NA</code> values pre and post-imputation
+are compared to 9 significant figures.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An imputed data frame
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># a df of random numbers
+X &lt;- as.data.frame(matrix(runif(50), 10, 5))
+
+# introduce NAs (2 in 3 of 5 cols)
+X[sample(1:10, 2), 1] &lt;- NA
+X[sample(1:10, 2), 3] &lt;- NA
+X[sample(1:10, 2), 5] &lt;- NA
+
+# impute using column mean
+Impute(X, f_i = "i_mean")
+
+# impute using row median (no normalisation)
+Impute(X, f_i = "i_median", impute_by = "row",
+       normalise_first = FALSE)
+
+
+</code></pre>
+
+
+</div>

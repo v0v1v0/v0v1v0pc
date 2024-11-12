@@ -1,0 +1,194 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>svyzenga</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Zenga index</h2>
+
+<h3>Description</h3>
+
+<p>Estimate the Zenga index, a measure of inequality
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">svyzenga(formula, design, ...)
+
+## S3 method for class 'survey.design'
+svyzenga(
+  formula,
+  design,
+  na.rm = FALSE,
+  deff = FALSE,
+  linearized = FALSE,
+  influence = FALSE,
+  ...
+)
+
+## S3 method for class 'svyrep.design'
+svyzenga(
+  formula,
+  design,
+  na.rm = FALSE,
+  deff = FALSE,
+  linearized = FALSE,
+  return.replicates = FALSE,
+  ...
+)
+
+## S3 method for class 'DBIsvydesign'
+svyzenga(formula, design, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>a formula specifying the income variable</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>design</code></td>
+<td>
+<p>a design object of class <code>survey.design</code> or class <code>svyrep.design</code> from the <code>survey</code> library.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>future expansion</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>na.rm</code></td>
+<td>
+<p>Should cases with missing values be dropped?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deff</code></td>
+<td>
+<p>Return the design effect (see <code>survey::svymean</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>linearized</code></td>
+<td>
+<p>Should a matrix of linearized variables be returned</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>influence</code></td>
+<td>
+<p>Should a matrix of (weighted) influence functions be returned? (for compatibility with <code>svyby</code>)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return.replicates</code></td>
+<td>
+<p>Return the replicate estimates?</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>you must run the <code>convey_prep</code> function on your survey design object immediately after creating it with the <code>svydesign</code> or <code>svrepdesign</code> function.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Object of class "<code>cvystat</code>", which are vectors with a "<code>var</code>" attribute giving the variance and a "<code>statistic</code>" attribute giving the name of the statistic.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Djalma Pessoa, Guilherme Jacob, and Anthony Damico
+</p>
+
+
+<h3>References</h3>
+
+<p>Lucio Barabesi, Giancarlo Diana and Pier Francesco Perri (2016). Linearization of inequality indices in the design-based framework. Statistics, 50(5), 1161-1172.
+DOI <a href="https://doi.org/10.1080/02331888.2015.1135924">doi:10.1080/02331888.2015.1135924</a>.
+</p>
+<p>Matti Langel and Yves Tille (2012). Inference by linearization for Zenga's new inequality index: a comparison with the Gini index.
+Metrika, 75, 1093-1110. DOI <a href="https://doi.org/10.1007/s00184-011-0369-1">doi:10.1007/s00184-011-0369-1</a>.
+</p>
+<p>Matti Langel (2012). Measuring inequality in finite population sampling.
+PhD thesis: Universite de Neuchatel,
+URL <a href="https://doc.rero.ch/record/29204/files/00002252.pdf">https://doc.rero.ch/record/29204/files/00002252.pdf</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>svygini</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(survey)
+library(laeken)
+data(eusilc) ; names( eusilc ) &lt;- tolower( names( eusilc ) )
+
+# linearized design
+des_eusilc &lt;- svydesign( ids = ~rb030 , strata = ~db040 ,  weights = ~rb050 , data = eusilc )
+des_eusilc &lt;- convey_prep(des_eusilc)
+
+svyzenga( ~eqincome , design = des_eusilc )
+
+# replicate-weighted design
+des_eusilc_rep &lt;- as.svrepdesign( des_eusilc , type = "bootstrap" )
+des_eusilc_rep &lt;- convey_prep(des_eusilc_rep)
+
+svyzenga( ~eqincome , design = des_eusilc_rep )
+
+## Not run: 
+
+# linearized design using a variable with missings
+svyzenga( ~ py010n , design = des_eusilc )
+svyzenga( ~ py010n , design = des_eusilc , na.rm = TRUE )
+# replicate-weighted design using a variable with missings
+svyzenga( ~ py010n , design = des_eusilc_rep )
+svyzenga( ~ py010n , design = des_eusilc_rep , na.rm = TRUE )
+
+# database-backed design
+library(RSQLite)
+library(DBI)
+dbfile &lt;- tempfile()
+conn &lt;- dbConnect( RSQLite::SQLite() , dbfile )
+dbWriteTable( conn , 'eusilc' , eusilc )
+
+dbd_eusilc &lt;-
+	svydesign(
+		ids = ~rb030 ,
+		strata = ~db040 ,
+		weights = ~rb050 ,
+		data="eusilc",
+		dbname=dbfile,
+		dbtype="SQLite"
+	)
+
+dbd_eusilc &lt;- convey_prep( dbd_eusilc )
+
+svyzenga( ~ eqincome , design = dbd_eusilc )
+
+dbRemoveTable( conn , 'eusilc' )
+
+dbDisconnect( conn , shutdown = TRUE )
+
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

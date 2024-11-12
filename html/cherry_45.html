@@ -1,0 +1,111 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Closure class</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Class "closure" for storing the result of the closed testing procedure</h2>
+
+<h3>Description</h3>
+
+<p>The class closure is the output of a call to <code>closed</code>. It stores the information needed to calculate confidence sets for the number of true and/or false hypotheses among a selected set.</p>
+
+
+<h3>Slots</h3>
+
+<p>These slots are not meant to be directly accessed by the user.
+</p>
+
+<dl>
+<dt>
+<code>adjusted</code>:</dt>
+<dd>
+<p>Object of class "numeric". Sores the adjusted p-values.</p>
+</dd>
+<dt>
+<code>defining</code>:</dt>
+<dd>
+<p>Object of class "integer". Stores the identifiers of the intersection hypotheses that are the defining rejections of the closed testing procedure. The identifiers should be read as binary booleans, i.e. 19 = 10011 (binary) is the intersection of the first, second and fifth elementary hypothesis.</p>
+</dd>
+<dt>
+<code>hypotheses</code>:</dt>
+<dd>
+<p>Object of class "character". Holds the names of the elementary hypotheses.</p>
+</dd>
+<dt>
+<code>alpha</code>:</dt>
+<dd>
+<p>Object of class "numeric". The type I error level chosen.</p>
+</dd>
+<dt>
+<code>max.alpha</code>:</dt>
+<dd>
+<p>Object of class "numeric". The largest value for which adjusted p-values have been calculated.</p>
+</dd>
+</dl>
+<h3>Methods</h3>
+
+
+<dl>
+<dt>show</dt>
+<dd>
+<p>(closure): Prints a brief description of the test results, including the upper bound of the number of true hypotheses and the corresponding lower bound to the number of false hypotheses among the full set.</p>
+</dd>
+<dt>summary</dt>
+<dd>
+<p>(closure): Prints the test results (as <code>show</code>) plus the defining rejections.</p>
+</dd>
+<dt>defining</dt>
+<dd>
+<p>(closure): Extracts the defining rejections as a list.</p>
+</dd>
+<dt>shortlist</dt>
+<dd>
+<p>(closure): Extracts the shortlist as a list.</p>
+</dd>
+<dt>hypotheses</dt>
+<dd>
+<p>(closure): Extracts the hypotheses slot.</p>
+</dd>
+</dl>
+<h3>Author(s)</h3>
+
+<p>Jelle Goeman: <a href="mailto:j.j.goeman@lumc.nl">j.j.goeman@lumc.nl</a></p>
+
+
+<h3>See Also</h3>
+
+<p><code>closed</code>, <code>pick</code>.</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">  # Example: the birthwt data set from the MASS library
+  # We want to find variables associated with low birth weight
+  library(MASS)
+  fullfit &lt;- glm(low~age+lwt+race+smoke+ptl+ht+ui+ftv, family=binomial, data=birthwt)
+  hypotheses &lt;- c("age", "lwt", "race", "smoke", "ptl", "ht", "ui", "ftv")
+
+  # Define the local test to be used in the closed testing procedure
+  mytest &lt;- function(hyps) {
+    others &lt;- setdiff(hypotheses, hyps)
+    form &lt;- formula(paste(c("low~",  paste(c("1", others), collapse="+"))))
+    anov &lt;- anova(glm(form, data=birthwt, family=binomial), fullfit, test="Chisq")
+    res &lt;- anov$"Pr("[2]                    # for R &gt;= 2.14.0
+    if (is.null(res)) res &lt;- anov$"P("[2]   # earlier versions
+    res
+  }
+
+  # perform the closed testing procedure
+  cl &lt;- closed(mytest, hypotheses)
+  summary(cl)
+  defining(cl)
+  shortlist(cl)
+  hypotheses(cl)
+
+  # how many variables among a chosen set are associated with the response?
+  pick(cl, c("ht", "lwt", "smoke", "ui"))
+</code></pre>
+
+
+</div>

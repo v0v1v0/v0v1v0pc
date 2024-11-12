@@ -1,0 +1,1082 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>gdm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+General Diagnostic Model
+</h2>
+
+<h3>Description</h3>
+
+<p>This function estimates the general diagnostic model
+(von Davier, 2008; Xu &amp; von Davier, 2008) which handles
+multidimensional item response models with ordered discrete
+or continuous latent variables for polytomous item
+responses.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">gdm( data, theta.k, irtmodel="2PL", group=NULL, weights=rep(1, nrow(data)),
+    Qmatrix=NULL, thetaDes=NULL, skillspace="loglinear",
+    b.constraint=NULL, a.constraint=NULL,
+    mean.constraint=NULL, Sigma.constraint=NULL, delta.designmatrix=NULL,
+    standardized.latent=FALSE, centered.latent=FALSE,
+    centerintercepts=FALSE, centerslopes=FALSE,
+    maxiter=1000,  conv=1e-5, globconv=1e-5, msteps=4, convM=.0005,
+    decrease.increments=FALSE, use.freqpatt=FALSE, progress=TRUE,
+    PEM=FALSE, PEM_itermax=maxiter, ...)
+
+## S3 method for class 'gdm'
+summary(object, file=NULL, ...)
+
+## S3 method for class 'gdm'
+print(x, ...)
+
+## S3 method for class 'gdm'
+plot(x, perstype="EAP", group=1, barwidth=.1, histcol=1,
+       cexcor=3, pchpers=16, cexpers=.7, ... )
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+
+<p>An <code class="reqn">N \times I</code> matrix of polytomous item
+responses with categories <code class="reqn">k=0,1,...,K</code>
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta.k</code></td>
+<td>
+
+<p>In the one-dimensional case it must be a vector.
+For multidimensional models it has to be a list
+of skill vectors if the theta grid differs between
+dimensions. If not, a vector input can be supplied.
+If an estimated skillspace (<code>skillspace="est"</code> should be estimated,
+a vector or a matrix <code>theta.k</code> will be used as initial values of the estimated
+<code class="reqn">\bold{\theta}</code> grid.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>irtmodel</code></td>
+<td>
+
+<p>The default <code>2PL</code> corresponds to the model
+where item slopes on dimensions are equal for all
+item categories. If item-category slopes should
+be estimated, use <code>2PLcat</code>. If no item slopes
+should be estimated then <code>1PL</code> can be selected.
+Note that fixed item slopes can be specified in
+the Q-matrix (argument <code>Qmatrix</code>).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>group</code></td>
+<td>
+
+<p>An optional vector of group identifiers for
+multiple group estimation.
+For <code>plot.gdm</code> it is an integer indicating which
+group should be used for plotting.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+
+<p>An optional vector of sample weights
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Qmatrix</code></td>
+<td>
+
+<p>An optional array of dimension <code class="reqn">I \times D \times K</code>
+which indicates pre-specified item loadings
+on dimensions. The default for category <code class="reqn">k</code> is the score <code class="reqn">k</code>, i.e.
+the scoring in the (generalized) partial credit model.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thetaDes</code></td>
+<td>
+
+<p>A design matrix for specifying nonlinear item response
+functions (see Example 1, Models 4 and 5)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>skillspace</code></td>
+<td>
+
+<p>The parametric assumption of the skillspace.
+If <code>skillspace="normal"</code> then a univariate or
+multivariate normal distribution is assumed.
+The default <code>"loglinear"</code> corresponds to log-linear
+smoothing of the skillspace distribution (Xu &amp; von Davier, 2008).
+If <code>skillspace="full"</code>, then all probabilities of the skill space
+are nonparametrically estimated. If <code>skillspace="est"</code>, then the
+<code class="reqn">\bold{\theta}</code> distribution vectors will be estimated
+(see Details and Examples 4 and 5; Bartolucci, 2007).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>b.constraint</code></td>
+<td>
+
+<p>In this optional matrix with <code class="reqn">C_b</code> rows and three columns,
+<code class="reqn">C_b</code> item intercepts <code class="reqn">b_{ik}</code> can be fixed.
+1st column: item index, 2nd column: category index,
+3rd column: fixed item thresholds
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>a.constraint</code></td>
+<td>
+
+<p>In this optional matrix with <code class="reqn">C_a</code> rows and four columns,
+<code class="reqn">C_a</code> item intercepts <code class="reqn">a_{idk}</code> can be fixed.
+1st column: item index, 2nd column: dimension index,
+3rd column: category index, 4th column: fixed item slopes <br></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mean.constraint</code></td>
+<td>
+<p>A <code class="reqn">C \times 3</code> matrix for
+constraining <code class="reqn">C</code> means in the
+normal distribution assumption (<code>skillspace="normal"</code>).
+1st column: Dimension, 2nd column: Group, 3rd column: Value
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Sigma.constraint</code></td>
+<td>
+<p>A <code class="reqn">C \times 4</code> matrix for
+constraining <code class="reqn">C</code> covariances in the
+normal distribution assumption (<code>skillspace="normal"</code>).
+1st column: Dimension 1, 2nd column: Dimension 2,
+3rd column: Group, 4th column: Value
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta.designmatrix</code></td>
+<td>
+
+<p>The design matrix of <code class="reqn">\delta</code> parameters
+for the reduced skillspace estimation (see Xu &amp;
+von Davier, 2008)
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>standardized.latent</code></td>
+<td>
+<p>A logical indicating whether in a uni- or multidimensional
+model all latent variables of the first group should be normally distributed
+and standardized. The default is <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>centered.latent</code></td>
+<td>
+
+<p>A logical indicating whether in a uni- or multidimensional
+model all latent variables of the first group should be normally
+distributed and do have zero means? The default is <code>FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>centerintercepts</code></td>
+<td>
+
+<p>A logical indicating whether intercepts should be centered to have a
+mean of 0 for all dimensions. This argument does not (yet) work properly
+for varying numbers of item categories.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>centerslopes</code></td>
+<td>
+
+<p>A logical indicating whether item slopes should be centered to have
+a mean of 1 for all dimensions. This argument only works for
+<code>irtmodel="2PL"</code>. The default is <code>FALSE</code>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxiter</code></td>
+<td>
+
+<p>Maximum number of iterations
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conv</code></td>
+<td>
+
+<p>Convergence criterion for item parameters and
+distribution parameters
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>globconv</code></td>
+<td>
+
+<p>Global deviance convergence criterion
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>msteps</code></td>
+<td>
+
+<p>Maximum number of M steps in estimating <code class="reqn">b</code> and
+<code class="reqn">a</code> item parameters. The default is to use 4 M steps.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>convM</code></td>
+<td>
+
+<p>Convergence criterion in M step
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>decrease.increments</code></td>
+<td>
+<p>Should in the M step the increments
+of <code class="reqn">a</code> and <code class="reqn">b</code> parameters decrease during iterations?
+The default is <code>FALSE</code>. If there is an increase in deviance
+during estimation, setting <code>decrease.increments</code> to <code>TRUE</code>
+is recommended.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use.freqpatt</code></td>
+<td>
+
+<p>A logical indicating whether frequencies of unique item response patterns
+should be used. In case of large data set <code>use.freqpatt=TRUE</code>
+can speed calculations (depending on the problem).
+Note that in this case, not all person parameters are calculated
+as usual in the output.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>progress</code></td>
+<td>
+
+<p>An optional logical indicating whether the function should print the
+progress of iteration in the estimation process.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PEM</code></td>
+<td>
+<p>Logical indicating whether the P-EM acceleration should be
+applied (Berlinet &amp; Roland, 2012).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PEM_itermax</code></td>
+<td>
+<p>Number of iterations in which the P-EM method should be
+applied.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>A required object of class <code>gdm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>file</code></td>
+<td>
+<p>Optional file name for a file in which <code>summary</code>
+should be sinked.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A required object of class <code>gdm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>perstype</code></td>
+<td>
+<p>Person parameter estimate type. Can be either
+<code>"EAP"</code>, <code>"MAP"</code> or <code>"MLE"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>barwidth</code></td>
+<td>
+<p>Bar width in <code>plot.gdm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>histcol</code></td>
+<td>
+<p>Color of histogram bars in <code>plot.gdm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cexcor</code></td>
+<td>
+<p>Font size for print of correlation in <code>plot.gdm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pchpers</code></td>
+<td>
+<p>Point type for scatter plot of person
+parameters in <code>plot.gdm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cexpers</code></td>
+<td>
+<p>Point size for scatter plot of person
+parameters in <code>plot.gdm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Optional parameters to be passed to or from other
+methods will be ignored.  </p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Case <code>irtmodel="1PL"</code>: <br>
+Equal item slopes of 1 are assumed in this model. Therefore,
+it corresponds to a generalized multidimensional Rasch model.
+</p>
+<p style="text-align: center;"><code class="reqn">logit P( X_{nj}=k | \theta_n )=b_{j0} +
+    \sum_d q_{jdk} \theta_{nd} </code>
+</p>
+
+<p>The Q-matrix entries <code class="reqn">q_{jdk}</code> are pre-specified by the user.
+</p>
+<p>Case <code>irtmodel="2PL"</code>: <br>
+For each item and each dimension, different item slopes <code class="reqn">a_{jd}</code>
+are estimated:
+</p>
+<p style="text-align: center;"><code class="reqn">logit P( X_{nj}=k | \theta_n )=b_{j0} +
+    \sum_d a_{jd} q_{jdk} \theta_{nd} </code>
+</p>
+
+<p>Case <code>irtmodel="2PLcat"</code>: <br>
+For each item, each dimension and each category,
+different item slopes <code class="reqn">a_{jdk}</code>
+are estimated:
+</p>
+<p style="text-align: center;"><code class="reqn">logit P( X_{nj}=k | \theta_n )=b_{j0} +
+    \sum_d a_{jdk} q_{jdk} \theta_{nd} </code>
+</p>
+
+<p>Note that this model can be generalized to include terms of
+any transformation <code class="reqn">t_h</code> of the <code class="reqn">\theta_n</code> vector (e.g. quadratic terms,
+step functions or interaction) such that the model can be formulated as
+</p>
+<p style="text-align: center;"><code class="reqn">logit P( X_{nj}=k | \theta_n )=b_{j0} +
+    \sum_h a_{jhk} q_{jhk} t_h( \theta_{n} ) </code>
+</p>
+
+<p>In general, the number of functions <code class="reqn">t_1, ..., t_H</code> will be
+larger than the <code class="reqn">\theta</code> dimension of <code class="reqn">D</code>.
+</p>
+<p>The estimation follows an EM algorithm as described in von Davier and
+Yamamoto (2004) and von Davier (2008).
+</p>
+<p>In case of <code>skillspace="est"</code>, the <code class="reqn">\bold{\theta}</code> vectors
+(the grid of the theta distribution) are estimated (Bartolucci, 2007;
+Bacci, Bartolucci &amp; Gnaldi, 2012). This model is called a multidimensional
+latent class item response model.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>gdm</code>. The list contains the
+following entries:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>item</code></td>
+<td>
+<p>Data frame with item parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>person</code></td>
+<td>
+<p>Data frame with person parameters:
+<code>EAP</code> denotes the mean of the individual posterior distribution,
+<code>SE.EAP</code> the corresponding standard error,
+<code>MLE</code> the maximum likelihood estimate at <code>theta.k</code>
+and <code>MAP</code> the mode of the posterior distribution
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>EAP.rel</code></td>
+<td>
+<p>Reliability of the EAP</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>deviance</code></td>
+<td>
+<p>Deviance</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ic</code></td>
+<td>
+<p>Information criteria, number of estimated parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>b</code></td>
+<td>
+<p>Item intercepts <code class="reqn">b_{jk}</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>se.b</code></td>
+<td>
+<p>Standard error of item intercepts <code class="reqn">b_{jk}</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>a</code></td>
+<td>
+<p>Item slopes <code class="reqn">a_{jd}</code> resp. <code class="reqn">a_{jdk}</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>se.a</code></td>
+<td>
+<p>Standard error of item slopes <code class="reqn">a_{jd}</code> resp. <code class="reqn">a_{jdk}</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>itemfit.rmsea</code></td>
+<td>
+<p>The RMSEA item fit index (see <code>itemfit.rmsea</code>).
+This entry comes as a list with total and group-wise item fit
+statistics.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mean.rmsea</code></td>
+<td>
+<p>Mean of RMSEA item fit indexes.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Qmatrix</code></td>
+<td>
+<p>Used Q-matrix</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pi.k</code></td>
+<td>
+<p>Trait distribution</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mean.trait</code></td>
+<td>
+<p>Means of trait distribution</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sd.trait</code></td>
+<td>
+<p>Standard deviations of trait distribution</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>skewness.trait</code></td>
+<td>
+<p>Skewnesses of trait distribution</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>correlation.trait</code></td>
+<td>
+<p>List of correlation matrices of trait distribution
+corresponding to each group</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pjk</code></td>
+<td>
+<p>Item response probabilities evaluated at grid <code>theta.k</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n.ik</code></td>
+<td>
+<p>An array of expected counts <code class="reqn">n_{cikg}</code> of ability class <code class="reqn">c</code>
+at item <code class="reqn">i</code> at category <code class="reqn">k</code> in group <code class="reqn">g</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>G</code></td>
+<td>
+<p>Number of groups</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>D</code></td>
+<td>
+<p>Number of dimension of <code class="reqn">\bold{\theta}</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>I</code></td>
+<td>
+<p>Number of items</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>N</code></td>
+<td>
+<p>Number of persons</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>delta</code></td>
+<td>
+<p>Parameter estimates for skillspace representation</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covdelta</code></td>
+<td>
+<p>Covariance matrix of parameter estimates for
+skillspace representation</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>Original data frame</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>group.stat</code></td>
+<td>
+<p>Group statistics (sample sizes, group labels)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p.xi.aj</code></td>
+<td>
+<p>Individual likelihood</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>posterior</code></td>
+<td>
+<p>Individual posterior distribution</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>skill.levels</code></td>
+<td>
+<p>Number of skill levels per dimension</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K.item</code></td>
+<td>
+<p>Maximal category per item</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>theta.k</code></td>
+<td>
+<p>Used theta design or estimated theta trait distribution
+in case of <code>skillspace="est"</code> </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thetaDes</code></td>
+<td>
+<p>Used theta design for item responses</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>se.theta.k</code></td>
+<td>
+<p>Estimated standard errors of <code>theta.k</code> if it is
+estimated</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>Info about computation time</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>skillspace</code></td>
+<td>
+<p>Used skillspace parametrization</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iter</code></td>
+<td>
+<p>Number of iterations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>converged</code></td>
+<td>
+<p>Logical indicating whether convergence was achieved.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>Object of class <code>gdm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Object of class <code>gdm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>perstype</code></td>
+<td>
+<p>Person paramter estimate type. Can be either
+<code>"EAP"</code>, <code>"MAP"</code> or <code>"MLE"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>group</code></td>
+<td>
+<p>Group which should be used for <code>plot.gdm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>barwidth</code></td>
+<td>
+<p>Bar width in <code>plot.gdm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>histcol</code></td>
+<td>
+<p>Color of histogram bars in <code>plot.gdm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cexcor</code></td>
+<td>
+<p>Font size for print of correlation in <code>plot.gdm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pchpers</code></td>
+<td>
+<p>Point type for scatter plot of person
+parameters in <code>plot.gdm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cexpers</code></td>
+<td>
+<p>Point size for scatter plot of person
+parameters in <code>plot.gdm</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Optional parameters to be passed to or from other
+methods will be ignored.  </p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Bacci, S., Bartolucci, F., &amp; Gnaldi, M. (2012).
+A class of multidimensional latent class IRT models for ordinal
+polytomous item responses. <em>arXiv preprint</em>, <em>arXiv:1201.4667</em>.
+</p>
+<p>Bartolucci, F. (2007). A class of multidimensional IRT models for testing
+unidimensionality and clustering items. <em>Psychometrika, 72</em>, 141-157.
+</p>
+<p>Berlinet, A. F., &amp; Roland, C. (2012).
+Acceleration of the EM algorithm: P-EM versus epsilon algorithm.
+<em>Computational Statistics &amp; Data Analysis</em>, <b>56</b>(12), 4122-4137.
+</p>
+<p>von Davier, M. (2008). A general diagnostic model applied to
+language testing data. <em>British Journal
+of Mathematical and Statistical Psychology, 61</em>, 287-307.
+</p>
+<p>von Davier, M., &amp; Yamamoto, K. (2004). Partially observed mixtures of IRT models:
+An extension of the generalized partial-credit model.
+<em>Applied Psychological Measurement, 28</em>, 389-406.
+</p>
+<p>Xu, X., &amp; von Davier, M. (2008). <em>Fitting the structured general diagnostic
+model to NAEP data</em>. ETS Research Report ETS RR-08-27. Princeton, ETS.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Cognitive diagnostic models for dichotomous data can be estimated
+with <code>din</code> (DINA or DINO model) or <code>gdina</code>
+(GDINA model, which contains many CDMs as special cases).
+</p>
+<p>For assessment of model fit see <code>modelfit.cor.din</code> and
+<code>anova.gdm</code>.
+</p>
+<p>See <code>itemfit.sx2</code> for item fit statistics.
+</p>
+<p>For the estimation of the multidimensional
+latent class item response model see the <span class="pkg">MultiLCIRT</span> package
+and <b>sirt</b> package (function <code>sirt::rasch.mirtlc</code>).
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#############################################################################
+# EXAMPLE 1: Fraction Dataset 1
+#      Unidimensional Models for dichotomous data
+#############################################################################
+
+data(data.fraction1, package="CDM")
+dat &lt;- data.fraction1$data
+theta.k &lt;- seq( -6, 6, len=15 )   # discretized ability
+
+#***
+# Model 1: Rasch model (normal distribution)
+mod1 &lt;- CDM::gdm( dat, irtmodel="1PL", theta.k=theta.k, skillspace="normal",
+               centered.latent=TRUE)
+summary(mod1)
+plot(mod1)
+
+#***
+# Model 2: Rasch model (log-linear smoothing)
+# set the item difficulty of the 8th item to zero
+b.constraint &lt;- matrix( c(8,1,0), 1, 3 )
+mod2 &lt;- CDM::gdm( dat, irtmodel="1PL", theta.k=theta.k,
+               skillspace="loglinear", b.constraint=b.constraint  )
+summary(mod2)
+
+#***
+# Model 3: 2PL model
+mod3 &lt;- CDM::gdm( dat, irtmodel="2PL", theta.k=theta.k,
+               skillspace="normal", standardized.latent=TRUE  )
+summary(mod3)
+
+## Not run: 
+#***
+# Model 4: include quadratic term in item response function
+#   using the argument decrease.increments=TRUE leads to a more
+#   stable estimate
+thetaDes &lt;- cbind( theta.k, theta.k^2 )
+colnames(thetaDes) &lt;- c( "F1", "F1q" )
+mod4 &lt;- CDM::gdm( dat, irtmodel="2PL", theta.k=theta.k,
+          thetaDes=thetaDes, skillspace="normal",
+          standardized.latent=TRUE, decrease.increments=TRUE)
+summary(mod4)
+
+#***
+# Model 5: step function for ICC
+#          two different probabilities theta &lt; 0 and theta &gt; 0
+thetaDes &lt;- matrix( 1*(theta.k&gt;0), ncol=1 )
+colnames(thetaDes) &lt;- c( "Fgrm1" )
+mod5 &lt;- CDM::gdm( dat, irtmodel="2PL", theta.k=theta.k,
+          thetaDes=thetaDes, skillspace="normal" )
+summary(mod5)
+
+#***
+# Model 6: DINA model with din function
+mod6 &lt;- CDM::din( dat, q.matrix=matrix( 1, nrow=ncol(dat),ncol=1 ) )
+summary(mod6)
+
+#***
+# Model 7: Estimating a version of the DINA model with gdm
+theta.k &lt;- c(-.5,.5)
+mod7 &lt;- CDM::gdm( dat, irtmodel="2PL", theta.k=theta.k, skillspace="loglinear" )
+summary(mod7)
+
+#############################################################################
+# EXAMPLE 2: Cultural Activities - data.Students
+#      Unidimensional Models for polytomous data
+#############################################################################
+
+data(data.Students, package="CDM")
+dat &lt;- data.Students
+
+dat &lt;- dat[, grep( "act", colnames(dat) ) ]
+theta.k &lt;- seq( -4, 4, len=11 )   # discretized ability
+
+#***
+# Model 1: Partial Credit Model (PCM)
+mod1 &lt;- CDM::gdm( dat, irtmodel="1PL", theta.k=theta.k, skillspace="normal",
+           centered.latent=TRUE)
+summary(mod1)
+plot(mod1)
+
+#***
+# Model 1b: PCM using frequency patterns
+mod1b &lt;- CDM::gdm( dat, irtmodel="1PL", theta.k=theta.k, skillspace="normal",
+           centered.latent=TRUE, use.freqpatt=TRUE)
+summary(mod1b)
+
+#***
+# Model 2: PCM with two groups
+mod2 &lt;- CDM::gdm( dat, irtmodel="1PL", theta.k=theta.k,
+            group=CDM::data.Students$urban + 1, skillspace="normal",
+            centered.latent=TRUE)
+summary(mod2)
+
+#***
+# Model 3: PCM with loglinear smoothing
+b.constraint &lt;- matrix( c(1,2,0), ncol=3 )
+mod3 &lt;- CDM::gdm( dat, irtmodel="1PL", theta.k=theta.k,
+    skillspace="loglinear", b.constraint=b.constraint )
+summary(mod3)
+
+#***
+# Model 4: Model with pre-specified item weights in Q-matrix
+Qmatrix &lt;- array( 1, dim=c(5,1,2) )
+Qmatrix[,1,2] &lt;- 2     # default is score 2 for category 2
+# now change the scoring of category 2:
+Qmatrix[c(2,4),1,1] &lt;- .74
+Qmatrix[c(2,4),1,2] &lt;- 2.3
+# for items 2 and 4 the score for category 1 is .74 and for category 2 it is 2.3
+mod4 &lt;- CDM::gdm( dat, irtmodel="1PL", theta.k=theta.k, Qmatrix=Qmatrix,
+           skillspace="normal", centered.latent=TRUE)
+summary(mod4)
+
+#***
+# Model 5: Generalized partial credit model
+mod5 &lt;- CDM::gdm( dat, irtmodel="2PL", theta.k=theta.k,
+          skillspace="normal", standardized.latent=TRUE )
+summary(mod5)
+
+#***
+# Model 6: Item-category slope estimation
+mod6 &lt;- CDM::gdm( dat, irtmodel="2PLcat", theta.k=theta.k,  skillspace="normal",
+                 standardized.latent=TRUE, decrease.increments=TRUE)
+summary(mod6)
+
+#***
+# Models 7: items with different number of categories
+dat0 &lt;- dat
+dat0[ paste(dat0[,1])==2, 1 ] &lt;- 1 # 1st item has only two categories
+dat0[ paste(dat0[,3])==2, 3 ] &lt;- 1 # 3rd item has only two categories
+
+# Model 7a: PCM
+mod7a &lt;- CDM::gdm( dat0, irtmodel="1PL", theta.k=theta.k,  centered.latent=TRUE )
+summary(mod7a)
+
+# Model 7b: Item category slopes
+mod7b &lt;- CDM::gdm( dat0, irtmodel="2PLcat", theta.k=theta.k,
+                 standardized.latent=TRUE, decrease.increments=TRUE )
+summary(mod7b)
+
+#############################################################################
+# EXAMPLE 3: Fraction Dataset 2
+#      Multidimensional Models for dichotomous data
+#############################################################################
+
+data(data.fraction2, package="CDM")
+dat &lt;- data.fraction2$data
+Qmatrix &lt;- data.fraction2$q.matrix3
+
+#***
+# Model 1: One-dimensional Rasch model
+theta.k &lt;- seq( -4, 4, len=11 )   # discretized ability
+mod1 &lt;- CDM::gdm( dat, irtmodel="1PL", theta.k=theta.k,  centered.latent=TRUE)
+summary(mod1)
+plot(mod1)
+
+#***
+# Model 2: One-dimensional 2PL model
+mod2 &lt;- CDM::gdm( dat, irtmodel="2PL", theta.k=theta.k, standardized.latent=TRUE)
+summary(mod2)
+plot(mod2)
+
+#***
+# Model 3: 3-dimensional Rasch Model (normal distribution)
+mod3 &lt;- CDM::gdm( dat, irtmodel="1PL", theta.k=theta.k, Qmatrix=Qmatrix,
+            centered.latent=TRUE,  globconv=5*1E-3, conv=1E-4 )
+summary(mod3)
+
+#***
+# Model 4: 3-dimensional Rasch model (loglinear smoothing)
+# set some item parameters of items 4,1 and 2 to zero
+b.constraint &lt;- cbind( c(4,1,2), 1, 0 )
+mod4 &lt;- CDM::gdm( dat, irtmodel="1PL", theta.k=theta.k, Qmatrix=Qmatrix,
+              b.constraint=b.constraint, skillspace="loglinear" )
+summary(mod4)
+
+#***
+# Model 5: define a different theta grid for each dimension
+theta.k &lt;- list( "Dim1"=seq( -5, 5, len=11 ),
+                 "Dim2"=seq(-5,5,len=8),
+                 "Dim3"=seq( -3,3,len=6) )
+mod5 &lt;- CDM::gdm( dat, irtmodel="1PL", theta.k=theta.k, Qmatrix=Qmatrix,
+                 b.constraint=b.constraint,  skillspace="loglinear")
+summary(mod5)
+
+#***
+# Model 6: multdimensional 2PL model (normal distribution)
+theta.k &lt;- seq( -5, 5, len=13 )
+a.constraint &lt;- cbind( c(8,1,3), 1:3, 1, 1 ) # fix some slopes to 1
+mod6 &lt;- CDM::gdm( dat, irtmodel="2PL", theta.k=theta.k,  Qmatrix=Qmatrix,
+            centered.latent=TRUE, a.constraint=a.constraint, decrease.increments=TRUE,
+            skillspace="normal")
+summary(mod6)
+
+#***
+# Model 7: multdimensional 2PL model (loglinear distribution)
+a.constraint &lt;- cbind( c(8,1,3), 1:3, 1, 1 )
+b.constraint &lt;- cbind( c(8,1,3), 1, 0 )
+mod7 &lt;- CDM::gdm( dat, irtmodel="2PL", theta.k=theta.k,  Qmatrix=Qmatrix,
+               b.constraint=b.constraint,  a.constraint=a.constraint,
+               decrease.increments=FALSE, skillspace="loglinear")
+summary(mod7)
+
+#############################################################################
+# EXAMPLE 4: Unidimensional latent class 1PL IRT model
+#############################################################################
+
+# simulate data
+set.seed(754)
+I &lt;- 20     # number of items
+N &lt;- 2000   # number of persons
+theta &lt;- c( -2, 0, 1, 2 )
+theta &lt;- rep( theta, c(N/4,N/4, 3*N/8, N/8)  )
+b &lt;- seq(-2,2,len=I)
+library(sirt)   # use function sim.raschtype from sirt package
+dat &lt;- sirt::sim.raschtype( theta=theta, b=b )
+
+theta.k &lt;- seq(-1, 1, len=4)      # initial vector of theta
+# estimate model
+mod1 &lt;- CDM::gdm( dat, theta.k=theta.k, skillspace="est", irtmodel="1PL",
+            centerintercepts=TRUE, maxiter=200)
+summary(mod1)
+  ##   Estimated Skill Distribution
+  ##         F1    pi.k
+  ##   1 -1.988 0.24813
+  ##   2 -0.055 0.23313
+  ##   3  0.940 0.40059
+  ##   4  2.000 0.11816
+
+#############################################################################
+# EXAMPLE 5: Multidimensional latent class IRT model
+#############################################################################
+
+# We simulate a two-dimensional IRT model in which theta vectors
+# are observed at a fixed discrete grid (see below).
+
+# simulate data
+set.seed(754)
+I &lt;- 13     # number of items
+N &lt;- 2400   # number of persons
+
+# simulate Dimension 1 at 4 discrete theta points
+theta &lt;- c( -2, 0, 1, 2 )
+theta &lt;- rep( theta, c(N/4,N/4, 3*N/8, N/8)  )
+b &lt;- seq(-2,2,len=I)
+library(sirt)  # use simulation function from sirt package
+dat1 &lt;- sirt::sim.raschtype( theta=theta, b=b )
+# simulate Dimension 2 at 4 discrete theta points
+theta &lt;- c( -3, 0, 1.5, 2 )
+theta &lt;- rep( theta, c(N/4,N/4, 3*N/8, N/8)  )
+dat2 &lt;- sirt::sim.raschtype( theta=theta, b=b )
+colnames(dat2) &lt;- gsub( "I", "U", colnames(dat2))
+dat &lt;- cbind( dat1, dat2 )
+
+# define Q-matrix
+Qmatrix &lt;- matrix(0,2*I,2)
+Qmatrix[ cbind( 1:(2*I), rep(1:2, each=I) ) ] &lt;- 1
+
+theta.k &lt;- seq(-1, 1, len=4)      # initial matrix
+theta.k &lt;- cbind( theta.k, theta.k )
+colnames(theta.k) &lt;- c("Dim1","Dim2")
+
+# estimate model
+mod2 &lt;- CDM::gdm( dat, theta.k=theta.k, skillspace="est", irtmodel="1PL",
+              Qmatrix=Qmatrix, centerintercepts=TRUE)
+summary(mod2)
+  ##   Estimated Skill Distribution
+  ##     theta.k.Dim1 theta.k.Dim2    pi.k
+  ##   1       -2.022       -3.035 0.25010
+  ##   2        0.016        0.053 0.24794
+  ##   3        0.956        1.525 0.36401
+  ##   4        1.958        1.919 0.13795
+
+#############################################################################
+# EXAMPLE 6: Large-scale dataset data.mg
+#############################################################################
+
+data(data.mg, package="CDM")
+dat &lt;- data.mg[, paste0("I", 1:11 ) ]
+theta.k &lt;- seq(-6,6,len=21)
+
+#***
+# Model 1: Generalized partial credit model with multiple groups
+mod1 &lt;- CDM::gdm( dat, irtmodel="2PL", theta.k=theta.k, group=CDM::data.mg$group,
+              skillspace="normal", standardized.latent=TRUE)
+summary(mod1)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

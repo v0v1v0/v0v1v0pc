@@ -1,0 +1,454 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>clean_coordinates</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Geographic Cleaning of Coordinates from Biologic Collections</h2>
+
+<h3>Description</h3>
+
+<p>Cleaning geographic coordinates by multiple empirical tests to flag
+potentially erroneous coordinates, addressing issues common in biological
+collection databases.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">clean_coordinates(
+  x,
+  lon = "decimalLongitude",
+  lat = "decimalLatitude",
+  species = "species",
+  countries = NULL,
+  tests = c("capitals", "centroids", "equal", "gbif", "institutions", "outliers", "seas",
+    "zeros"),
+  capitals_rad = 10000,
+  centroids_rad = 1000,
+  centroids_detail = "both",
+  inst_rad = 100,
+  outliers_method = "quantile",
+  outliers_mtp = 5,
+  outliers_td = 1000,
+  outliers_size = 7,
+  range_rad = 0,
+  zeros_rad = 0.5,
+  capitals_ref = NULL,
+  centroids_ref = NULL,
+  country_ref = NULL,
+  country_refcol = "iso_a3",
+  country_buffer = NULL,
+  inst_ref = NULL,
+  range_ref = NULL,
+  seas_ref = NULL,
+  seas_scale = 50,
+  seas_buffer = NULL,
+  urban_ref = NULL,
+  aohi_rad = NULL,
+  value = "spatialvalid",
+  verbose = TRUE,
+  report = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>data.frame. Containing geographical coordinates and species names.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lon</code></td>
+<td>
+<p>character string. The column with the longitude coordinates.
+Default = “decimalLongitude”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lat</code></td>
+<td>
+<p>character string. The column with the latitude coordinates.
+Default = “decimalLatitude”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>species</code></td>
+<td>
+<p>a character string. A vector of the same length as rows in x,
+with the species identity for each record.  If NULL, <code>tests</code> must not
+include the "outliers" or "duplicates" tests.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>countries</code></td>
+<td>
+<p>a character string. The column with the country assignment
+of each record in three letter ISO code. Default = “countrycode”. If
+missing, the countries test is skipped.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tests</code></td>
+<td>
+<p>a vector of character strings, indicating which tests to run.
+See details for all tests available. Default = c("capitals", "centroids",
+"equal", "gbif", "institutions", "outliers", "seas", "zeros")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>capitals_rad</code></td>
+<td>
+<p>numeric. The radius around capital coordinates in meters.
+Default = 10000.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>centroids_rad</code></td>
+<td>
+<p>numeric. The radius around centroid coordinates in
+meters. Default = 1000.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>centroids_detail</code></td>
+<td>
+<p>a <code>character string</code>. If set to ‘country’
+only country (adm-0) centroids are tested, if set to ‘provinces’
+only province (adm-1) centroids are tested.  Default = ‘both’.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inst_rad</code></td>
+<td>
+<p>numeric. The radius around biodiversity institutions
+coordinates in metres. Default = 100.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outliers_method</code></td>
+<td>
+<p>The method used for outlier testing. See details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outliers_mtp</code></td>
+<td>
+<p>numeric. The multiplier for the interquartile range of
+the outlier test.  If NULL <code>outliers.td</code> is used.  Default = 5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outliers_td</code></td>
+<td>
+<p>numeric.  The minimum distance of a record to all other
+records of a species to be identified as outlier, in km. Default = 1000.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outliers_size</code></td>
+<td>
+<p>numerical.  The minimum number of records in a dataset
+to run the taxon-specific outlier test.  Default = 7.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>range_rad</code></td>
+<td>
+<p>buffer around natural ranges. Default = 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>zeros_rad</code></td>
+<td>
+<p>numeric. The radius around 0/0 in degrees. Default = 0.5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>capitals_ref</code></td>
+<td>
+<p>a <code>data.frame</code> with alternative reference data for
+the country capitals test. If missing, the <code>countryref</code> dataset is
+used. Alternatives must be identical in structure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>centroids_ref</code></td>
+<td>
+<p>a <code>data.frame</code> with alternative reference data for
+the centroid test. If NULL, the <code>countryref</code> dataset is used.
+Alternatives must be identical in structure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>country_ref</code></td>
+<td>
+<p>a <code>SpatVector</code> as alternative reference
+for the countries test. If NULL, the
+<code>rnaturalearth:ne_countries('medium', returnclass = "sf")</code> dataset is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>country_refcol</code></td>
+<td>
+<p>the column name in the reference dataset, containing
+the relevant ISO codes for matching. Default is to "iso_a3_eh" which
+referes to the ISO-3 codes in the reference dataset. See notes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>country_buffer</code></td>
+<td>
+<p>numeric. Units are in meters. If provided, a buffer is
+created around each country polygon.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>inst_ref</code></td>
+<td>
+<p>a <code>data.frame</code> with alternative reference data for the
+biodiversity institution test. If NULL, the <code>institutions</code> dataset is
+used.  Alternatives must be identical in structure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>range_ref</code></td>
+<td>
+<p>a <code>SpatVector</code> of species natural ranges.
+Required to include the 'ranges' test. See <code>cc_iucn</code> for
+details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seas_ref</code></td>
+<td>
+<p>a <code>SpatVector</code> as alternative reference
+for the seas test. If NULL, the rnaturalearth::ne_download(scale = 110,
+type = 'land', category = 'physical', returnclass = "sf") dataset is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seas_scale</code></td>
+<td>
+<p>The scale of the default landmass reference. Must be one of
+10, 50, 110. Higher numbers equal higher detail. Default = 50.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seas_buffer</code></td>
+<td>
+<p>numeric. Units are in meters. If provided, a buffer is
+created around sea polygon.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>urban_ref</code></td>
+<td>
+<p>a <code>SpatVector</code> as alternative reference
+for the urban test. If NULL, the test is skipped. See details for a
+reference gazetteers.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>aohi_rad</code></td>
+<td>
+<p>numeric. The radius around aohi coordinates in
+meters. Default = 1000.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>value</code></td>
+<td>
+<p>a character string defining the output value. See the value
+section for details. one of ‘spatialvalid’, ‘summary’,
+‘clean’. Default = ‘<code>spatialvalid</code>’.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>logical. If TRUE reports the name of the test and the number
+of records flagged.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>report</code></td>
+<td>
+<p>logical or character.  If TRUE a report file is written to the
+working directory, summarizing the cleaning results. If a character, the
+path to which the file should be written.  Default = FALSE.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function needs all coordinates to be formally valid according to WGS84.
+If the data contains invalid coordinates, the function will stop and return a
+vector flagging the invalid records. TRUE = non-problematic coordinate, FALSE
+= potentially problematic coordinates.
+</p>
+
+<ul>
+<li>
+<p> capitals tests a radius around adm-0 capitals. The
+radius is <code>capitals_rad</code>.
+</p>
+</li>
+<li>
+<p> centroids tests a radius around country centroids.
+The radius is <code>centroids_rad</code>.
+</p>
+</li>
+<li>
+<p> countries tests if coordinates are from the
+country indicated in the country column.  <em>Switched off by default.</em>
+</p>
+</li>
+<li>
+<p> duplicates tests for duplicate records. This
+checks for identical coordinates or if a species vector is provided for
+identical coordinates within a species. All but the first records are flagged
+as duplicates. <em>Switched off by default.</em>
+</p>
+</li>
+<li>
+<p> equal tests for equal absolute longitude and latitude.
+</p>
+</li>
+<li>
+<p> gbif tests a one-degree radius around the GBIF
+headquarters in Copenhagen, Denmark.
+</p>
+</li>
+<li>
+<p> institutions tests a radius around known
+biodiversity institutions from <code>instiutions</code>. The radius is
+<code>inst_rad</code>.
+</p>
+</li>
+<li>
+<p> outliers tests each species for outlier records.
+Depending on the <code>outliers_mtp</code> and <code>outliers.td</code> arguments either
+flags records that are a minimum distance away from all other records of this
+species (<code>outliers_td</code>) or records that are outside a multiple of the
+interquartile range of minimum distances to the next neighbour of this
+species (<code>outliers_mtp</code>). Three different methods are available for the
+outlier test: "If “outlier” a boxplot method is used and records are
+flagged as outliers if their <em>mean</em> distance to all other records of the
+same species is larger than mltpl * the interquartile range of the mean
+distance of all records of this species. If “mad” the median absolute
+deviation is used. In this case a record is flagged as outlier, if the
+<em>mean</em> distance to all other records of the same species is larger than
+the median of the mean distance of all points plus/minus the mad of the mean
+distances of all records of the species * mltpl. If “distance” records
+are flagged as outliers, if the <em>minimum</em> distance to the next record of
+the species is &gt; <code>tdi</code>.
+</p>
+</li>
+<li>
+<p> ranges tests if records fall within provided natural range polygons on
+a per species basis. See <code>cc_iucn</code> for details.
+</p>
+</li>
+<li>
+<p> seas tests if coordinates fall into the ocean.
+</p>
+</li>
+<li>
+<p> urban tests if coordinates are from urban areas.
+<em>Switched off by default</em>
+</p>
+</li>
+<li>
+<p> validity checks if coordinates correspond to a lat/lon coordinate reference system.
+This test is always on, since all records need to pass for any other test to
+run.
+</p>
+</li>
+<li>
+<p> zeros tests for plain zeros, equal latitude and
+longitude and a radius around the point 0/0. The radius is <code>zeros.rad</code>.
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p>Depending on the output argument:
+</p>
+
+<dl>
+<dt>“spatialvalid”</dt>
+<dd>
+<p>an object of class <code>spatialvalid</code> similar to x
+with one column added for each test. TRUE = clean coordinate entry, FALSE = potentially
+problematic coordinate entries.  The .summary column is FALSE if any test flagged
+the respective coordinate.</p>
+</dd>
+<dt>“flagged”</dt>
+<dd>
+<p>a logical vector with the
+same order as the input data summarizing the results of all test. TRUE =
+clean coordinate, FALSE = potentially problematic (= at least one test
+failed).</p>
+</dd>
+<dt>“clean”</dt>
+<dd>
+<p>a <code>data.frame</code> similar to x
+with potentially problematic records removed</p>
+</dd>
+</dl>
+<h3>Note</h3>
+
+<p>Always tests for coordinate validity: non-numeric or missing
+coordinates and coordinates exceeding the global extent (lon/lat, WGS84).
+See <a href="https://ropensci.github.io/CoordinateCleaner/">https://ropensci.github.io/CoordinateCleaner/</a> for more details
+and tutorials.
+</p>
+<p>The country_refcol argument allows to adapt the function to the
+structure of alternative reference datasets. For instance, for
+<code>rnaturalearth::ne_countries(scale = "small", returnclass = "sf")</code>, the default will fail,
+but country_refcol = "iso_a3" will work.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other Wrapper functions: 
+<code>clean_dataset()</code>,
+<code>clean_fossils()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+exmpl &lt;- data.frame(species = sample(letters, size = 250, replace = TRUE),
+                    decimalLongitude = runif(250, min = 42, max = 51),
+                    decimalLatitude = runif(250, min = -26, max = -11))
+
+test &lt;- clean_coordinates(x = exmpl, 
+                          tests = c("equal"))
+                                    
+## Not run: 
+#run more tests
+test &lt;- clean_coordinates(x = exmpl, 
+                          tests = c("capitals", 
+                          "centroids","equal", 
+                          "gbif", "institutions", 
+                          "outliers", "seas", 
+                          "zeros"))
+
+## End(Not run)
+                                 
+                                    
+summary(test)
+
+</code></pre>
+
+
+</div>

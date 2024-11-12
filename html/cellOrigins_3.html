@@ -1,0 +1,111 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cellOrigins-package</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Finding the most likely originating tissue(s) and developmental stage(s) of RNASeq data
+</h2>
+
+<h3>Description</h3>
+
+<p><img src="../help/figures/delphi.jpg" alt="Logo: the Pythia at Delphi."></p>
+<p><code>cellOrigins</code> compares RNASeq read coverages with in high-throughput RNA in situ hybridisation patterns for transcriptome source identification and verification. The package can identify both pure transcriptomes and mixtures of transcriptomes. Typical uses are the identification of cancer cell origins, validation of cell culture strain identities, validation of single-cell transcriptomes, and validation of identity and purity of flow-sorting and dissection sequencing products.
+</p>
+<p>The comparison of quantitative RNA sequencing coverage with thresholded, qualitative staining patterns is probabilistic. First, given the sequenced transcriptome, a prediction is made how likely each sequenced transcript would lead to a positive signal in a high-throughput in situ hybridisation experiment. The probability of staining increases with the logarithm of the sequencing coverage. This relationship was empirically found through a comparison between <em>Drosophila</em> embryo transcriptomes and RNA in situ staining results. Then, using Bayes's theorem all the genes in the simulated and observed hybridisation patterns are compared. The pattern (or linear combination of patterns) with the highest posterior probability is identified as the most likely source.
+</p>
+<p>Batteries included: the package contains a filtered high-confidence expression pattern dataset for <em>Drosophila melanogaster</em> embryos (based on BDGP insitu).
+</p>
+<p>Typical use:
+</p>
+<p>I GENERATE INPUT
+</p>
+<p>Input is RNASeq mean FPKM (fragments per kilobase per million reads). Whole-gene FPKM may  be used (as output by e.g. cufflinks/cuffquant), however assignment difficulties at overlapping transcripts and transcript isoforms reduce prediction quality. For best results use FPKM values calculated for the targets of the in situ hybridisation probes as described below:
+</p>
+<p>Step 1) Generate masking bed file – this file is included for BDGP insitu in the extdata folder. For other species align probe sequences to the target genome using BLAT (https://genome.ucsc.edu/FAQ/FAQblat.html). Convert the best-scoring alignments to a masking bed file with <code>psl_to_bed_best_score.pl</code> (https://gist.github.com/davetang/7314846).
+Then sort with <code>bedtools sort</code> (http://bedtools.readthedocs.org/).
+</p>
+<p>Step 2) Get coverages. Use Bedtools with the masking bed file to extract the mean sequencing covereage from wig files in the in situ probed regions:
+</p>
+<p><code>bedtools map -a sorted_probes.bed -b sequenced.wig -o max -c 4 &gt;insitu_high_confidence.tsv</code>
+</p>
+<p>Use the output tab separated values file as input for the function <code>seqVsInsitu</code>.
+</p>
+<p>II SOURCE IDENTIFICATION
+</p>
+<p><code>seqVsInsitu</code> and <code>iterating_seqVsInsitu</code> calculate the probability for each in situ expression pattern that it is produced by the same gene expression patterns as the sequencing data. If you believe you have a mixed input, allow combined patterns from several target tissues. This is computationally expensive for more than two tissues. <code>iterating_seqVsInsitu</code> is faster thorugh calculating all combinations for n==2 and then using only the top tissues for n==3. The top tissues of n==3 is then are used for n==4 etc.
+</p>
+<p>III INTERPRETATION
+</p>
+<p><code>seqVsInsitu</code> and <code>iterating_seqVsInsitu</code> return the terms or term combinations together with a log2 probability score for each. They also produce two diagnostic graphs. If multiple tissues contribute to the sample, the scatterplot should show a number of clusters at low n. As n increases, the clusters should merge into just two clusters at the ideal value of n. The line graph shows the log2 probability distribution.
+</p>
+<p><code>discovery_probability</code> if RNASeq and in situ hybridisation data from the same tissue are paired, then with increasing FPKM the probability of RNA in situ discovery should increase logarithmically. If the tissue sources do not match, no such relationship should be visible. Using this function, if the tissue combination in the argument is a match, there should by a nearly linearly increasing relationship in the log-plot, with saturation at very high FPKM values only.
+</p>
+
+
+<h3>Details</h3>
+
+
+<table>
+<tr>
+<td style="text-align: left;">
+Package: </td>
+<td style="text-align: left;"> cellOrigins</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+Type: </td>
+<td style="text-align: left;"> Package</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+Version: </td>
+<td style="text-align: left;"> 1.0</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+Date: </td>
+<td style="text-align: left;"> 2015-03-18</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+License: </td>
+<td style="text-align: left;"> Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>David Molnar
+</p>
+<p>Maintainer: David Molnar &lt;dmolnar100@icloud.com&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Molnar, D 2015, 'Single embryo-single organ transcriptomics of Drosophila embryos', PhD thesis, University of Cambridge. <br>
+BDGP insitu: Tomancak, Genome Biol. 2007;8(7):R145. <br>
+BDGP insitu homepage: insitu.fruitfly.org/cgi-bin/ex/insitu.pl
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+pmoracle &lt;- seqVsInsitu(transcriptomeMatrix)
+rownames(pmoracle)[1:3]
+diagnosticPlots(pmoracle)
+
+## End(Not run)
+##loading the BDGP insitu probe coordinates if not
+##copied directly from the package extdata folder
+system.file("extdata", "BDGP_insitu_probes.bed", package = "cellOrigins")
+</code></pre>
+
+
+</div>

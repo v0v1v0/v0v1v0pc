@@ -1,0 +1,169 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>removeFreq</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Remove Frequencies from a Spectra or Spectra2D Object</h2>
+
+<h3>Description</h3>
+
+<p>This function removes specified frequencies from a <code>Spectra</code>
+or <code>Spectra2D</code> object.
+For instance, one might want to remove regions lacking any useful
+information (to reduce the data size), remove regions with large
+interfering peaks (e.g. the water peak in 1H NMR) or simply focus
+on a region of interest.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">removeFreq(spectra, rem.freq = NULL, remF2 = NULL, remF1 = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>spectra</code></td>
+<td>
+<p>An object of S3 class <code>ChemoSpec::Spectra()</code> or <code>ChemoSpec2D::Spectra2D()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rem.freq</code></td>
+<td>
+<p>For a <code>Spectra</code> object, a vector of logicals.
+<code>rem.freq</code> can be any valid <code>R</code> statement that leads to a vector of
+logicals (must be of <code>length(Spectra$freq)</code>).  This vector should be <code>TRUE</code>
+for frequencies you want to be removed
+and <code>FALSE</code> for those frequencies which will be kept.
+In the examples, the | and &amp; operators may seem backward in
+a sense, but R evaluates them one at a time and then combines them to give
+the desired result.  You may wish to look at <code>Comparison</code> and
+<code>Logic</code>. See the examples.  <em>In addition, since January 2020 <code>rem.freq</code>
+may be a formula as described below.</em></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>remF2</code></td>
+<td>
+<p>Applies to <code>Spectra2D</code> objects. A formula giving the range of
+frequencies to be extracted.  May include
+"low" or "high" representing the extremes of the spectra.  Values outside the range of
+F2 are tolerated without notice and are handled as <code>min</code> or <code>max</code>. See the examples.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>remF1</code></td>
+<td>
+<p>As for <code>remF2</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>An object of S3 class <code>ChemoSpec::Spectra()</code> or <code>ChemoSpec2D::Spectra2D()</code>.
+</p>
+
+
+<h3>Modifying Spectra2D Objects</h3>
+
+<p>Regarding <code>Spectra2D</code> objects, one cannot remove frequencies from the interior of
+a 2D NMR data set and expect
+to get a meaningful contour plot, because doing so puts unrelated peaks adjacent
+in the data set. This would lead to contours being drawn that don't exist in the
+original data set. However, one can remove data from the interior and run a PARAFAC
+analysis on the result, using the spectrum as an abstract object (that is, the
+spectrum may not plottable, but the resulting scores are still meaningful).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Bryan A. Hanson (DePauw University).
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>removeFreq</code> for another way to remove data.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">if (checkForPackageWithVersion("ChemoSpec", 6.0)) {
+  library("ChemoSpec")
+  data(SrE.IR)
+  sumSpectra(SrE.IR)
+
+  # Examples where rem.freq is a logical vector
+
+  # Remove frequencies from one end:
+  newIR &lt;- removeFreq(SrE.IR, rem.freq = SrE.IR$freq &gt; 3500)
+
+  # Remove frequencies from both ends at once:
+  newIR &lt;- removeFreq(SrE.IR, rem.freq = SrE.IR$freq &gt; 3500
+    | SrE.IR$freq &lt; 800)
+
+  # Remove frequencies from the middle:
+  newIR &lt;- removeFreq(SrE.IR, rem.freq = SrE.IR$freq &gt; 800
+    &amp; SrE.IR$freq &lt; 1000)
+
+  # The logic of this last one is as follows.  Any values
+  # that are TRUE will be removed.
+  values &lt;- 1:7
+  values &gt; 2
+  values &lt; 6
+  values &gt; 2 &amp; values &lt; 6
+
+  # Examples where rem.freq is a formula
+
+  # Remove frequencies from one end:
+  newIR &lt;- removeFreq(SrE.IR, rem.freq = 3500 ~ high)
+
+  # Remove frequencies from both ends is a two step process with formulas:
+  newIR &lt;- removeFreq(SrE.IR, rem.freq = 3500 ~ high)
+  newIR &lt;- removeFreq(newIR, rem.freq = low ~ 800)
+
+  # Remove frequencies from the middle:
+  newIR &lt;- removeFreq(SrE.IR, rem.freq = 800 ~ 1000)
+
+  # After any of these, inspect the results:
+  sumSpectra(newIR)
+}
+
+if (checkForPackageWithVersion("ChemoSpec2D", 0.5)) {
+  library("ChemoSpec2D")
+# Note we will set contours a bit low to better
+# show what is going on.
+
+  data(MUD1)
+
+  plotSpectra2D(MUD1, which = 7, lvls = 0.1, cols = "black",
+    main = "MUD1 Sample 7: Complete Data Set")
+
+  MUD1a &lt;- removeFreq(MUD1, remF2 = 2.5 ~ 4)
+  sumSpectra(MUD1a) # don't plot, removing peaks from interior is misleading
+
+  MUD1b &lt;- removeFreq(MUD1, remF2 = low ~ 2)
+  sumSpectra(MUD1b)
+  plotSpectra2D(MUD1b, which = 7, lvls = 0.1, cols = "black",
+    main = "MUD1 Sample 7\nRemoved Peaks: F2 low ~ 2")
+
+  MUD1c &lt;- removeFreq(MUD1, remF1 = high ~ 23)
+  sumSpectra(MUD1c)
+  plotSpectra2D(MUD1c, which = 7, lvls = 0.1, cols = "black",
+    main = "MUD1 Sample 7\nRemoved Peaks: F1 high ~ 23")
+
+  MUD1d &lt;- removeFreq(MUD1, remF2 = 2.5 ~ 4, remF1 = 45 ~ 55)
+  sumSpectra(MUD1d)  # don't plot, removing peaks from interior is misleading
+
+}
+</code></pre>
+
+
+</div>

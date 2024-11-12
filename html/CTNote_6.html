@@ -1,0 +1,163 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>impute_missing_visits</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Naively Impute Missing Visits</h2>
+
+<h3>Description</h3>
+
+<p>Given a use pattern string with missing visits, make naive
+imputations for each missing visit
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">impute_missing_visits(
+  use_pattern,
+  method = c("locf", "locfD", "mode", "kNV"),
+  missing_is = "o",
+  mixed_is = "*",
+  tiebreaker = "+",
+  k = 1,
+  knvWeights_num = c(o = NA, `+` = 1, `*` = 0.5, `-` = 0),
+  quietly = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>use_pattern</code></td>
+<td>
+<p>A character string showing the daily, by visit, or weekly
+substance use pattern for a single subject</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>Which naive imputation method should be used? Current supported
+options are <code>"locf"</code> (last observation carried forward),
+<code>"locfD"</code> (last observation carried forward until dropout),
+<code>"mode"</code> (most common non-missing value), and <code>"kNV"</code> (k nearest
+visits).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>missing_is</code></td>
+<td>
+<p>Which single character is used to mark missing UDS in a
+use pattern string? Defaults to <code>"o"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mixed_is</code></td>
+<td>
+<p>Which single character is used to mark mixed UDS (both
+positive and negative UDS for the visit block) in a use pattern string?
+Defaults to <code>"*"</code>. When imputing by the mode, all mixed result UDS
+will be assigned the <code>tiebreaker</code> value in order to calculate the mode
+but will remain unchanged in the returned use pattern string.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tiebreaker</code></td>
+<td>
+<p>In the event of ties between two modes, should positive or
+negative UDS be the mode? Defaults to positive (<code>"+"</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p>The number of nearest visits to use in kNV imputation. This defaults
+to 1; we recommend that this parameter stays at 1 unless the use patterns
+in your data have extraordinarily few missing values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>knvWeights_num</code></td>
+<td>
+<p>A named vector matching the use pattern word "letters"
+to their numerical use values. The names of this vector should match the
+"letters" of the use pattern word exactly; use backticks to escape special
+characters. For example, if the study protocol counts a mixed result (one
+positive and one negative UDS in a single observation period [week]) as
+worth three "use days", then mixed results should have a  weight of 3/7.
+Additionally, a study protocol may count missing values as five "use days"
+out of a week. The defaults for this function are to leave <code>"o"</code> as
+missing (<code>NA</code>), and give weights of 1, 1/2, and 0 for visits with
+<code>"+"</code>, <code>"*"</code>, and <code>"-"</code> UDS, respectively.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quietly</code></td>
+<td>
+<p>Should warning messages be muted? Defaults to <code>FALSE</code></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If you would like to replace all UDS for missing visits with a
+single, pre-specified value (such as positive), please use
+<code>recode_missing_visits</code> instead. Furthermore, there will most
+likely still be missing values in the use pattern even after imputation.
+This would occur if all the values are missing, if the first values of the
+use pattern are missing (if LOCF is used), if the first and/or last values
+of the use pattern are missing (if LOCF-D is used), or if there are back to
+back missing visits (if kNV with <code>k = 1</code> is used). Because of this,
+you may need to call <code>recode_missing_visits</code> in a pipeline
+after this function to replace or remove the remaining non-imputable
+missing visits.
+</p>
+<p>If you are using the kNV imputation option, there are some caveats to
+consider. Due to rounding rules, any rounding ties are broken by order of
+the values to the <code>knvWeights_num</code> vector. For instance, consider a
+subject who had a negative UDS in one week, then a missing UDS for the next
+week, and then two UDS in the following week (of which one was positive and
+the other was negative). This is represented by the use pattern
+<code>"-o*"</code>. The default behavior of the kNV method is to impute this to
+<code>"-**"</code> because the order of the <code>knvWeights_num</code> vector has
+<code>"+"</code>, then <code>"*"</code>, then <code>"-"</code> UDS values. In this order, a
+positive result trumps a mixed result, and a mixed result trumps a negative
+result. Similarly, the use pattern <code>"+o*"</code> will be imputed to
+<code>"++*"</code> by default.
+</p>
+<p>At current, we allow for many symbols in the use pattern "word", such as
+"_" for missing by study design, "o" missing for protocol non-compliance
+(the most common form of missing), "+" for positive, "-" for negative, and
+"*" for mixed positive and negative results (this usually comes up when the
+visit represents multiple days and there are both positive and negative
+results in those days; for example, a subject is tested weekly; they
+provided a positive test on Tuesday but came back to provide a negative
+test the following day).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A use pattern string the same length as <code>use_pattern</code> with
+missing values imputed according to the chosen imputation method.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">  pattern_char &lt;- "__++++*o-------+--+-o-o-o+o+oooooo"
+  impute_missing_visits(pattern_char)
+  impute_missing_visits(pattern_char, method = "locfD")
+  impute_missing_visits(pattern_char, method = "mode")
+  
+  pattern2_char &lt;- "ooooooooooo"
+  impute_missing_visits(pattern2_char)
+  
+</code></pre>
+
+
+</div>

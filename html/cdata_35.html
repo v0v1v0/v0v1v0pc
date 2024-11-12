@@ -1,0 +1,217 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>rowrecs_to_blocks_q</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Map a set of columns to rows (query based, take name of table).</h2>
+
+<h3>Description</h3>
+
+<p>Transform data facts from columns into additional rows using SQL
+and controlTable.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">rowrecs_to_blocks_q(
+  wideTable,
+  controlTable,
+  my_db,
+  ...,
+  columnsToCopy = NULL,
+  tempNameGenerator = mk_tmp_name_source("mvtrq"),
+  strict = FALSE,
+  controlTableKeys = colnames(controlTable)[[1]],
+  checkNames = TRUE,
+  checkKeys = FALSE,
+  showQuery = FALSE,
+  defaultValue = NULL,
+  temporary = FALSE,
+  resultName = NULL,
+  incoming_qualifiers = NULL,
+  outgoing_qualifiers = NULL,
+  temp_qualifiers = NULL,
+  executeQuery = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>wideTable</code></td>
+<td>
+<p>name of table containing data to be mapped (db/Spark data)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>controlTable</code></td>
+<td>
+<p>table specifying mapping (local data frame)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>my_db</code></td>
+<td>
+<p>db handle</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>force later arguments to be by name.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>columnsToCopy</code></td>
+<td>
+<p>character array of column names to copy</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tempNameGenerator</code></td>
+<td>
+<p>a tempNameGenerator from cdata::mk_tmp_name_source()</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>strict</code></td>
+<td>
+<p>logical, if TRUE check control table name forms</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>controlTableKeys</code></td>
+<td>
+<p>character, which column names of the control table are considered to be keys.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>checkNames</code></td>
+<td>
+<p>logical, if TRUE check names</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>checkKeys</code></td>
+<td>
+<p>logical, if TRUE check wideTable keys</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>showQuery</code></td>
+<td>
+<p>if TRUE print query</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>defaultValue</code></td>
+<td>
+<p>if not NULL literal to use for non-match values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>temporary</code></td>
+<td>
+<p>logical, if TRUE make result temporary.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resultName</code></td>
+<td>
+<p>character, name for result table.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>incoming_qualifiers</code></td>
+<td>
+<p>optional named ordered vector of strings carrying additional db hierarchy terms, such as schema.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>outgoing_qualifiers</code></td>
+<td>
+<p>optional named ordered vector of strings carrying additional db hierarchy terms, such as schema.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>temp_qualifiers</code></td>
+<td>
+<p>optional named ordered vector of strings carrying additional db hierarchy terms, such as schema.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>executeQuery</code></td>
+<td>
+<p>logical, if TRUE execute the query and return result.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This is using the theory of "fluid data"n
+(<a href="https://github.com/WinVector/cdata">https://github.com/WinVector/cdata</a>), which includes the
+principle that each data cell has coordinates independent of the
+storage details and storage detail dependent coordinates (usually
+row-id, column-id, and group-id) can be re-derived at will (the
+other principle is that there may not be "one true preferred data
+shape" and many re-shapings of data may be needed to match data to
+different algorithms and methods).
+</p>
+<p>The controlTable defines the names of each data element in the two notations:
+the notation of the tall table (which is row oriented)
+and the notation of the wide table (which is column oriented).
+controlTable[ , 1] (the group label) cross colnames(controlTable)
+(the column labels) are names of data cells in the long form.
+controlTable[ , 2:ncol(controlTable)] (column labels)
+are names of data cells in the wide form.
+To get behavior similar to tidyr::gather/spread one builds the control table
+by running an appropriate query over the data.
+</p>
+<p>Some discussion and examples can be found here:
+<a href="https://winvector.github.io/FluidData/FluidData.html">https://winvector.github.io/FluidData/FluidData.html</a> and
+here <a href="https://github.com/WinVector/cdata">https://github.com/WinVector/cdata</a>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>long table built by mapping wideTable to one row per group (or query if executeQuery is FALSE)
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>build_unpivot_control</code>,  <code>rowrecs_to_blocks</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+if (requireNamespace("DBI", quietly = TRUE) &amp;&amp;
+  requireNamespace("RSQLite", quietly = TRUE)) {
+  my_db &lt;- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+
+  # un-pivot example
+  d &lt;- data.frame(AUC = 0.6, R2 = 0.2)
+  rquery::rq_copy_to(my_db,
+                    'd',
+                    d,
+                    overwrite = TRUE,
+                    temporary = TRUE)
+  cT &lt;- build_unpivot_control(nameForNewKeyColumn= 'meas',
+                              nameForNewValueColumn= 'val',
+                              columnsToTakeFrom= c('AUC', 'R2'))
+  tab &lt;- rowrecs_to_blocks_q('d', cT, my_db = my_db)
+  qlook(my_db, tab)
+  DBI::dbDisconnect(my_db)
+}
+
+</code></pre>
+
+
+</div>

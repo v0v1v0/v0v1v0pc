@@ -1,0 +1,247 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>resample_cifti</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Resample CIFTI data</h2>
+
+<h3>Description</h3>
+
+<p>Performs spatial resampling of CIFTI data on the cortical surface
+by separating it into GIFTI and NIFTI files, resampling the GIFTIs, and then
+putting them together. (The subcortex is not resampled.)
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">resample_cifti(
+  x = NULL,
+  cifti_target_fname = NULL,
+  surfL_original_fname = NULL,
+  surfR_original_fname = NULL,
+  surfL_target_fname = NULL,
+  surfR_target_fname = NULL,
+  resamp_res,
+  resamp_method = c("barycentric", "adaptive"),
+  areaL_original_fname = NULL,
+  areaR_original_fname = NULL,
+  write_dir = NULL,
+  mwall_values = c(NA, NaN),
+  verbose = TRUE
+)
+
+resampleCIfTI(
+  x = NULL,
+  cifti_target_fname = NULL,
+  surfL_original_fname = NULL,
+  surfR_original_fname = NULL,
+  surfL_target_fname = NULL,
+  surfR_target_fname = NULL,
+  resamp_res,
+  resamp_method = c("barycentric", "adaptive"),
+  areaL_original_fname = NULL,
+  areaR_original_fname = NULL,
+  write_dir = NULL,
+  mwall_values = c(NA, NaN),
+  verbose = TRUE
+)
+
+resamplecii(
+  x = NULL,
+  cifti_target_fname = NULL,
+  surfL_original_fname = NULL,
+  surfR_original_fname = NULL,
+  surfL_target_fname = NULL,
+  surfR_target_fname = NULL,
+  resamp_res,
+  resamp_method = c("barycentric", "adaptive"),
+  areaL_original_fname = NULL,
+  areaR_original_fname = NULL,
+  write_dir = NULL,
+  mwall_values = c(NA, NaN),
+  verbose = TRUE
+)
+
+resample_xifti(
+  x = NULL,
+  cifti_target_fname = NULL,
+  surfL_original_fname = NULL,
+  surfR_original_fname = NULL,
+  surfL_target_fname = NULL,
+  surfR_target_fname = NULL,
+  resamp_res,
+  resamp_method = c("barycentric", "adaptive"),
+  areaL_original_fname = NULL,
+  areaR_original_fname = NULL,
+  write_dir = NULL,
+  mwall_values = c(NA, NaN),
+  verbose = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>The CIFTI file name or <code>"xifti"</code> object to resample. If
+<code>NULL</code>, the result will be a <code>"xifti"</code> with resampled surfaces
+given by <code>surfL_original_fname</code> and <code>surfR_original_fname</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cifti_target_fname</code></td>
+<td>
+<p>File name for the resampled CIFTI. Will be placed
+in <code>write_dir</code>. If <code>NULL</code>, will be written to "resampled.d*.nii".
+<code>write_dir</code> will be appended to the beginning of the path.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>surfL_original_fname, surfR_original_fname</code></td>
+<td>
+<p>(Optional) Path to a GIFTI
+surface geometry file representing the left/right cortex. One or both can be
+provided. These will be resampled too, and are convenient for visualizing
+the resampled data.
+</p>
+<p>If <code>x</code> is a <code>"xifti"</code> object with surfaces, these arguments
+will override the surfaces in the <code>"xifti"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>surfL_target_fname, surfR_target_fname</code></td>
+<td>
+<p>(Optional) File names for the
+resampled GIFTI surface geometry files. Will be placed in <code>write_dir</code>.
+If <code>NULL</code> (default), will use default names created by
+<code>resample_cifti_default_fname</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resamp_res</code></td>
+<td>
+<p>Target resolution for resampling (number of
+cortical surface vertices per hemisphere).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>resamp_method</code></td>
+<td>
+<p><code>"barycentric"</code> (default) or <code>"adaptive"</code>
+resampling for the metric or label data. These options correspond to the
+Workbench command options <code>"BARYCENTRIC"</code> and <code>"ADAP_BARY_AREA"</code>,
+respectively.
+</p>
+<p>While adaptive resampling is recommended for metric or label
+data, it requires that <code>area[L/R]_original_fname</code> be provided.
+</p>
+<p>Note that surfaces will resampled using barycentric resampling regardless of
+<code>resamp_method</code>, because barycentric resampling rather than adaptive
+resampling is recommended for surface data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>areaL_original_fname, areaR_original_fname</code></td>
+<td>
+<p>File paths to the surfaces
+to use for vertex area correction during adaptive resampling. (Only used if
+resampling with the adaptive method.) <code>area[L/R]_original_fname</code> should
+match the current resolution of the data.
+</p>
+<p>For resampling: the Workbench command for adaptive resampling requires the
+target surfaces for area correction too. But to make the workflow easier,
+<code>ciftiTools</code> will resample <code>area[L/R]_original_fname</code> with the
+barycentric method and use that for the target area.
+</p>
+<p>For remapping: <code>area[L/R]_target_fname</code> must be directly provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>write_dir</code></td>
+<td>
+<p>Where to write the resampled CIFTI (and surfaces if present.)
+If <code>NULL</code> (default), will use the current working directory if <code>x</code>
+was a CIFTI file, and a temporary directory if <code>x</code> was a <code>"xifti"</code>
+object.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mwall_values</code></td>
+<td>
+<p>If the medial wall locations are not indicated in the
+CIFTI, use these values to infer the medial wall mask. Default:
+<code>c(NA, NaN)</code>. If <code>NULL</code>, do not attempt to infer the medial wall.
+</p>
+<p>Correctly indicating the medial wall locations is important for resampling,
+because the medial wall mask is taken into account during resampling
+calculations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Should occasional updates be printed? Default: <code>TRUE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Can accept a <code>"xifti"</code> object as well as a path to a CIFTI-file.
+</p>
+<p>If surface data is included, it will be resampled with the barycentric
+method even if <code>resamp_method=="adaptive"</code> because the barycentric
+method is recommended for surface geometry data.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A named character vector of written files: <code>"cifti"</code> and
+potentially <code>"surfL"</code> (if <code>surfL_original_fname</code> was provided)
+and/or <code>"surfR"</code> (if <code>surfR_original_fname</code> was provided).
+</p>
+
+
+<h3>Connectome Workbench</h3>
+
+<p>This function interfaces with the <code>"-metric-resample"</code>, <code>"-label-resample"</code>,
+and/or <code>"-surface-resample"</code> Workbench commands, depending on the input.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other manipulating xifti: 
+<code>add_surf()</code>,
+<code>apply_parc()</code>,
+<code>apply_xifti()</code>,
+<code>combine_xifti()</code>,
+<code>convert_to_dlabel()</code>,
+<code>merge_xifti()</code>,
+<code>move_to_mwall()</code>,
+<code>move_to_submask()</code>,
+<code>newdata_xifti()</code>,
+<code>remap_cifti()</code>,
+<code>remove_xifti()</code>,
+<code>resample_cifti_from_template()</code>,
+<code>scale_xifti()</code>,
+<code>select_xifti()</code>,
+<code>set_names_xifti()</code>,
+<code>smooth_cifti()</code>,
+<code>transform_xifti()</code>
+</p>
+<p>Other common: 
+<code>is.cifti()</code>,
+<code>read_cifti()</code>,
+<code>smooth_cifti()</code>,
+<code>view_xifti()</code>,
+<code>write_cifti()</code>
+</p>
+
+
+</div>

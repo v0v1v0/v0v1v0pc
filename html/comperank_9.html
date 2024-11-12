@@ -1,0 +1,222 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>iterative</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Iterative rating method</h2>
+
+<h3>Description</h3>
+
+<p>Functions to compute Iterative numeric ratings, i.e. which
+are recomputed after every game, and corresponding
+rankings.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">rate_iterative(cr_data, rate_fun, initial_ratings = 0)
+
+rank_iterative(cr_data, rate_fun, initial_ratings = 0, keep_rating = FALSE,
+  type = "desc", ties = c("average", "first", "last", "random", "max",
+  "min"), round_digits = 7)
+
+add_iterative_ratings(cr_data, rate_fun, initial_ratings = 0)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>cr_data</code></td>
+<td>
+<p>Competition results in format ready for
+as_longcr().</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rate_fun</code></td>
+<td>
+<p>Rating function (see Details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>initial_ratings</code></td>
+<td>
+<p>Initial ratings (see Details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>keep_rating</code></td>
+<td>
+<p>Whether to keep rating column in ranking output.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>Value for <code>type</code> in <code>round_rank()</code>: <code>"desc"</code> or <code>"asc"</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ties</code></td>
+<td>
+<p>Value for <code>ties</code> in <code>round_rank()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>round_digits</code></td>
+<td>
+<p>Value for <code>round_digits</code> in <code>round_rank()</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Iterative ratings of group of players are recomputed after every
+game based on players' game scores and their ratings just before the game.
+Theoretically this kind of ratings can be non-numeric and be computed on
+competition results with variable number of players but they rarely do. This
+package provides functions for computing iterative <strong>numeric</strong> ratings for
+pairgames (competition results with games only
+between two players). Error is thrown if <code>cr_data</code> is not pairgames.
+</p>
+<p>Games in widecr form are arranged in increasing order
+of values in column <code>game</code> (if it is present) and processed from first to
+last row.
+</p>
+<p><code>NA</code> values in column <code>player</code> are allowed. These players are treated as
+'ghosts': players of the same rating as opponent before the game. 'Ghosts'
+are not actual players so they don't appear in the output of
+<code>rate_iterative()</code>. For games between two 'ghosts' ratings before and after
+the game are set to 0.
+</p>
+<p>The core of the rating system is <code>rate_fun</code>. It should take the
+following arguments:
+</p>
+
+<ul>
+<li> <p><strong>rating1</strong> - Rating of player1 before the game.
+</p>
+</li>
+<li> <p><strong>score1</strong> - Score of player1 in the game.
+</p>
+</li>
+<li> <p><strong>rating2</strong> - Rating of player2 before the game.
+</p>
+</li>
+<li> <p><strong>score2</strong> - Score of player2 in the game.
+</p>
+</li>
+</ul>
+<p><code>rate_fun</code> should return a numeric vector of length 2: first element being a
+rating of player1 after the game, second - of player2.
+</p>
+<p>Ratings are computed based only on games between players of interest (see
+Players) and <code>NA</code> values.
+</p>
+<p>Initial ratings should be defined with argument <code>initial_ratings</code>. It
+can be:
+</p>
+
+<ul>
+<li>
+<p> A single numeric value. In this case initial ratings for all players are
+set to this value.
+</p>
+</li>
+<li>
+<p> A named vector of ratings. All non-<code>NA</code> players, for which rating is
+computed, should be present in its names (as character representation of
+players' actual identifiers).
+</p>
+</li>
+<li>
+<p> A data frame with first column representing player and second - initial
+rating. It will be converted to named vector with
+deframe() from <code>tibble</code> package.
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p><code>rate_iterative()</code> returns a tibble with columns
+<code>player</code> (player identifier) and <code>rating_iterative</code> (Iterative
+ratings, based on row order, by the end of competition
+results). <strong>Interpretation of numbers depends on rating function
+<code>rate_fun</code></strong>.
+</p>
+<p><code>rank_iterative()</code> returns a <code>tibble</code> with columns <code>player</code>,
+<code>rating_iterative</code> (if <code>keep_rating = TRUE</code>) and <code>ranking_iterative</code>
+(Iterative ranking computed with <code>round_rank()</code> based on
+specified <code>type</code>).
+</p>
+<p><code>add_iterative_ratings()</code> returns a widecr form of
+<code>cr_data</code> with four rating columns added:
+</p>
+
+<ul>
+<li> <p><strong>rating1Before</strong> - Rating of player1 before the game.
+</p>
+</li>
+<li> <p><strong>rating2Before</strong> - Rating of player2 before the game.
+</p>
+</li>
+<li> <p><strong>rating1After</strong> - Rating of player1 after the game.
+</p>
+</li>
+<li> <p><strong>rating2After</strong> - Rating of player2 after the game.
+</p>
+</li>
+</ul>
+<h3>Players</h3>
+
+<p><code>comperank</code> offers a possibility to handle certain set of players. It is done
+by having <code>player</code> column (in longcr format) as factor
+with levels specifying all players of interest. In case of factor the result
+is returned only for players from its levels. Otherwise - for all present
+players.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">test_rate_fun &lt;- function(rating1, score1, rating2, score2) {
+  c(rating1, rating2) + ((score1 &gt;= score2) * 2 - 1) * c(1, -1)
+}
+set.seed(1002)
+cr_data &lt;- data.frame(
+  game = rep(1:10, each = 2),
+  player = rep(1:5, times = 4),
+  score = runif(20)
+)
+cr_data$player[c(6, 8)] &lt;- NA
+
+# Different settings of add_iterative_ratings
+add_iterative_ratings(cr_data, test_rate_fun)
+
+add_iterative_ratings(cr_data, test_rate_fun, initial_ratings = 10)
+
+add_iterative_ratings(
+  cr_data, test_rate_fun,
+  initial_ratings = c("1" = 1, "2" = 2, "3" = 3, "4" = 4, "5" = 5)
+)
+
+add_iterative_ratings(
+  cr_data, test_rate_fun,
+  initial_ratings = data.frame(1:5, 0:4)
+)
+
+# Ratings and ranking at the end of competition results.
+rate_iterative(cr_data, test_rate_fun)
+
+rank_iterative(cr_data, test_rate_fun, type = "desc")
+
+rank_iterative(cr_data, test_rate_fun, type = "desc", keep_rating = TRUE)
+
+</code></pre>
+
+
+</div>

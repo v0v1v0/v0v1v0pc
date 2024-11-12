@@ -1,0 +1,174 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ctbi</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>ctbi</h2>
+
+<h3>Description</h3>
+
+<p><b>Please cite</b> the following companion paper if you're using the <code>ctbi</code> package: Ritter, F.: Technical note: A procedure to clean, decompose, and aggregate time series, Hydrol. Earth Syst. Sci., 27, 349–361, https://doi.org/10.5194/hess-27-349-2023, 2023.
+</p>
+<p>The goal of <code>ctbi</code> is to <b>clean</b>, <b>decompose</b>, <b>impute</b> and <b>aggregate</b> univariate time series. <code>ctbi</code> stands for <em>Cyclic/Trend decomposition using Bin Interpolation</em>: the time series is divided into a sequence of non-overlapping bins (inputs: <code>bin.side</code> or <code>bin.center</code>, and <code>bin.period</code>). Bins with enough data (input: <code>bin.max.f.NA</code>) are <em>accepted</em>, and otherwise <em>rejected</em> (their values are set to <code>NA</code>). The <b>long-term trend</b> is a linear interpolation of the mean values between successive bins. The <b>cyclic component</b> is the mean stack of detrended data within all accepted bins.
+</p>
+<p>Outliers present in the residuals are flagged using an enhanced box plot rule (called <b>Logbox</b>, input: <code>coeff.outlier</code>) that is adapted to non-Gaussian data and keeps the type I error at <code class="reqn">\frac{0.1}{\sqrt{n}}</code> % (percentage of erroneously flagged outliers). <b>Logbox</b> replaces the original <code class="reqn">\alpha = 1.5</code> constant of the box plot rule with <code class="reqn">\alpha = A \times \log(n)+B+\frac{C}{n}</code>. The variable <code class="reqn">n \geq 9</code> is the sample size, <code class="reqn">C = 36</code> corrects biases emerging in small samples, and <code class="reqn">A</code> and <code class="reqn">B</code> are automatically calculated on a predictor of the maximum tail weight (<code class="reqn">m_{*}</code>).
+</p>
+<p>The strength of the <b>cyclic pattern</b> within each bin is quantified by a new metric, the <b>Stacked Cycles Index</b> defined as <code class="reqn">SCI = 1 - \frac{SS_{res}}{SS_{tot}} - \frac{1}{N_{bin}}</code>. The variable <code class="reqn">SS_{tot}</code> is the sum of the squared detrended data, <code class="reqn">SS_{res}</code> is the sum of the squared detrended &amp; deseasonalized data, and <code class="reqn">N_{bin}</code> is the number of accepted bins. A value of <code class="reqn">SCI \leq 0</code> is associated  with no cyclicity, while <code class="reqn">SCI = 1</code> is associated with a perfectly cyclic signal. Data can be imputed if <code class="reqn">SCI_{min} \leq SCI</code> (input: <code>SCI.min</code>). Finally, data are aggregated in each bin (input: <code>bin.FUN</code>).
+</p>
+<p>Important functions of the package: <code>ctbi</code>, <code>ctbi.outlier</code> (flag outliers in univariate datasets with the <b>Logbox</b> method) and <code>ctbi.plot</code> (plot the time series).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ctbi(
+  data.input,
+  bin.side,
+  bin.period,
+  bin.center = NULL,
+  bin.FUN = "mean",
+  bin.max.f.NA = 0.2,
+  SCI.min = 0.6,
+  coeff.outlier = "auto",
+  ylim = c(-Inf, +Inf)
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data.input</code></td>
+<td>
+<p>two columns data.frame (or data.table) with the first column being the time component (POSIXct, Date or numeric) and the second column the value (numeric)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bin.side</code></td>
+<td>
+<p>one side of any bin (same class as the time component)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bin.period</code></td>
+<td>
+<p>time interval between two sides of a bin. If the time component x.t of data.input is numeric, <code>bin.period</code> is numeric. If x.t is POSIXct or Date, <code>bin.period</code> = 'k units', with k an integer and units = (seconds, minutes, hours, days, weeks, half-months, months, years, decades, centuries, millenaries)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bin.center</code></td>
+<td>
+<p>if <code>bin.side</code> is not specified, one center of a bin (same class as the time component)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bin.FUN</code></td>
+<td>
+<p>character ('mean', 'median' or 'sum') that defines the aggregating operator</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bin.max.f.NA</code></td>
+<td>
+<p>numeric between 0 and 1 that specifies the maximum fraction of missing values for a bin to be accepted. The minimum number of non-NA points for a bin to be accepted is bin.size.min.accepted = bin.size*(1-<code>bin.max.f.NA</code>) with bin.size the number of points per bin</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SCI.min</code></td>
+<td>
+<p>numeric between 0 and 1 that is compared to the Stacked Cycles Index (SCI). If SCI &gt; <code>SCI.min</code>, missing values are imputed in accepted bins with the sum of the long-term and cyclic components. If <code>SCI.min</code> = <code>NA</code>, no values are imputed</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coeff.outlier</code></td>
+<td>
+<p>one of <code>coeff.outlier</code> = 'auto' (default value), <code>coeff.outlier</code> = 'gaussian', <code>coeff.outlier</code> = c(A,B,C) or <code>coeff.outlier</code> = <code>NA</code>. If <code>coeff.outlier</code> = 'auto', C = 36 and the coefficients A and B are calculated on <code class="reqn">m_{*}</code>. If <code>coeff.outlier</code> = 'gaussian', <code>coeff.outlier</code> = c(0.08,2,36), adapted to the Gaussian distribution. If <code>coeff.outlier</code> = <code>NA</code>, no outliers are flagged</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ylim</code></td>
+<td>
+<p>numeric vector of length 2 that defines the range of possible values. Values strictly below ylim[1] or strictly above ylim[2] are set to NA. Values equal to ylim[1] or ylim[2] are discarded from the residuals</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list that contains:
+</p>
+<p><b>data0</b>, the raw dataset (same class as <code>data.input</code>), with 9 columns: (i) time; (ii) outlier-free and imputed data; (iii) index.bin: index of the bins associated with each data points (the index is negative if the bin is rejected); (iv) long.term: long-term trend; (v) cycle: cyclic component; (vi) residuals: residuals including the outliers; (vii) outliers: quarantined outliers; (viii) imputed: value of the imputed data points; (ix) time.bin: relative position of the data points in their bins, between 0 and 1
+</p>
+<p><b>data1</b>, the aggregated dataset (same class as <code>data.input</code>), with 10 columns: (i) aggregated time (center of the bins); (ii) aggregated data; (iii) index.bin: index of the bin (negative value if the bin is rejected); (iv) bin.start: start of the bin; (v) bin.end: end of the bin; (vi) n.points: number of points per bin (including <code>NA</code> values); (vii) n.NA: number of NA values per bin, originally; (viii) n.outliers: number of outliers per bin; (ix) n.imputed: number of imputed points per bin; (x) variability associated with the aggregation (standard deviation for the mean, MAD for the median and nothing for the sum)
+</p>
+<p><b>mean.cycle</b>, a dataset (same class as <code>data.input</code>) with bin.size rows and 4 columns: (i) generic.time.bin1: time of the first bin; (ii) mean: the mean stack of detrended data; (iii) sd: the standard deviation on the mean; (iv) time.bin: relative position of the data points in the bin, between 0 and 1
+</p>
+<p><b>summary.bin</b>, a vector that contains bin.size (median number of points in non-empty bins), bin.size.min.accepted (minimum number of points for a bin to be accepted) and SCI
+</p>
+<p><b>summary.outlier</b>, a vector that contains A, B, C, <code class="reqn">m_{*}</code>, the size of the residuals (n), and the lower and upper outlier threshold
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># example of the contaminated sunspot data
+example1 &lt;- data.frame(year = 1700:1988,sunspot = as.numeric(sunspot.year))
+example1[sample(1:289,30),'sunspot'] &lt;- NA # contaminate data with missing values
+example1[c(5,30,50),'sunspot'] &lt;- c(-50,300,400) # contaminate data with outliers
+example1 &lt;- example1[-(70:100),] # create gap in the data
+bin.period &lt;- 11 # aggregation performed every 11 years (the year is numeric here)
+bin.side &lt;- 1989 # give one side of a bin
+bin.FUN &lt;- 'mean'
+bin.max.f.NA &lt;- 0.2 # maximum of 20% of missing data per bin
+ylim &lt;- c(0,Inf) # negative values are impossible
+
+list.main &lt;- ctbi(example1,bin.period=bin.period,
+                       bin.side=bin.side,bin.FUN=bin.FUN,
+                       ylim=ylim,bin.max.f.NA=bin.max.f.NA)
+data0.example1 &lt;- list.main$data0 # cleaned raw dataset
+data1.example1 &lt;- list.main$data1 # aggregated dataset.
+mean.cycle.example1 &lt;- list.main$mean.cycle # this data set shows a moderate seasonality
+summary.bin.example1 &lt;- list.main$summary.bin # confirmed with SCI = 0.50
+summary.outlier.example1 &lt;- list.main$summary.outlier
+
+plot(mean.cycle.example1[,'generic.time.bin1'],
+     mean.cycle.example1[,'mean'],type='l',ylim=c(-80,80),
+     ylab='sunspot cycle',
+     xlab='11 years window')
+lines(mean.cycle.example1[,'generic.time.bin1'],
+      mean.cycle.example1[,'mean']+mean.cycle.example1[,'sd'],type='l',lty=2)
+lines(mean.cycle.example1[,'generic.time.bin1'],
+      mean.cycle.example1[,'mean']-mean.cycle.example1[,'sd'],type='l',lty=2)
+title(paste0('mean cycle (moderate cyclicity: SCI = ',summary.bin.example1['SCI'],')'))
+# plot tool:
+ctbi.plot(list.main,show.n.bin=10)
+
+# example of the beaver data
+temp.beaver &lt;- beaver1[,'temp']
+t.char &lt;- as.character(beaver1[,'time'])
+minutes &lt;- substr(t.char,nchar(t.char)-1,nchar(t.char))
+hours &lt;- substr(t.char,nchar(t.char)-3,nchar(t.char)-2)
+hours[hours==""] &lt;- '0'
+days &lt;- c(rep(12,91),rep(13,23))
+time.beaver &lt;- as.POSIXct(paste0('2000-12-',days,' ',hours,':',minutes,':00'),tz='UTC')
+example2 &lt;- data.frame(time=time.beaver,temp=temp.beaver)
+
+bin.period &lt;- '1 hour' # aggregation performed every hour
+bin.side &lt;- as.POSIXct('2000-12-12 00:00:00',tz='UTC') # give one side of a bin
+bin.FUN &lt;- 'mean' # aggregation operator
+bin.max.f.NA &lt;- 0.2 # maximum of 20% of missing data per bin
+ylim &lt;- c(-Inf,Inf)
+list.main &lt;- ctbi(example2,bin.period=bin.period,
+                 bin.side=bin.side,bin.FUN=bin.FUN,
+                 ylim=ylim,bin.max.f.NA=bin.max.f.NA)
+data0.example2 &lt;- list.main$data0 # cleaned raw dataset
+data1.example2 &lt;- list.main$data1 # aggregated dataset.
+lower.threshold &lt;- list.main$summary.outlier['lower.outlier.threshold']
+upper.threshold &lt;- list.main$summary.outlier['upper.outlier.threshold']
+hist(data0.example2[,'residuals'],xlim=c(-0.5,0.5),30,main='beaver residuals')
+abline(v=c(lower.threshold,upper.threshold),col='red',lwd=2) # show the histogram of the residuals
+</code></pre>
+
+
+</div>

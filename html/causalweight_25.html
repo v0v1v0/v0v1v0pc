@@ -1,0 +1,153 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>treatDML</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Binary or multiple  discrete treatment effect evaluation with double machine learning</h2>
+
+<h3>Description</h3>
+
+<p>Treatment effect estimation for assessing the average effects of discrete (multiple or binary) treatments. Combines estimation based on (doubly robust) efficient score functions with double machine learning to control for confounders in a data-driven way.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">treatDML(
+  y,
+  d,
+  x,
+  s = NULL,
+  dtreat = 1,
+  dcontrol = 0,
+  trim = 0.01,
+  MLmethod = "lasso",
+  k = 3,
+  normalized = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>Dependent variable, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>d</code></td>
+<td>
+<p>Treatment variable, must be discrete, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>Covariates, must not contain missings.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>s</code></td>
+<td>
+<p>Indicator function for defining a subpopulation for whom the treatment effect is estimated as a function of the subpopulation's distribution of <code>x</code>. Default is <code>NULL</code> (estimation of the average treatment effect in the total population).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dtreat</code></td>
+<td>
+<p>Value of the treatment in the treatment group. Default is 1.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dcontrol</code></td>
+<td>
+<p>Value of the treatment in the control group. Default is 0.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trim</code></td>
+<td>
+<p>Trimming rule for discarding observations with treatment propensity scores that are smaller than <code>trim</code> or larger than <code>1-trim</code> (to avoid too small denominators in weighting by the inverse of the propensity scores). Default is 0.01.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MLmethod</code></td>
+<td>
+<p>Machine learning method for estimating the nuisance parameters based on the <code>SuperLearner</code> package. Must be either  <code>"lasso"</code> (default) for lasso estimation,  <code>"randomforest"</code> for random forests, <code>"xgboost"</code> for xg boosting,  <code>"svm"</code> for support vector machines, <code>"ensemble"</code> for using an ensemble algorithm based on all previously mentioned machine learners, or <code>"parametric"</code> for linear or logit regression.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p>Number of folds in k-fold cross-fitting. Default is 3.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>normalized</code></td>
+<td>
+<p>If set to <code>TRUE</code>, then the inverse probability-based weights are normalized such that they add up to 1 within treatment groups. Default is <code>TRUE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Estimation of the causal effects of binary or multiple discrete treatments under conditional independence, assuming that confounders jointly affecting the treatment and the outcome can be controlled for by observed covariates. Estimation is based on the (doubly robust) efficient score functions for potential outcomes in combination with double machine learning with cross-fitting, see Chernozhukov et al (2018). To this end, one part of the data is used for estimating the model parameters of the treatment and outcome equations based machine learning. The other part of the data is used for predicting the efficient score functions. The roles of the data parts are swapped (using k-fold cross-fitting) and the average treatment effect is estimated based on averaging the predicted efficient score functions in the total sample.
+Standard errors are based on asymptotic approximations using the estimated variance of the (estimated) efficient score functions.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>treatDML</code> object contains eight components, <code>effect</code>, <code>se</code>, <code>pval</code>, <code>ntrimmed</code>, <code>meantreat</code>, <code>meancontrol</code>, <code>pstreat</code>, and <code>pscontrol</code>:
+</p>
+<p><code>effect</code>: estimate of the average treatment effect.
+</p>
+<p><code>se</code>: standard error of the effect.
+</p>
+<p><code>pval</code>: p-value of the effect estimate.
+</p>
+<p><code>ntrimmed</code>: number of discarded (trimmed) observations due to extreme propensity scores.
+</p>
+<p><code>meantreat</code>: Estimate of the mean potential outcome under treatment.
+</p>
+<p><code>meancontrol</code>: Estimate of the mean potential outcome under control.
+</p>
+<p><code>pstreat</code>: P-score estimates for treatment in treatment group.
+</p>
+<p><code>pscontrol</code>: P-score estimates for treatment in control group.
+</p>
+
+
+<h3>References</h3>
+
+<p>Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., Robins, J. (2018): "Double/debiased machine learning for treatment and structural parameters", The Econometrics Journal, 21, C1-C68.
+</p>
+<p>van der Laan, M., Polley, E., Hubbard, A. (2007): "Super Learner", Statistical Applications in Genetics and Molecular Biology, 6.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># A little example with simulated data (2000 observations)
+## Not run: 
+n=2000                            # sample size
+p=100                             # number of covariates
+s=2                               # number of covariates that are confounders
+x=matrix(rnorm(n*p),ncol=p)       # covariate matrix
+beta=c(rep(0.25,s), rep(0,p-s))   # coefficients determining degree of confounding
+d=(x%*%beta+rnorm(n)&gt;0)*1         # treatment equation
+y=x%*%beta+0.5*d+rnorm(n)       # outcome equation
+# The true ATE is equal to 0.5
+output=treatDML(y,d,x)
+cat("ATE: ",round(c(output$effect),3),", standard error: ",
+    round(c(output$se),3), ", p-value: ",round(c(output$pval),3))
+output$ntrimmed
+## End(Not run)
+</code></pre>
+
+
+</div>

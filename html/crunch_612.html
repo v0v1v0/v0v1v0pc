@@ -1,0 +1,145 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>makeCaseWhenVariable</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Create a categorical or numeric variable based on conditions</h2>
+
+<h3>Description</h3>
+
+<p>Conditions are specified using a series of formulas: the left-hand side is
+the condition that must be true (a <code>CrunchLogicalExpr</code>) and the right-hand
+side is where to get the value if the condition on the left-hand side is
+true. When creating a categorical variable, the right-hand side must be
+a <code>Category</code> or a categorical <code>CrunchVariable</code> or <code>CrunchExpression</code>, while
+for numeric variables it is a single number or variable or expression.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">makeCaseWhenVariable(..., data = NULL, cases = NULL, name, type = NULL)
+
+caseWhenExpr(..., data = NULL, cases = NULL, type = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>formulas where the left hand side is a <code>CrunchLogicalExpression</code> (or <code>TRUE</code>
+to indicate the "else" case that will be met if all the other expression are
+not met) and the right hand side is a CrunchVariable that should be filled in,
+a <code>Category</code> object describing the Category it should be used, a string
+which will be the name of the <code>Category</code> or <code>NA</code> to indicate that it should
+be replaced with the system missing value. For <code>makeCaseWhenVariable()</code>
+non-formula arguments will be passed to <code style="white-space: pre;">⁠[VarDef()]⁠</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A CrunchDataset to use if variable aliases are left bare in the
+formulas.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cases</code></td>
+<td>
+<p>A list of formulas that match the description in <code>...</code> or a list of
+lists with named items, "expression" (like the left-hand side of the formulas above),
+"fill" for a variable to fill in, or "name", "id", and other items that describe a
+category.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p>For <code>makeCaseWhenVariable()</code> the name of the variable to create.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>The type of the variable to output (either "categorical" or "numeric"), only
+required if all fills are expressions and so their type cannot be guessed automatically.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><code>makeCaseWhenVariable()</code> returns a <code>VariableDefinition</code> and
+<code>caseWhenExpr()</code> returns an expression
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+# Creating categorical variables
+ds$new_var &lt;- makeCaseWhenVariable(
+   ds$x %in% c("a", "b") ~ ds$y, # can fill with a variable
+   ds$x %in% c("c", "d") ~ Category(name = "c or d", numeric_value = 10), # or a Category
+   # If none of the categories match, will be set to missing unless you
+   # specify an "else" case with `TRUE` in the left hand side
+   TRUE ~ Category(name = "catch all"),
+   name = "combined x and y"
+)
+
+ds$brand_x_pref &lt;- makeCaseWhenVariable(
+   ds$brand[[1]] == "Brand X" ~ ds$pref[[1]],
+   ds$brand[[2]] == "Brand X" ~ ds$pref[[2]],
+   ds$brand[[3]] == "Brand X" ~ ds$pref[[3]],
+   name = "brand x preference"
+)
+
+ds$x_among_aware &lt;- makeCaseWhenVariable(
+   ds$aware_x == "Yes" ~ ds$x,
+   TRUE ~ Category(name = "(Not aware)", missing = TRUE),
+   name = "x (among respondents aware of x)"
+)
+
+ds$new_num_var &lt;- makeCaseWhenVariable(
+  ds$x %in% c("a", "b") ~ ds$z, # LHS as before, RHS can be numeric variables,
+  ds$x == "c" ~ ds$z * 10, # expressions,
+  ds$x == "d" ~ 100, # or numbers
+  name = "New numeric variable"
+)
+
+ds$capped_z &lt;- makeCaseWhenVariable(
+  ds$z &gt; 10 ~ 10,
+  TRUE ~ ds$z,
+  name = "Capped z"
+)
+
+# caseWhenExpr can be used inside other expressions
+ds$brand_x_prefer_high &lt;- VarDef(
+   selectCategories(
+       caseWhenExpr(
+           ds$brand_shown[[1]] == "Brand X" ~ ds$ratings[[1]],
+           ds$brand_shown[[2]] == "Brand X" ~ ds$ratings[[2]],
+           ds$brand_shown[[3]] == "Brand X" ~ ds$ratings[[3]]
+       ),
+       c("Best", "Very Good")
+   ),
+   name = "Rate X highly"
+)
+
+# Using lists in `cases` argument can be helpful when working programmatically
+source_var &lt;- ds$x
+inclusion_condition &lt;- ds$skipped_x != "Yes"
+
+ds$x2_among_aware &lt;- makeCaseWhenVariable(
+   cases = list(list(fill = source_var, expression = inclusion_condition)),
+   name = "x2 among aware"
+)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

@@ -1,0 +1,206 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>calibrate</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>make a linear modification to a colorSpec responder</h2>
+
+<h3>Description</h3>
+
+<p>make a linear modification to a <b>colorSpec</b> responder with M spectra,
+so a specific stimulus (a single spectrum) creates a specific response (an M-vector).
+It is generalized form of <em>white balance</em>.<br>
+The options are complicated, but in all cases the returned object is
+<code>multiply(x,gmat)</code> where <code>gmat</code> is an internally calculated MxM matrix - called the <em>gain matrix</em>.
+Stated another way, the spectra in the output are linear combinations of spectra in
+the input <code>x</code>.<br>
+In case of ERROR, a message is logged and the original <code>x</code> is returned.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'colorSpec'
+calibrate( x, stimulus=NULL, response=NULL, method=NULL )
+
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a <b>colorSpec</b> responder with M spectra.
+The <code>type</code> must be <code>'responsivity.light'</code> or <code>'responsivity.material'</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stimulus</code></td>
+<td>
+<p>a <b>colorSpec</b> object with a single spectrum, with <code>type</code> either
+<code>'light'</code> or <code>'material'</code> to match <code>x</code>.
+The wavelength sequence of <code>stimulus</code> must be equal to that of <code>x</code>.<br>
+If <code>stimulus</code> is <code>NULL</code>, then an appropriate default is chosen, see <b>Details</b>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>response</code></td>
+<td>
+<p>an M-vector, or a scalar which is then replicated to length M.
+Normally all entries are not <code>NA</code>, but it is OK to have exactly one that is not <code>NA</code>.
+In this special case, a single scaling factor is computed from that non-<code>NA</code> coordinate,
+and then applied to <em>all</em> M coordinates; the <code>method</code> must be <code>'scaling'</code>.
+This is useful for the recommended method for calibration in ASTM E308-01 section 7.1.2.
+The same type of scaling is also recommended method in CIE 15: Technical Report section 7.1.
+In this case <code>response=c(NA,100,NA)</code> so the special coordinate is the luminance Y.
+See the <b>Examples</b> below and the vignettes
+<a href="../doc/gallery.pdf"><b>Viewing Object Colors in a Gallery</b></a>
+and  
+<a href="../doc/lens-aging.pdf"><b>The Effect of the Aging Human Lens on Color Vision</b></a>.<br>
+All entries in <code>response</code>, that are not <code>NA</code>, must be positive.<br>  
+If <code>response</code> is <code>NULL</code>, then an appropriate default <em>may be</em> chosen, see <b>Details</b>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>an MxM <em>adaptation matrix</em>.
+<code>method</code> can also be <code>'scaling'</code> and it is then set to the MxM identity matrix,
+which scales each responsivity spectrum in <code>x</code> independently.<br>
+If M=3, <code>method</code> can also be <code>'Bradford'</code>, <code>'Von Kries'</code>, <code>'MCAT02'</code>, or <code>'Bianco+Schettini'</code>,
+and it is then set to the popular corresponding <em>chromatic adaptation matrix</em>.
+For these special matrices, the spectra in <code>x</code> are <b>not</b> scaled independently;
+there is "cross-talk".<br>
+If <code>method</code> is <code>NULL</code>, then an appropriate default is chosen, see <b>Details</b>.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If <code>stimulus</code> is <code>NULL</code>, it is set to
+<code>illuminantE()</code> or <code>neutralMaterial()</code> to match <code>x</code>.
+</p>
+<p>If <code>response</code> is <code>NULL</code> and the response of <code>x</code> is <code>electrical</code> or <code>action</code>,
+then <code>response</code> is set to an M-vector of all 1s.
+If <code>response</code> is <code>NULL</code> and the response of <code>x</code> is <code>neural</code>,
+then this is an ERROR and the user is prompted to supply a specific <code>response</code>.
+</p>
+<p>If <code>method</code> is <code>NULL</code>, its assignment is complicated.<br>
+If M=3 and the response of <code>x</code> is <code>neural</code>, 
+and the <code>specnames</code> of <code>x</code> partially match <code>c('x','y','z')</code> (case-insensitive),
+and none of the components of <code>response</code> are <code>NA</code>,
+then the neural response is assumed to be human,   and the <code>method</code> is set to <code>'Bradford'</code>.<br>
+Otherwise <code>method</code> is set to <code>'scaling'</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a <b>colorSpec</b> object equal to <code>multiply(x,gmat)</code>
+where <code>gmat</code> is an internally calculated MxM matrix.
+The <code>quantity()</code> and <code>wavelength()</code> are preserved.<br>
+Note that <code>gmat</code> is not the same as the the MxM <em>adaptation matrix</em>.
+To inspect <code>gmat</code> execute <code>summary()</code> on the returned object.
+If <code>method</code> is <code>'scaling'</code> then <code>gmat</code> is diagonal and the
+diagonal entries are the M gain factors needed to achieve the calibration.<br>
+Useful data is attached as attribute <code>"calibrate"</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Chromatic adaptation transforms, such as <code>'Bradford'</code>,
+do not belong in the realm of spectra,
+for this is not really a spectral calculation.
+For more about this subject see the explanation in <cite>Digital Color Management</cite>,
+Chapter 15 - Myths and Misconceptions.
+These sophisticated adaptation transforms are provided in <code>calibrate()</code> because it is possible and convenient.
+</p>
+
+
+<h3>References</h3>
+
+<p>ASTM E308-01.
+Standard Practice for Computing the Colors of Objects by Using the CIE System.
+2001.
+</p>
+<p>CIE 15: Technical Report: Colorimetry, 3rd edition.
+CIE 15:2004.
+</p>
+<p>Edward J. Giorgianni and Thomas E. Madden.
+<b>Digital Color Management: Encoding Solutions.</b> 2nd Edition
+John Wiley. 2009.
+Chapter 15 - Myths and Misconceptions.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>is.regular()</code>,
+<code>multiply()</code>,
+<code>quantity()</code>,
+<code>wavelength()</code>,
+<code>colorSpec</code>,
+<code>summary()</code>,
+<code>illuminantE()</code>,
+<code>neutralMaterial()</code>,
+<code>product()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">wave = 380:780
+
+# make an art gallery illuminated by illuminant A, and with tristimulus XYZ as output
+gallery = product( A.1nm, 'artwork', xyz1931.1nm, wave=wave )
+
+#  calibrate simplistically,
+#  so the perfect reflecting diffuser has the standard XYZ coordinates for Illuminant A
+#  using the convention that Y=100 (instead of Y=1)
+A = 100 * spacesXYZ::standardXYZ('A')
+A
+##         X   Y      Z
+##  A 109.85 100 35.585
+
+
+gallery.cal1 = calibrate( gallery, response=A, method='scaling' )
+
+#  calibrate following the ASTM and CIE recommendation
+gallery.cal2 = calibrate( gallery, response=c(NA,100,NA), method='scaling' )
+
+#   make the Perfect Reflecting Diffuser for testing
+prd = neutralMaterial( 1, wave=wave ) ; specnames(prd) = 'PRD'
+
+#   compare responses to the PRD for gallery.cal1 and gallery.cal2
+white.1 = product( prd, gallery.cal1 )
+white.2 = product( prd, gallery.cal2 )
+white.1 ; white.2 ; white.1 - white.2 
+
+##           X   Y      Z
+##  PRD 109.85 100 35.585
+##             X   Y        Z
+##  PRD 109.8488 100 35.58151
+##                X             Y           Z
+##  PRD 0.001210456 -2.842171e-14 0.003489313
+
+
+# make an RGB flatbead scanner from illuminant F11 and a Flea2 camera
+scanner = product( subset(Fs.5nm,'F11'), 'paper', Flea2.RGB, wave='auto')
+# adjust RGB gain factors (white balance) so the perfect reflecting diffuser yields RGB=(1,1,1)
+scanner = calibrate( scanner )
+
+# same flatbead scanner, but this time with some "white headroom"
+scanner = product( subset(Fs.5nm,'F11'), 'paper', Flea2.RGB, wave='auto' )
+scanner = calibrate( scanner, response=0.95 )
+scanner
+</code></pre>
+
+
+</div>

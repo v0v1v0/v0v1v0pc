@@ -1,0 +1,119 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>tidy_as_ard</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Build ARD from Tidier</h2>
+
+<h3>Description</h3>
+
+<p>Function converts a model's one-row tidy data frame into an ARD structure.
+The tidied data frame must have been constructed with
+<code>eval_capture_conditions()</code>.
+</p>
+<p>This function is primarily for developers and few consistency checks have
+been included.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">tidy_as_ard(
+  lst_tidy,
+  tidy_result_names,
+  fun_args_to_record = character(0L),
+  formals = list(),
+  passed_args = list(),
+  lst_ard_columns
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>lst_tidy</code></td>
+<td>
+<p>(named <code>list</code>)<br>
+list of tidied results constructed with <code>eval_capture_conditions()</code>,
+e.g. <code>eval_capture_conditions(t.test(mtcars$mpg ~ mtcars$am) |&gt; broom::tidy())</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tidy_result_names</code></td>
+<td>
+<p>(<code>character</code>)<br>
+character vector of column names expected by the
+tidier method. This is used to construct blank results in the event of an error.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fun_args_to_record</code></td>
+<td>
+<p>(<code>character</code>)<br>
+character vector of function argument names that are added to the ARD.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formals</code></td>
+<td>
+<p>(<code>pairlist</code>)<br>
+the results from <code>formals()</code>, e.g. <code>formals(fisher.test)</code>.
+This is used to get the default argument values from unspecified arguments.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>passed_args</code></td>
+<td>
+<p>(named <code>list</code>)<br>
+named list of additional arguments passed to the modeling function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lst_ard_columns</code></td>
+<td>
+<p>(named <code>list</code>)<br>
+named list of values that will be added to the ARD data frame.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>an ARD data frame of class 'card'
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># example how one may create a fisher.test() ARD function
+my_ard_fishertest &lt;- function(data, by, variable, ...) {
+  # perform fisher test and format results -----------------------------------
+  lst_tidy_fisher &lt;-
+    eval_capture_conditions(
+      # this manipulation is similar to `fisher.test(...) |&gt; broom::tidy()`
+      stats::fisher.test(x = data[[variable]], y = data[[by]], ...)[c("p.value", "method")] |&gt;
+        as.data.frame()
+    )
+
+  # build ARD ------------------------------------------------------------------
+  tidy_as_ard(
+    lst_tidy = lst_tidy_fisher,
+    tidy_result_names = c("p.value", "method"),
+    fun_args_to_record =
+      c(
+        "workspace", "hybrid", "hybridPars", "control", "or",
+        "conf.int", "conf.level", "simulate.p.value", "B"
+      ),
+    formals = formals(stats::fisher.test),
+    passed_args = dots_list(...),
+    lst_ard_columns = list(group1 = by, variable = variable, context = "fishertest")
+  )
+}
+
+my_ard_fishertest(mtcars, by = "am", variable = "vs")
+</code></pre>
+
+
+</div>

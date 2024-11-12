@@ -1,0 +1,182 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>resample</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>resample a colorSpec Object to new wavelengths</h2>
+
+<h3>Description</h3>
+
+<p>interpolate or smooth to new wavelengths.  
+Simple extrapolation and clamping is also performed.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'colorSpec'
+resample( x, wavelength, method='auto', span=0.02, extrapolation='const', clamp='auto' )
+
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a <b>colorSpec</b> object</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>wavelength</code></td>
+<td>
+<p>vector of new wavelengths, in nanometers</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>interpolation methods available are 
+<code>'sprague'</code>, <code>'spline'</code>, and <code>'linear'</code>.
+Also available is <code>'auto'</code> which means to use <code>'sprague'</code>
+if <code>x</code> is regular, and <code>'spline'</code> otherwise.
+
+An available smoothing method is <code>'loess'</code>.
+See <b>Details</b>.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>span</code></td>
+<td>
+<p>smoothing argument passed to <code>loess()</code>
+during interpolation, and not used by other methods.
+The default value <code>span=0.02</code> is suitable for
+<code>.scope</code> spectra but may be too small in many other cases.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extrapolation</code></td>
+<td>
+<p>extrapolation methods available are
+<code>'const'</code> and <code>'linear'</code>.
+These can be abbreviated to the initial letter.
+Also available is a numeric value, which is used for simple padding.
+See <b>Details</b>.<br>
+Also available is a vector or list of length 2 that combines 2 of the above.
+The first item is used on the low side (shorter wavelengths),
+and the second item is used on the high side (longer wavelengths).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clamp</code></td>
+<td>
+<p>clamp methods available are
+<code>'auto'</code>, <code>TRUE</code>, and <code>FALSE</code>.
+Also available is a numeric vector of length 2,
+which defines the clamping interval.    
+See <b>Details</b>.
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If method is <code>'sprague'</code>, the quintic polynomial in <cite>De Kerf</cite> is used.
+Six weights are applied to nearby data values: 3 on each side.
+The <code>'sprague'</code> method is only supported when <code>x</code> is regular.
+</p>
+<p>If method is <code>'spline'</code>, the function <code>stats::spline()</code>
+is called with <code>method='natural'</code>.
+
+The <code>'spline'</code> method is supported even when <code>x</code> is irregular.
+</p>
+<p>If method is <code>'linear'</code>, the function <code>stats::approx()</code> is called.
+Two weights are applied to nearby data values: 1 on each side.
+The <code>'linear'</code> method is supported even when <code>x</code> is irregular.
+</p>
+<p>If method is <code>'loess'</code>, the function <code>stats::loess()</code> is called
+with the given <code>span</code> parameter.
+Smoothing is most useful for noisy data, e.g. raw data from a spectrometer.
+I have found that <code>span=0.02</code> works well for Ocean Optics <code>.scope</code> files, 
+but this may be too small in other cases, which triggers an error in <code>stats::loess()</code>. 
+The <code>'loess'</code> method is supported even when <code>x</code> is irregular.
+</p>
+<p>If extrapolation is <code>'const'</code>,
+the extreme values at each end are simply extended.
+If extrapolation is <code>'linear'</code>,
+the line defined by the 2 extreme values at each end is used for extrapolation.
+If the ultimate and penultimate wavelengths are equal,
+then this line is undefined and the function reverts to <code>'const'</code>.
+</p>
+<p>If clamp is <code>'auto'</code>,
+output values are clamped to the physically realizable interval
+appropriate for <code>x</code>.
+This is the interval [0,1]  when
+<code>quantity(x)</code> is <code>'reflectance'</code> or <code>'transmittance'</code>,
+and the interval [0,<code class="reqn">\infty</code>)  otherwise.
+Exception: If an input spectrum in <code>x</code> violates a limit,
+then clamping the output spectrum to this limit is <em>NOT</em> enforced.
+This happens most frequenty for theoretical (or matrixed) cameras,
+such as <code>BT.709.RGB</code>.
+</p>
+<p>If clamp is <code>TRUE</code>, the result is the same as <code>'auto'</code>,
+but with no exceptions.
+If clamp is <code>FALSE</code>, then no clamping is done.
+</p>
+<p>If clamp is a numerical interval, then clamping is done to that interval,
+with no exceptions.
+The two standard intervals mentioned above can be expressed in <b>R</b>
+as <code>c(0,1)</code> and <code>c(0,Inf)</code> respectively.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>resample(x)</code> returns a <b>colorSpec</b> object 
+with the new <code>wavelength</code>.
+Other properties, e.g. <code>organization</code>, <code>quantity</code>, ...,
+are preserved.<br>
+In case of ERROR, the function returns <code>NULL</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>De Kerf, Joseph L. F.
+<b>The interpolation method of Sprague-Karup</b>.
+<em>Journal of Computational and Applied Mathematics</em>.
+volume I, no 2, 1975.
+equation (S).
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>organization()</code>,   
+<code>quantity()</code>,
+<code>wavelength()</code>,
+<code>is.regular()</code>,
+<code>theoreticalRGB</code>,
+<code>spline()</code>,
+<code>approx()</code>,
+<code>loess</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">path = system.file( "extdata/sources/pos1-20x.scope", package='colorSpec' )
+y = readSpectra( path )
+# plot noisy data in gray
+plot( y, col='gray' )
+# plot smoothed plot in black on top of the noisy one to check quality
+plot( resample( y, 200:880, meth='loess', span=0.02 ), col='black', add=TRUE )
+</code></pre>
+
+
+</div>

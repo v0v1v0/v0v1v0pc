@@ -1,0 +1,80 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>convey_prep</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>prepare svydesign and svyrep.design objects for the convey package</h2>
+
+<h3>Description</h3>
+
+<p>sets the population of reference for poverty threshold estimation (needed for convey functions that use a global poverty threshold) within the design.  this function generally should be run immediately after the full design object creation with <code>svydesign</code> or <code>svrepdesign</code>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">convey_prep(design)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table><tr style="vertical-align: top;">
+<td><code>design</code></td>
+<td>
+<p>a survey design object of the library survey.</p>
+</td>
+</tr></table>
+<h3>Details</h3>
+
+<p>functions in the convey package that use a global poverty threshold require the complete (pre-subsetted) design in order to calculate variances correctly.  this function stores the full design object as a separate attribute so that functions from the <code>survey</code> package such as <code>subset</code> and <code>svyby</code> do not disrupt the calculation of error terms.
+</p>
+
+
+<h3>Value</h3>
+
+<p>the same survey object with a <code>full_design</code> attribute as the storage space for the unsubsetted survey design
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Djalma Pessoa, Anthony Damico, and Guilherme Jacob
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+library(survey)
+library(laeken)
+data(eusilc) ; names( eusilc ) &lt;- tolower( names( eusilc ) )
+
+# linearized design: convey_prep must be run as soon as the linearized design has been created
+des_eusilc &lt;- svydesign( ids = ~rb030 , strata = ~db040 ,  weights = ~rb050 , data = eusilc )
+des_eusilc &lt;- convey_prep( des_eusilc )
+# now this linearized design object is ready for analysis!
+
+# # # CORRECT usage example # # #
+des_eusilc &lt;- svydesign( ids = ~rb030 , strata = ~db040 ,  weights = ~rb050 , data = eusilc )
+des_eusilc &lt;- convey_prep( des_eusilc )
+sub_eusilc &lt;- subset( des_eusilc , age &gt; 20 )
+# since convey_prep() was run immediately after creating the design
+# this will calculate the variance accurately
+SE( svyarpt( ~ eqincome , sub_eusilc ) )
+# # # end of CORRECT usage example # # #
+
+# # # INCORRECT usage example # # #
+des_eusilc &lt;- svydesign( ids = ~rb030 , strata = ~db040 ,  weights = ~rb050 , data = eusilc )
+sub_eusilc &lt;- subset( des_eusilc , age &gt; 20 )
+sub_eusilc &lt;- convey_prep( sub_eusilc )
+# since convey_prep() was not run immediately after creating the design
+# this will make the variance wrong
+SE( svyarpt( ~ eqincome , sub_eusilc ) )
+# # # end of INCORRECT usage example # # #
+
+</code></pre>
+
+
+</div>

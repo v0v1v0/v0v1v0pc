@@ -1,0 +1,251 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>crf</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Linear-chain Conditional Random Field</h2>
+
+<h3>Description</h3>
+
+<p>Fits a Linear-chain (first-order Markov) CRF on the provided label sequence and saves it on disk in order to do sequence labelling.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">crf(
+  x,
+  y,
+  group,
+  method = c("lbfgs", "l2sgd", "averaged-perceptron", "passive-aggressive", "arow"),
+  options = crf_options(method)$default,
+  embeddings,
+  file = "annotator.crfsuite",
+  trace = FALSE,
+  FUN = identity,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a character matrix of data containing attributes about the label sequence <code>y</code> or an object which can be coerced to a character matrix.
+It is important to note that an attribute which has the same value in a different column is considered the same.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>y</code></td>
+<td>
+<p>a character vector with the sequence of labels to model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>group</code></td>
+<td>
+<p>an integer or character vector of the same length as <code>y</code> indicating the group the sequence <code>y</code> belongs to (e.g. a document or sentence identifier)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>character string with the type of training method. Either one of:
+</p>
+
+<ul>
+<li>
+<p>lbfgs: L-BFGS with L1/L2 regularization
+</p>
+</li>
+<li>
+<p>l2sgd: SGD with L2-regularization
+</p>
+</li>
+<li>
+<p>averaged-perceptron: Averaged Perceptron
+</p>
+</li>
+<li>
+<p>passive-aggressive: Passive Aggressive
+</p>
+</li>
+<li>
+<p>arow: Adaptive Regularization of Weights (AROW)
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>options</code></td>
+<td>
+<p>a list of options to provide to the training algorithm. See <code>crf_options</code> for possible options and the example below on how to provide them.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>embeddings</code></td>
+<td>
+<p>a matrix with the same number of rows as <code>x</code> and in the same order with numeric information used in model building (experimental)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>file</code></td>
+<td>
+<p>a character string with the path to the file on disk where the CRF model will be stored.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>a logical indicating to show the trace of the training output. Defaults to <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FUN</code></td>
+<td>
+<p>a function which can be applied on raw text in order to obtain the attribute matrix used in <code>predict.crf</code>. Currently not used yet.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>arguments to FUN. Currently not used yet.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>an object of class crf which is a list with elements
+</p>
+
+<ul>
+<li>
+<p>method: The training method
+</p>
+</li>
+<li>
+<p>type: The type of graphical model which is always set crf1d: Linear-chain (first-order Markov) CRF
+</p>
+</li>
+<li>
+<p>labels: The training labels
+</p>
+</li>
+<li>
+<p>options: A data.frame with the training options provided to the algorithm
+</p>
+</li>
+<li>
+<p>file_model: The path where the CRF model is stored
+</p>
+</li>
+<li>
+<p>attribute_names: The column names of <code>x</code>
+</p>
+</li>
+<li>
+<p>log: The training log of the algorithm
+</p>
+</li>
+<li>
+<p>FUN: The argument passed on to FUN
+</p>
+</li>
+<li>
+<p>ldots: A list with the arguments passed on to ...
+</p>
+</li>
+</ul>
+<h3>References</h3>
+
+<p>More details about this model is available at <a href="http://www.chokkan.org/software/crfsuite/">http://www.chokkan.org/software/crfsuite/</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>predict.crf</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Download modeldata (conll 2002 shared task in Dutch)
+
+x         &lt;- ner_download_modeldata("conll2002-nl")
+
+# for CRAN only - word on a subset of the data
+x &lt;- ner_download_modeldata("conll2002-nl", docs = 10)
+if(is.data.frame(x)){
+  ##
+  ## Build Named Entity Recognition model on conll2002-nl
+  ##
+  x$pos     &lt;- txt_sprintf("Parts of Speech: %s", x$pos)
+  x$token   &lt;- txt_sprintf("Token: %s", x$token)
+  crf_train &lt;- subset(x, data == "ned.train")
+  crf_test  &lt;- subset(x, data == "testa")
+
+  model &lt;- crf(y = crf_train$label, 
+               x = crf_train[, c("token", "pos")], 
+               group = crf_train$doc_id, 
+               method = "lbfgs", 
+               options = list(max_iterations = 3, feature.minfreq = 5, 
+                              c1 = 0, c2 = 1)) 
+  model
+  weights &lt;- coefficients(model)
+  head(weights$states, n = 20)
+  head(weights$transitions, n = 20)
+  stats   &lt;- summary(model, "modeldetails.txt")
+  stats
+  plot(stats$iterations$loss)
+
+  ## Use the CRF model to label a sequence
+  scores &lt;- predict(model, 
+                    newdata = crf_test[, c("token", "pos")], 
+                    group = crf_test$doc_id)
+  head(scores)
+  crf_test$label &lt;- scores$label
+  
+  ## cleanup for CRAN
+  if(file.exists(model$file_model)) file.remove(model$file_model)
+  if(file.exists("modeldetails.txt")) file.remove("modeldetails.txt")
+}
+
+##
+## More detailed example where text data was annotated with the webapp in the package
+## This data is joined with a tokenised dataset to construct the training data which
+## is further enriched with attributes of upos/lemma in the neighbourhood
+##
+
+library(udpipe)
+data(airbnb_chunks, package = "crfsuite")
+udmodel       &lt;- udpipe_download_model("dutch-lassysmall")
+if(!udmodel$download_failed){
+udmodel       &lt;- udpipe_load_model(udmodel$file_model)
+airbnb_tokens &lt;- udpipe(x = unique(airbnb_chunks[, c("doc_id", "text")]), 
+                        object = udmodel)
+x &lt;- merge(airbnb_chunks, airbnb_tokens)
+x &lt;- crf_cbind_attributes(x, terms = c("upos", "lemma"), by = "doc_id")
+model &lt;- crf(y = x$chunk_entity, 
+             x = x[, grep("upos|lemma", colnames(x), value = TRUE)], 
+             group = x$doc_id, 
+             method = "lbfgs", options = list(max_iterations = 5)) 
+stats &lt;- summary(model)
+stats
+plot(stats$iterations$loss, type = "b", xlab = "Iteration", ylab = "Loss")
+scores &lt;- predict(model, 
+                  newdata = x[, grep("upos|lemma", colnames(x))], 
+                  group = x$doc_id)
+head(scores)
+}
+
+
+</code></pre>
+
+
+</div>

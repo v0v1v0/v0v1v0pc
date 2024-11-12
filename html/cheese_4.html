@@ -1,0 +1,178 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>depths</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Find the elements in a list structure that satisfy a predicate</h2>
+
+<h3>Description</h3>
+
+<p>Traverse a list of structure to find the depths and positions of its elements that satisfy a predicate.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">depths(
+    list,
+    predicate,
+    bare = TRUE,
+    ...
+)
+depths_string(
+    list,
+    predicate,
+    bare = TRUE,
+    ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>list</code></td>
+<td>
+<p>A <code>list</code>, <code>data.frame</code>, or <code>vector</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predicate</code></td>
+<td>
+<p>A <code>function</code> that evaluates to <code>TRUE</code> or <code>FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>bare</code></td>
+<td>
+<p>Should algorithm only continue for bare lists? Defaults to TRUE. See <code>rlang::`bare-type-predicates`</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional arguments to pass to <code>predicate</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The input is recursively evaluated to find elements that satisfy <code>predicate</code>, and only proceeds where <code>rlang::is_list</code> when argument <code>bare</code> is <code>FALSE</code>, and <code>rlang::is_bare_list</code> when it is <code>TRUE</code>.
+</p>
+
+
+<h3>Value</h3>
+
+
+<ul>
+<li> <p><code>depths()</code> returns an <code>integer</code> vector indicating the levels that contain elements satisfying the predicate.
+</p>
+</li>
+<li> <p><code>depths_string()</code> returns a <code>character</code> representation of the traversal. Brackets {} are used to indicate the level of the tree, commas to separate element-indices within a level, and the sign of the index to indicate whether the element satisfied <code>predicate</code> (- = yes, + = no).
+</p>
+</li>
+</ul>
+<h3>Author(s)</h3>
+
+<p>Alex Zajichek</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#Find depths of data frames
+df1 &lt;-
+  heart_disease %&gt;%
+  
+    #Divide the frame into a list
+    divide(
+      Sex,
+      HeartDisease,
+      ChestPain
+    )
+
+df1 %&gt;%
+  
+  #Get depths as an integer
+  depths(
+    predicate = is.data.frame
+  )
+
+df1 %&gt;%
+
+  #Get full structure
+  depths_string(
+    predicate = is.data.frame
+  )
+
+#Shallower list
+df2 &lt;-
+  heart_disease %&gt;%
+    divide(
+      Sex,
+      HeartDisease,
+      ChestPain,
+      depth = 1
+    ) 
+
+df2 %&gt;%
+  depths(
+    predicate = is.data.frame
+  )
+
+df2 %&gt;%
+  depths_string(
+    predicate = is.data.frame
+  )
+
+#Allow for non-bare lists to be traversed
+df1 %&gt;%
+  depths(
+    predicate = is.factor,
+    bare = FALSE
+  )
+
+#Make uneven list with diverse objects
+my_list &lt;-
+  list(
+    heart_disease,
+    list(
+      heart_disease
+    ),
+    1:10,
+    list(
+      heart_disease$Age,
+      list(
+        heart_disease
+      )
+    ),
+    glm(
+      formula = HeartDisease ~ .,
+      data = heart_disease,
+      family = "binomial"
+    )
+  )
+
+#Find the data frames
+my_list %&gt;%
+  depths(
+    predicate = is.data.frame
+  )
+
+my_list %&gt;%
+  depths_string(
+    predicate = is.data.frame
+  )
+
+#Go deeper by relaxing bare list argument
+my_list %&gt;%
+  depths_string(
+    predicate = is.data.frame,
+    bare = FALSE
+  )
+
+</code></pre>
+
+
+</div>

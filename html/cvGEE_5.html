@@ -1,0 +1,117 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cv_gee</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Proper Scoring Rules for Generalized Estimating Equations
+</h2>
+
+<h3>Description</h3>
+
+<p>Calculates the logarithmic, quadratic/Brier and spherical scoring rules based on generalized estimation equations.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cv_gee(object, rule = c("all", "quadratic", "logarithmic", "spherical"), 
+  max_count = 500, K = 5L, M = 10L, seed = 1L, return_data = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>an object inheriting from class <code>"geeglm"</code> of the <b>geepack</b>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rule</code></td>
+<td>
+<p>character string indicating the type of scoring rule to be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_count</code></td>
+<td>
+<p>numeric scalar or vector denoting the maximum count up to which to calculate 
+probabilities; this is relevant for count response data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>K</code></td>
+<td>
+<p>numeric scalar indicating the number of folds used in the cross-validation procedure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>M</code></td>
+<td>
+<p>numeric scalar denoting how many times the split of the data in <code>K</code> folds will be performed. The reported scoring rules values are the average over the <code>M</code> replicates.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>seed</code></td>
+<td>
+<p>numeric scalre providing the seed used in the procedure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>return_data</code></td>
+<td>
+<p>logical; if <code>TRUE</code> the values of the scoring rules are 
+ruturned as extra columns of the <code>data</code> behind <code>object</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list or a data.frame with elements or (extra) columns the values of the logarithmic, quadratic and spherical scoring rules calculated based on the GEE object.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Dimitris Rizopoulos <a href="mailto:d.rizopoulos@erasmusmc.nl">d.rizopoulos@erasmusmc.nl</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Carvalho, A. (2016). An overview of applications of proper scoring rules. 
+<em>Decision Analysis</em> <b>13</b>, 223-242. doi:10.1287/deca.2016.0337
+</p>
+<p>Liang, K.Y. and Zeger, S.L. (1986). Longitudinal data  analysis  using  generalized  linear  models. <em>Biometrika</em> <b>73</b>, 13-22. doi:10.1093/biomet/73.1.13
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library("geepack")
+library("lattice")
+
+pbc2$serBilirD &lt;- as.numeric(pbc2$serBilir &gt; 1.2)
+
+fm1 &lt;- geeglm(serBilirD ~ year, family = binomial(), data = pbc2, 
+              id = id, corstr = "exchangeable")
+
+fm2 &lt;- geeglm(serBilirD ~ year * drug, family = binomial(), data = pbc2, 
+              id = id, corstr = "exchangeable")
+
+plot_data &lt;- cv_gee(fm1, return_data = TRUE, M = 5)
+plot_data$model_year &lt;- plot_data$.score
+plot_data$model_year_drug &lt;- unlist(cv_gee(fm2, M = 5))
+
+xyplot(model_year + model_year_drug ~ year | .rule, data = plot_data, 
+       type = "smooth", auto.key = TRUE, layout = c(3, 1),
+       scales = list(y = list(relation = "free")),
+       xlab = "Follow-up time (years)", ylab = "Scoring Rules")
+</code></pre>
+
+
+</div>

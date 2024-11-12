@@ -1,0 +1,435 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>clustEff</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Cluster Effects Algorithm
+</h2>
+
+<h3>Description</h3>
+
+<p>This function implements the algorithm to cluster curves of effects obtained from a
+quantile regression (qrcm; Frumento and Bottai, 2015) in which the coefficients are described by flexible parametric functions of the order of the quantile. This algorithm can be also used for clustering of curves observed in time, as in functional data analysis.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">clustEff(Beta, Beta.lower = NULL, Beta.upper = NULL,
+         k = c(2, min(5, (ncol(Beta)-1))), ask = FALSE, diss.mat, alpha = .5,
+         step = c("both", "shape", "distance"),
+         cut.method = c("mindist", "length", "conf.int"),
+         method = "ward.D2", approx.spline = FALSE, nbasis = 50,
+         conf.level = 0.9, stand = FALSE, plot = TRUE, trace = TRUE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Beta</code></td>
+<td>
+<p>A matrix <kbd>n</kbd> x <kbd>q</kbd>. <kbd>q</kbd> represents the number of curves to cluster and <kbd>n</kbd> is either the length of percentiles used in the quantile regression or the length of the time vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Beta.lower</code></td>
+<td>
+<p>A matrix <kbd>n</kbd> x <kbd>q</kbd>. <kbd>q</kbd> represents the number of lower interval of the   curves to cluster and <kbd>n</kbd> the length of percentiles used in quantile regression. Used only if cluster.effects=TRUE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Beta.upper</code></td>
+<td>
+<p>A matrix <kbd>n</kbd> x <kbd>q</kbd>. <kbd>q</kbd> represents the number of upper interval of the curves to cluster and <kbd>n</kbd> the length of percentiles used in quantile regression. Used only if cluster.effects=TRUE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p>It represents the number of clusters to look for. If it is two-length vector (k.min - k.max) an optimization is performed, if it is a unique value it is fixed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ask</code></td>
+<td>
+<p>If TRUE, after plotting the dendrogram, the user make is own choice about how many cluster to use.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>diss.mat</code></td>
+<td>
+<p>a dissimilarity matrix, obtained by using distshape function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>It is the alpha-percentile used for computing the dissimilarity matrix. The default value is alpha=.5.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>step</code></td>
+<td>
+<p>The steps used in computing the dissimilarity matrix. Default is "both"=("shape" and  "distance")</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cut.method</code></td>
+<td>
+<p>The method used in optimization step to look for the optimal number of clusters. Default is "mindist", however if Beta.lower and Beta.upper are available the suggested method is "conf.int".</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>The agglomeration method to be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>approx.spline</code></td>
+<td>
+<p>If TRUE, Beta is approximated by a smooth spline.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nbasis</code></td>
+<td>
+<p>An integer variable specifying the number of basis functions. Only when approx.spline=TRUE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conf.level</code></td>
+<td>
+<p>the confidence level required.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stand</code></td>
+<td>
+<p>If TRUE, the argument Beta is standardized.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot</code></td>
+<td>
+<p>If TRUE, dendrogram, boxplot and clusters are plotted.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>If TRUE, some informations are printed.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Quantile regression models conditional quantiles of a response variabile,
+given a set of covariates. Assume that each coefficient can be expressed as a parametric function of      <code class="reqn">p</code> in the form: </p>
+<p style="text-align: center;"><code class="reqn">\beta(p | \theta) = \theta_{0} + \theta_1 b_1(p) + \theta_2 b_2(p) +      \ldots</code>
+</p>
+
+<p>where <code class="reqn">b_1(p), b_2(p, \ldots)</code> are known functions of <code class="reqn">p</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class “<code>clustEff</code>”, a list containing the following items:
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>the matched call.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p>The percentiles used in quantile regression coefficient modeling or the time otherwise.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>The curves matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>clusters</code></td>
+<td>
+<p>The vector of clusters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X.mean</code></td>
+<td>
+<p>The mean curves matrix of dimension <kbd>n</kbd> x <kbd>k</kbd>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X.mean.dist</code></td>
+<td>
+<p>The within cluster distance from the mean curve.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X.lower</code></td>
+<td>
+<p>The lower bound matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X.mean.lower</code></td>
+<td>
+<p>The mean lower bound of dimension <kbd>n</kbd> x <kbd>k</kbd>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X.upper</code></td>
+<td>
+<p>The upper bound matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X.mean.upper</code></td>
+<td>
+<p>The mean upper bound of dimension <kbd>n</kbd> x <kbd>k</kbd>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Signif.interval</code></td>
+<td>
+<p>The matrix of dimension <kbd>n</kbd> x <kbd>k</kbd> containing the intervals in which each mean lower and upper bounds don't include the zero.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k</code></td>
+<td>
+<p>The number of selected clusters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>diss.matrix</code></td>
+<td>
+<p>The dissimilarity matrix.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X.mean.diss</code></td>
+<td>
+<p>The within cluster dissimilarity.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>oggSilhouette</code></td>
+<td>
+<p>An object of class “<code>silhouette</code>”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>oggHclust</code></td>
+<td>
+<p>An object of class “<code>hclust</code>”.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>distance</code></td>
+<td>
+<p>A vector of goodness measures used to select the best number of clusters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>step</code></td>
+<td>
+<p>The selected step.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>The used agglomeration method.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cut.method</code></td>
+<td>
+<p>The used method to select the best number of clusters.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alpha</code></td>
+<td>
+<p>The selected alpha-percentile.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Gianluca Sottile <a href="mailto:gianluca.sottile@unipa.it">gianluca.sottile@unipa.it</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Sottile, G., Adelfio, G. Clusters of effects curves in quantile regression models. Comput Stat 34, 551–569 (2019). https://doi.org/10.1007/s00180-018-0817-8
+</p>
+<p>Sottile, G and Adelfio, G (2017). <em>Clustering of effects through quantile regression</em>.
+Proceedings 32nd International Workshop of Statistical Modeling, Groningen (NL), vol.2 127-130, https://iwsm2017.webhosting.rug.nl/IWSM_2017_V2.pdf.
+</p>
+<p>Frumento, P., and Bottai, M. (2015). <em>Parametric modeling of quantile regression coefficient functions</em>. Biometrics, doi: 10.1111/biom.12410.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>summary.clustEff</code>, <code>plot.clustEff</code>,
+for summary and plotting.
+<code>extract.object</code> to extract useful objects for the clustering algorithm through a quantile regression coefficient modeling in a multivariate case.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# CURVES EFFECTS CLUSTERING
+
+set.seed(1234)
+n &lt;- 300
+q &lt;- 2
+k &lt;- 5
+x1 &lt;- runif(n, 0, 5)
+x2 &lt;- runif(n, 0, 5)
+
+X &lt;- cbind(x1, x2)
+rownames(X) &lt;- 1:n
+colnames(X) &lt;- paste0("X", 1:q)
+
+theta1 &lt;- matrix(c(1, 1, 0, 0, 0, .5, 0, .5, 1, 2, .5, 0, 2, 1, .5),
+                 ncol=k, byrow=TRUE)
+
+theta2 &lt;- matrix(c(1, 1, 0, 0, 0, -.3, 0, .5, 1, .5, -1.5, 0, -1, -.5, 1),
+                 ncol=k, byrow=TRUE)
+
+theta3 &lt;- matrix(c(1, 1, 0, 0, 0, .3, 0, -.5, -1, 2, -.5, 0, 1, -.5, -1),
+                 ncol=k, byrow=TRUE)
+
+rownames(theta3) &lt;- rownames(theta2) &lt;- rownames(theta1) &lt;-
+    c("(intercept)", paste("X", 1:q, sep=""))
+colnames(theta3) &lt;- colnames(theta2) &lt;- colnames(theta1) &lt;-
+    c("(intercept)", "qnorm(p)", "p", "p^2", "p^3")
+
+Theta &lt;- list(theta1, theta2, theta3)
+
+B &lt;- function(p, k){matrix(cbind(1, qnorm(p), p, p^2, p^3), nrow=k, byrow=TRUE)}
+Q &lt;- function(p, theta, B, k, X){rowSums(X * t(theta %*% B(p, k)))}
+
+Y &lt;- matrix(NA, nrow(X), 15)
+for(i in 1:15){
+  if(i &lt;= 5) Y[, i] &lt;- Q(runif(n), Theta[[1]], B, k, cbind(1, X))
+  if(i &lt;= 10 &amp; i &gt; 5) Y[, i] &lt;- Q(runif(n), Theta[[2]], B, k, cbind(1, X))
+  if(i &lt;= 15 &amp; i &gt; 10) Y[, i] &lt;- Q(runif(n), Theta[[3]], B, k, cbind(1, X))
+}
+
+XX &lt;- extract.object(Y, X, intercept=TRUE, formula.p= ~ I(p) + I(p^2) + I(p^3))
+
+obj &lt;- clustEff(XX$X$X1, Beta.lower=XX$Xl$X1, Beta.upper=XX$Xr$X1, cut.method = "conf.int")
+summary(obj)
+plot(obj, xvar="clusters", col = 1:3)
+plot(obj, xvar="dendrogram")
+plot(obj, xvar="boxplot")
+
+obj2 &lt;- clustEff(XX$X$X2, Beta.lower=XX$Xl$X2, Beta.upper=XX$Xr$X2, cut.method = "conf.int")
+summary(obj2)
+plot(obj2, xvar="clusters", col=1:3)
+plot(obj2, xvar="dendrogram")
+plot(obj2, xvar="boxplot")
+
+
+## Not run: 
+set.seed(1234)
+n &lt;- 300
+q &lt;- 15
+k &lt;- 5
+X &lt;- matrix(rnorm(n*q), n, q); X &lt;- scale(X)
+rownames(X) &lt;- 1:n
+colnames(X) &lt;- paste0("X", 1:q)
+
+Theta &lt;- matrix(c(1, 1, 0, 0, 0,
+                  .5, 0, .5, 1, 1,
+                  .5, 0, 1, 2, .5,
+                   .5, 0, 1, 1, .5,
+                  .5, 0, .5, 1, 1,
+                   .5, 0, .5, 1, .5,
+                 -1.5, 0, -.5, 1, 1,
+                  -1, 0, .5, -1, -1,
+                 -.5, 0, -.5, -1, .5,
+                  -1, 0, .5, -1, -.5,
+                -1.5, 0, -.5, -1, -.5,
+                  2, 0, 1, 1.5, 2,
+                  2, 0, .5, 1.5, 2,
+                  2.5, 0, 1, 1, 2,
+                  1.5, 0, 1.5, 1, 2,
+                  3, 0, 2, 1, .5),
+                 ncol=k, byrow=TRUE)
+rownames(Theta) &lt;- c("(intercept)", paste("X", 1:q, sep=""))
+colnames(Theta) &lt;- c("(intercept)", "qnorm(p)", "p", "p^2", "p^3")
+
+B &lt;- function(p, k){matrix(cbind(1, qnorm(p), p, p^2, p^3), nrow=k, byrow=TRUE)}
+Q &lt;- function(p, theta, B, k, X){rowSums(X * t(theta %*% B(p, k)))}
+
+s &lt;- matrix(1, q+1, k)
+s[2:(q+1), 2] &lt;- 0
+s[1, 3:k] &lt;- 0
+
+Y &lt;- Q(runif(n), Theta, B, k, cbind(1, X))
+XX &lt;- extract.object(Y, X, intercept = TRUE, formula.p= ~ I(p) + I(p^2) + I(p^3))
+
+obj3 &lt;- clustEff(XX$X, Beta.lower=XX$Xl, Beta.upper=XX$Xr, cut.method = "conf.int")
+summary(obj3)
+
+# changing the alpha-percentile clusters are correctly identified
+
+obj4 &lt;- clustEff(XX$X, Beta.lower=XX$Xl, Beta.upper=XX$Xr, cut.method = "conf.int",
+                 alpha = 0.25)
+summary(obj4)
+
+# CURVES CLUSTERING IN FUNCTIONAL DATA ANALYSIS
+
+set.seed(1234)
+n &lt;- 300
+x &lt;- 1:n/n
+
+Y &lt;- matrix(0, n, 30)
+
+sigma2 &lt;- 4*pmax(x-.2, 0) - 8*pmax(x-.5, 0) + 4*pmax(x-.8, 0)
+
+mu &lt;- sin(3*pi*x)
+for(i in 1:10) Y[, i] &lt;- mu + rnorm(length(x), 0, pmax(sigma2, 0))
+
+mu &lt;- cos(3*pi*x)
+for(i in 11:23) Y[,i] &lt;- mu + rnorm(length(x), 0, pmax(sigma2,0))
+
+mu &lt;- sin(3*pi*x)*cos(pi*x)
+for(i in 24:28) Y[, i] &lt;- mu + rnorm(length(x), 0, pmax(sigma2, 0))
+
+mu &lt;- 0 #sin(1/3*pi*x)*cos(2*pi*x)
+for(i in 29:30) Y[, i] &lt;- mu + rnorm(length(x), 0, pmax(sigma2, 0))
+
+obj5 &lt;- clustEff(Y)
+summary(obj5)
+plot(obj5, xvar="clusters", col=1:4)
+plot(obj5, xvar="dendrogram")
+plot(obj5, xvar="boxplot")
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,354 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>setup</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Setup Functions for proc and lik objects</h2>
+
+<h3>Description</h3>
+
+<p>These functions set up lik and proc objects of squared error
+and multinormal processes.</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">LS.setup(pars,coefs=NULL,fn,basisvals=NULL,lambda,fd.obj=NULL,
+        more=NULL,data=NULL,weights=NULL,times=NULL,quadrature=NULL,
+        likfn = make.id(), likmore = NULL,eps=1e-6,
+        posproc=FALSE,poslik=FALSE,discrete=FALSE,names=NULL,sparse=FALSE)
+
+multinorm.setup(pars,coefs=NULL,fn,basisvals=NULL,var=c(1,0.01),fd.obj=NULL,
+        more=NULL,data=NULL,times=NULL,quadrature=NULL,eps=1e-6,posproc=FALSE,
+        poslik=FALSE,discrete=FALSE,names=NULL,sparse=FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>pars</code></td>
+<td>
+<p> Initial values of parameters to be estimated processes. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>coefs</code></td>
+<td>
+<p> Vector giving the current estimate of the coefficients in the spline. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fn</code></td>
+<td>
+<p> A function giving the right hand side of a differential/difference equation.  The function should have arguments
+</p>
+
+<ul>
+<li>
+<p>times The times at which the RHS is being evaluated.
+</p>
+</li>
+<li>
+<p>x The state values at those times.
+</p>
+</li>
+<li>
+<p>p Parameters to be entered in the system.
+</p>
+</li>
+<li>
+<p>more An object containing additional inputs to <code>fn</code> </p>
+</li>
+</ul>
+<p>It should return a matrix of the same dimension of <code>x</code> giving the right hand side values.
+</p>
+<p>If <code>fn</code> is given as a single function, its derivatives are estimated by finite-differencing with
+stepsize <code>eps</code>. Alternatively, a list can be supplied with elements:
+</p>
+
+<ul>
+<li>
+<p>fn Function to calculate the right hand side should accept a matrix of state values at .
+</p>
+</li>
+<li>
+<p>dfdx Function to calculate the derivative with respect to <code>x</code>
+</p>
+</li>
+<li>
+<p>dfdp Function to calculate the derivative with respect to <code>p</code>
+</p>
+</li>
+<li>
+<p>d2fdx2 Function to calculate the second derivative with respect to <code>x</code>
+</p>
+</li>
+<li>
+<p>d2fdxdp Function to calculate the second derivative with respect to <code>x</code> and <code>p</code>
+</p>
+</li>
+</ul>
+<p>These functions take the same arguments as <code>fn</code> and should output multidimensional arrays with
+the dimensions ordered according to time, state, deriv1, deriv2; here derivatives with respect to <code>x</code>
+always precede derivatives with respect to <code>p</code>. 
+</p>
+<p><code>fn</code> can also be given as a <code>pomp</code> object (see the <code>pomp</code> package), in which case it is 
+interfaced to <code>CollocInfer</code> through <code>pomp.skeleton</code> using a finite differencing. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>basisvals</code></td>
+<td>
+<p>Values of the collocation basis to be used. This can either be a basis object from the <code>fda</code> package,
+or a list elements:
+</p>
+
+<ul>
+<li>
+<p>bvals.obs A matrix giving the values of the basis at the observation times
+</p>
+</li>
+<li>
+<p>bvals A matrix giving the values of the basis at the quadrature times
+</p>
+</li>
+<li>
+<p>dbvals A matrix giving the derivative of the basis at the quadrature times
+</p>
+</li>
+</ul>
+<p>For discrete systems, it may also be specified as a matrix, in which case <code>bvals$bvals</code> is obtained by deleting the last row
+and <code>bvals$dbvals</code> is obtained by deleting the first/  
+</p>
+<p>If left as NULL, it is taken from <code>fd.obj</code> for <code>discrete=FALSE</code> and defaults to an identity matrix
+of the same dimension as the number of observations for <code>discrete=TRUE</code> systems. 
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lambda</code></td>
+<td>
+<p>(<code>LS.setup</code> only) Penalty value trading off fidelity to data with fidelity to differential equations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var</code></td>
+<td>
+<p>(<code>profile.Cproc</code> or <code>profile.Dproc</code>) A vector of length 2, giving  </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fd.obj</code></td>
+<td>
+<p>(Optional) A functional data object; if this is non-null, <code>coefs</code> and <code>basisvals</code> is extracted from here. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>more</code></td>
+<td>
+<p>An object specifying additional arguments to <code>fn</code>. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>The data to be used, this can be a matrix, or a three-dimensional array. If the latter, the middle
+dimension is taken to be replicates. The data are returned, if replicated they are returned in a concatenated form.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>(<code>LS.setup</code> only)  </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>times</code></td>
+<td>
+<p> Vector observation times for the data. If the data are replicated, times are returned in a concatenated form.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quadrature</code></td>
+<td>
+<p> Quadrature points, should contain two elements (if not NULL)
+</p>
+
+<ul>
+<li>
+<p>qpts Quadrature points; defaults to midpoints between knots
+</p>
+</li>
+<li>
+<p>qwts Quadrature weights; defaults to normalizing by the length of <code>qpts</code>.   
+</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eps</code></td>
+<td>
+<p> Finite differencing step size, if needed. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>posproc</code></td>
+<td>
+<p> Should the state vector be constrained to be positive? If this is the case, the state is represented by
+an exponentiated basis expansion in the <code>proc</code> object. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>poslik</code></td>
+<td>
+<p> Should the state be exponentiated before being compared to the data? When the state is represented
+on the log scale <code>TRUE</code>, this is an alternative to taking the log of the data. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>discrete</code></td>
+<td>
+<p> Is this a discrete or continuous-time system?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>names</code></td>
+<td>
+<p> The names of the state variables if not given by the column names of <code>coefs</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sparse</code></td>
+<td>
+<p> Should sparse matrices be used for basis values? This option can save memory when 
+<code>ProfileGausNewt</code> and <code>SplineEstNewtRaph</code> are called. Otherwise sparse matrices will be
+converted to  full matrices and this can slow the code down.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>likfn</code></td>
+<td>
+<p> Defines a map from the trajectory to the observations. This should be in the same form as
+<code>fn</code>. If a function is given, derivatives are estimated by finite differencing, otherwise a list
+is expected to provide the same derivatives as <code>fn</code>. If <code>poslik=TRUE</code>, the states are
+exponentiated before the <code>likfn</code> is evaluated and the derivatives are updated to account for this.
+Defaults to the identity transform. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>likmore</code></td>
+<td>
+<p> A list containing additional inputs to <code>likfn</code> if needed, otherwise set to <code>NULL</code> </p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>These functions provide basic setup utilities for the collocation inference methods. They define
+<code>lik</code> and <code>proc</code> objects for sum of squared errors and multivariate normal log likelihoods with
+nonlinear transfer functions describing the evolution of the state vector.
+</p>
+
+<ul>
+<li>
+<p>LS.setup Creates sum of squares functions
+</p>
+</li>
+<li>
+<p>multinorm.setup Creates multinormal log likelihoods for a continuous-time system.
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p>A list with elements
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>coefs</code></td>
+<td>
+<p>Starting values for <code>coefs</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lik</code></td>
+<td>
+<p>The <code>lik</code> object generated</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>proc</code></td>
+<td>
+<p>The <code>proc</code> item generated</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>The data matrix, concatenated if from a 3d array.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>times</code></td>
+<td>
+<p>The vector of observation times, concatenated if data is a 3d array.</p>
+</td>
+</tr>
+</table>
+<h3>See Also</h3>
+
+<p><code>inneropt</code>, <code>outeropt</code>, <code>Profile.LS</code>, <code>Profile.multinorm</code>, <code>Smooth.LS</code>, <code>Smooth.multinorm</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# FitzHugh-Nagumo
+
+t = seq(0,20,0.05)            # Observation times
+
+pars = c(0.2,0.2,3)           # Parameter vector
+names(pars) = c('a','b','c')
+
+knots = seq(0,20,0.2)         # Create a basis
+norder = 3
+nbasis = length(knots) + norder - 2
+range = c(0,20)
+
+bbasis = create.bspline.basis(range=range,nbasis=nbasis,norder=norder,breaks=knots)
+
+lambda = 10000               # Penalty value
+
+coefs = matrix(0,nbasis,2)   # Coefficient matrix
+
+profile.obj = LS.setup(pars=pars,coefs=coefs,fn=make.fhn(),basisvals=bbasis,
+                       lambda=lambda,times=t)
+
+
+# Using multinorm
+
+var = c(1,0.01)
+
+profile.obj = multinorm.setup(pars=pars,coefs=coefs,fn=make.fhn(),
+                                        basisvals=bbasis,var=var,times=t)
+
+
+# Henon - discrete
+
+hpars = c(1.4,0.3)
+t = 1:200
+
+coefs = matrix(0,200,2)
+lambda = 10000
+
+profile.obj = LS.setup(pars=hpars,coefs=coefs,fn=make.Henon(),basisvals=NULL,
+                             lambda=lambda,times=t,discrete=TRUE)
+</code></pre>
+
+
+</div>

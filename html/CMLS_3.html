@@ -1,0 +1,481 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cmls</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Solve a Constrained Multivariate Least Squares Problem
+</h2>
+
+<h3>Description</h3>
+
+<p>Finds the <code class="reqn">p</code> x <code class="reqn">m</code> matrix <code>B</code> that minimizes the multivariate least squares problem
+</p>
+
+<table><tr>
+<td style="text-align: center;">
+<code> sum(( Y - X %*% B )^2) </code>
+</td>
+</tr></table>
+<p>subject to the specified constraints on the rows of <code>B</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cmls(X, Y, const = "uncons", struc = NULL, 
+     z = NULL, df = 10, degree = 3, intercept = TRUE,
+     backfit = FALSE, maxit = 1e3, eps = 1e-10, 
+     del = 1e-6, XtX = NULL, mode.range = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>Matrix of dimension <code class="reqn">n</code> x <code class="reqn">p</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Y</code></td>
+<td>
+<p>Matrix of dimension <code class="reqn">n</code> x <code class="reqn">m</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>const</code></td>
+<td>
+<p>Constraint code. See <code>const</code> for the 24 available options.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>struc</code></td>
+<td>
+<p>Structural constraints (defaults to unstructured). See Note.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>z</code></td>
+<td>
+<p>Predictor values for the spline basis (for smoothness constraints). See Note.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>df</code></td>
+<td>
+<p>Degrees of freedom for the spline basis (for smoothness constraints). See Note.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>degree</code></td>
+<td>
+<p>Polynomial degree for the spline basis (for smoothness constraints). See Note.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>intercept</code></td>
+<td>
+<p>Logical indicating whether the spline basis should contain an intercept (for smoothness constraints). See Note.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>backfit</code></td>
+<td>
+<p>Estimate <code>B</code> via back-fitting (<code>TRUE</code>) or vectorization (<code>FALSE</code>). See Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxit</code></td>
+<td>
+<p>Maximum number of iterations for back-fitting algorithm. Ignored if <code>backfit = FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>eps</code></td>
+<td>
+<p>Convergence tolerance for back-fitting algorithm. Ignored if <code>backfit = FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>del</code></td>
+<td>
+<p>Stability tolerance for back-fitting algorithm. Ignored if <code>backfit = FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>XtX</code></td>
+<td>
+<p>Crossproduct matrix:  <code>XtX = crossprod(X)</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mode.range</code></td>
+<td>
+<p>Mode search ranges (for unimodal constraints). See Note.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>If <code>backfit = FALSE</code> (default), a closed-form solution is used to estimate <code>B</code> whenever possible. Otherwise a back-fitting algorithm is used, where the rows of <code>B</code> are updated sequentially until convergence. The backfitting algorithm is determined to have converged when 
+</p>
+<p><code>mean((B.new - B.old)^2) &lt; eps * (mean(B.old^2) + del)</code>, 
+</p>
+<p>where <code>B.old</code> and <code>B.new</code> denote the parameter estimates at iterations <code class="reqn">t</code> and <code class="reqn">t+1</code> of the backfitting algorithm.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns the estimated matrix <code>B</code> with attribute "df" (degrees of freedom), which gives the df for each row of <code>B</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Structure constraints (<code>struc</code>) should be specified with a <code class="reqn">p</code> x <code class="reqn">m</code> matrix of logicals (TRUE/FALSE), such that FALSE elements indicate a weight should be constrained to be zero. Default uses unstructured weights, i.e., a <code class="reqn">p</code> x <code class="reqn">m</code> matrix of all TRUE values.
+</p>
+<p>Inputs <code>z</code>, <code>df</code>, <code>degree</code>, and <code>intercept</code> are only applicable when using one of the 12 constraints that involves a spline basis, i.e., "smooth", "smonon", "smoper", "smpeno", "ortsmo", "orsmpe", "monsmo", "mosmno", "unismo", "unsmno", "unsmpe", "unsmpn".
+</p>
+<p>Input <code>mode.range</code> is only applicable when using one of the 8 constraints that enforces unimodality: "unimod", "uninon", "uniper", "unpeno", "unismo", "unsmno", "unsmpe", "unsmpn". Mode search ranges (<code>mode.range</code>) should be specified with a 2 x <code class="reqn">p</code> matrix of integers such that 
+</p>
+<p><code>1 &lt;= mode.range[1,j] &lt;= mode.range[2,j] &lt;= m</code> for all <code>j = 1:p</code>. 
+</p>
+<p>Default is  <code>mode.range = matrix(c(1, m), 2, p)</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Nathaniel E. Helwig &lt;helwig@umn.edu&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Goldfarb, D., &amp; Idnani, A. (1983). A numerically stable dual method for solving strictly convex quadratic programs. Mathematical Programming, 27, 1-33. <a href="https://doi.org/10.1007/BF02591962">doi:10.1007/BF02591962</a>
+</p>
+<p>Helwig, N. E. (in prep). Constrained multivariate least squares in R.
+</p>
+<p>Ten Berge, J. M. F. (1993). Least Squares Optimization in Multivariate Analysis. Volume 25 of M &amp; T Series. DSWO Press, Leiden University. ISBN: 9789066950832
+</p>
+<p>Turlach, B. A., &amp; Weingessel, A. (2019). quadprog: Functions to solve Quadratic Programming Problems. R package version 1.5-8. https://CRAN.R-project.org/package=quadprog
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>const</code> prints/returns the contraint options.
+</p>
+<p><code>cv.cmls</code> performs k-fold cross-validation to tune the constraint options.
+</p>
+<p><code>mlsei</code> and <code>mlsun</code> are used to implement several of the constraints.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">######***######   GENERATE DATA   ######***######
+
+# make X
+set.seed(2)
+n &lt;- 50
+m &lt;- 20
+p &lt;- 2
+Xmat &lt;- matrix(rnorm(n*p), nrow = n, ncol = p)
+
+# make B (which satisfies all constraints except monotonicity)
+x &lt;- seq(0, 1, length.out = m)
+Bmat &lt;- rbind(sin(2*pi*x), sin(2*pi*x+pi)) / sqrt(4.75)
+struc &lt;- rbind(rep(c(TRUE, FALSE), each = m / 2),
+               rep(c(FALSE, TRUE), each = m / 2))
+Bmat &lt;- Bmat * struc
+
+# make noisy data
+set.seed(1)
+Ymat &lt;- Xmat %*% Bmat + rnorm(n*m, sd = 0.25)
+
+
+######***######   UNCONSTRAINED   ######***######
+
+# unconstrained
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "uncons")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# unconstrained and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "uncons", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+
+######***######   NON-NEGATIVITY   ######***######
+
+# non-negative
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "nonneg")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# non-negative and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "nonneg", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+
+######***######   PERIODICITY   ######***######
+
+# periodic
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "period")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# periodic and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "period", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# periodic and non-negative
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "pernon")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# periodic and non-negative and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "pernon", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+
+######***######   SMOOTHNESS   ######***######
+
+# smooth
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "smooth")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# smooth and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "smooth", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# smooth and periodic
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "smoper")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# smooth and periodic and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "smoper", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# smooth and non-negative
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "smonon")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# smooth and non-negative and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "smonon", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# smooth and periodic and non-negative
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "smpeno")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# smooth and periodic and non-negative and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "smpeno", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+
+######***######   ORTHOGONALITY   ######***######
+
+# orthogonal
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "orthog")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# orthogonal and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "orthog", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# orthgonal and non-negative
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "ortnon")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# orthgonal and non-negative and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "ortnon", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# orthogonal and smooth
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "ortsmo")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# orthogonal and smooth and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "ortsmo", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# orthogonal and smooth and periodic
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "orsmpe")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# orthogonal and smooth and periodic and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "orsmpe", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+
+######***######   UNIMODALITY   ######***######
+
+# unimodal
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "unimod")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# unimodal and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "unimod", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# unimodal and non-negative
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "uninon")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# unimodal and non-negative and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "uninon", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# unimodal and periodic
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "uniper")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# unimodal and periodic and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "uniper", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# unimodal and periodic and non-negative
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "unpeno")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# unimodal and periodic and non-negative and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "unpeno", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+
+######***######   UNIMODALITY AND SMOOTHNESS   ######***######
+
+# unimodal and smooth
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "unismo")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# unimodal and smooth and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "unismo", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# unimodal and smooth and non-negative
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "unsmno")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# unimodal and smooth and non-negative and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "unsmno", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# unimodal and smooth and periodic
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "unsmpe")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# unimodal and smooth and periodic and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "unsmpe", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# unimodal and smooth and periodic and non-negative
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "unsmpn")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# unimodal and smooth and periodic and non-negative and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "unsmpn", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+
+######***######   MONOTONICITY   ######***######
+
+# make B
+x &lt;- 1:m
+Bmat &lt;- rbind(1 / (1 + exp(-(x - quantile(x, 0.5)))), 
+              1 / (1 + exp(-(x - quantile(x, 0.8)))))
+struc &lt;- rbind(rep(c(FALSE, TRUE), c(1 * m, 3 * m) / 4),
+               rep(c(FALSE, TRUE), c(m, m) / 2))
+Bmat &lt;- Bmat * struc               
+
+# make noisy data
+set.seed(1)
+Ymat &lt;- Xmat %*% Bmat + rnorm(m*n, sd = 0.25)
+
+# monotonic increasing
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "moninc")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# monotonic increasing and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "moninc", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# monotonic increasing and non-negative
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "monnon")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# monotonic increasing and non-negative and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "monnon", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# monotonic increasing and smooth
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "monsmo")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# monotonic increasing and smooth and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "monsmo", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# monotonic increasing and smooth and non-negative
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "mosmno")
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+# monotonic increasing and smooth and non-negative and structured
+Bhat &lt;- cmls(X = Xmat, Y = Ymat, const = "mosmno", struc = struc)
+mean((Bhat - Bmat)^2)
+attr(Bhat, "df")
+
+</code></pre>
+
+
+</div>

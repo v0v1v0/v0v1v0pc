@@ -1,0 +1,188 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>sdists.trace</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Edit Transcripts and Sequence Alignments</h2>
+
+<h3>Description</h3>
+
+<p>This function computes and returns the set of all optimal but equivalent
+edit transcripts that transforms one sequences into another at minimum
+cost, as well as the corresponding aligned sequences, or, alternatively 
+a combined edit graph. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">sdists.trace(x, y, method = "ow", weight = c(1, 1, 0, 2),
+             exclude = c(NA, NaN, Inf, -Inf), graph = FALSE,
+	     partial = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x,y</code></td>
+<td>
+<p>a numeric or string vector.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>a mnemonic string referencing a distance measure.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weight</code></td>
+<td>
+<p>vector or matrix of parameter values.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>exclude</code></td>
+<td>
+<p>argument to factor.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>graph</code></td>
+<td>
+<p>option to compute the combined edit graph.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>partial</code></td>
+<td>
+<p>option to compute an approximate substring match.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Function <code>sdists.trace</code> complements the distance computation between
+sequences by <code>sdists</code>. So, please, see the details of
+<code>method</code>, <code>weight</code>, and <code>exclude</code> there. However, note the
+following differences: 1) you can supply only two sequences, either as
+vectors of numeric symbol codes, factors, or as strings, i.e. scalar 
+vectors of type <code>character</code>. 2) you can supply a weight matrix with
+the rownames and colnames representing the symbol sets of the first and
+second sequence. For instance, this allows you to align a sequence with
+the profile of a multiple alignment. 3) if <code>method = "ow"</code> the
+space symbol <code>""</code> is included in the factor levels so that you can
+conveniently replace <code>NA</code> in the aligned sequences.
+</p>
+<p>A transcript uses the character codes <code>I</code>, <code>D</code>, <code>R</code>, and
+<code>M</code>, for insert, delete, replace, and match operations, which
+transform the first into the second sequence. Thus, conceptually a symbol
+has to be inserted into the first, deleted from the second, replaced in the
+first sequence, or matched in both, to obtain the second sequence. However,
+in the aligned sequences you will see <code>NA</code>, where an insert or delete
+would take place, indicating space. 
+</p>
+<p>In the case of a local alignment different symbols are used for the 
+prefix and/or suffix of the alignment: <code>i</code>, <code>d</code>, and <code>?</code>
+for insert, delete, and replace or match operations. However, note that
+their sole purpose is to obtain a common representation of the two
+sequences. Finally, only alignments of maximal length are reported.
+</p>
+<p>The time complexity of finding a transcript is <code class="reqn">O(n+m)</code> for two
+sequences of length n and m, respectively <code class="reqn">O(n*m)</code> for the local
+alignment problem. However, note that the runtime for generating all
+transcripts can be <code class="reqn">O((n*m)^3)</code> in the worst case.
+</p>
+<p>If <code>partial = FALSE</code> computes an approximate substring match of
+<code>x</code> (the pattern) in <code>y</code>, for <code>method = "ow"</code> only.
+Returns the subset of paths which require the maximum number of match
+and initial and final insert operations.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with components each a list of two factors, the aligned sequences.
+The names of the components are the edit transcripts, and the attribute
+<code>value</code> contains the minimum cost, i.e. the distance (or negative
+similarity).
+</p>
+<p>If <code>graph = TRUE</code> a vector of edit transcripts is returned with
+attributes <code>value</code>, <code>table</code>, <code>pointer</code>, and <code>graph</code>.
+The second contains the values of the dynamic programming table and the
+third a list of vectors <code>x0, y0, x1, y1</code> representing the
+(back)pointers. Similarly, the fourth attribute is a list of vectors
+<code>x0, y0, x1, y1, weight</code> representing the edge set of all optimal
+paths. That is, each tuple contains the <code>from</code> and <code>to</code>
+coordinates as used by <code>segments</code>, each representing a pair of
+indexes into the first and second sequence, and the number of times an
+edge occurs on a path. Note that the origin of the coordinate system
+(0,0) corresponds to the element of <code>table</code> indexed by
+(<code>""</code>,<code>""</code>),
+where <code>""</code> indicates the space symbol. Thus, if used as subscripts
+the coordinates have to be offset by one.
+</p>
+
+
+<h3>Warning</h3>
+
+<p>The interface is experimental and may change in the future</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Christian Buchta</p>
+
+
+<h3>References</h3>
+
+<p>D. Gusfield (1997). <em>Algorithms on Strings, Trees, and Sequences</em>. 
+Cambridge University Press, Chapter 11.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>sdists</code> for computation of distances between sequences,
+<code>segments</code> for plotting of edge sets,
+<code>plot.sdists.graph</code> for visualizing alignments.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">### from the book
+x1 &lt;- "vintner"
+y1 &lt;- "writers"
+b1 &lt;- sdists.trace(x1, y1, weight=c(1,1,0,1))
+b1
+## longest common subsequence ?
+sdists.trace("a","b", weight=c(0,0,-1,0))
+## from the book
+w2 &lt;- matrix(-2,ncol=13,nrow=13)
+w2[1,] &lt;- w2[,1] &lt;- -1
+diag(w2) &lt;- c(0,rep(2,12))
+x2 &lt;- "pqraxabcstvq"
+y2 &lt;- "xyaxbacsll"
+colnames(w2) &lt;- c("",unique(strsplit(paste(x2, y2, sep = ""),"")[[1]]))
+b2 &lt;- sdists.trace(x2, y2, method="awl", weight=w2)
+b2
+## alignment with different symbol sets
+x3 &lt;- "121314"
+y3 &lt;- "ABACAD"
+w3 &lt;- matrix(-1,nrow=5,ncol=5)
+diag(w3) &lt;- 0
+rownames(w3) &lt;- c("","1","2","3","4")
+colnames(w3) &lt;- c("","A","B","C","D")
+b3 &lt;- sdists.trace(x3, y3, method="aw", weight=w3)
+b3
+## partial
+b4 &lt;- sdists.trace(x1, y1, weight=c(1,1,0,1), partial = TRUE)
+b4
+</code></pre>
+
+
+</div>

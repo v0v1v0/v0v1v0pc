@@ -1,0 +1,118 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>predict.bp</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Predict method for barycentric projection models</h2>
+
+<h3>Description</h3>
+
+<p>Predict method for barycentric projection models
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">## S3 method for class 'bp'
+predict(
+  object,
+  newdata = NULL,
+  source.sample,
+  cost_function = NULL,
+  niter = 1000,
+  tol = 1e-07,
+  ...
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>An object of class "bp"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdata</code></td>
+<td>
+<p>a data.frame containing new observations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>source.sample</code></td>
+<td>
+<p>a vector giving the sample each observations arise from</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cost_function</code></td>
+<td>
+<p>a cost metric between observations</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>niter</code></td>
+<td>
+<p>number of iterations to run the barycentric projection for powers &gt; 2.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tol</code></td>
+<td>
+<p>Tolerance on the optimization problem for projections with powers &gt; 2.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Dots passed to the lbfgs method in the torch package.</p>
+</td>
+</tr>
+</table>
+<h3>Examples</h3>
+
+<pre><code class="language-R">if(torch::torch_is_installed()) {
+set.seed(23483)
+n &lt;- 2^5
+pp &lt;- 6
+overlap &lt;- "low"
+design &lt;- "A"
+estimate &lt;- "ATT"
+power &lt;- 2
+data &lt;- causalOT::Hainmueller$new(n = n, p = pp,
+design = design, overlap = overlap)
+
+data$gen_data()
+
+weights &lt;- causalOT::calc_weight(x = data,
+  z = NULL, y = NULL,
+  estimand = estimate,
+  method = "NNM")
+  
+ df &lt;- data.frame(y = data$get_y(), z = data$get_z(), data$get_x())
+  
+ # undebiased
+ fit &lt;- causalOT::barycentric_projection(y ~ ., data = df, 
+    weight = weights,
+    separate.samples.on = "z", niter = 2)
+    
+ #debiased
+ fit_d &lt;- causalOT::barycentric_projection(y ~ ., data = df, 
+    weight = weights,
+    separate.samples.on = "z", debias = TRUE, niter = 2)
+ 
+ # predictions, without new data
+ undebiased_predictions &lt;- predict(fit,   source.sample = df$z)
+ debiased_predictions   &lt;- predict(fit_d, source.sample = df$z)
+ 
+ isTRUE(all.equal(unname(undebiased_predictions), df$y)) # FALSE
+ isTRUE(all.equal(unname(debiased_predictions), df$y)) # TRUE
+ }
+</code></pre>
+
+
+</div>

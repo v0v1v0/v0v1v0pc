@@ -1,0 +1,136 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>coxphSGD</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Stochastic Gradient Descent log-likelihood Estimation in
+Cox Proportional Hazards Model</h2>
+
+<h3>Description</h3>
+
+<p><code>coxphSGD</code> estimates coefficients using stochastic
+gradient descent algorithm in Cox proportional hazards model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">coxphSGD(formula, data, learn.rates = function(x) {     1/x },
+  beta.zero = 0, epsilon = 1e-05, max.iter = 500, verbose = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>a formula object, with the response on the left of a ~ operator,
+and the terms on the right. The response must be a survival object as returned by
+the Surv function.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>a list of batch data.frames in which to interpret the variables named in the <code>formula</code>.
+See Details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>learn.rates</code></td>
+<td>
+<p>a function specifing how to define learning rates in
+steps of the algorithm. By default the <code>f(t)=1/t</code> is used, where <code>t</code> is
+the number of algorithm's step.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta.zero</code></td>
+<td>
+<p>a numeric vector (if of length 1 then will be replicated) of length
+equal to the number of variables after using <code>formula</code> in the <code>model.matrix</code>
+function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>epsilon</code></td>
+<td>
+<p>a numeric value with the stop condition of the estimation algorithm.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max.iter</code></td>
+<td>
+<p>numeric specifing maximal number of iterations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>whether to cat the number of the iteration</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>A <code>data</code> argument should be a list of data.frames, where in every batch data.frame
+there is the same structure and naming convention for explanatory and survival (times, censoring)
+variables. See Examples.
+</p>
+
+
+<h3>Note</h3>
+
+<p>If one of the conditions is fullfiled (j denotes the step number)
+</p>
+
+<ul>
+<li> <p><code class="reqn">||\beta_{j+1}-\beta_{j}|| &lt;</code><code>epsilon</code> parameter for any <code class="reqn">j</code>
+</p>
+</li>
+<li> <p><code class="reqn">j&gt;max.iter</code>
+</p>
+</li>
+</ul>
+<p>the estimation process is stopped.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Marcin Kosinski, <a href="mailto:m.p.kosinski@gmail.com">m.p.kosinski@gmail.com</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(survival)
+set.seed(456)
+x &lt;- matrix(sample(0:1, size = 20000, replace = TRUE), ncol = 2)
+head(x)
+dCox &lt;- dataCox(10^4, lambda = 3, rho = 2, x,
+                beta = c(2,2), cens.rate = 5)
+batch_id &lt;- sample(1:90, size = 10^4, replace = TRUE)
+dCox_split &lt;- split(dCox, batch_id)
+results &lt;-
+  coxphSGD(formula     = Surv(time, status) ~ x.1+x.2,
+           data        = dCox_split,
+           epsilon     = 1e-5,
+           learn.rates = function(x){1/(100*sqrt(x))},
+           beta.zero   = c(0,0),
+           max.iter    = 10*90)
+coeff_by_iteration &lt;-
+  as.data.frame(
+    do.call(
+      rbind,
+      results$coefficients
+    )
+  )
+head(coeff_by_iteration)
+</code></pre>
+
+
+</div>

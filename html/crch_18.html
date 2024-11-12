@@ -1,0 +1,190 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>crch.stabsel</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Auxiliary Functions for Stability Selection Using Boosting</h2>
+
+<h3>Description</h3>
+
+<p>Auxilirary function which allows to do stability selection on heteroscedastic
+<code>crch</code> models based on <code>crch.boost</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">crch.stabsel(formula, data, ..., nu = 0.1, q, B = 100, thr = 0.9, 
+  maxit = 2000, data_percentage = 0.5)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>formula</code></td>
+<td>
+<p>a formula expression of the form <code>y ~ x | z</code> where
+<code>y</code> is the response and <code>x</code> and <code>z</code> are regressor variables
+for the location and the scale of the fitted distribution respectively.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>an optional data frame containing the variables occurring in the
+formulas.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Additional attributes to control the <code>crch</code> model.
+Note that <code>control</code> is <em>not</em> allowed; <code>crch.stabsel</code>
+uses <code>crch.boost</code> by default.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nu</code></td>
+<td>
+<p>Boosting step size (see <code>crch.boost</code>) default is <code>0.1</code>
+as for <code>crch.boost</code> while lower values might yield better results
+frequently and should be considered.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>q</code></td>
+<td>
+<p>Positive <code>numeric</code>. Maximum number of parameters to be selected
+during each iteration (not including intercepts).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>B</code></td>
+<td>
+<p><code>numeric</code>, total number of iterations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thr</code></td>
+<td>
+<p><code>numeric</code> threshold (<code>(0.5-1.0)</code>). Used to generate the new
+formula and the computation of the per-family error rate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxit</code></td>
+<td>
+<p>Positive <code>numeric</code> value. Maximum number for the boosting algorithm.
+If <code>q</code> is not reached before <code>maxit</code> the algorithm will stop.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data_percentage</code></td>
+<td>
+<p>Percentage of data which should be sampled in each of the
+iterations. Default (and suggested) is <code>0.5</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>crch.boost</code> allows to perform gradient boosting on heteroscedastic
+additive models. <code>crch.stabsel</code> is a wrapper around the core <code>crch.boost</code>
+algorithm to perform stability selection (see references).
+</p>
+<p>Half of the data set (<code>data</code>) is sampled <code>B</code> times to perform boosting
+(based on <code>crch.boost</code>). Rather than perform the boosting iterations
+until a certain stopping criterion is reached (e.g., maximum number of iterations
+<code>maxit</code>) the algorithm stops as soon as <code>q</code> parameters have been selected.
+The number of parameters is computed across both parameters location and scale.
+Intercepts are not counted.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns an object of class <code>"stabsel.crch"</code> containing the stability
+selection summary and the new formula based on the stability selection.
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>table</code></td>
+<td>
+<p>A table object containing the parameters which have been
+selected and the corresponding frequency of selection.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula.org</code></td>
+<td>
+<p>Original formula used to perform the stability selection.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>formula.new</code></td>
+<td>
+<p>New formula based including the coefficients selected during
+stability selection.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>A list object which contains the distribution-specification from
+the <code>crch.stabsel</code> call including: <code>dist</code>, <code>cens</code>, and <code>truncated</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parameter</code></td>
+<td>
+<p>List with the parameters used to perform the stability selection
+including <code>q</code>, <code>B</code>, <code>thr</code>, <code>p</code>, and <code>PFER</code> (per-family error rate).</p>
+</td>
+</tr>
+</table>
+<h3>References</h3>
+
+<p>Meinhausen N, Buehlmann P (2010). Stability selection.
+<em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em>, <b>72</b>(4),
+417–473. <a href="https://doi.org/10.1111/j.1467-9868.2010.00740.x">doi:10.1111/j.1467-9868.2010.00740.x</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>crch</code>, <code>crch.boost</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># generate data
+suppressWarnings(RNGversion("3.5.0"))
+set.seed(5)
+x &lt;- matrix(rnorm(1000*20),1000,20)
+y &lt;- rnorm(1000, 1 + x[,1] - 1.5 * x[,2], exp(-1 + 0.3*x[,3]))
+y &lt;- pmax(0, y)
+data &lt;- data.frame(cbind(y, x))
+
+# fit model with maximum likelihood
+CRCH1 &lt;- crch(y ~ .|., data = data, dist = "gaussian", left = 0)
+
+# Perform stability selection
+stabsel &lt;- crch.stabsel(y ~ .|.,  data = data, dist = "gaussian", left = 0,
+           q = 8, B = 5)
+
+# Show stability selection summary
+print(stabsel); plot(stabsel)
+
+CRCH2 &lt;- crch(stabsel$formula.new, data = data, dist = "gaussian", left = 0 )
+BOOST &lt;- crch(stabsel$formula.new, data = data, dist = "gaussian", left = 0,
+              control = crch.boost() )
+
+### AIC comparison
+sapply( list(CRCH1,CRCH2,BOOST), logLik )
+</code></pre>
+
+
+</div>

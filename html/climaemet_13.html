@@ -1,0 +1,213 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>aemet_forecast_daily</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Forecast database by municipality</h2>
+
+<h3>Description</h3>
+
+<p>Get a database of daily or hourly weather forecasts for a given municipality.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">aemet_forecast_daily(
+  x,
+  verbose = FALSE,
+  extract_metadata = FALSE,
+  progress = TRUE
+)
+
+aemet_forecast_hourly(
+  x,
+  verbose = FALSE,
+  extract_metadata = FALSE,
+  progress = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A vector of municipality codes to extract. For convenience,
+<a href="https://CRAN.R-project.org/package=climaemet"><span class="pkg">climaemet</span></a> provides this data on the dataset aemet_munic
+(see <code>municipio</code> field) as of January 2024.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>Logical <code>TRUE/FALSE</code>. Provides information about the flow of
+information between the client and server.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>extract_metadata</code></td>
+<td>
+<p>Logical <code>TRUE/FALSE</code>. On <code>TRUE</code> the output is
+a <code>tibble</code> with the description of the fields. See also
+<code>get_metadata_aemet()</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>progress</code></td>
+<td>
+<p>Logical, display a <code>cli::cli_progress_bar()</code> object. If
+<code>verbose = TRUE</code> won't be displayed.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Forecasts format provided by the AEMET API have a complex structure.
+Although <a href="https://CRAN.R-project.org/package=climaemet"><span class="pkg">climaemet</span></a> returns a <code>tibble</code>, each
+forecasted value is provided as a nested <code>tibble</code>.
+<code>aemet_forecast_tidy()</code> helper function can unnest these values an provide a
+single unnested <code>tibble</code> for the requested variable.
+</p>
+<p>If <code>extract_metadata = TRUE</code> a simple <code>tibble</code> describing
+the value of each field of the forecast is returned.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A nested <code>tibble</code>. Forecasted values can be
+extracted with <code>aemet_forecast_tidy()</code>. See also <strong>Details</strong>.
+</p>
+
+
+<h3>API Key</h3>
+
+<p>You need to set your API Key globally using <code>aemet_api_key()</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>aemet_munic for municipality codes and <a href="https://CRAN.R-project.org/package=mapSpain"><span class="pkg">mapSpain</span></a> package for
+working with <code>sf</code> objects of municipalities (see
+<code>mapSpain::esp_get_munic()</code> and <strong>Examples</strong>).
+</p>
+<p>Other aemet_api_data: 
+<code>aemet_alert_zones()</code>,
+<code>aemet_alerts()</code>,
+<code>aemet_beaches()</code>,
+<code>aemet_daily_clim()</code>,
+<code>aemet_extremes_clim()</code>,
+<code>aemet_forecast_beaches()</code>,
+<code>aemet_forecast_fires()</code>,
+<code>aemet_last_obs()</code>,
+<code>aemet_monthly</code>,
+<code>aemet_normal</code>,
+<code>aemet_stations()</code>
+</p>
+<p>Other forecasts: 
+<code>aemet_forecast_beaches()</code>,
+<code>aemet_forecast_fires()</code>,
+<code>aemet_forecast_tidy()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+
+# Select a city
+data("aemet_munic")
+library(dplyr)
+munis &lt;- aemet_munic %&gt;%
+  filter(municipio_nombre %in% c("Santiago de Compostela", "Lugo")) %&gt;%
+  pull(municipio)
+
+daily &lt;- aemet_forecast_daily(munis)
+
+# Metadata
+meta &lt;- aemet_forecast_daily(munis, extract_metadata = TRUE)
+glimpse(meta$campos)
+
+# Vars available
+aemet_forecast_vars_available(daily)
+
+
+# This is nested
+daily %&gt;%
+  select(municipio, fecha, nombre, temperatura)
+
+# Select and unnest
+daily_temp &lt;- aemet_forecast_tidy(daily, "temperatura")
+
+# This is not
+daily_temp
+
+# Wrangle and plot
+daily_temp_end &lt;- daily_temp %&gt;%
+  select(
+    elaborado, fecha, municipio, nombre, temperatura_minima,
+    temperatura_maxima
+  ) %&gt;%
+  tidyr::pivot_longer(cols = contains("temperatura"))
+
+# Plot
+library(ggplot2)
+ggplot(daily_temp_end) +
+  geom_line(aes(fecha, value, color = name)) +
+  facet_wrap(~nombre, ncol = 1) +
+  scale_color_manual(
+    values = c("red", "blue"),
+    labels = c("max", "min")
+  ) +
+  scale_x_date(
+    labels = scales::label_date_short(),
+    breaks = "day"
+  ) +
+  scale_y_continuous(
+    labels = scales::label_comma(suffix = "º")
+  ) +
+  theme_minimal() +
+  labs(
+    x = "", y = "",
+    color = "",
+    title = "Forecast: 7-day temperature",
+    subtitle = paste(
+      "Forecast produced on",
+      format(daily_temp_end$elaborado[1], usetz = TRUE)
+    )
+  )
+
+# Spatial with mapSpain
+library(mapSpain)
+library(sf)
+
+lugo_sf &lt;- esp_get_munic(munic = "Lugo") %&gt;%
+  select(LAU_CODE)
+
+daily_temp_end_lugo_sf &lt;- daily_temp_end %&gt;%
+  filter(nombre == "Lugo" &amp; name == "temperatura_maxima") %&gt;%
+  # Join by LAU_CODE
+  left_join(lugo_sf, by = c("municipio" = "LAU_CODE")) %&gt;%
+  st_as_sf()
+
+ggplot(daily_temp_end_lugo_sf) +
+  geom_sf(aes(fill = value)) +
+  facet_wrap(~fecha) +
+  scale_fill_gradientn(
+    colors = c("blue", "red"),
+    guide = guide_legend()
+  ) +
+  labs(
+    main = "Forecast: 7-day max temperature",
+    subtitle = "Lugo, ES"
+  )
+
+</code></pre>
+
+
+</div>

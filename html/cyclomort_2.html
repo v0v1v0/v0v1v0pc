@@ -1,0 +1,93 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>censor_cycloSurv</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Censor and Trim</h2>
+
+<h3>Description</h3>
+
+<p>Functions for right-censoring and left-trimming survival data. They are convenient
+for comparing cyclomort fits before and after some cut-off time, as in the example
+below.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">censor_cycloSurv(x, censor.time)
+
+trim_cycloSurv(x, trim.time)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>cycloSurv object</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>censor.time</code></td>
+<td>
+<p>time of (right) censoring, or vector of times of censoring</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trim.time</code></td>
+<td>
+<p>time of (left) trimming</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>Censored Surv object
+</p>
+<p>Trimmed Surv object
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## load Western Arctic Herd data and convert to cycloSurv
+data(wah_morts)
+wah &lt;- with(wah_morts, create_cycloSurv(start = start, end = end, 
+                                        event = fate == "dead", period = 365))
+
+# censor and trim
+cutoff = "2016-01-01"
+wah_pre = censor_cycloSurv(wah, censor.time = cutoff)
+wah_post = trim_cycloSurv(wah, trim.time = cutoff)
+
+# combine into dataframe
+par.init &lt;- par(no.readonly = TRUE)
+
+par(mfrow = c(1,2))
+plot(wah_pre[,1], 1:length(wah_pre), xlim = range(wah_pre[,1:2]), type= "n", main = "pre")
+segments(wah_pre[,1], 1:length(wah_pre), wah_pre[,2], 1:length(wah_pre), col = wah_pre[,3]+1)
+plot(wah_post[,1], 1:length(wah_post), xlim = range(wah_post[,1:2]), type= "n", main = "post")
+segments(wah_post[,1], 1:length(wah_post), wah_post[,2], 1:length(wah_post), col = wah_pre[,3]+1)
+
+# fit seasonal model before and after
+wah_fit_pre &lt;- fit_cyclomort(wah_pre, n.seasons = 1)
+wah_fit_post &lt;- fit_cyclomort(wah_post, n.seasons = 1)
+
+# some evidence of a shift, though confidence intervals are wide
+summary(wah_fit_pre)
+summary(wah_fit_post)
+
+
+par(mfrow = c(1,2))
+plot(wah_fit_pre, plotCI = TRUE, breaks = 10); title("pre cut-off")
+plot(wah_fit_post, plotCI = TRUE, breaks = 10); title("post cut-off")
+
+par(par.init)
+</code></pre>
+
+
+</div>

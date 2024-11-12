@@ -1,0 +1,137 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>encrypt_data</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Encrypt and decrypt data and other things</h2>
+
+<h3>Description</h3>
+
+<p>Encrypt and decrypt raw data, objects, strings and files.  The
+core functions here are <code>encrypt_data</code> and
+<code>decrypt_data</code> which take raw data and decrypt it, writing
+either to file or returning a raw vector.  The other functions
+encrypt and decrypt arbitrary R objects (<code>encrypt_object</code>,
+<code>decrypt_object</code>), strings (<code>encrypt_string</code>,
+<code>decrypt_string</code>) and files (<code>encrypt_file</code>,
+<code>decrypt_file</code>).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">encrypt_data(data, key, dest = NULL)
+
+encrypt_object(object, key, dest = NULL, rds_version = NULL)
+
+encrypt_string(string, key, dest = NULL)
+
+encrypt_file(path, key, dest = NULL)
+
+decrypt_data(data, key, dest = NULL)
+
+decrypt_object(data, key)
+
+decrypt_string(data, key)
+
+decrypt_file(path, key, dest = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>(for <code>encrypt_data</code>, <code>decrypt_data</code>,
+<code>decrypt_object</code>, <code>decrypt_string</code>) a raw vector with
+the data to be encrypted or decrypted.  For the decryption
+functions this must be data derived by encrypting something or
+you will get an error.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>key</code></td>
+<td>
+<p>A <code>cyphr_key</code> object describing the encryption approach
+to use.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dest</code></td>
+<td>
+<p>The destination filename for the encrypted or
+decrypted data, or <code>NULL</code> to return a raw vector.  This is
+not used by <code>decrypt_object</code> or <code>decrypt_string</code> which
+always return an object or string.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p>(for <code>encrypt_object</code>) an arbitrary R object to
+encrypt.  It will be serialised to raw first (see
+serialize).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rds_version</code></td>
+<td>
+<p>RDS serialisation version to use (see
+serialize.  The default in R version 3.3 and below is version
+2 - in the R 3.4 series version 3 was introduced and is becoming
+the default.  Version 3 format serialisation is not understood
+by older versions so if you need to exchange data with older R
+versions, you will need to use <code>rds_version = 2</code>.  The default
+argument here (<code>NULL</code>) will ensure the same serialisation is
+used as R would use by default.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>string</code></td>
+<td>
+<p>(for <code>encrypt_string</code>) a scalar character
+vector to encrypt.  It will be converted to raw first with
+charToRaw.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>path</code></td>
+<td>
+<p>(for <code>encrypt_file</code>) the name of a file to
+encrypt.  It will first be read into R as binary (see
+readBin).</p>
+</td>
+</tr>
+</table>
+<h3>Examples</h3>
+
+<pre><code class="language-R">key &lt;- key_sodium(sodium::keygen())
+# Some super secret data we want to encrypt:
+x &lt;- runif(10)
+# Convert the data into a raw vector:
+data &lt;- serialize(x, NULL)
+data
+# Encrypt the data; without the key above we will never be able to
+# decrypt this.
+data_enc &lt;- encrypt_data(data, key)
+data_enc
+# Our random numbers:
+unserialize(decrypt_data(data_enc, key))
+# Same as the never-encrypted version:
+x
+
+# This can be achieved more easily using `encrypt_object`:
+data_enc &lt;- encrypt_object(x, key)
+identical(decrypt_object(data_enc, key), x)
+
+# Encrypt strings easily:
+str_enc &lt;- encrypt_string("secret message", key)
+str_enc
+decrypt_string(str_enc, key)
+</code></pre>
+
+
+</div>

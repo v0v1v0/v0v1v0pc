@@ -1,0 +1,547 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>adjust_loglik</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Loglikelihood adjustment using the sandwich estimator</h2>
+
+<h3>Description</h3>
+
+<p>Performs adjustments of a user-supplied independence loglikelihood for the
+presence of cluster dependence, following Chandler and Bate (2007).
+The user provides a function that returns a vector of observation-specific
+loglikelihood contributions and a vector that indicates cluster membership.
+The loglikelihood of a sub-model can be adjusted by fixing a set of
+parameters at particular values.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">adjust_loglik(
+  loglik = NULL,
+  ...,
+  cluster = NULL,
+  p = NULL,
+  init = NULL,
+  par_names = NULL,
+  fixed_pars = NULL,
+  fixed_at = 0,
+  name = NULL,
+  larger = NULL,
+  alg_deriv = NULL,
+  alg_hess = NULL,
+  mle = NULL,
+  H = NULL,
+  V = NULL
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>loglik</code></td>
+<td>
+<p>A named function.  Returns a vector of the
+loglikelihood contributions of individual observations.  The first
+argument must be the vector of model parameter(s). If any of the model
+parameters are out-of-bounds then <code>loglik</code> should return either
+<code>-Inf</code> or a vector with at least one element equal to <code>-Inf</code>.
+The number of parameters in the <strong>full</strong> model must be specified
+using (at least) one of the arguments <code>p</code>, <code>init</code> or
+<code>par_names</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Further arguments to be passed either to <code>loglik</code>
+(and to <code>alg_deriv</code> and <code>alg_hess</code> if these are supplied) or
+to <code>optim</code>.  The latter may include <code>gr</code>,
+<code>method</code>, <code>lower</code>, <code>upper</code> or <code>control</code>.
+In the call to <code>optim</code>, <code>hessian = TRUE</code>
+will be used regardless of any value supplied.
+The function <code>loglik</code> must <em>not</em> have arguments with names
+that match any of these arguments to <code>optim</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cluster</code></td>
+<td>
+<p>A vector or factor indicating from which cluster the
+respective loglikelihood contributions from <code>loglik</code> originate.
+Must have the same length as the vector returned by <code>loglik</code>.
+If <code>cluster</code> is not supplied then it is set inside
+<code>adjust_loglik</code> under the assumption that each observation forms
+its own cluster.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>p</code></td>
+<td>
+<p>A numeric scalar.  The dimension of the <strong>full</strong> parameter
+vector, i.e. the number of parameters in the full model.  Must be
+consistent with the lengths of <code>init</code> and <code>par_names</code>,
+if these are also supplied.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>init</code></td>
+<td>
+<p>A numeric vector of initial values.  Must have length equal
+to the number of parameters in the <strong>full</strong> model.  If <code>init</code>
+is supplied then <code>p</code> is set to <code>length(init)</code>, provided that
+this is consistent with the the value given by <code>p</code> or implied
+by <code>length(par_names)</code>.
+If <code>fixed_pars</code> is not <code>NULL</code> then <code>init[-fixed_pars]</code>
+is used in the search for the MLE.
+If <code>init</code> is not supplied then <code>rep(0.1, p)</code> is used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>par_names</code></td>
+<td>
+<p>A character vector.  Names of the <code>p</code> parameters
+in the <strong>full</strong> model.  Must be consistent with the lengths of
+<code>init</code> and <code>p</code>, if these are also supplied.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixed_pars</code></td>
+<td>
+<p>A vector specifying which parameters are to be restricted
+to be equal to the value(s) in <code>fixed_at</code>.  Can be either a numeric
+vector, specifying indices of the components of the <strong>full</strong> parameter
+vector, or a character vector of parameter names, which must be a subset
+of those supplied in <code>par_names</code> or stored in the object
+<code>larger</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixed_at</code></td>
+<td>
+<p>A numeric vector of length 1 or <code>length(fixed_pars)</code>.
+If <code>length(fixed_at) = 1</code> then the components <code>fixed_pars</code>
+of the parameter vector are all fixed at <code>fixed_at</code>.
+If <code>length(fixed_at) = length(fixed_pars)</code> then the component
+<code>fixed_pars[i]</code> is fixed at <code>fixed_at[i]</code> for each <code>i</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p>A character scalar.  A name for the model that gives rise
+to <code>loglik</code>.  If this is not supplied then the name in
+<code>larger</code> is used, if this has been supplied, and the name of
+the function <code>loglik</code> otherwise.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>larger</code></td>
+<td>
+<p>Only relevant if <code>fixed_pars</code> is not <code>NULL</code>.
+If <code>larger</code> is supplied but <code>fixed_pars</code> is not then an error
+will result.  if <code>larger</code> is supplied then information about the
+model in <code>larger</code>, e.g. about <code>p</code> and <code>par_names</code> will
+override any attempt to set these arguments in the call to
+<code>adjust_loglik</code>.
+</p>
+<p>An object of class <code>"chandwich"</code> returned by <code>adjust_loglik</code>,
+corresponding to a model in which the smaller model implied by
+<code>fixed_pars</code> is nested.  If <code>larger</code> is supplied then
+all the arguments to <code>adjust_loglik</code> apart from
+<code>fixed_pars</code> and <code>fixed_at</code> are extracted from <code>larger</code>.
+If <code>init</code> is not supplied in the current call to
+<code>adjust_loglik</code> then <code>init</code> is set to
+<code>attr(larger, "MLE")</code>, with the elements in <code>fixed_pars</code>
+set to <code>fixed_at</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alg_deriv</code></td>
+<td>
+<p>A function with the vector of model parameter(s) as its
+first argument.  Returns a <code>length(cluster)</code> by <code>p</code> numeric
+matrix. Column i contains the derivatives of each of the loglikelihood
+contributions in <code>loglik</code> with respect to model parameter i.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>alg_hess</code></td>
+<td>
+<p>A function with the vector of model parameter(s) as its
+first argument.  Returns a <code>p</code> by <code>p</code> numeric matrix equal to
+the Hessian of <code>loglik</code>, i.e. the matrix of second derivatives of
+the function <code>loglik</code>.
+</p>
+<p>Supplying both <code>V</code> and <code>alg_deriv</code> or both <code>H</code> and
+<code>alg_hess</code> will produce an error.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mle</code></td>
+<td>
+<p>A numeric vector.  Can only be used if <code>fixed_pars = NULL</code>.
+Provides the maximum likelihood estimate of the model parameters,
+that is, the value of the parameter vector
+at which the independence loglikelihood <code>loglik</code> is maximized.
+Must have length equal to the number of parameters in the
+<strong>full</strong> model.  If <code>mle</code> is supplied then <code>p</code> is set
+to <code>length(mle)</code>, provided that this is consistent with the the
+value given by <code>p</code> or implied by <code>length(par_names)</code>.
+If <code>mle</code> is supplied then it overrides <code>init</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>H, V</code></td>
+<td>
+<p>p by p numeric matrices.  Only used if <code>mle</code> is supplied.
+Provide estimates of the Hessian of the
+independence loglikelihood (H) and the variance of the vector
+of cluster-specific contributions to the score vector (first
+derivatives with respect to the parameters) of the independence
+loglikelihood, each evaluated at the MLE <code>mle</code>.  See the
+<em>Introducing chandwich</em> vignette and/or Chandler and Bate (2007).
+</p>
+<p>Supplying both <code>V</code> and <code>alg_deriv</code> or both <code>H</code> and
+<code>alg_hess</code> will produce an error.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Three adjustments to the independence loglikelihood described in
+Chandler and Bate (2007) are available.  The vertical adjustment is
+described in Section 6 and two horizontal adjustments are described
+in Sections 3.2 to 3.4.  See the descriptions of <code>type</code> and, for the
+horizontal adjustments, the descriptions of <code>C_cholesky</code> and
+<code>C_spectral</code>, in <strong>Value</strong>.
+</p>
+<p>The adjustments involve first and second derivatives of the loglikelihood
+with respect to the model parameters.  These are estimated using
+<code>jacobian</code> and <code>optimHess</code>
+unless <code>alg_deriv</code> and/or <code>alg_hess</code> are supplied.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A function of class <code>"chandwich"</code> to evaluate an adjusted
+loglikelihood, or the independence loglikelihood, at one or more sets
+of model parameters, with arguments
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>A numeric vector or matrix giving values of the <code>p_current</code>
+(see below) parameters in the model to which the returned adjusted
+loglikelihood applies.
+If <code>p_current = 1</code> this may be a numeric vector or a matrix
+with 1 column.
+If <code>p_current &gt; 1</code> this may be a numeric vector of length <code>p</code>
+(one set of model parameters) or a numeric matrix with <code>p</code>
+columns (<code>nrow(x)</code> sets of model parameters), one set in each row
+of <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>A character scalar.  The type of adjustment to use.
+One of <code>"vertical"</code>, <code>"cholesky"</code>, <code>"spectral"</code> or
+<code>"none"</code>.</p>
+</td>
+</tr>
+</table>
+<p>  The latter results in the evaluation of the
+(unadjusted) independence loglikelihood.
+The function has (additional) attributes
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>p_full, p_current</code></td>
+<td>
+<p>The number of parameters in the full model and
+current models, respectively.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>free_pars</code></td>
+<td>
+<p>A numeric vector giving the indices of the free
+parameters in the current model, with names inferred from
+<code>par_names</code> if this was supplied.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MLE, res_MLE</code></td>
+<td>
+<p>Numeric vectors, with names inferred from
+<code>par_names</code> if this was supplied.  Maximum likelihood estimates
+of free parameters under the current model (<code>mle</code>) and all
+parameters in the full model, including any parameters with fixed
+values (<code>res_MLE</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SE, adjSE</code></td>
+<td>
+<p>The unadjusted and adjusted estimated standard errors,
+of the free parameters, respectively.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>VC, adjVC</code></td>
+<td>
+<p>The unadjusted and adjusted estimated
+variance-covariance matrix of the free parameters, respectively.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>HI, HA</code></td>
+<td>
+<p>The Hessians of the independence and adjusted loglikelihood,
+respectively.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>C_cholesky, C_spectral</code></td>
+<td>
+<p>The matrix C in equation (14) of Chandler and
+Bate (2007), calculated using Cholesky decomposition and spectral
+decomposition, respectively.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>full_par_names, par_names</code></td>
+<td>
+<p>The names of the parameters in the full
+and current models, respectively, if these were supplied in
+this call or a previous call.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>max_loglik</code></td>
+<td>
+<p>The common maximised value of the independence and
+adjusted loglikelihoods.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>loglik, cluster</code></td>
+<td>
+<p>The arguments <code>loglik</code> and <code>cluster</code>
+supplied in this call, or a previous call.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>loglik_args</code></td>
+<td>
+<p>A list containing the further arguments passed to
+<code>loglik</code> via ... in this call, or a previous call.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>loglikVecMLE</code></td>
+<td>
+<p>a vector containing the contributions of individual
+observations to the independence log-likelihood evaluated at the MLE.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>name</code></td>
+<td>
+<p>The argument <code>name</code>, or the name of the function
+<code>loglik</code> if <code>name</code> isn't supplied.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>nobs</code></td>
+<td>
+<p>The number of observations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>call</code></td>
+<td>
+<p>The call to <code>adjust_loglik</code>.</p>
+</td>
+</tr>
+</table>
+<p>If <code>fixed_pars</code> is not <code>NULL</code> then there are further attributes
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>fixed_pars</code></td>
+<td>
+<p>The argument <code>fixed_pars</code>, with names inferred from
+<code>par_names</code> if this was supplied.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixed_at</code></td>
+<td>
+<p>The argument <code>fixed_at</code>, with names inferred from
+<code>par_names</code> if this was supplied.</p>
+</td>
+</tr>
+</table>
+<p>If <code>alg_deriv</code> and/or <code>alg_hess</code> were supplied then these are
+returned as further attributes.
+</p>
+<p>To view an individual attribute called <code>att_name</code> use
+<code>attr(x, "att_name")</code> or <code>attributes(x)$att_name</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Chandler, R. E. and Bate, S. (2007). Inference for clustered
+data using the independence loglikelihood. <em>Biometrika</em>,
+<strong>94</strong>(1), 167-183. <a href="https://doi.org/10.1093/biomet/asm015">doi:10.1093/biomet/asm015</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>summary.chandwich</code> for maximum likelihood estimates
+and unadjusted and adjusted standard errors.
+</p>
+<p><code>plot.chandwich</code> for plots of one-dimensional adjusted
+loglikelihoods.
+</p>
+<p><code>confint.chandwich</code>, <code>anova.chandwich</code>,
+<code>coef.chandwich</code>, <code>vcov.chandwich</code>
+and <code>logLik.chandwich</code> for other <code>chandwich</code> methods.
+</p>
+<p><code>conf_intervals</code> for confidence intervals for
+individual parameters.
+</p>
+<p><code>conf_region</code> for a confidence region for
+a pair of parameters.
+</p>
+<p><code>compare_models</code> to compare nested models using an
+(adjusted) likelihood ratio test.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># ------------------------- Binomial model, rats data ----------------------
+
+# Contributions to the independence loglikelihood
+binom_loglik &lt;- function(prob, data) {
+  if (prob &lt; 0 || prob &gt; 1) {
+    return(-Inf)
+  }
+  return(dbinom(data[, "y"], data[, "n"], prob, log = TRUE))
+}
+rat_res &lt;- adjust_loglik(loglik = binom_loglik, data = rats, par_names = "p")
+
+# Plot the loglikelihoods
+plot(rat_res, type = 1:4, legend_pos = "bottom", lwd = 2, col = 1:4)
+# MLE, SEs and adjusted SEs
+summary(rat_res)
+
+# -------------------------- GEV model, owtemps data -----------------------
+# ------------ following Section 5.2 of Chandler and Bate (2007) -----------
+
+# Contributions to the independence loglikelihood
+gev_loglik &lt;- function(pars, data) {
+  o_pars &lt;- pars[c(1, 3, 5)] + pars[c(2, 4, 6)]
+  w_pars &lt;- pars[c(1, 3, 5)] - pars[c(2, 4, 6)]
+  if (isTRUE(o_pars[2] &lt;= 0 | w_pars[2] &lt;= 0)) return(-Inf)
+  o_data &lt;- data[, "Oxford"]
+  w_data &lt;- data[, "Worthing"]
+  check &lt;- 1 + o_pars[3] * (o_data - o_pars[1]) / o_pars[2]
+  if (isTRUE(any(check &lt;= 0))) return(-Inf)
+  check &lt;- 1 + w_pars[3] * (w_data - w_pars[1]) / w_pars[2]
+  if (isTRUE(any(check &lt;= 0))) return(-Inf)
+  o_loglik &lt;- log_gev(o_data, o_pars[1], o_pars[2], o_pars[3])
+  w_loglik &lt;- log_gev(w_data, w_pars[1], w_pars[2], w_pars[3])
+  return(o_loglik + w_loglik)
+}
+
+# Initial estimates (method of moments for the Gumbel case)
+sigma &lt;- as.numeric(sqrt(6 * diag(var(owtemps))) / pi)
+mu &lt;- as.numeric(colMeans(owtemps) - 0.57722 * sigma)
+init &lt;- c(mean(mu), -diff(mu) / 2, mean(sigma), -diff(sigma) / 2, 0, 0)
+
+# Loglikelihood adjustment for the full model
+par_names &lt;- c("mu[0]", "mu[1]", "sigma[0]", "sigma[1]", "xi[0]", "xi[1]")
+large &lt;- adjust_loglik(gev_loglik, data = owtemps, init = init,
+                       par_names = par_names)
+# Rows 1, 3 and 4 of Table 2 of Chandler and Bate (2007)
+t(summary(large))
+
+# Loglikelihood adjustment of some smaller models: xi[1] = 0 etc
+
+# Starting from a larger model
+medium &lt;- adjust_loglik(larger = large, fixed_pars = "xi[1]")
+small &lt;- adjust_loglik(larger = large, fixed_pars = c("sigma[1]", "xi[1]"))
+small &lt;- adjust_loglik(larger = medium, fixed_pars = c("sigma[1]", "xi[1]"))
+
+# Starting from scratch
+medium &lt;- adjust_loglik(gev_loglik, data = owtemps, init = init,
+          par_names = par_names, fixed_pars = "xi[1]")
+small &lt;- adjust_loglik(gev_loglik, data = owtemps, init = init,
+         par_names = par_names, fixed_pars = c("sigma[1]", "xi[1]"))
+
+# --------- Misspecified Poisson model for negative binomial data ----------
+
+# ... following Section 5.1 of the "Object-Oriented Computation of Sandwich
+# Estimators" vignette of the sandwich package
+# https://cran.r-project.org/web/packages/sandwich/vignettes/sandwich-OOP.pdf
+
+# Simulate data
+set.seed(123)
+x &lt;- rnorm(250)
+y &lt;- rnbinom(250, mu = exp(1 + x), size = 1)
+# Fit misspecified Poisson model
+fm_pois &lt;- glm(y ~ x + I(x^2), family = poisson)
+summary(fm_pois)$coefficients
+
+# Contributions to the independence loglikelihood
+pois_glm_loglik &lt;- function(pars, y, x) {
+  log_mu &lt;- pars[1] + pars[2] * x + pars[3] * x ^ 2
+  return(dpois(y, lambda = exp(log_mu), log = TRUE))
+}
+pars &lt;- c("alpha", "beta", "gamma")
+pois_quad &lt;- adjust_loglik(pois_glm_loglik, y = y, x = x, par_names = pars)
+summary(pois_quad)
+
+# Providing algebraic derivatives and Hessian
+pois_alg_deriv &lt;- function(pars, y, x) {
+  mu &lt;- exp(pars[1] + pars[2] * x + pars[3] * x ^ 2)
+  return(cbind(y - mu, x * (y - mu), x ^2 * (y - mu)))
+}
+pois_alg_hess &lt;- function(pars, y, x) {
+  mu &lt;- exp(pars[1] + pars[2] * x + pars[3] * x ^ 2)
+  alg_hess &lt;- matrix(0, 3, 3)
+  alg_hess[1, ] &lt;- -c(sum(mu), sum(x * mu), sum(x ^ 2 * mu))
+  alg_hess[2, ] &lt;- -c(sum(x * mu), sum(x ^ 2 * mu), sum(x ^ 3 * mu))
+  alg_hess[3, ] &lt;- -c(sum(x ^ 2 * mu), sum(x ^ 3 * mu), sum(x ^ 4 * mu))
+  return(alg_hess)
+}
+pois_quad &lt;- adjust_loglik(pois_glm_loglik, y = y, x = x, p = 3,
+                           alg_deriv = pois_alg_deriv, alg_hess = pois_alg_hess)
+summary(pois_quad)
+
+got_sandwich &lt;- requireNamespace("sandwich", quietly = TRUE)
+if (got_sandwich) {
+  # Providing MLE, H and V
+  # H and V calculated using bread() and meat() from sandwich package
+  n_obs &lt;- stats::nobs(fm_pois)
+  pois_quad &lt;- adjust_loglik(pois_glm_loglik, y = y, x = x, p = 3,
+                             mle = fm_pois$coefficients,
+                             H = -solve(sandwich::bread(fm_pois) / n_obs),
+                             V = sandwich::meat(fm_pois) * n_obs)
+}
+</code></pre>
+
+
+</div>

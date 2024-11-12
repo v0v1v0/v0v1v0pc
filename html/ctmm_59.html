@@ -1,0 +1,164 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>residuals.ctmm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calculate model fit residuals and assess their autocorrelation</h2>
+
+<h3>Description</h3>
+
+<p>These functions calculate the residuals of a CTMM or UERE calibration model, which should be standardized and IID if the model correctly specified.
+A correlogram method is also provided to assess autocorrelation.
+This function is analogous to <code>acf</code>, but can handle missing data and multiple dimensions.
+Finally, <code>mag</code> calculates residual magnitudes, which is useful for comparing against potential covariates.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">
+## S3 method for class 'ctmm'
+residuals(object,data,...)
+
+## S3 method for class 'telemetry'
+residuals(object,CTMM=NULL,...)
+
+correlogram(data,dt=NULL,fast=TRUE,res=1,axes=c("x","y"),trace=TRUE)
+
+mag(x,...)
+
+## S3 method for class 'telemetry'
+mag(x,axes=c('x','y'),...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>object</code></td>
+<td>
+<p><code>ctmm</code> model object or <code>telemetry</code> data object for calculating residuals.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p><code>telemetry</code> data object or <code>data.frame</code> with time column <code>t</code> and data columns <code>axes</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CTMM</code></td>
+<td>
+<p><code>ctmm</code> model object. If <code>NULL</code>, the data is treated as (calibrated) calibration data.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Unused arguments.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dt</code></td>
+<td>
+<p> Lag bin width. An ordered array will yield a progressive coarsening of the lags. Defaults to the median sampling interval.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fast</code></td>
+<td>
+<p> Use the lag-weighted algorithm if <code>FALSE</code> or the FFT algorithm if <code>TRUE</code>. The slow algorithm outputs a progress bar.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>res</code></td>
+<td>
+<p>Increase the discretization resolution for irregularly sampled data with <code>res&gt;1</code>. Decreases bias at the cost of smoothness.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>axes</code></td>
+<td>
+<p>Array of axes for which to calculate residual correlogram or magnitudes.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>trace</code></td>
+<td>
+<p>Display a progress bar if <code>fast=FALSE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p><code>telemetry</code> object from the output of <code>residuals</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Given a <code>telemetry</code> dataset and <code>ctmm</code> model, <code>residuals</code> calculates the standardized residuals of the Kalman filter, which can be tested for independence. The residuals object can then be plotted with <code>plot</code> or fed into the <code>correlogram</code> method to test independence. Output of the correlogram can then be plotted as well, though <code>zoom</code> is much more useful.
+</p>
+<p>When calculating correlograms, minimizing bias is more important than producing a overall smooth estimate. If <code>fast=TRUE</code>, then <code>res</code> needs to be large enough to resolve variability in the sampling interval (missing data is permitted). E.g., if the sampling interval is set to 15 minutes, but can be off by a minute or two, then <code>res=15</code> is a good choice.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>residuals</code> return a residual object (class <code>telemetry</code>, but flagged as residual) and <code>correlogram</code> returns a correlogram object (class <code>variogram</code>, but flagged as an ACF).
+</p>
+
+
+<h3>Note</h3>
+
+<p>If the sampling schedule is irregular, permitting gaps, then the correlogram may not look good even if the model is correctly specified. In this case the correlogram of the residuals should be compared to the correlogram of simulated residuals, using "data" simulated from the fit model and with the same sampling schedule.</p>
+
+
+<h3>Author(s)</h3>
+
+<p> C. H. Fleming</p>
+
+
+<h3>References</h3>
+
+<p>C. H. Fleming, D. Sheldon, E. Gurarie, W. F. Fagan, S. LaPoint, J. M. Calabrese,
+“Kálmán filters for continuous-time movement models”,
+Ecological Informatics, 40, 8-21 (2017) <a href="https://doi.org/10.1016/j.ecoinf.2017.04.008">doi:10.1016/j.ecoinf.2017.04.008</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code>plot.variogram</code>, <code>variogram</code>. </p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+# Load package and data
+library(ctmm)
+data(buffalo)
+Cilla &lt;- buffalo$Cilla
+
+# fit a model
+GUESS &lt;- ctmm.guess(Cilla,interactive=FALSE)
+FIT &lt;- ctmm.fit(Cilla,GUESS)
+
+# calculate residuals
+RES &lt;- residuals(Cilla,FIT)
+
+# scatter plot of residuals with 50%, 95%, and 99.9% quantiles
+plot(RES,col.DF=NA,level.UD=c(.50,.95,0.999))
+
+# calculate correlogram of residuals
+# increase the res argument to account for sampling variability
+ACF &lt;- correlogram(RES,res=10)
+
+# plot 4 day's worth of lags
+plot(ACF[ACF$lag&lt;=4 %#% 'day',],fraction=1)
+</code></pre>
+
+
+</div>

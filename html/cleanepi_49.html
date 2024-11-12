@@ -1,0 +1,118 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>print_report</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Generate report from data cleaning operations</h2>
+
+<h3>Description</h3>
+
+<p>Generate report from data cleaning operations
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">print_report(
+  data,
+  report_title = "{cleanepi} data cleaning report",
+  output_file_name = NULL,
+  format = "html",
+  print = TRUE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>A <code>data.frame</code> or <code>linelist</code> object returned from the
+<code>clean_data()</code> or the main functions of each data cleaning module.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>report_title</code></td>
+<td>
+<p>The title to appear on the report</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>output_file_name</code></td>
+<td>
+<p>A string specifying the name of the report file,
+excluding any file extension. If no file name is supplied, one will be
+automatically generated with the format <code>cleanepi_report_YYMMDD_HHMMSS</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>format</code></td>
+<td>
+<p>The file format of the report. Currently only <code>"html"</code>
+is supported.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>print</code></td>
+<td>
+<p>A logical that specifies whether to print the generated HTML
+file or no.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A string containing the name and path of the saved report
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+data &lt;- readRDS(system.file("extdata", "test_df.RDS", package = "cleanepi"))
+test_dictionary &lt;- readRDS(system.file("extdata", "test_dictionary.RDS",
+                                       package = "cleanepi"))
+
+# scan through the data
+scan_res &lt;- scan_data(data)
+
+# Perform data cleaning
+cleaned_data &lt;- data |&gt;
+ standardize_column_names(keep = NULL, rename = c("DOB" = "dateOfBirth")) |&gt;
+ replace_missing_values(target_columns = NULL, na_strings = "-99") |&gt;
+ remove_constants(cutoff = 1.0) |&gt;
+ remove_duplicates(target_columns = NULL) |&gt;
+ standardize_dates(target_columns  = NULL,
+                   error_tolerance = 0.4,
+                   format          = NULL,
+                   timeframe     = as.Date(c("1973-05-29", "2023-05-29"))) |&gt;
+ check_subject_ids(target_columns = "study_id",
+                   prefix         = "PS",
+                   suffix         = "P2",
+                   range          = c(1L, 100L),
+                   nchar          = 7L) |&gt;
+ convert_to_numeric(target_columns = "sex", lang = "en") |&gt;
+ clean_using_dictionary(dictionary = test_dictionary)
+
+# add the data scanning result to the report
+cleaned_data &lt;- add_to_report(x     = cleaned_data,
+                              key   = "scanning_result",
+                              value = scan_res)
+
+# save a report in the current directory using the previously-created objects
+print_report(
+  data             = cleaned_data,
+  report_title     = "{cleanepi} data cleaning report",
+  output_file_name = NULL,
+  format           = "html",
+  print            = TRUE
+)
+
+
+</code></pre>
+
+
+</div>

@@ -1,0 +1,271 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ls_fit_ultrametric</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Least Squares Fit of Ultrametrics to Dissimilarities</h2>
+
+<h3>Description</h3>
+
+<p>Find the ultrametric with minimal square distance (Euclidean
+dissimilarity) to given dissimilarity objects.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ls_fit_ultrametric(x, method = c("SUMT", "IP", "IR"), weights = 1,
+                   control = list())
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>x</code></td>
+<td>
+<p>a dissimilarity object inheriting from or coercible to class
+<code>"dist"</code>, or an ensemble of such objects.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>a character string indicating the fitting method to be
+employed.  Must be one of <code>"SUMT"</code> (default), <code>"IP"</code>, or
+<code>"IR"</code>, or a unique abbreviation thereof.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>weights</code></td>
+<td>
+<p>a numeric vector or matrix with non-negative weights
+for obtaining a weighted least squares fit.  If a matrix, its
+numbers of rows and columns must be the same as the number of
+objects in <code>x</code>, and the lower diagonal part is used.
+Otherwise, it is recycled to the number of elements in <code>x</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>control</code></td>
+<td>
+<p>a list of control parameters.  See <b>Details</b>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>For a single dissimilarity object <code>x</code>, the problem to be solved
+is minimizing
+</p>
+<p style="text-align: center;"><code class="reqn">L(u) = \sum_{i,j} w_{ij} (x_{ij} - u_{ij})^2</code>
+</p>
+
+<p>over all <code class="reqn">u</code> satisfying the ultrametric constraints (i.e., for all
+<code class="reqn">i, j, k</code>, <code class="reqn">u_{ij} \le \max(u_{ik}, u_{jk})</code>).  This problem
+is known to be NP hard (Krivanek and Moravek, 1986).
+</p>
+<p>For an ensemble of dissimilarity objects, the criterion function is
+</p>
+<p style="text-align: center;"><code class="reqn">L(u) = \sum_b w_b \sum_{i,j} w_{ij} (x_{ij}(b) - u_{ij})^2,</code>
+</p>
+
+<p>where <code class="reqn">w_b</code> is the weight given to element <code class="reqn">x_b</code> of the
+ensemble and can be specified via control parameter <code>weights</code>
+(default: all ones).  This problem reduces to the above basic problem
+with <code class="reqn">x</code> as the <code class="reqn">w_b</code>-weighted mean of the <code class="reqn">x_b</code>.
+</p>
+<p>We provide three heuristics for solving the basic problem.
+</p>
+<p>Method <code>"SUMT"</code> implements the <abbr><span class="acronym">SUMT</span></abbr> (Sequential
+Unconstrained Minimization Technique, Fiacco and McCormick, 1968)
+approach of de Soete (1986) which in turn simplifies the suggestions
+in Carroll and Pruzansky (1980).  (See <code>sumt</code> for more
+information on the <abbr><span class="acronym">SUMT</span></abbr> approach.)  We then use a final
+single linkage hierarchical clustering step to ensure that the
+returned object exactly satisfies the ultrametric constraints.  The
+starting value <code class="reqn">u_0</code> is obtained by “random shaking” of the
+given dissimilarity object (if not given).  If there are missing
+values in <code>x</code>, i.e., the given dissimilarities are
+<em>incomplete</em>, we follow a suggestion of de Soete (1984), imputing
+the missing values by the weighted mean of the non-missing ones, and
+setting the corresponding weights to zero.
+</p>
+<p>Available control parameters are <code>method</code>, <code>control</code>,
+<code>eps</code>, <code>q</code>, and <code>verbose</code>, which have the same roles as
+for <code>sumt</code>, and the following.
+</p>
+
+<dl>
+<dt><code>nruns</code></dt>
+<dd>
+<p>an integer giving the number of runs to be
+performed.  Defaults to 1.</p>
+</dd>
+<dt><code>start</code></dt>
+<dd>
+<p>a single dissimilarity, or a list of
+dissimilarities to be employed as starting values.</p>
+</dd>
+</dl>
+<p>The default optimization using conjugate gradients should work
+reasonably well for medium to large size problems.  For “small”
+ones, using <code>nlm</code> is usually faster.  Note that the number of
+ultrametric constraints is of the order <code class="reqn">n^3</code>, where <code class="reqn">n</code> is
+the number of objects in the dissimilarity object, suggesting to use
+the <abbr><span class="acronym">SUMT</span></abbr> approach in favor of
+<code>constrOptim</code>.
+</p>
+<p>If starting values for the <abbr><span class="acronym">SUMT</span></abbr> are provided via
+<code>start</code>, the number of starting values gives the number of runs
+to be performed, and control option <code>nruns</code> is ignored.
+Otherwise, <code>nruns</code> starting values are obtained by random shaking
+of the dissimilarity to be fitted.  In the case of multiple
+<abbr><span class="acronym">SUMT</span></abbr> runs, the (first) best solution found is returned.
+</p>
+<p>Method <code>"IP"</code> implements the Iterative Projection approach of
+Hubert and Arabie (1995).  This iteratively projects the current
+dissimilarities to the closed convex set given by the ultrametric
+constraints (3-point conditions) for a single index triple <code class="reqn">(i, j,
+    k)</code>, in fact replacing the two largest values among <code class="reqn">d_{ij},
+    d_{ik}, d_{jk}</code> by their mean.  The following control parameters can
+be provided via the <code>control</code> argument.
+</p>
+
+<dl>
+<dt><code>nruns</code></dt>
+<dd>
+<p>an integer giving the number of runs to be
+performed.  Defaults to 1.</p>
+</dd>
+<dt><code>order</code></dt>
+<dd>
+<p>a permutation of the numbers from 1 to the
+number of objects in <code>x</code>, specifying the order in which the
+ultrametric constraints are considered, or a list of such
+permutations.</p>
+</dd>
+<dt><code>maxiter</code></dt>
+<dd>
+<p>an integer giving the maximal number of
+iterations to be employed.</p>
+</dd>
+<dt><code>tol</code></dt>
+<dd>
+<p>a double indicating the maximal convergence
+tolerance.  The algorithm stops if the total absolute change in
+the dissimilarities in an iteration is less than <code>tol</code>.</p>
+</dd>
+<dt><code>verbose</code></dt>
+<dd>
+<p>a logical indicating whether to provide some
+output on minimization progress.  Defaults to
+<code>getOption("verbose")</code>.</p>
+</dd>
+</dl>
+<p>If permutations are provided via <code>order</code>, the number of these
+gives the number of runs to be performed, and control option
+<code>nruns</code> is ignored.  Otherwise, <code>nruns</code> randomly generated
+orders are tried.  In the case of multiple runs, the (first) best
+solution found is returned.
+</p>
+<p>Non-identical weights and incomplete dissimilarities are currently not
+supported.
+</p>
+<p>Method <code>"IR"</code> implements the Iterative Reduction approach
+suggested by Roux (1988), see also Barthélémy and Guénoche (1991).
+This is similar to the Iterative Projection method, but modifies the
+dissimilarities between objects proportionally to the aggregated
+change incurred from the ultrametric projections.  Available control
+parameters are identical to those of method <code>"IP"</code>.
+</p>
+<p>Non-identical weights and incomplete dissimilarities are currently not
+supported.
+</p>
+<p>It should be noted that all methods are heuristics which can not be
+guaranteed to find the global minimum.  Standard practice would
+recommend to use the best solution found in “sufficiently many”
+replications of the base algorithm.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>"cl_ultrametric"</code> containing the
+fitted ultrametric distances.
+</p>
+
+
+<h3>References</h3>
+
+<p>J.-P. Barthélémy and A. Guénoche (1991).
+<em>Trees and proximity representations</em>.
+Chichester: John Wiley &amp; Sons.
+ISBN 0-471-92263-3.
+</p>
+<p>J. D. Carroll and S. Pruzansky (1980).
+Discrete and hybrid scaling models.
+In E. D. Lantermann and H. Feger (eds.), <em>Similarity and Choice</em>.
+Bern (Switzerland): Huber.
+</p>
+<p>L. Hubert and P. Arabie (1995).
+Iterative projection strategies for the least squares fitting of tree
+structures to proximity data.
+<em>British Journal of Mathematical and Statistical Psychology</em>,
+<b>48</b>, 281–317.
+<a href="https://doi.org/10.1111/j.2044-8317.1995.tb01065.x">doi:10.1111/j.2044-8317.1995.tb01065.x</a>.
+</p>
+<p>M. Krivanek and J. Moravek (1986).
+NP-hard problems in hierarchical tree clustering.
+<em>Acta Informatica</em>, <b>23</b>, 311–323.
+<a href="https://doi.org/10.1007/BF00289116">doi:10.1007/BF00289116</a>.
+</p>
+<p>M. Roux (1988).
+Techniques of approximation for building two tree structures.
+In C. Hayashi and E. Diday and M. Jambu and N. Ohsumi (Eds.),
+<em>Recent Developments in Clustering and Data Analysis</em>, pages
+151–170.
+New York: Academic Press.
+</p>
+<p>G. de Soete (1984).
+Ultrametric tree representations of incomplete dissimilarity data.
+<em>Journal of Classification</em>, <b>1</b>, 235–242.
+<a href="https://doi.org/10.1007/BF01890124">doi:10.1007/BF01890124</a>.
+</p>
+<p>G. de Soete (1986).
+A least squares algorithm for fitting an ultrametric tree to a
+dissimilarity matrix.
+<em>Pattern Recognition Letters</em>, <b>2</b>, 133–137.
+<a href="https://doi.org/10.1016/0167-8655%2884%2990036-9">doi:10.1016/0167-8655(84)90036-9</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cl_consensus</code> for computing least squares (Euclidean)
+consensus hierarchies by least squares fitting of average ultrametric
+distances;
+<code>l1_fit_ultrametric</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Least squares fit of an ultrametric to the Miller-Nicely consonant
+## phoneme confusion data.
+data("Phonemes")
+## Note that the Phonemes data set has the consonant misclassification
+## probabilities, i.e., the similarities between the phonemes.
+d &lt;- as.dist(1 - Phonemes)
+u &lt;- ls_fit_ultrametric(d, control = list(verbose = TRUE))
+## Cophenetic correlation:
+cor(d, u)
+## Plot:
+plot(u)
+## ("Basically" the same as Figure 1 in de Soete (1986).)
+</code></pre>
+
+
+</div>

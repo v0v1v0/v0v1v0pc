@@ -1,0 +1,424 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>ClarkLDF</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Clark LDF method
+</h2>
+
+<h3>Description</h3>
+
+<p>Analyze loss triangle using Clark's LDF (loss development factor) method.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">ClarkLDF(Triangle, cumulative = TRUE, maxage = Inf, 
+        adol = TRUE, adol.age = NULL, origin.width = NULL,
+        G = "loglogistic")
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Triangle</code></td>
+<td>
+
+<p>A loss triangle in the form of a matrix.
+The number of columns must be at least four;
+the number of rows may be as few as 1.
+The column names of the matrix should be able to be interpreted
+as the "age" of the losses in that column.
+The row names of the matrix should uniquely define the year of
+origin of the losses in that row.
+Losses may be inception-to-date or incremental.
+</p>
+<p>The "ages" of the triangle can be "phase shifted" –
+i.e., the first age need not be as at the end of the origin period.
+(See the Examples section.)
+Nor need the "ages" be uniformly spaced.
+However, when the ages are not uniformly spaced, 
+it would be prudent to specify the <code>origin.width</code> argument.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cumulative</code></td>
+<td>
+
+<p>If <code>TRUE</code> (the default), values in <code>Triangle</code> are
+inception to date.
+If <code>FALSE</code>, <code>Triangle</code> holds incremental losses.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>maxage</code></td>
+<td>
+
+<p>The "ultimate" age to which losses should be projected.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>adol</code></td>
+<td>
+
+<p>If <code>TRUE</code> (the default), the growth function should be applied
+to the length of time from the average date of loss ("adol")
+of losses in the origin year.
+If <code>FALSE</code>, the growth function should be applied
+to the length of time since the beginning of the origin year.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>adol.age</code></td>
+<td>
+
+<p>Only pertinent if <code>adol</code> is <code>TRUE</code>.
+The age of the average date of losses within an origin period
+in the same units as the "ages" of the <code>Triangle</code> matrix.
+If <code>NULL</code> (the default) it will be assumed to be half the width
+of an origin period (which would be the case if losses can be assumed
+to occur uniformly over an origin period).
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>origin.width</code></td>
+<td>
+
+<p>Only pertinent if <code>adol</code> is <code>TRUE</code>.
+The width of an origin period
+in the same units as the "ages" of the <code>Triangle</code> matrix.
+If <code>NULL</code> (the default) it will be assumed to be the mean difference
+in the "ages" of the triangle, 
+with a warning if not all differences are equal.
+</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>G</code></td>
+<td>
+
+<p>A <code>character</code> scalar identifying the "growth function."
+The two growth functions defined at this time are "loglogistic"
+(the default)
+and "weibull".
+</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Clark's "LDF method" assumes that the 
+incremental losses across development periods in a loss triangle
+are independent.
+He assumes that the expected value of an incremental loss is
+equal to the <em>theoretical</em> expected ultimate loss (<b>U</b>)
+(by origin year)
+times the change in the <em>theoretical</em>
+underlying growth function over the development period.
+Clark models the growth function, also called the percent of ultimate,
+by either the loglogistic function (a.k.a., "the inverse power curve") 
+or the weibull function.
+Clark completes his incremental loss model 
+by wrapping the expected values within an 
+overdispersed poisson (ODP) process where
+the "scale factor" 
+sigma^2
+is assumed to be a known constant for all 
+development periods.
+</p>
+<p>The parameters of Clark's "LDF method" are therefore:
+U,
+and 
+omega
+and 
+theta
+(the parameters of the <b>loglogistic</b> and <b>weibull</b> growth functions).
+Finally, Clark uses maximum likelihood to parameterize his model,
+uses the ODP process to estimate process risk, and
+uses the Cramer-Rao theorem and the "delta method" to estimate parameter risk.
+</p>
+<p>Clark recommends inspecting the residuals to help assess the 
+reasonableness of the model relative to the actual data
+(see <code>plot.clark</code> below).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>list</code> of class "ClarkLDF" with the components listed below.
+("Key" to naming convention: all caps represent parameters;
+mixed case represent origin-level amounts;
+all-lower-case represent observation-level (origin, development age) results.)
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>"LDF"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>growthFunction</code></td>
+<td>
+<p>name of the growth function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Origin</code></td>
+<td>
+<p>names of the rows of the triangle</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CurrentValue</code></td>
+<td>
+<p>the most mature value for each row</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CurrentAge</code></td>
+<td>
+<p>the most mature "age" for each row</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>CurrentAge.used</code></td>
+<td>
+<p>the most mature age used; differs from "CurrentAge"
+when adol=TRUE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MAXAGE</code></td>
+<td>
+<p>same as 'maxage' argument</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>MAXAGE.USED</code></td>
+<td>
+<p>the maximum age for development 
+from the average date of loss; 
+differs from MAXAGE when adol=TRUE</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FutureValue</code></td>
+<td>
+<p>the projected loss amounts ("Reserves" in Clark's paper)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ProcessSE</code></td>
+<td>
+<p>the process standard error of the FutureValue</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ParameterSE</code></td>
+<td>
+<p>the parameter standard error of the FutureValue</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>StdError</code></td>
+<td>
+<p>the total standard error (process + parameter) 
+of the FutureValue</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Total</code></td>
+<td>
+<p>a <code>list</code> with amounts that appear on the "Total" row
+for components "Origin" (="Total"), "CurrentValue", "FutureValue",
+"ProcessSE", "ParameterSE", and "StdError"</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>PAR</code></td>
+<td>
+<p>the estimated parameters</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>THETAU</code></td>
+<td>
+<p>the estimated parameters for the "ultimate loss" by 
+origin year ("U" in Clark's notation)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>THETAG</code></td>
+<td>
+<p>the estimated parameters of the growth function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>GrowthFunction</code></td>
+<td>
+<p>value of the growth function as of the 
+CurrentAge.used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>GrowthFunctionMAXAGE</code></td>
+<td>
+<p>value of the growth function as of the
+MAXAGE.used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>SIGMA2</code></td>
+<td>
+<p>the estimate of the sigma^2 parameter</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Ldf</code></td>
+<td>
+<p>the "to-ultimate" loss development factor
+(sometimes called the "cumulative development factor")
+as defined in Clark's paper for each origin year</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>LdfMAXAGE</code></td>
+<td>
+<p>the "to-ultimate" loss development factor as of 
+the maximum age used in the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>TruncatedLdf</code></td>
+<td>
+<p>the "truncated" loss development factor for developing
+the current diagonal to
+the maximum age used in the model</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FutureValueGradient</code></td>
+<td>
+<p>the gradient of the FutureValue function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>origin</code></td>
+<td>
+<p>the origin year corresponding to each observed value of incremental loss</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>age</code></td>
+<td>
+<p>the age of each observed value of incremental loss</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fitted</code></td>
+<td>
+<p>the expected value of each observed value of incremental loss 
+(the "mu's" of Clark's paper)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>residuals</code></td>
+<td>
+<p>the actual minus fitted value for 
+each observed incremental loss</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stdresid</code></td>
+<td>
+<p> the standardized residuals for 
+each observed incremental loss
+(= residuals/sqrt(sigma2*fitted), 
+referred to as "normalized residuals" in Clark's paper; see p. 62)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>FI</code></td>
+<td>
+<p>the "Fisher Information" matrix as defined in Clark's paper
+(i.e., without the sigma^2 value)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>value</code></td>
+<td>
+<p>the value of the loglikelihood function at the solution point</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>counts</code></td>
+<td>
+<p>the number of calls to the loglikelihood function
+and its gradient function when numerical convergence was achieved</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Daniel Murphy
+</p>
+
+
+<h3>References</h3>
+
+<p>Clark, David R., 
+"LDF Curve-Fitting and Stochastic Reserving: A Maximum Likelihood Approach",
+<em>Casualty Actuarial Society Forum</em>, Fall, 2003
+<a href="https://www.casact.org/sites/default/files/database/forum_03fforum_03ff041.pdf">https://www.casact.org/sites/default/files/database/forum_03fforum_03ff041.pdf</a> 
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>ClarkCapeCod</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">X &lt;- GenIns
+ClarkLDF(X, maxage=20)
+
+# Clark's "LDF method" also works with triangles that have  
+# more development periods than origin periods
+ClarkLDF(qincurred, G="loglogistic")
+
+# Method also works for a "triangle" with only one row:
+# 1st row of GenIns; need "drop=FALSE" to avoid becoming a vector.
+ClarkLDF(GenIns[1, , drop=FALSE], maxage=20)
+
+# The age of the first evaluation may be prior to the end of the origin period.
+# Here the ages are in units of "months" and the first evaluation 
+# is at the end of the third quarter.
+X &lt;- GenIns
+colnames(X) &lt;- 12 * as.numeric(colnames(X)) - 3
+# The indicated liability increases from 1st example above, 
+# but not significantly.
+ClarkLDF(X, maxage=240)
+# When maxage is infinite, the phase shift has a more noticeable impact:
+# a 4-5% increase of the overall CV.
+x &lt;- ClarkLDF(GenIns, maxage=Inf)
+y &lt;- ClarkLDF(X, maxage=Inf)
+# Percent change in the bottom line CV:
+(tail(y$Table65$TotalCV, 1) - tail(x$Table65$TotalCV, 1)) / tail(x$Table65$TotalCV, 1)
+
+</code></pre>
+
+
+</div>

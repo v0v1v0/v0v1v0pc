@@ -1,0 +1,84 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>get_metadata</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Template function for metadata</h2>
+
+<h3>Description</h3>
+
+<p>Simple function that processes metadata files.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">  get_metadata(file, metrics)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>file</code></td>
+<td>
+<p>character, metadata file (CSV format)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metrics</code></td>
+<td>
+<p>data frame, output of <code>get_metrics</code></p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>This function is provided as a simple example of reading metadata about 16S rRNA datasets.
+The basic metadata for all datasets include ‘<span class="samp">⁠name⁠</span>’ (study name), ‘<span class="samp">⁠Run⁠</span>’ (SRA or other run ID), ‘<span class="samp">⁠BioSample⁠</span>’ (SRA BioSample), and ‘<span class="samp">⁠Sample⁠</span>’ (sample description).
+Each data set contains environmental data, but the specific variables differ between datasets.
+Therefore, this function processes the environmental data for different datasets and appends ‘<span class="samp">⁠pch⁠</span>’ and ‘<span class="samp">⁠col⁠</span>’ columns that can be used for visualization and identifying trends between groups of samples.
+</p>
+<p>Samples are identified by the <code>Run</code> column (case-sensitive) in both <code>file</code> and <code>metrics</code>.
+It is possible that metrics for one or more samples are not available (for example, if the number of RDP classifications is below <code>mincount</code> in <code>get_metrics</code>).
+The function therefore removes metadata for unavailable samples.
+Then, the samples in <code>metrics</code> are placed in the same order as they appear in metadata.
+Ordering the samples is important because the columns in RDP Classifier output are not necessarily in the same order as the metadata.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If <code>metrics</code> is NULL, a data frame read from <code>file</code> with columns ‘<span class="samp">⁠pch⁠</span>’ and ‘<span class="samp">⁠col⁠</span>’ appended.
+Otherwise, a list with two components, <code>metadata</code> and <code>metrics</code>.
+In this list, <code>metrics</code> is the value from the <code>metrics</code> argument and <code>metadata</code> is a data frame read from <code>file</code> with columns ‘<span class="samp">⁠pch⁠</span>’ and ‘<span class="samp">⁠col⁠</span>’ appended and excluding any rows that correspond to unavailable samples in <code>metrics</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Get metrics for the Bison Pool dataset (Swingley et al., 2012)
+RDPfile &lt;- system.file("extdata/RDP/SMS+12.tab.xz", package = "chem16S")
+RDP &lt;- read_RDP(RDPfile)
+map &lt;- map_taxa(RDP, refdb = "RefSeq_206")
+metrics &lt;- get_metrics(RDP, map, refdb = "RefSeq_206")
+# Read the metadata file
+mdatfile &lt;- system.file("extdata/metadata/SMS+12.csv", package = "chem16S")
+mdat &lt;- get_metadata(mdatfile, metrics)
+
+# Print sample names
+mdat$metadata$Sample # 1 2 3 4 5
+# Plot Zc of community reference proteomes at sites 1-5
+Site &lt;- mdat$metadata$Sample
+Zc &lt;- mdat$metrics$Zc
+plot(Site, Zc, ylab = "Carbon oxidation state", type = "b")
+
+# Find the columns of the RDP file for samples 1 to 5
+match(mdat$metadata$Run, colnames(RDP)) # 6 5 7 8 9
+# NOTE: for this dataset, samples 1 and 2 are in columns 6 and 5, respectively
+</code></pre>
+
+
+</div>

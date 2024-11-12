@@ -1,0 +1,148 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>Fract.Poly</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Fit fractional polynomials</h2>
+
+<h3>Description</h3>
+
+<p>Fits regression models with <code class="reqn">m</code> terms of the form <code class="reqn">X^{p}</code>, where the exponents <code class="reqn">p</code> are selected from a small predefined set <code class="reqn">S</code> of both integer and non-integer values. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">Fract.Poly(Covariate, Outcome, S=c(-2,-1,-0.5,0,0.5,1,2,3), Max.M=5, Dataset)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Covariate</code></td>
+<td>
+<p>The covariate to be considered in the models.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Outcome</code></td>
+<td>
+<p>The outcome to be considered in the models.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>S</code></td>
+<td>
+<p>The set <code class="reqn">S</code> from which each power <code class="reqn">p^{m}</code>
+is selected. Default 
+<code>S={-2, -1, -0.5, 0, 0.5, 1, 2, 3}</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Max.M</code></td>
+<td>
+<p>The maximum order <code class="reqn">M</code> to be considered for the fractional polynomial. This value can be <code class="reqn">5</code> at most. When <code class="reqn">M=5</code>, then fractional polynomials of order <code class="reqn">1</code> to <code class="reqn">5</code> are considered. Default <code>Max.M=5</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Dataset</code></td>
+<td>
+<p>A <code>data.frame</code> that should consist of multiple lines per subject ('long' format).</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Results.M1</code></td>
+<td>
+<p>The results (powers and AIC values) of the fractional polynomials of order <code class="reqn">1</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Results.M2</code></td>
+<td>
+<p>The results (powers and AIC values) of the fractional polynomials of order <code class="reqn">2</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Results.M3</code></td>
+<td>
+<p>The results (powers and AIC values) of the fractional polynomials of order <code class="reqn">3</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Results.M4</code></td>
+<td>
+<p>The results (powers and AIC values) of the fractional polynomials of order <code class="reqn">4</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Results.M5</code></td>
+<td>
+<p>The results (powers and AIC values) of the fractional polynomials of order <code class="reqn">5</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Wim Van der Elst, Geert Molenberghs, Ralf-Dieter Hilgers, &amp; Nicole Heussen
+</p>
+
+
+<h3>References</h3>
+
+<p>Van der Elst, W., Molenberghs, G., Hilgers, R., &amp; Heussen, N. (2015). Estimating the reliability of repeatedly measured endpoints based on linear mixed-effects models. A tutorial. <em>Submitted.</em>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Open data
+data(Example.Data)
+
+# Fit fractional polynomials, mox. order = 3
+FP &lt;- Fract.Poly(Covariate = Time, Outcome = Outcome, 
+Dataset = Example.Data, Max.M=3)
+
+# Explore results
+summary(FP)
+# best fitting model (based on AIC) for m=3, 
+# powers:  p_{1}=3,  p_{2}=3, and  p_{3}=2
+
+# Fit model and compare with observed means
+
+    # plot of mean 
+Spaghetti.Plot(Dataset = Example.Data, Outcome = Outcome,
+Time = Time, Id=Id, Add.Profiles = FALSE, Lwd.Me=1, 
+ylab="Mean Outcome")
+
+    # Coding of predictors (note that when p_{1}=p_{2},
+    # beta_{1}*X ** {p_{1}} + beta_{2}*X ** {p_{1}} * log(X)
+    #  and when p=0, X ** {0}= log(X)    )
+term1 &lt;- Example.Data$Time**3
+term2 &lt;- (Example.Data$Time**3) * log(Example.Data$Time) 
+term3 &lt;- Example.Data$Time**2 
+
+    # fit model
+Model &lt;- lm(Outcome~term1+term2+term3, data=Example.Data)
+Model$coef # regression weights (beta's)  
+
+    # make prediction for time 1 to 47
+term1 &lt;- (1:47)**3 
+term2 &lt;- ((1:47)**3) * log(1:47)   
+term3 &lt;- (1:47)**2 
+    # compute predicted values
+pred &lt;- Model$coef[1] + (Model$coef[2] * term1) + 
+  (Model$coef[3] * term2) + (Model$coef[4] * term3)
+   # Add predicted values to plot
+lines(x = 1:47, y=pred,  lty=2)
+legend("topright", c("Observed", "Predicted"), lty=c(1, 2))
+</code></pre>
+
+
+</div>

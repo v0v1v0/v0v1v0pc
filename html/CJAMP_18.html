@@ -1,0 +1,198 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>minusloglik</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Minus log-likelihood of copula models.</h2>
+
+<h3>Description</h3>
+
+<p>Function to compute the minus log-likelihood of the joint distribution
+of <code>Y1</code> and <code>Y2</code> given the predictors <code>predictors_Y1</code>
+of <code>Y1</code> and <code>predictors_Y2</code> of <code>Y2</code> in a copula model
+for given parameter values <code>parameters</code>. Implemented are the
+Clayton and 2-parameter copula. The function assumes quantitative
+predictors and uses an additive model, i.e. for categorical predictors
+with more than 2 levels, dummy variables have to be created beforehand.
+Accordingly, if single nucleotide variants (SNVs) are included as
+predictors, the computation is based on an additive genetic model if
+SNVs are provided as 0-1-2 genotypes and on a dominant model if SNVs
+are provided as 0-1 genotypes.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">minusloglik(copula = "Clayton", Y1 = NULL, Y2 = NULL,
+  predictors_Y1 = NULL, predictors_Y2 = NULL, parameters = NULL)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>copula</code></td>
+<td>
+<p>String indicating whether the likelihood should be computed
+under the Clayton (<code>"Clayton"</code>) or 2-parameter copula
+(<code>"2param"</code>) model.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Y1</code></td>
+<td>
+<p>Numeric vector containing the first phenotype.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Y2</code></td>
+<td>
+<p>Numeric vector containing the second phenotype.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predictors_Y1</code></td>
+<td>
+<p>Dataframe containing the predictors of <code>Y1</code>
+in columns.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>predictors_Y2</code></td>
+<td>
+<p>Dataframe containing predictors of <code>Y2</code>
+in columns.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parameters</code></td>
+<td>
+<p>Named integer vector containing the parameter estimates
+of the marginal and copula parameters, for which the
+log-likelihood will be computed. For details and the
+necessary format of the vector, see the details below.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The number of predictors is not fixed and also different predictors
+can be supplied for <code>Y1</code> and <code>Y2</code>. However, for the functioning
+of the log-likelihood function, the <code>parameters</code> vector has to be
+supplied in a pre-specified form and formatting:
+</p>
+<p>The vector has to include the copula parameter(s), marginal parameters
+for <code>Y1</code>, and marginal parameters for <code>Y2</code> in this order.
+For example, for the 2-parameter copula with parameters <code class="reqn">\phi, \theta</code>
+and marginal models
+</p>
+<p style="text-align: center;"><code class="reqn">Y_1 = \alpha_0 + \alpha_1 \cdot X_1 + \alpha_2 \cdot X_2 + \epsilon_1, \ \epsilon_1 \sim N(0,\sigma_1^2),</code>
+</p>
+
+<p style="text-align: center;"><code class="reqn">Y_1 = \beta_0 + \beta_1 \cdot X_1 + \epsilon_2, \ \epsilon_2 \sim N(0,\sigma_2^2),</code>
+</p>
+
+<p>the parameter vector has be
+</p>
+<p style="text-align: center;"><code class="reqn">(log(\phi), log(\theta-1), log(\sigma_1), log(\sigma_2), \alpha_0, \alpha_2, \alpha_1, \beta_0, \beta_1)^T.</code>
+</p>
+
+<p><code class="reqn">log(\phi)</code> and <code class="reqn">log(\theta-1)</code> have to be provided instead of
+<code class="reqn">\phi, \theta</code> and <code class="reqn">log(\sigma_1)</code>, <code class="reqn">log(\sigma_2)</code> instead of
+<code class="reqn">\sigma_1</code>, <code class="reqn">\sigma_2</code> for computational reasons when the log-likelihood
+function is optimized in <code>cjamp</code>. As further necessary format,
+the vector has to be named and the names of the copula parameter(s) has/have
+to be <code>log_phi</code> and/or <code>log_theta_minus1</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Minus log-likelihood value (integer).
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># Generate genetic data:
+set.seed(10)
+genodata &lt;- generate_genodata(n_SNV = 20, n_ind = 1000)
+
+# Generate phenotype data:
+phenodata &lt;- generate_phenodata_2_copula(genodata = genodata, MAF_cutoff = 1,
+                                         prop_causal = 0.5, tau = 0.2,
+                                         b1 = 0.3, b2 = 0.3)
+
+# Example 1: Log-likelihood of null model without covariates &amp; genetic effects
+estimates &lt;- get_estimates_naive(Y1 = phenodata$Y1, Y2 = phenodata$Y2,
+                                 predictors_Y1 = NULL, predictors_Y2 = NULL,
+                                 copula_param = "both")
+minusloglik(Y1 = phenodata$Y1, Y2 = phenodata$Y2, predictors_Y1 = NULL,
+            predictors_Y2 = NULL, parameters = estimates, copula = "2param")
+
+# Example 2: Log-likelihood of null model with covariates, without genetic effects
+predictors &lt;- data.frame(X1 = phenodata$X1, X2 = phenodata$X2)
+estimates &lt;- get_estimates_naive(Y1 = phenodata$Y1, Y2 = phenodata$Y2,
+                                 predictors_Y1 = predictors,
+                                 predictors_Y2 = predictors,
+                                 copula_param = "both")
+minusloglik(Y1 = phenodata$Y1, Y2 = phenodata$Y2, predictors_Y1 = predictors,
+            predictors_Y2 = predictors, parameters = estimates, copula = "2param")
+
+# Example 3: Log-likelihood of model with covariates &amp; genetic effect on Y1 only
+predictors_Y1 &lt;- data.frame(X1 = phenodata$X1, X2 = phenodata$X2,
+                            SNV = genodata$SNV1)
+predictors_Y2 &lt;- data.frame(X1 = phenodata$X1, X2 = phenodata$X2)
+estimates &lt;- get_estimates_naive(Y1 = phenodata$Y1, Y2 = phenodata$Y2,
+                                 predictors_Y1 = predictors_Y1,
+                                 predictors_Y2 = predictors_Y2,
+                                 copula_param = "both")
+minusloglik(Y1 = phenodata$Y1, Y2 = phenodata$Y2, predictors_Y1 = predictors_Y1,
+            predictors_Y2 = predictors_Y2, parameters = estimates,
+            copula = "2param")
+
+# Example 4: Log-likelihood of model with covariates &amp; genetic effect on Y2 only
+predictors_Y1 &lt;- data.frame(X1 = phenodata$X1, X2 = phenodata$X2)
+predictors_Y2 &lt;- data.frame(X1 = phenodata$X1, X2 = phenodata$X2,
+                            SNV = genodata$SNV1)
+estimates &lt;- get_estimates_naive(Y1 = phenodata$Y1, Y2 = phenodata$Y2,
+                                 predictors_Y1 = predictors_Y1,
+                                 predictors_Y2 = predictors_Y2,
+                                 copula_param = "both")
+minusloglik(Y1 = phenodata$Y1, Y2 = phenodata$Y2, predictors_Y1 = predictors_Y1,
+            predictors_Y2 = predictors_Y2, parameters = estimates,
+            copula = "2param")
+
+# Example 5: Log-likelihood of model without covariates, with genetic effects
+predictors &lt;- data.frame(SNV = genodata$SNV1)
+estimates &lt;- get_estimates_naive(Y1 = phenodata$Y1, Y2 = phenodata$Y2,
+                                 predictors_Y1 = predictors,
+                                 predictors_Y2 = predictors,
+                                 copula_param = "both")
+minusloglik(Y1 = phenodata$Y1, Y2 = phenodata$Y2, predictors_Y1 = predictors,
+            predictors_Y2 = predictors, parameters = estimates, copula = "2param")
+
+# Example 6: Log-likelihood of model with covariates &amp; genetic effects
+predictors &lt;- data.frame(X1 = phenodata$X1, X2 = phenodata$X2, SNV = genodata$SNV1)
+estimates &lt;- get_estimates_naive(Y1 = phenodata$Y1, Y2 = phenodata$Y2,
+                                 predictors_Y1 = predictors,
+                                 predictors_Y2 = predictors,
+                                 copula_param = "both")
+minusloglik(Y1 = phenodata$Y1, Y2 = phenodata$Y2, predictors_Y1 = predictors,
+            predictors_Y2 = predictors, parameters = estimates, copula = "2param")
+
+# Example 7: Log-likelihood of model with covariates &amp; multiple genetic effects
+predictors &lt;- data.frame(X1 = phenodata$X1, X2 = phenodata$X2, genodata[, 1:5])
+estimates &lt;- get_estimates_naive(Y1 = phenodata$Y1, Y2 = phenodata$Y2,
+                                 predictors_Y1 = predictors,
+                                 predictors_Y2 = predictors,
+                                 copula_param = "both")
+minusloglik(Y1 = phenodata$Y1, Y2 = phenodata$Y2, predictors_Y1 = predictors,
+            predictors_Y2 = predictors, parameters = estimates, copula = "2param")
+
+</code></pre>
+
+
+</div>

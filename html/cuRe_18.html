@@ -1,0 +1,159 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>lts</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Long term survival predictions</h2>
+
+<h3>Description</h3>
+
+<p>Function for computing survival estimates using a relative survival model and the
+expected general population survival.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">lts(
+  fit,
+  type = c("surv", "hazard", "cumhaz", "loghaz", "fail"),
+  newdata = NULL,
+  time = NULL,
+  var.type = c("ci", "se", "n"),
+  exp.fun = NULL,
+  ratetable = cuRe::survexp.dk,
+  rmap,
+  scale = 365.24,
+  smooth.exp = FALSE,
+  link = NULL,
+  mean = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>fit</code></td>
+<td>
+<p>Fitted model to do predictions from. Possible classes are <code>gfcm</code>, <code>stpm2</code>,
+<code>pstpm2</code>, and <code>cm</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>Prediction type (see details). The default is <code>surv</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>newdata</code></td>
+<td>
+<p>Data frame from which to compute predictions. If empty, predictions are made on the the data which
+the model was fitted on.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>time</code></td>
+<td>
+<p>Optional time points at which to compute predictions. If empty, a grid of 100 time points between 0
+and the maximum follow-up time is selected.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>var.type</code></td>
+<td>
+<p>Character. Possible values are "<code>ci</code>" (default) for confidence intervals,
+"<code>se</code>" for standard errors, and "<code>n</code>" for neither.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>exp.fun</code></td>
+<td>
+<p>Object of class <code>list</code> containing functions for the expected survival
+of each row in <code>newdata</code>. If not specified, the function computes the expected
+survival based on <code>newdata</code> using the <code>survival::survexp</code> function. If <code>newdata</code> is not provided,
+the expected survival is based on the data which the model was fitted on.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ratetable</code></td>
+<td>
+<p>Object of class <code>ratetable</code> used to compute the general population survival.
+Default is <code>survexp.dk</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>rmap</code></td>
+<td>
+<p>List to be passed to <code>survexp</code> from the <code>survival</code> package if <code>exp.fun = NULL</code>.
+Detailed documentation on this argument can be found by <code>?survexp</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>scale</code></td>
+<td>
+<p>Numeric. Passed to the <code>survival::survexp</code> function and defaults to 365.24.
+That is, the time scale is assumed to be in years.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>smooth.exp</code></td>
+<td>
+<p>Logical. If <code>TRUE</code>, the general population survival function is smoothed by the function
+<code>smooth.spline</code> using the the argument <code>all.knots = TRUE</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>link</code></td>
+<td>
+<p>Character, indicating the link function for the variance calculations.
+Possible values are "<code>log</code>", "<code>cloglog</code>" for <code class="reqn">log(-log(x))</code> , "<code>mlog</code>" for -log(x),
+and "<code>I</code>" for the indentity.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mean</code></td>
+<td>
+<p>Logical. If <code>TRUE</code>, the function outputs the average estimate across the
+rows in <code>newdata</code>. If <code>newdata = NULL</code>, the argument is not used. The default is <code>FALSE</code>.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Possible values for argument <code>type</code> are:<br><code>surv</code>: Survival function computed by <code class="reqn">S(t) = R(t)S^*(t)</code><br><code>hazard</code>: Hazard function computed by <code class="reqn">h(t) = \lambda(t) + h^*(t)</code><br><code>cumhaz</code>: The cumulative hazard function computed by <code class="reqn">H(t) = \Lambda(t) + H^*(t)</code><br><code>loghazard</code>: The log-hazard function computed by <code class="reqn">\log(\lambda(t) + h^*(t))</code><br><code>fail</code>: The distribution function computed by <code class="reqn">1 - R(t)S^*(t)</code>
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>lts</code> containing the predictions of each individual in <code>newdata</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">##Use data cleaned version of the colon cancer data from the rstpm2 package
+data("colonDC")
+set.seed(2)
+colonDC &lt;- colonDC[sample(1:nrow(colonDC), 1000), ]
+
+##Extract general population hazards
+colonDC$bhaz &lt;- general.haz(time = "FU", rmap = list(age = "agedays", sex = "sex", year= "dx"),
+                            data = colonDC, ratetable = survexp.dk)
+
+##Fit flexible parametric relative survival model
+fit &lt;- stpm2(Surv(FUyear, status) ~ 1, data = colonDC, df = 6, bhazard = colonDC$bhaz)
+
+##Compute survival probabilities from 0 to 20 years
+pred &lt;- lts(fit, rmap = list(age = agedays, sex = sex, year = dx))
+
+##Plot the survival function
+plot(pred)
+</code></pre>
+
+
+</div>

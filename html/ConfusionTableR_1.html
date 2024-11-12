@@ -1,0 +1,103 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>binary_class_cm</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Binary Confusion Matrix data frame</h2>
+
+<h3>Description</h3>
+
+<p>a confusion matrix object for binary classification machine learning problems.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">binary_class_cm(train_labels, truth_labels, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>train_labels</code></td>
+<td>
+<p>the classification labels from the training set</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>truth_labels</code></td>
+<td>
+<p>the testing set ground truth labels for comparison</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>function forwarding for additional 'caret' confusion matrix parameters to be passed such as mode="everything" and positive="class label"</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>A list containing the outputs highlighted hereunder:
+</p>
+
+<ul>
+<li>
+<p><strong>"confusion_matrix"</strong> a confusion matrix list item with all the associated confusion matrix statistics
+</p>
+</li>
+<li>
+<p><strong>"record_level_cm"</strong> a row by row data.frame version of the above output, to allow for storage in databases and row by row for tracking ML model performance
+</p>
+</li>
+<li>
+<p><strong>"cm_tbl"</strong> a confusion matrix raw table of the values in the matrix
+</p>
+</li>
+<li>
+<p><strong>"last_run"</strong>datetime object storing when the function was run
+</p>
+</li>
+</ul>
+<h3>Examples</h3>
+
+<pre><code class="language-R">library(dplyr)
+library(ConfusionTableR)
+library(caret)
+library(tidyr)
+library(mlbench)
+
+# Load in the data
+data("BreastCancer", package = "mlbench")
+breast &lt;- BreastCancer[complete.cases(BreastCancer), ] #Create a copy
+breast &lt;- breast[, -1]
+breast &lt;- breast[1:100,]
+breast$Class &lt;- factor(breast$Class) # Create as factor
+for(i in 1:9) {
+ breast[, i] &lt;- as.numeric(as.character(breast[, i]))
+}
+
+#Perform train / test split on the data
+train_split_idx &lt;- caret::createDataPartition(breast$Class, p = 0.75, list = FALSE)
+train &lt;- breast[train_split_idx, ]
+test &lt;- breast[-train_split_idx, ]
+rf_fit &lt;- caret::train(Class ~ ., data=train, method="rf")
+#Make predictions to expose class labels
+preds &lt;- predict(rf_fit, newdata=test, type="raw")
+predicted &lt;- cbind(data.frame(class_preds=preds), test)
+
+#ConfusionTableR to produce record level output
+cm &lt;- ConfusionTableR::binary_class_cm(predicted$class_preds,predicted$Class)
+# Other modes here are mode="prec_recall", mode="sens_spec" and mode="everything"
+# Record level output
+cm$record_level_cm #Primed for storage in a database table
+# List confusion matrix
+cm$confusion_matrix
+</code></pre>
+
+
+</div>

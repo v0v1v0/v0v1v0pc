@@ -1,0 +1,217 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>run_CALANGO</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Run the CALANGO pipeline</h2>
+
+<h3>Description</h3>
+
+<p>This function runs the complete workflow of CALANGO and generates the
+HTML5 output pages and export files.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">run_CALANGO(
+  defs,
+  type = "correlation",
+  cores = NULL,
+  render.report = TRUE,
+  basedir = ""
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>defs</code></td>
+<td>
+<p>either a CALANGO-type list object or
+a path to a text file containing the required definitions (see Details).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>type of analysis to perform. Currently only "correlation" is
+supported.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cores</code></td>
+<td>
+<p>positive integer, how many CPU cores to use. Setting
+this parameter overrides any 'cores' field from 'defs'.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>render.report</code></td>
+<td>
+<p>logical: should a HTML5 report be generated?</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>basedir</code></td>
+<td>
+<p>path to base folder to which all relative paths in 'defs' 
+refer to.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The script expects a 'CALANGO'-type list, passed either as an actual list
+object or as a file path. In the latter case, notice that
+the file must be a text file with a 'field = value' format.
+Blank likes and lines starting with '#' are ignored. The function expects the
+input list to have the following fields:
+</p>
+
+<ul>
+<li>
+<p><code>annotation.files.dir</code> (required, string) - Folder where
+annotation files are located.
+</p>
+</li>
+<li>
+<p><code>output.dir</code> (required, string) - output folder for results
+</p>
+</li>
+<li>
+<p><code>dataset.info</code> (required, string) - genome metadata file, it
+should contain at least:
+</p>
+
+<ul>
+<li>
+<p> File names. Please notice this information should be the first
+column in metadata file;
+</p>
+</li>
+<li>
+<p> Phenotype data (numeric, this is the value CALANGO uses to rank
+species when searching for associations)
+</p>
+</li>
+<li>
+<p> Normalization data (numeric, this is the value CALANGO uses as a
+denominator to compute annotation term frequencies to remove potential
+biases caused by, for instance, over annotation of model organisms or
+large differences in the counts of genomic elements). Please notice that
+CALANGO does not require normalization data for GO, as it computes the
+total number of GO terms per species and uses it as a normalizing factor.
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p><code>x.column</code> (required, numeric) - which column in "dataset.info"
+contains the phenotype data?
+</p>
+</li>
+<li>
+<p><code>ontology</code> (required, string)  - which dictionary data type to
+use? Possible values are "GO" and "other". For GO, CALANGO can compute
+normalization data.
+</p>
+</li>
+<li>
+<p><code>dict.path</code> (required, string)  - file for dictionary file
+(two-column file containing annotation IDs and their descriptions. Not
+needed for GO.
+</p>
+</li>
+<li>
+<p><code>column</code> (required, string)  - which column in annotation files
+should be used (column name)
+</p>
+</li>
+<li>
+<p><code>denominator.column</code> (optional, numeric) - which column contains
+normalization data (column number)
+</p>
+</li>
+<li>
+<p><code>tree.path</code> (required, string)  - path for tree file in either
+newick or nexus format
+</p>
+</li>
+<li>
+<p><code>tree.type</code> (required, string) - tree file type (either "nexus"
+or "newick")
+</p>
+</li>
+<li>
+<p><code>cores</code> (optional, numeric) - how many cores to use? If not
+provided the function defaults to 1.
+</p>
+</li>
+<li>
+<p><code>linear.model.cutoff</code> (required, numeric) - parameter that
+regulates how much graphical output is produced. We configure it to
+generate plots only for annotation terms with corrected q-values for
+phylogenetically independent contrasts (standard: smaller than 0.5).
+</p>
+</li>
+<li>
+<p><code>MHT.method</code> (optional, string) - type of multiple hypothesis
+correction to be used. Accepts all methods listed by
+'stats::p.adjust.methods()'. If not provided the function defaults to
+"BH".
+</p>
+</li>
+</ul>
+<h3>Value</h3>
+
+<p>Updated 'defs' list, containing:
+</p>
+
+<ul>
+<li>
+<p> All input parameters originally passed or read from a 'defs' file 
+(see **Details**).
+</p>
+</li>
+<li>
+<p> Derived fields loaded and preprocessed from the files indicated in 
+'defs'.
+</p>
+</li>
+<li>
+<p> Several statistical summaries of the data (used to render the 
+report), including correlations, contrasts, covariances, p-values and 
+other summary statistics.
+</p>
+</li>
+</ul>
+<p>Results are also saved to files under 'defs$output.dir'.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+
+## Install any missing BioConductor packages for report generation 
+## (only needs to be done once)
+# CALANGO::install_bioc_dependencies()
+
+# Retrieve example files
+basedir &lt;- tempdir()
+retrieve_data_files(target.dir = paste0(basedir, "/data"))
+defs &lt;- paste0(basedir, "/data/parameters/parameters_domain2GO_count_less_phages.txt")
+
+# Run CALANGO
+res &lt;- run_CALANGO(defs, cores = 2)
+
+## End(Not run)
+
+</code></pre>
+
+
+</div>

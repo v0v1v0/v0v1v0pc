@@ -1,0 +1,141 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>vita</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Calibrate a regular vine</h2>
+
+<h3>Description</h3>
+
+<p><code>vita</code> implements the VITA (VIne-To-Anything) algorithm.
+Covariance matrix and margins are specified, and <code>vita</code> calibrates the
+pair-copulas in each node of the tree to match the target covariance.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">vita(
+  margins,
+  sigma.target,
+  vc = NULL,
+  family_set = c("clayton", "gauss", "joe", "gumbel", "frank"),
+  Nmax = 10^6,
+  numrootpoints = 10,
+  conflevel = 0.995,
+  numpoints = 4,
+  verbose = TRUE,
+  cores = parallel::detectCores()
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>margins</code></td>
+<td>
+<p>A list where each element corresponds to a margin. Each
+margin element is a list containing the distribution family ("distr") and
+additional parameters. Must be a distribution available in the stats package.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sigma.target</code></td>
+<td>
+<p>The target covariance matrix that is to be matched. The diagonal
+elements must contain the variances of marginal distributions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>vc</code></td>
+<td>
+<p>A vine dist object as specified by the rvinecopulib package. This object
+specifies the  vine that is to be calibrated. If not provided, a D-vine is assumed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family_set</code></td>
+<td>
+<p>A vector of one-parameter pair-copula families that is to
+be calibrated at each node in the vine. Possible entries are "gauss", "clayton", "joe", "gumbel" and "frank".
+Calibration of pair-copula families is attempted in the order provided.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Nmax</code></td>
+<td>
+<p>The sample size used for calibration. Reduce for faster calibration,
+at the cost of precision.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>numrootpoints</code></td>
+<td>
+<p>The number of estimated roots at the initial calibration stage, which
+determines a search interval where Nmax samples are drawn</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>conflevel</code></td>
+<td>
+<p>Confidence level for determining search interval</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>numpoints</code></td>
+<td>
+<p>The number of samples drawn with size Nmax, to determine the root within search interval
+To increase precision increase this number. To calibrate faster (but less precisely), may be reduced to a number no lower than 2</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>If TRUE, outputs details of calibration of each bicopula</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>cores</code></td>
+<td>
+<p>Number of cores to use. If larger than 1, computations are done in parallel. May be determined with parallel:detectCores()</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>If a feasible solution was found, a vine to be used for simulation
+</p>
+
+
+<h3>References</h3>
+
+<p>Grønneberg, S., Foldnes, N., &amp; Marcoulides, K. M. (2021). covsim: An r package for simulating non-normal data for structural equation models using copulas. Journal of Statistical Software. doi:10.18637/jss.v102.i03
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">set.seed(1)# define a target covariance. 3 dimensions.
+sigma.target &lt;- cov(MASS::mvrnorm(10, mu=rep(0,3), Sigma=diag(1, 3)))
+
+#normal margins that match the covariances:
+marginsnorm &lt;- lapply(X=sqrt(diag(sigma.target)),function(X) list(distr="norm", sd=X) )
+
+#calibrate with a default D-vine, with rather low precision (default Nmax is 10^6)
+# if cores=1 is removed, all cores are used, with a speed gain
+calibrated.vine &lt;- vita(marginsnorm, sigma.target =sigma.target, Nmax=10^5, cores=1)
+#check
+#round(cov(rvinecopulib::rvine(10^5, calibrated.vine))-sigma.target, 3)
+
+#margins are normal but dependence structure is not
+#pairs(rvinecopulib::rvine(500, calibrated.vine))
+
+
+
+</code></pre>
+
+
+</div>

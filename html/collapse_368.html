@@ -1,0 +1,168 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>GGDC10S</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>
+Groningen Growth and Development Centre 10-Sector Database
+</h2>
+
+<h3>Description</h3>
+
+<p>The GGDC 10-Sector Database provides a long-run internationally comparable dataset on sectoral productivity performance in Africa, Asia, and Latin America. Variables covered in the data set are annual series of value added (in local currency), and persons employed for 10 broad sectors.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">data("GGDC10S")</code></pre>
+
+
+<h3>Format</h3>
+
+<p>A data frame with 5027 observations on the following 16 variables.
+</p>
+
+<dl>
+<dt><code>Country</code></dt>
+<dd>
+<p><em>char</em>: Country (43 countries)</p>
+</dd>
+<dt><code>Regioncode</code></dt>
+<dd>
+<p><em>char</em>: ISO3 Region code</p>
+</dd>
+<dt><code>Region</code></dt>
+<dd>
+<p><em>char</em>: Region (6 World Regions)</p>
+</dd>
+<dt><code>Variable</code></dt>
+<dd>
+<p><em>char</em>: Variable (Value Added or Employment)</p>
+</dd>
+<dt><code>Year</code></dt>
+<dd>
+<p><em>num</em>: Year (67 Years, 1947-2013)</p>
+</dd>
+<dt><code>AGR</code></dt>
+<dd>
+<p><em>num</em>: Agriculture</p>
+</dd>
+<dt><code>MIN</code></dt>
+<dd>
+<p><em>num</em>: Mining</p>
+</dd>
+<dt><code>MAN</code></dt>
+<dd>
+<p><em>num</em>: Manufacturing</p>
+</dd>
+<dt><code>PU</code></dt>
+<dd>
+<p><em>num</em>: Utilities</p>
+</dd>
+<dt><code>CON</code></dt>
+<dd>
+<p><em>num</em>: Construction</p>
+</dd>
+<dt><code>WRT</code></dt>
+<dd>
+<p><em>num</em>: Trade, restaurants and hotels</p>
+</dd>
+<dt><code>TRA</code></dt>
+<dd>
+<p><em>num</em>: Transport, storage and communication</p>
+</dd>
+<dt><code>FIRE</code></dt>
+<dd>
+<p><em>num</em>: Finance, insurance, real estate and business services</p>
+</dd>
+<dt><code>GOV</code></dt>
+<dd>
+<p><em>num</em>: Government services</p>
+</dd>
+<dt><code>OTH</code></dt>
+<dd>
+<p><em>num</em>: Community, social and personal services</p>
+</dd>
+<dt><code>SUM</code></dt>
+<dd>
+<p><em>num</em>: Summation of sector GDP</p>
+</dd>
+</dl>
+<h3>Source</h3>
+
+<p><a href="https://www.rug.nl/ggdc/productivity/10-sector/">https://www.rug.nl/ggdc/productivity/10-sector/</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Timmer, M. P., de Vries, G. J., &amp; de Vries, K. (2015). "Patterns of Structural Change in Developing Countries." . In J. Weiss, &amp; M. Tribe (Eds.), <em>Routledge Handbook of Industry and Development.</em> (pp. 65-83). Routledge.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>wlddev</code>, Collapse Overview
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">namlab(GGDC10S, class = TRUE)
+# aperm(qsu(GGDC10S, ~ Variable, ~ Variable + Country, vlabels = TRUE))
+
+library(ggplot2)
+
+## World Regions Structural Change Plot
+
+GGDC10S |&gt;
+  fmutate(across(AGR:OTH, `*`, 1 / SUM),
+          Variable = ifelse(Variable == "VA","Value Added Share", "Employment Share")) |&gt;
+  replace_outliers(0, NA, "min") |&gt;
+  collap( ~ Variable + Region + Year, cols = 6:15) |&gt; qDT() |&gt;
+  pivot(1:3, names = list(variable = "Sector"), na.rm = TRUE) |&gt;
+
+  ggplot(aes(x = Year, y = value, fill = Sector)) +
+    geom_area(position = "fill", alpha = 0.9) + labs(x = NULL, y = NULL) +
+    theme_linedraw(base_size = 14) +
+    facet_grid(Variable ~ Region, scales = "free_x") +
+    scale_fill_manual(values = sub("#00FF66", "#00CC66", rainbow(10))) +
+    scale_x_continuous(breaks = scales::pretty_breaks(n = 7), expand = c(0, 0))+
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 10), expand = c(0, 0),
+                       labels = scales::percent) +
+    theme(axis.text.x = element_text(angle = 315, hjust = 0, margin = ggplot2::margin(t = 0)),
+          strip.background = element_rect(colour = "grey30", fill = "grey30"))
+
+# A function to plot the structural change of an arbitrary country
+
+plotGGDC &lt;- function(ctry) {
+
+  GGDC10S |&gt;
+  fsubset(Country == ctry, Variable, Year, AGR:SUM) |&gt;
+  fmutate(across(AGR:OTH, `*`, 1 / SUM), SUM = NULL,
+          Variable = ifelse(Variable == "VA","Value Added Share", "Employment Share")) |&gt;
+  replace_outliers(0, NA, "min") |&gt; qDT() |&gt;
+  pivot(1:2, names = list(variable = "Sector"), na.rm = TRUE) |&gt;
+
+  ggplot(aes(x = Year, y = value, fill = Sector)) +
+    geom_area(position = "fill", alpha = 0.9) + labs(x = NULL, y = NULL) +
+    theme_linedraw(base_size = 14) + facet_wrap( ~ Variable) +
+    scale_fill_manual(values = sub("#00FF66", "#00CC66", rainbow(10))) +
+    scale_x_continuous(breaks = scales::pretty_breaks(n = 7), expand = c(0, 0)) +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 10), expand = c(0, 0),
+                       labels = scales::percent) +
+    theme(axis.text.x = element_text(angle = 315, hjust = 0, margin = ggplot2::margin(t = 0)),
+          strip.background = element_rect(colour = "grey20", fill = "grey20"),
+          strip.text = element_text(face = "bold"))
+}
+
+plotGGDC("BWA")
+
+
+
+</code></pre>
+
+
+</div>

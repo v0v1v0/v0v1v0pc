@@ -1,0 +1,446 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>findstysols</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Given two time series find some time-varying linear combinations
+that are stationary.
+</h2>
+
+<h3>Description</h3>
+
+<p>Find some time-varying linear combinations of two
+time series that are stationary. The complexity of the
+time-varying combinations is restricted by the <code>Ncoefs</code>
+argument.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">findstysols(Nsims = 100, Ncoefs = 3, tsx, tsy, sf=100, plot.it = FALSE,
+        print.it=FALSE, verbose = FALSE, lctsfn=LCTS, prodcomb.fn=prodcomb,
+        filter.number=1, family=c("DaubExPhase", "DaubLeAsymm"),
+	my.maxit=500, spec.filter.number=1,
+	spec.family=c("DaubExPhase","DaubLeAsymm"),
+        optim.control=list(maxit=my.maxit, reltol=1e-6),
+        irng=rnorm, lapplyfn=lapply, Bsims=200, ...)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>Nsims</code></td>
+<td>
+<p>Number of searches attempted</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Ncoefs</code></td>
+<td>
+<p>Number of Haar wavelet coefficients to use. Must be
+&gt;= 1. Should only increase in steps of powers of two. E.g.
+can only supply the values 1, 3, 7, 15, etc. So, "1" means
+only one coarse scale coefficient (corresponds to piecewise constant
+with one centrally located jump), "3" means one coarse, and two
+next coarse scale coefficients (corresponds to piecewise constant
+with 4 equally sized piece with jumps at 1/4, 1/2 and 3/4), "7"
+means one coarse, two next coarse, four next coarse, and so on. </p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tsx</code></td>
+<td>
+<p>One of the time series</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tsy</code></td>
+<td>
+<p>The other time series,  values at the same time locations
+as <code>tsx</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sf</code></td>
+<td>
+<p>A scale factor to multiply both time series by (not really
+of much use)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>plot.it</code></td>
+<td>
+<p>If <code>TRUE</code> then the <code>plot.it</code> argument passed
+to <code>LCTS</code> via <code>optim</code> is made <code>TRUE</code>.
+This has the effect of plotting the results of every trial in
+the optimation (what actually is plotted is described in the
+help to <code>LCTS</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>print.it</code></td>
+<td>
+<p>Not currently used in this function, reserved for
+future use</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>verbose</code></td>
+<td>
+<p>If <code>TRUE</code> then helpful messages get printed.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lctsfn</code></td>
+<td>
+<p>The function to compute the 'linear combination
+test of stationarity'. I.e. it is the function that
+combines the two series and returns the value of the test
+statistic on the combination.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>prodcomb.fn</code></td>
+<td>
+<p>The function that can produce the linear combination
+of the two time series and return the combination, and optionally
+vectors containing the combination functions.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>filter.number</code></td>
+<td>
+<p>Gets passed to <code>lctsfn</code> and <code>prodcomb.fn</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>Gets passed to <code>lctsfn</code> and <code>prodcomb.fn</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>my.maxit</code></td>
+<td>
+<p>Maximum number of iterations in the optimization.
+May need to be increased to, e.g. 1000 or 2000 for longer
+time series (e.g. T=2048)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>spec.filter.number</code></td>
+<td>
+<p>Wavelet filter number. This argument
+gets passed to the <code>lctsfn</code> and is used for the wavelet
+for all spectral smoothing.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>spec.family</code></td>
+<td>
+<p>Same as <code>spec.filter.number</code> but for the wavelet
+family.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>optim.control</code></td>
+<td>
+<p>Argument passed to the <code>optim</code> optimizer as
+its <code>control</code> argument. <code>optim</code> 
+performs optimization. See help page for <code>optim</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>irng</code></td>
+<td>
+<p>Random number generator used to generate coefficients
+for starting parameters for the linear combination of time
+series (actually wavelet coefficients of the combination
+functions)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lapplyfn</code></td>
+<td>
+<p>Function to use to process lists. If this argument
+is <code>mclapply</code> then the multicore library function 
+<code>mclapply</code> is used to parallel process the lists.
+If you don't have multicore then the <code>lapply</code> function
+can be used to process things sequentially.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>Bsims</code></td>
+<td>
+<p>The number of bootstrap simulations for the (single)
+test of stationarity <code>BootTOS</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>...</code></td>
+<td>
+<p>Other arguments, passed to the <code>optim</code> call.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The function searches for time-varying linear combinations of
+two time series, <code>tsa</code> and <code>tsy</code>, such that the combination
+is stationary (according to the <code>TOSts</code> test statistic).
+</p>
+<p>Each linear combination is parametrised by a coarse scale
+Haar wavelet decomposition (controlled by <code>Ncoefs</code>).
+Initially, the Haar wavelet coefficients (up to a fixed finite scale,
+controlled by <code>Ncoefs</code>) are randomly chosen. These coefficients
+are converted to functions <code class="reqn">\alpha_t, \beta_t</code>
+by the <code>coeftofn</code> function and then a linear combination
+with the time series is formed out of those and the time series,
+i.e.
+<code class="reqn">Z_t = \alpha_t x_t + \beta_t y_t</code>
+The non-stationarity of <code class="reqn">Z_t</code> is measured using the
+<code>TOSts</code> test statistic and this value is minimized
+over the coarse scale Haar wavelet coefficients.
+</p>
+<p>This optimization procedure is repeated <code>Nsims</code> times.
+If the <code>lapplyfn</code> is set to <code>mclapply</code> then this
+function from the <code>multicore</code> package is used to process
+the lists in parallel. 
+</p>
+<p>This function can be called multiple times (e.g. on different
+processors in a multiprocessor environment. The result sets from
+different runs can be combined using the
+<code>mergexy</code> function.
+</p>
+<p>The variance <code>Ncoefs</code> is very important, it controls the
+complexity of the linear combinations. If it is too big the
+linear combinations themselves can be extremely oscillatory and
+stationarity is easy to obtain. Small values of <code>Ncoefs</code>
+results in piecewise constant functions with fewer jumps.
+</p>
+<p>The <code>Ncoefs</code> value must take the value of
+<code class="reqn">2^k - 1</code>. If this is the case the <code class="reqn">k</code>
+is the number of scale levels present in the Haar representation
+of the combining function <code class="reqn">\alpha_t, \beta_t</code>
+(excluding the scaling function coefficient, just the wavelet
+coefficients from the coarsest scale).
+</p>
+<p>The functions to compute the linear combination and also the
+test statistic on that combination, and just to compute the
+combination and return also (optionally) the combination
+vectors are supplied in <code>lctsfn</code> and <code>prodcomb.fn</code>.
+By default, these are just the <code>LCTS</code> and <code>prodcomb</code>
+functions. However, it is possible to recode these to
+look at operating on combinations that operate on portfolios.
+I.e. rather than look at linear combinations of log-returns
+(which if <code>tsx</code> and <code>tsy</code> were) one can look at
+linear combinations of actual series (ie portfolios) and
+then look for stationarity of log-returns of the portfolios.
+These functions will be made available in a later package.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>csFSS</code> which is a
+list with the following components.
+</p>
+<table>
+<tr style="vertical-align: top;">
+<td><code>startpar</code></td>
+<td>
+<p>A matrix with <code>Nsims</code> rows and <code>2*Ncoefs</code>
+columns containing the initial random coefficients of the
+linear combination functions, one row for each optimization
+run. The first <code>Ncoefs</code> numbers on each row correspond to
+the <code class="reqn">\alpha_t</code> coefficients, the second <code>Ncoefs</code>
+numbers correspond to the <code class="reqn">\beta_t</code> coefficients.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>endpar</code></td>
+<td>
+<p>Same dimension as <code>startpar</code> except containing
+the final coefficients obtained after running the optimizer.
+If, for a particuar run, the optimizer converged and the p-value
+is less than 0.05 then one can say that this solution represents
+a valid time-varying linear combination where the combination
+is stationary (coefficient storage format as for <code>startpar</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>convergence</code></td>
+<td>
+<p>A vector of length <code>Nsims</code>. Reports the convergence
+code from <code>optim</code> for each optimization run. A value of
+0 indicates successful convergence.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>minvar</code></td>
+<td>
+<p>A vector of length <code>Nsims</code>. Contains the minimum
+variance achieved on each run.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>pvals</code></td>
+<td>
+<p>A vector of length <code>Nsims</code>. Contains the p-values
+achieved on each run.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tsx</code></td>
+<td>
+<p>The <code>tsx</code> time series that was supplied to this function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tsy</code></td>
+<td>
+<p>The <code>tsy</code> time series that was supplied to this function</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tsxname</code></td>
+<td>
+<p>The name of the <code>tsx</code> object that was supplied</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tsyname</code></td>
+<td>
+<p>The name of the <code>tsy</code> object that was supplied</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>filter.number</code></td>
+<td>
+<p>The filter number that was used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>family</code></td>
+<td>
+<p>The wavelet family that was used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>spec.filter.number</code></td>
+<td>
+<p>The filter number that was used</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>spec.family</code></td>
+<td>
+<p>The wavelet family that was used</p>
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Guy Nason</p>
+
+
+<h3>References</h3>
+
+<p>Cardinali, A. and Nason, Guy P. (2013) Costationarity of
+Locally Stationary Time Series Using costat.
+<em>Journal of Statistical Software</em>, <b>55</b>, Issue 1.
+</p>
+<p>Cardinali, A. and Nason, G.P. (2010) Costationarity of locally stationary
+time series. <em>J. Time Series Econometrics</em>, <b>2</b>, Issue 2, Article 1.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>LCTS</code>, <code>BootTOS</code>,<code>plotBS</code>, <code>prodcomb</code>, <code>COEFbothscale</code>,
+<code>LCTSres</code>, <code>print.csFSS</code>, <code>summary.csFSS</code>,
+<code>plot.csFSS</code></p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">#
+# Find some stationary solutions with \code{Ncoefs=3}.
+#
+# Note: this is a toy example
+#
+tsx1 &lt;- rnorm(32)	# A x time series
+tsy1 &lt;- rnorm(32)	# A y time series
+#
+# Find costationary solutions, but only from 2 random starts
+#
+# Typically, the length of tsx and tsy would be bigger (eg sret, fret are
+# other examples you might use). Also, Nsims would be bigger, you need
+# to use many random starts to ensure good coverage of the solution
+# space, e.g. Nsims=100
+#
+# Note: the following examples are not run so as to adhere to CRAN
+# requirements for package execution timings
+#
+## Not run: ans &lt;- findstysols(Nsims=3, tsx=tsx1, tsy=tsy1)
+#
+# Print out a summary of the results
+#
+## Not run: ans
+#Class 'csFSS' : Stationary Solutions Object from costat:
+#       ~~~~~  : List with 13 components with names
+#              startpar endpar convergence minvar pvals tsx tsy tsxname tsyname
+#		filter.number family spec.filter.number spec.family 
+#
+#
+#summary(.):
+#----------
+#Name of X time series:  tsx1 
+#Name of Y time series:  tsy1 
+#Length of input series:  32 
+#There are  3  sets of solutions
+#Each solution vector is based on  3  coefficients
+#Some solutions did not converge, check convergence component for more information.
+#Zero indicates successful convergence, other values mean different things and
+#you should consult the help page for `optim' to discover what they mean
+#For size level:  0.05 
+#	 0  solutions appear NOT to be stationary
+#	 3  solutions appear to be stationary
+#Range of p-values: ( 0.93 , 0.995 )
+#
+#Wavelet filter for combinations:  1   DaubExPhase 
+#Wavelet filter for spectrum:  1   DaubExPhase 
+#
+#______________
+#
+# Ok. The printout above suggests that some solutions did not converge.
+# Which ones?
+#
+## Not run: ans$convergence
+# [1] 0 1 0 
+#
+# The second one did not converge, the others did. Good. The printout
+# above also indicates that all the resultant solutions were stationary
+# (this is not surprising for this example, as the inputs tsx1 and tsy1
+# are stationary, and indeed iid).
+#
+# Let's see how the solutions compare. For example, let's plot the
+# hierarchical cluster analysis of the final solutions (those that
+# converged and are stationary)
+#
+## Not run: plot(ans, ALLplotscale=FALSE)
+#
+# My cluster shows that solution 1 and 3 are similar. Let's
+# view solution 3.
+#
+## Not run: oldpar &lt;- par(mfrow=c(2,2))
+## Not run: plot(ans, solno=3)
+## Not run: par(oldpar)
+</code></pre>
+
+
+</div>

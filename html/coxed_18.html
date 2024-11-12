@@ -1,0 +1,304 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>sim.survdata</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Simulating duration data for the Cox proportional hazards model</h2>
+
+<h3>Description</h3>
+
+<p><code>sim.survdata()</code> randomly generates data frames containing a user-specified number
+of observations, time points, and covariates.  It generates durations, a variable indicating
+whether each observation is right-censored, and "true" marginal effects.
+It can accept user-specified coefficients, covariates, and baseline hazard functions, and it can
+output data with time-varying covariates or using time-varying coefficients.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">sim.survdata(N = 1000, T = 100, type = "none", hazard.fun = NULL,
+  num.data.frames = 1, fixed.hazard = FALSE, knots = 8,
+  spline = TRUE, X = NULL, beta = NULL, xvars = 3, mu = 0,
+  sd = 0.5, covariate = 1, low = 0, high = 1, compare = median,
+  censor = 0.1, censor.cond = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>N</code></td>
+<td>
+<p>Number of observations in each generated data frame. Ignored if <code>X</code> is not <code>NULL</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>T</code></td>
+<td>
+<p>The latest time point during which an observation may fail. Failures can occur
+as early as 1 and as late as T</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>If "none" (the default) data are generated with no time-varying covariates or coefficients.
+If "tvc", data are generated with time-varying covariates, and if "tvbeta" data are generated with time-varying
+coefficients (see details)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>hazard.fun</code></td>
+<td>
+<p>A user-specified R function with one argument, representing time, that outputs the baseline hazard function.
+If <code>NULL</code>, a baseline hazard function is generated using the flexible-hazard method as described in Harden and
+Kropko (2018) (see details)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>num.data.frames</code></td>
+<td>
+<p>The number of data frames to be generated</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fixed.hazard</code></td>
+<td>
+<p>If <code>TRUE</code>, the same hazard function is used to generate each data frame. If <code>FALSE</code> (the default),
+different drawn hazard functions are used to generate each data frame.  Ignored if <code>hazard.fun</code> is not <code>NULL</code> or if
+<code>num.data.frames</code> is 1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>knots</code></td>
+<td>
+<p>The number of points to draw while using the flexible-hazard method to generate hazard functions (default is 8).
+Ignored if <code>hazard.fun</code> is not <code>NULL</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>spline</code></td>
+<td>
+<p>If <code>TRUE</code> (the default), a spline is employed to smooth the generated cumulative baseline hazard, and if <code>FALSE</code>
+the cumulative baseline hazard is specified as a step function with steps at the knots. Ignored if <code>hazard.fun</code> is not <code>NULL</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>X</code></td>
+<td>
+<p>A user-specified data frame containing the covariates that condition duration. If <code>NULL</code>, covariates are generated from
+normal distributions with means given by the <code>mu</code> argument and standard deviations given by the <code>sd</code> argument</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>beta</code></td>
+<td>
+<p>Either a user-specified vector containing the coefficients that for the linear part of the duration model, or
+a user specified matrix with rows equal to <code>T</code> for pre-specified time-varying coefficients.
+If <code>NULL</code>, coefficients are generated from normal distributions with means of 0 and standard deviations of 0.1</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>xvars</code></td>
+<td>
+<p>The number of covariates to generate. Ignored if <code>X</code> is not <code>NULL</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>mu</code></td>
+<td>
+<p>If scalar, all covariates are generated to have means equal to this scalar. If a vector, it specifies the mean of each covariate separately,
+and it must be equal in length to <code>xvars</code>. Ignored if <code>X</code> is not <code>NULL</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sd</code></td>
+<td>
+<p>If scalar, all covariates are generated to have standard deviations equal to this scalar. If a vector, it specifies the standard deviation
+of each covariate separately, and it must be equal in length to <code>xvars</code>. Ignored if <code>X</code> is not <code>NULL</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>covariate</code></td>
+<td>
+<p>Specification of the column number of the covariate in the <code>X</code> matrix for which to generate a simulated marginal effect (default is 1).
+The marginal effect is the difference in expected duration when the covariate is fixed at a high value and the expected duration when the covariate is fixed
+at a low value</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>low</code></td>
+<td>
+<p>The low value of the covariate for which to calculate a marginal effect</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>high</code></td>
+<td>
+<p>The high value of the covariate for which to calculate a marginal effect</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>compare</code></td>
+<td>
+<p>The statistic to employ when examining the two new vectors of expected durations (see details).  The default is <code>median</code></p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>censor</code></td>
+<td>
+<p>The proportion of observations to designate as being right-censored</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>censor.cond</code></td>
+<td>
+<p>Whether to make right-censoring conditional on the covariates (default is <code>FALSE</code>, but see details)</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The <code>sim.survdata</code> function generates simulated duration data. It can accept a user-supplied
+hazard function, or else it uses the flexible-hazard method described in Harden and Kropko (2018) to generate
+a hazard that does not necessarily conform to any parametric hazard function. It can generate data with time-varying
+covariates or coefficients. For time-varying covariates <code>type="tvc"</code> it employs the permutational algorithm by Sylvestre and Abrahamowicz (2008).
+For time-varying coefficients with <code>type="tvbeta"</code>, the first beta coefficient that is either supplied by the user or generated by
+the function is multiplied by the natural log of the failure time under consideration.
+</p>
+<p>If <code>fixed.hazard=TRUE</code>, one baseline hazard is generated and the same function is used to generate all of the simulated
+datasets. If <code>fixed.hazard=FALSE</code> (the default), a new hazard function is generated with each simulation iteration.
+</p>
+<p>The flexible-hazard method employed when <code>hazard.fun</code> is <code>NULL</code> generates a unique baseline hazard by fitting a curve to
+randomly-drawn points. This produces a wide variety
+of shapes for the baseline hazard, including those that are unimodal, multimodal, monotonically increasing or decreasing, and many other
+shapes. The method then generates a density function based on each baseline hazard and draws durations from it in a way that circumvents
+the need to calculate the inverse cumulative baseline hazard. Because the shape of the baseline hazard can vary considerably, this approach
+matches the Cox model’s inherent flexibility and better corresponds to the assumed data generating process (DGP) of the Cox model. Moreover,
+repeating this process over many iterations in a simulation produces simulated samples of data that better reflect the considerable
+heterogeneity in data used by applied researchers. This increases the generalizability of the simulation results. See Harden and Kropko (2018)
+for more detail.
+</p>
+<p>When generating a marginal effect, first the user specifies a covariate by typing its column number in the <code>X</code> matrix into the <code>covariate</code>
+argument, then specifies the high and low values at which to fix this covariate.  The function calculates the differences in expected duration for each
+observation when fixing the covariate to the high and low values.  If <code>compare</code> is <code>median</code>, the function reports the median of these differences,
+and if <code>compare</code> is <code>mean</code>, the function reports the median of these differences, but any function may be employed that takes a vector as input and
+outputs a scalar.
+</p>
+<p>If <code>censor.cond</code> is <code>FALSE</code> then a proportion of the observations specified by <code>censor</code> is randomly and uniformly selected to be right-censored.
+If <code>censor.cond</code> is <code>TRUE</code> then censoring depends on the covariates as follows: new coefficients are drawn from normal distributions with mean 0 and
+standard deviation of 0.1, and these new coefficients are used to create a new linear predictor using the <code>X</code> matrix.  The observations with the largest
+(100 x <code>censor</code>) percent of the linear predictors are designated as right-censored.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns an object of class "<code>simSurvdata</code>" which is a list of length <code>num.data.frames</code> for each iteration of data simulation.
+Each element of this list is itself a list with the following components:
+</p>
+
+<table>
+<tr>
+<td style="text-align: left;">
+<code>data</code> </td>
+<td style="text-align: left;"> The simulated data frame, including the simulated durations, the censoring variable, and covariates</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>xdata</code> </td>
+<td style="text-align: left;"> The simulated data frame, containing only covariates </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>baseline</code> </td>
+<td style="text-align: left;"> A data frame containing every potential failure time and the baseline failure PDF,
+baseline failure CDF, baseline survivor function, and baseline hazard function at each time point. </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>xb</code> </td>
+<td style="text-align: left;"> The linear predictor for each observation </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>exp.xb</code> </td>
+<td style="text-align: left;"> The exponentiated linear predictor for each observation </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>betas</code> </td>
+<td style="text-align: left;"> The coefficients, varying over time if <code>type</code> is "tvbeta" </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>ind.survive</code> </td>
+<td style="text-align: left;"> An (<code>N</code> x <code>T</code>) matrix containing the individual survivor function at
+time t for the individual represented by row n   </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>marg.effect</code> </td>
+<td style="text-align: left;"> The simulated marginal change in expected duration comparing the high and low values of
+the variable specified with <code>covariate</code> </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+<code>marg.effect.data</code> </td>
+<td style="text-align: left;"> The <code>X</code> matrix and vector of durations for the low and high conditions </td>
+</tr>
+<tr>
+<td style="text-align: left;">
+</td>
+</tr>
+</table>
+<h3>Author(s)</h3>
+
+<p>Jonathan Kropko &lt;jkropko@virginia.edu&gt; and Jeffrey J. Harden &lt;jharden2@nd.edu&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Harden, J. J. and Kropko, J. (2018). Simulating Duration Data for the Cox Model.
+<em>Political Science Research and Methods</em> <a href="https://doi.org/10.1017/psrm.2018.19">https://doi.org/10.1017/psrm.2018.19</a>
+</p>
+<p>Sylvestre M.-P., Abrahamowicz M. (2008) Comparison of algorithms to generate event times conditional on time-dependent covariates. <em>Statistics in Medicine</em> <strong>27(14)</strong>:2618–34.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">simdata &lt;- sim.survdata(N=1000, T=100, num.data.frames=2)
+require(survival)
+data &lt;- simdata[[1]]$data
+model &lt;- coxph(Surv(y, failed) ~ X1 + X2 + X3, data=data)
+model$coefficients ## model-estimated coefficients
+simdata[[1]]$betas ## "true" coefficients
+
+## User-specified baseline hazard
+my.hazard &lt;- function(t){ #lognormal with mean of 50, sd of 10
+dnorm((log(t) - log(50))/log(10)) /
+     (log(10)*t*(1 - pnorm((log(t) - log(50))/log(10))))
+}
+simdata &lt;- sim.survdata(N=1000, T=100, hazard.fun = my.hazard)
+
+## A simulated data set with time-varying covariates
+## Not run: simdata &lt;- sim.survdata(N=1000, T=100, type="tvc", xvars=5, num.data.frames=1)
+summary(simdata$data)
+model &lt;- coxph(Surv(start, end, failed) ~ X1 + X2 + X3 + X4 + X5, data=simdata$data)
+model$coefficients ## model-estimated coefficients
+simdata$betas ## "true" coefficients
+
+## End(Not run)
+
+## A simulated data set with time-varying coefficients
+simdata &lt;- sim.survdata(N=1000, T=100, type="tvbeta", num.data.frames = 1)
+simdata$betas
+</code></pre>
+
+
+</div>

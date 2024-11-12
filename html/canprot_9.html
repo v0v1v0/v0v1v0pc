@@ -1,0 +1,195 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>read_fasta</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Functions for reading FASTA files</h2>
+
+<h3>Description</h3>
+
+<p>Read protein amino acid composition or sequences from a file and count numbers of amino acids in given sequences.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">  read_fasta(file, iseq = NULL, type = "count", lines = NULL, 
+    ihead = NULL, start = NULL, stop = NULL, molecule = "protein", id = NULL)
+  count_aa(sequence, start = NULL, stop = NULL, molecule = "protein")
+  sum_aa(AAcomp, abundance = 1, average = FALSE)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>file</code></td>
+<td>
+<p>character, path to FASTA file</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>iseq</code></td>
+<td>
+<p>numeric, which sequences to read from the file</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>type</code></td>
+<td>
+<p>character, type of return value (‘<span class="samp">⁠count⁠</span>’, ‘<span class="samp">⁠sequence⁠</span>’, ‘<span class="samp">⁠lines⁠</span>’, or ‘<span class="samp">⁠headers⁠</span>’)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>lines</code></td>
+<td>
+<p>list of character, supply the lines here instead of reading them from file</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>ihead</code></td>
+<td>
+<p>numeric, which lines are headers</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>start</code></td>
+<td>
+<p>numeric, position in sequence to start counting</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>stop</code></td>
+<td>
+<p>numeric, position in sequence to stop counting</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>molecule</code></td>
+<td>
+<p>character, type of molecule (‘<span class="samp">⁠protein⁠</span>’, ‘<span class="samp">⁠DNA⁠</span>’, or ‘<span class="samp">⁠RNA⁠</span>’)</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>id</code></td>
+<td>
+<p>character, value to be used for <code>protein</code> in output table</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>sequence</code></td>
+<td>
+<p>character, one or more sequences</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>AAcomp</code></td>
+<td>
+<p>data frame, amino acid composition(s) of proteins</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>abundance</code></td>
+<td>
+<p>numeric, abundances of proteins</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>average</code></td>
+<td>
+<p>logical, return the weighted average of amino acid counts?</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p><code>read_fasta</code> is used to retrieve entries from a FASTA file.
+Use <code>iseq</code> to select the sequences to read (the default is all sequences).
+</p>
+<p>The function returns various data formats depending on the value of <code>type</code>:
+</p>
+
+<dl>
+<dt>‘<span class="samp">⁠count⁠</span>’</dt>
+<dd>
+<p>data frame of amino acid counts</p>
+</dd>
+<dt>‘<span class="samp">⁠sequence⁠</span>’</dt>
+<dd>
+<p>list of sequences</p>
+</dd>
+<dt>‘<span class="samp">⁠lines⁠</span>’</dt>
+<dd>
+<p>list of lines from the FASTA file (including headers)</p>
+</dd>
+<dt>‘<span class="samp">⁠headers⁠</span>’</dt>
+<dd>
+<p>list of header lines from the FASTA file</p>
+</dd>
+</dl>
+<p>When <code>type</code> is ‘<span class="samp">⁠count⁠</span>’, the header lines of the file are parsed to obtain protein names that are put into the <code>protein</code> column in the result.
+Furthermore, if a UniProt FASTA header is detected (using the regular expression <code>"\|......\|.*_"</code>), the information there (accession, name, organism) is split into the <code>protein</code>, <code>abbrv</code>, and <code>organism</code> columns of the resulting data frame.
+this behavior (which may take a while for large files) can be suppressed by supplying protein names in <code>id</code>.
+</p>
+<p>To speed up processing, if the line numbers of the header lines were previously determined, they can be supplied in <code>ihead</code>. 
+Optionally, the lines of a previously read file may be supplied in <code>lines</code> (in this case no file is needed so <code>file</code> should be set to "").
+</p>
+<p><code>count_aa</code> is the underlying function that counts the numbers of each amino acid or nucleic-acid base in one or more sequences.
+The matching of letters is case-insensitive.
+A message is generated if any character in <code>sequence</code>, excluding spaces, is not one of the single-letter amino acid or nucleobase abbreviations.
+<code>start</code> and/or <code>stop</code> can be provided to process a fragment of the sequence.
+If only one of <code>start</code> or <code>stop</code> is present, the other defaults to 1 (<code>start</code>) or the length of the respective sequence (<code>stop</code>).
+</p>
+<p><code>sum_aa</code> sums the amino acid compositions in the input <code>AAcomp</code> data frame.
+It only applies to columns with the three-letter abbreviations of amino acids and to a column named <code>chains</code> (if present).
+The values in these columns are multiplied by the indicated <code>abundance</code> after recycling to the number of proteins.
+The values in these columns are then summed; if <code>average</code> is TRUE then the sum is divided by the number of proteins.
+Proteins with missing values (NA) of amino acid composition or abundance are omitted from the calculation.
+The output has one row and the same number of columns as the input; the value in the non-amino acid columns is taken from the first row of the input.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>count_aa</code> returns a data frame with these columns (for proteins): <code>Ala</code>, <code>Cys</code>, <code>Asp</code>, <code>Glu</code>, <code>Phe</code>, <code>Gly</code>, <code>His</code>, <code>Ile</code>, <code>Lys</code>, <code>Leu</code>, <code>Met</code>, <code>Asn</code>, <code>Pro</code>, <code>Gln</code>, <code>Arg</code>, <code>Ser</code>, <code>Thr</code>, <code>Val</code>, <code>Trp</code>, <code>Tyr</code>.
+For ‘<span class="samp">⁠DNA⁠</span>’, the columns are changed to <code>A</code>, <code>C</code>, <code>G</code>, <code>T</code>, and for ‘<span class="samp">⁠RNA⁠</span>’, the columns are changed to <code>A</code>, <code>C</code>, <code>G</code>, <code>U</code>.
+</p>
+<p><code>read_fasta</code> returns a list of sequences (for <code>type</code> equal to ‘<span class="samp">⁠sequence⁠</span>’) or a list of lines (for <code>type</code> equal to ‘<span class="samp">⁠lines⁠</span>’ or ‘<span class="samp">⁠headers⁠</span>’).
+Otherwise, (for <code>type</code> equal to ‘<span class="samp">⁠count⁠</span>’) a data frame with these columns: <code>protein</code>, <code>organism</code>, <code>ref</code>, <code>abbrv</code>, <code>chains</code>, and the columns described above for <code>count_aa</code>.
+</p>
+<p><code>sum_aa</code> returns a one-row data frame.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Pass the output of <code>read_fasta</code> to <code>add.protein</code> in the CHNOSZ package to set up thermodynamic calculations for proteins.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Reading a protein FASTA file
+# The path to the file
+file &lt;- system.file("extdata/fasta/KHAB17.fasta", package = "canprot")
+# Read the sequences, and print the first one
+read_fasta(file, type = "seq")[[1]]
+# Count the amino acids in the sequences
+aa &lt;- read_fasta(file)
+# Calculate protein length (number of amino acids in each protein)
+plength(aa)
+# Sum the amino acid compositions
+sum_aa(aa)
+
+# Count amino acids in a sequence
+count_aa("GGSGG")
+# A message is issued for unrecognized characters
+count_aa("AAAXXX")
+# Count nucleobases in a sequence
+bases &lt;- count_aa("ACCGGGTTT", molecule = "DNA")
+</code></pre>
+
+
+</div>

@@ -1,0 +1,231 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cpThreshold</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Optimizing <code>k</code> And <code>I</code> For Clique Percolation Community Detection</h2>
+
+<h3>Description</h3>
+
+<p>Function for determining threshold value(s) (ratio of largest to second largest
+community sizes, chi, entropy, fuzzy modularity, signed fuzzy modularity) of ranges 
+of <code>k</code> and <code>I</code> values to help deciding for optimal <code>k</code> and <code>I</code> values.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cpThreshold(
+  W,
+  method = c("unweighted", "weighted", "weighted.CFinder"),
+  k.range,
+  I.range,
+  threshold = c("largest.components.ratio", "chi", "entropy", "fuzzymod",
+    "signedfuzzymod")
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>W</code></td>
+<td>
+<p>A qgraph object or a symmetric matrix; see also qgraph</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>method</code></td>
+<td>
+<p>A string indicating the method to use 
+(<code>"unweighted"</code>, <code>"weighted"</code>, or <code>"weighted.CFinder"</code>).
+See cpAlgorithm for more information</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>k.range</code></td>
+<td>
+<p>integer or vector of <code>k</code> value(s) for which threshold(s) are determined
+See cpAlgorithm for more information</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>I.range</code></td>
+<td>
+<p>integer or vector of <code>I</code> value(s) for which threshold(s) are determined
+See cpAlgorithm for more information</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>threshold</code></td>
+<td>
+<p>A string or vector indicating which threshold(s) to determine
+(<code>"largest.components.ratio", "chi", "entropy", "fuzzymod", "signedfuzzymod"</code>); see Details</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>Optimizing <code>k</code> (clique size) and <code>I</code> (Intensity threshold) in clique percolation
+community detection is a difficult task. Farkas et al. (2007) recommend to look at the
+ratio of the largest to second largest community sizes
+(<code>threshold = "largest.components.ratio"</code>) for very large networks or
+the variance of the community sizes when removing the community size of the largest
+community (<code>threshold = "chi"</code>) for somewhat smaller networks. These thresholds were
+derived from percolation theory. If <code>I</code> for a certain <code>k</code> is too high, no
+community will be identified. If <code>I</code> is too low, a giant community with all nodes
+emerges. Just above this <code>I</code>, the distribution of community sizes often follows a
+power law, which constitutes a broad community sizes distribution. Farkas et al. (2007)
+point out, that for such <code>I</code>, the ratio of the largest to second largest community
+sizes is approximately 2, constituting one way to optimize <code>I</code> for each possible
+<code>k</code>. For somewhat smaller networks, the ratio can be rather unstable. Instead,
+Farkas et al. (2007, p.8) propose to look at the variance of the community sizes after
+removing the largest community. The idea is that when <code>I</code> is rather low, one giant
+community and multiple equally small ones occur. Then, the variance of the community
+sizes of the small communities (removing the giant community) is low. When <code>I</code>
+is high, only a few equally small communities will occur. Then, the variance of the
+community sizes (after removing the largest community) will also be low. In between,
+the variance will at some point be maximal, namely when the community size
+distribution is maximally broad (power law-distributed). Thus, the maximal variance
+could be used to optimize <code>I</code> for various <code>k</code>.
+</p>
+<p>For very small networks, optimizing <code>k</code> and <code>I</code> based on the distribution of the
+community sizes will be impossible, as too few communities will occur. Another possible
+threshold for such networks is based on the entropy of the community sizes
+(<code>threshold = "entropy"</code>). Entropy can be interpreted as an indicator of how
+surprising the respective solution is. The formula used here is based on Shannon
+Information, namely
+</p>
+<p style="text-align: center;"><code class="reqn">-\sum_{i=1}^N p_i * \log_2 p_i</code>
+</p>
+
+<p>with <code class="reqn">p_i</code> being the probability that a node is part of community <code class="reqn">i</code>. For instance,
+if there are two communities, one of size 5 and one of size 3, the result would be
+</p>
+<p style="text-align: center;"><code class="reqn">-((5/8 * \log_2 5/8) + (3/8 * \log_2 3/8)) = 1.46</code>
+</p>
+
+<p>When calculating entropy, the isolated nodes identified by clique percolation are treated as
+a separate community. If there is only one community or only isolated nodes, entropy is
+zero, indicating that the surprisingness is low. As compared to the ratio and chi 
+thresholds, entropy favors communities that are equal in size. Thus, it should not be 
+used for larger networks for which a broader community size distribution is preferred.
+Note that the entropy threshold has not been validated for clique percolation as of now.
+Initial simulation studies indicate that it consistently detects surprising community
+partitions in smaller networks especially if there are cliques of larger <code>k</code>.
+</p>
+<p>Santiago et al. (2022) recently proposed in a simulation study that two 
+alternative metrics, fuzzy modularity and signed fuzzy modularity, showed good performance 
+in recovering the true community assignment in psychological networks with overlapping nodes 
+and can also be used to optimize <code>k</code> (clique size) and <code>I</code> (Intensity threshold).
+See FuzzyMod and SignedFuzzyMod for more information.
+</p>
+<p>Ratio thresholds can be determined only if there are at least two communities. Chi threshold
+can be determined only if there are at least three communities. If there are not enough
+communities for the respective threshold, their values are NA in the data frame.
+Entropy, fuzzy modularity, and signed fuzzy modularity can always be determined.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame with columns for <code>k</code>, <code>I</code> (if <code>method = "weighted"</code>
+or <code>method = "weighted.CFinder"</code>), number of communities, number of isolated
+nodes, and results of the specified threshold(s).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jens Lange, <a href="mailto:lange.jens@outlook.com">lange.jens@outlook.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Farkas, I., Abel, D., Palla, G., &amp; Vicsek, T. (2007). Weighted network modules.
+<em>New Journal of Physics, 9</em>, 180-180. http://doi.org/10.1088/1367-2630/9/6/180
+</p>
+<p>Santiago, P. H. R., Soares, G. H., Quintero, A., &amp; Jamieson, L. (2022). <em>The performance of 
+the Clique Percolation to identify overlapping symptoms in psychological networks</em>. PsyArXiv.
+https://psyarxiv.com/fk963/
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: ## Example for unweighted networks
+
+# create qgraph object
+W &lt;- matrix(c(0,1,1,1,0,0,0,0,
+              0,0,1,1,0,0,0,0,
+              0,0,0,0,0,0,0,0,
+              0,0,0,0,1,1,1,0,
+              0,0,0,0,0,1,1,0,
+              0,0,0,0,0,0,1,0,
+              0,0,0,0,0,0,0,1,
+              0,0,0,0,0,0,0,0), nrow = 8, ncol = 8, byrow = TRUE)
+W &lt;- Matrix::forceSymmetric(W)
+W &lt;- qgraph::qgraph(W)
+
+# determine entropy and fuzzy modularity thresholds for k = 3 and k = 4
+results &lt;- cpThreshold(W = W, method = "unweighted", k.range = c(3,4), threshold = c("entropy",
+"fuzzymod"))
+
+## Example for weighted networks; three large communities with I = 0.3, 0.2, and 0.1, respectively
+
+# create qgraph object
+W &lt;- matrix(c(0,0.10,0,0,0,0,0.10,0.10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+              0,0,0.10,0,0,0,0,0.10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+              0,0,0,0.10,0,0,0,0.10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+              0,0,0,0,0.10,0,0,0.10,0.20,0,0,0,0,0.20,0.20,0,0,0,0,0,0,0,
+              0,0,0,0,0,0.10,0,0.10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+              0,0,0,0,0,0,0.10,0.10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+              0,0,0,0,0,0,0,0.10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+              0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+              0,0,0,0,0,0,0,0,0,0.20,0,0,0,0,0.20,0,0,0,0,0,0,0,
+              0,0,0,0,0,0,0,0,0,0,0.20,0,0,0,0.20,0,0,0,0,0,0,0,
+              0,0,0,0,0,0,0,0,0,0,0,0.20,0,0,0.20,0,0,0,0,0,0,0,
+              0,0,0,0,0,0,0,0,0,0,0,0,0.20,0,0.20,0,0,0,0,0,0,0,
+              0,0,0,0,0,0,0,0,0,0,0,0,0,0.20,0.20,0.30,0,0,0,0,0.30,0.30,
+              0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.20,0,0,0,0,0,0,0,
+              0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+              0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.30,0,0,0,0,0.30,
+              0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.30,0,0,0,0.30,
+              0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.30,0,0,0.30,
+              0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.30,0,0.30,
+              0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.30,0.30,
+              0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.30,
+              0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0), nrow = 22, ncol = 22, byrow = TRUE) 
+W &lt;- Matrix::forceSymmetric(W)
+W &lt;- qgraph::qgraph(W, layout = "spring", edge.labels = TRUE)
+
+# determine ratio, chi, entropy, fuzzy modularity, and signed fuzzy modularity 
+# thresholds for k = 3 and I from 0.3 to 0.09
+results &lt;- cpThreshold(W = W, method = "weighted", k.range = 3,
+                       I.range = c(seq(0.3, 0.09, by = -0.01)),
+                       threshold = c("largest.components.ratio","chi","entropy",
+                       "fuzzymod","signedfuzzymod"))
+
+## Example with Obama data set (see ?Obama)
+
+# get data
+data(Obama)
+
+# estimate network
+net &lt;- qgraph::EBICglasso(qgraph::cor_auto(Obama), n = nrow(Obama))
+
+# determine entropy, fuzzy modularity, and signed fuzzy modularity thresholds 
+# for k from 3 to 4 and I from 0.1 to 0.5
+threshold &lt;- cpThreshold(net, method = "weighted",
+                         k.range = 3:4,
+                         I.range = seq(0.1, 0.5, 0.01),
+                         threshold = c("entropy", "fuzzymod", "signedfuzzymod"))
+## End(Not run)
+
+</code></pre>
+
+
+</div>

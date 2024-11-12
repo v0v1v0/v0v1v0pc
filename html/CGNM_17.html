@@ -1,0 +1,125 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>plot_simulationWithCI</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>plot_simulationWithCI</h2>
+
+<h3>Description</h3>
+
+<p>Plot model simulation where the various parameter combinations are provided and conduct simulations and then the confidence interval (or more like a confidence region) is plotted.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">plot_simulationWithCI(
+  simulationFunction,
+  parameter_matrix,
+  independentVariableVector = NA,
+  dependentVariableTypeVector = NA,
+  confidenceLevels = c(0.25, 0.75),
+  observationVector = NA,
+  observationIndpendentVariableVector = NA,
+  observationDependentVariableTypeVector = NA
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>simulationFunction</code></td>
+<td>
+<p>(required input) <em>A function</em> that maps the parameter vector to the simulation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>parameter_matrix</code></td>
+<td>
+<p>(required input) <em>A matrix of numbers</em> where each row contains the parameter combination that will be used for the simulations.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>independentVariableVector</code></td>
+<td>
+<p>(default: NA) <em>A vector of numbers</em> that represents the independent variables of each points of the simulation (e.g., observation time) where used for the values of x-axis when plotting. If set at NA then sequence of 1,2,3,... will be used.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>dependentVariableTypeVector</code></td>
+<td>
+<p>(default: NA) <em>A vector of strings</em> specify the kind of variable the simulationFunction simulate out. (i.e., if it simulate both PK and PD then indicate which simulation output is PK and which is PD).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>confidenceLevels</code></td>
+<td>
+<p>(default: c(25,75)) <em>A vector of two numbers between 0 and 1</em> set the confidence interval that will be used for the plot.  Default is inter-quartile range.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>observationVector</code></td>
+<td>
+<p>(default: NA) <em>A vector of numbers</em> used when wishing to overlay the plot of observations to the simulation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>observationIndpendentVariableVector</code></td>
+<td>
+<p>(default: NA) <em>A vector of numbers</em> used when wishing to overlay the plot of observations to the simulation.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>observationDependentVariableTypeVector</code></td>
+<td>
+<p>(default: NA) <em>A vector of numbers</em> used when wishing to overlay the plot of observations to the simulation.</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p><em>A ggplot object</em> including the violin plot, interquartile range and median, minimum and maximum.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">## Not run: 
+model_analytic_function=function(x){
+
+ observation_time=c(0.1,0.2,0.4,0.6,1,2,3,6,12)
+ Dose=1000
+ F=1
+
+ ka=x[1]
+ V1=x[2]
+ CL_2=x[3]
+ t=observation_time
+
+ Cp=ka*F*Dose/(V1*(ka-CL_2/V1))*(exp(-CL_2/V1*t)-exp(-ka*t))
+
+ (Cp)
+}
+
+observation=(c(4.91, 8.65, 12.4, 18.7, 24.3, 24.5, 18.4, 4.66, 0.238))
+
+CGNM_result=Cluster_Gauss_Newton_method(
+nonlinearFunction=model_analytic_function,
+targetVector = observation, num_iteration = 10, num_minimizersToFind = 100,
+initial_lowerRange = c(0.1,0.1,0.1), initial_upperRange =  c(10,10,10),
+lowerBound=rep(0,3), ParameterNames=c("Ka","V1","CL_2"), saveLog = FALSE)
+
+CGNM_bootstrap=Cluster_Gauss_Newton_Bootstrap_method(CGNM_result,
+     nonlinearFunction=model_analytic_function, num_bootstrapSample=100)
+
+plot_simulationWithCI(model_analytic_function, as.matrix(CGNM_result$bootstrapTheta),
+independentVariableVector=observation_time, observationVector=observation)
+
+## End(Not run)
+</code></pre>
+
+
+</div>

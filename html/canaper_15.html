@@ -1,0 +1,288 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>cpr_rand_test</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>Run a randomization analysis for one or more biodiversity metrics</h2>
+
+<h3>Description</h3>
+
+<p>The observed value of the biodiversity metric(s) will be calculated for the
+input community data, then compared against a set of random communities.
+Various statistics are calculated from the comparison (see <strong>Value</strong> below).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre><code class="language-R">cpr_rand_test(
+  comm,
+  phy,
+  null_model,
+  n_reps = 100,
+  n_iterations = 10000,
+  thin = 1,
+  metrics = c("pd", "rpd", "pe", "rpe"),
+  site_col = "site",
+  tbl_out = tibble::is_tibble(comm),
+  quiet = FALSE
+)
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>comm</code></td>
+<td>
+<p>Dataframe, tibble, or matrix; input community data with
+sites (communities) as rows and species as columns. Either presence-absence
+data (values only 0s or 1s) or abundance data (values &gt;= 0) accepted, but
+calculations do not use abundance-weighting, so results from abundance data
+will be the same as if converted to presence-absence before analysis.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>phy</code></td>
+<td>
+<p>List of class <code>phylo</code>; input phylogeny.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>null_model</code></td>
+<td>
+<p>Character vector of length 1 or object of class <code>commsim</code>;
+either the name of the model to use for generating random communities (null
+model), or a custom null model. For full list of available predefined null
+models, see the help file of <code>vegan::commsim()</code>, or run
+<code>vegan::make.commsim()</code>. An object of class <code>commsim</code> can be generated with
+<code>vegan::commsim()</code> (see <strong>Examples</strong> in <code>cpr_rand_comm()</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_reps</code></td>
+<td>
+<p>Numeric vector of length 1; number of random communities to
+replicate.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>n_iterations</code></td>
+<td>
+<p>Numeric vector of length 1; number of iterations to use
+for sequential null models; ignored for non-sequential models.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>thin</code></td>
+<td>
+<p>Numeric vector of length 1; thinning parameter used by some
+null models in <code>vegan</code> (e.g., <code>quasiswap</code>); ignored for other models.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>metrics</code></td>
+<td>
+<p>Character vector; names of biodiversity metrics to calculate.
+May include one or more of: <code>pd</code>, <code>rpd</code>, <code>pe</code>, <code>rpe</code> (case-sensitive).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>site_col</code></td>
+<td>
+<p>Character vector of length 1; name of column in <code>comm</code> that
+contains the site names; only used if <code>comm</code> is a tibble (object of class
+<code>tbl_df</code>).</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>tbl_out</code></td>
+<td>
+<p>Logical vector of length 1; should the output be returned as
+a tibble? If <code>FALSE</code>, will return a dataframe. Defaults to <code>TRUE</code> if <code>comm</code>
+is a tibble.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>quiet</code></td>
+<td>
+<p>Logical vector of length 1; if <code>TRUE</code>, suppress all warnings and
+messages that would be emitted by this function.</p>
+</td>
+</tr>
+</table>
+<h3>Details</h3>
+
+<p>The biodiversity metrics (<code>metrics</code>) available for analysis include:
+</p>
+
+<ul>
+<li> <p><code>pd</code>: Phylogenetic diversity (Faith 1992)
+</p>
+</li>
+<li> <p><code>rpd</code>: Relative phylogenetic diversity (Mishler et al 2014)
+</p>
+</li>
+<li> <p><code>pe</code>: Phylogenetic endemism (Rosauer et al 2009)
+</p>
+</li>
+<li> <p><code>rpe</code>: Relative phylogenetic endemism (Mishler et al 2014)
+</p>
+</li>
+</ul>
+<p>(<code>pe</code> and <code>rpe</code> are needed for CANAPE with
+<code>cpr_classify_endem()</code>)
+</p>
+<p>The choice of a randomization algorithm (<code>null_model</code>) is not trivial, and
+may strongly affect results. <code>cpr_rand_test()</code> uses null models provided by
+<code>vegan</code>; for a complete list, see the help file of <code>vegan::commsim()</code> or run
+<code>vegan::make.commsim()</code>. One frequently used null model is <code>swap</code> (Gotelli &amp;
+Entsminger 2003), which randomizes the community matrix while preserving
+column and row sums (marginal sums). For a review of various null models, see
+Strona et al. (2018); <code>swap</code> is an "FF" model in the sense of Strona et al.
+(2018).
+</p>
+<p>Instead of using one of the predefined null models in <code>vegan::commsim()</code>, it
+is also possible to define a custom null model; see <strong>Examples</strong> in
+<code>cpr_rand_comm()</code>
+</p>
+<p>Note that the pre-defined models in <code>vegan</code> include binary models (designed
+for presence-absence data) and quantitative models (designed for abundance
+data). Although the binary models will accept abundance data, they treat it
+as binary and always return a binary (presence-absence) matrix. The PD and PE
+calculations in <code>canaper</code> are not abundance-weighted, so they return the same
+result regardless of whether the input is presence-absence or abundance. In
+that sense, binary null models are appropriate for <code>cpr_rand_test()</code>. The
+quantitative models could also be used for abundance data, but the output
+will be treated as binary anyways when calculating PD and PE. The effects of
+using binary vs. quantitative null models for <code>cpr_rand_test()</code> have not been
+investigated.
+</p>
+<p>A minimum of 5 species and sites are required as input; fewer than that is
+likely cause the some randomization algorithms (e.g., <code>swap</code>) to enter an
+infinite loop. Besides, inferences on very small numbers of species and/or
+sites is not recommended generally.
+</p>
+<p>The following rules apply to <code>comm</code> input:
+</p>
+
+<ul>
+<li>
+<p> If dataframe or matrix, must include row names (site names) and column
+names (species names).
+</p>
+</li>
+<li>
+<p> If tibble, a single column (default, <code>site</code>) must be included with site
+names, and other columns must correspond to species names.
+</p>
+</li>
+<li>
+<p> Column names cannot start with a number and must be unique.
+</p>
+</li>
+<li>
+<p> Row names (site names) must be unique.
+</p>
+</li>
+<li>
+<p> Values (other than site names) should only include integers &gt;= 0;
+non-integer input will be converted to integer.
+</p>
+</li>
+</ul>
+<p>The results are identical regardless of whether the input for <code>comm</code> is
+abundance or presence-absence data (i.e., abundance weighting is not used).
+</p>
+
+
+<h3>Value</h3>
+
+<p>Dataframe. For each of the biodiversity metrics, the following 9
+columns will be produced:
+</p>
+
+<ul>
+<li> <p><code style="white-space: pre;">⁠*_obs⁠</code>: Observed value
+</p>
+</li>
+<li> <p><code style="white-space: pre;">⁠*_obs_c_lower⁠</code>: Count of times observed value was lower than random values
+</p>
+</li>
+<li> <p><code style="white-space: pre;">⁠*_obs_c_upper⁠</code>: Count of times observed value was higher than random
+values
+</p>
+</li>
+<li> <p><code style="white-space: pre;">⁠*_obs_p_lower⁠</code>: Percentage of times observed value was lower than random
+values
+</p>
+</li>
+<li> <p><code style="white-space: pre;">⁠*_obs_p_upper⁠</code>: Percentage of times observed value was higher than random
+values
+</p>
+</li>
+<li> <p><code style="white-space: pre;">⁠*_obs_q⁠</code>: Count of the non-NA random values used for comparison
+</p>
+</li>
+<li> <p><code style="white-space: pre;">⁠*_obs_z⁠</code>: Standard effect size (z-score)
+</p>
+</li>
+<li> <p><code style="white-space: pre;">⁠*_rand_mean⁠</code>: Mean of the random values
+</p>
+</li>
+<li> <p><code style="white-space: pre;">⁠*_rand_sd⁠</code>: Standard deviation of the random values
+</p>
+</li>
+</ul>
+<p>So if you included <code>pd</code> in <code>metrics</code>, the output columns would include
+<code>pd_obs</code>, <code>pd_obs_c_lower</code>, etc...
+</p>
+
+
+<h3>References</h3>
+
+<p>Faith DP (1992) Conservation evaluation and phylogenetic
+diversity. Biological Conservation, 61:1–10.
+<a href="https://doi.org/10.1016/0006-3207%2892%2991201-3">doi:10.1016/0006-3207(92)91201-3</a>
+</p>
+<p>Gotelli, N.J. and Entsminger, N.J. (2003). Swap algorithms in
+null model analysis. Ecology 84, 532–535.
+</p>
+<p>Mishler, B., Knerr, N., González-Orozco, C. et al.  (2014)
+Phylogenetic measures of biodiversity and neo- and paleo-endemism in
+Australian Acacia. Nat Commun, 5: 4473. <a href="https://doi.org/10.1038/ncomms5473">doi:10.1038/ncomms5473</a>
+</p>
+<p>Rosauer, D., Laffan, S.W., Crisp, M.D., Donnellan, S.C. and Cook,
+L.G. (2009) Phylogenetic endemism: a new approach for identifying
+geographical concentrations of evolutionary history. Molecular Ecology, 18:
+4061-4072. <a href="https://doi.org/10.1111/j.1365-294X.2009.04311.x">doi:10.1111/j.1365-294X.2009.04311.x</a>
+</p>
+<p>Strona, G., Ulrich, W. and Gotelli, N.J. (2018), Bi-dimensional
+null model analysis of presence-absence binary matrices.
+Ecology, 99: 103-115. <a href="https://doi.org/10.1002/ecy.2043">doi:10.1002/ecy.2043</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R">
+set.seed(12345)
+data(phylocom)
+# Returns a dataframe by defualt
+cpr_rand_test(
+  phylocom$comm, phylocom$phy,
+  null_model = "curveball", metrics = "pd", n_reps = 10
+)
+
+# Tibbles may be preferable because of the large number of columns
+cpr_rand_test(
+  phylocom$comm, phylocom$phy,
+  null_model = "curveball", tbl_out = TRUE, n_reps = 10
+)
+
+</code></pre>
+
+
+</div>

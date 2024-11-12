@@ -1,0 +1,149 @@
+<div class="container">
+
+<table style="width: 100%;"><tr>
+<td>to_list</td>
+<td style="text-align: right;">R Documentation</td>
+</tr></table>
+<h2>List comprehensions for R</h2>
+
+<h3>Description</h3>
+
+
+<ul>
+<li> <p><code>to_list</code> converts usual R loops expressions to list producers.
+Expression should be started with <code>for</code>, <code>while</code> or
+<code>repeat</code>. You can iterate over multiple lists if you provide several
+loop variables in backticks. See examples.
+</p>
+</li>
+<li> <p><code>to_vec</code> is the same as 'to_list' but return vector. See examples.
+</p>
+</li>
+<li> <p><code>to_df</code> is the same as 'to_list' but return data.frame. All elements of
+resulted list will be converted to data.frame and combined via <code>rbind</code>.
+</p>
+</li>
+<li> <p><code>alter</code> returns the same type as its argument but with modified
+elements. It is useful for altering existing data.frames or lists. See
+examples.
+</p>
+</li>
+<li> <p><code>exclude</code> is an auxiliary function for dropping elements in
+<code>alter</code>. There are no arguments for this function.
+</p>
+</li>
+</ul>
+<h3>Usage</h3>
+
+<pre><code class="language-R">to_list(expr)
+
+to_vec(expr, recursive = TRUE, use.names = FALSE)
+
+alter(expr, data = NULL)
+
+to_df(expr, fill = TRUE)
+
+exclude()
+</code></pre>
+
+
+<h3>Arguments</h3>
+
+<table>
+<tr style="vertical-align: top;">
+<td><code>expr</code></td>
+<td>
+<p>expression which starts with <code>for</code>, <code>while</code> or <code>repeat</code>.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>recursive</code></td>
+<td>
+<p>logical. Should unlisting be applied to list components of result? See unlist for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>use.names</code></td>
+<td>
+<p>logical. Should names be preserved? See unlist for details.</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>data</code></td>
+<td>
+<p>data.frame/list/vector which we want to alter</p>
+</td>
+</tr>
+<tr style="vertical-align: top;">
+<td><code>fill</code></td>
+<td>
+<p>logical. TRUE by default. Should we combine data.frames with different names in the <code>to_df</code>?</p>
+</td>
+</tr>
+</table>
+<h3>Value</h3>
+
+<p>list for <code>to_list</code> and vector for <code>to_vec</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre><code class="language-R"># rather useless expression - squares of even numbers
+to_list(for(i in 1:10) if(i %% 2==0) i*i)
+
+# Pythagorean triples
+to_list(for (x in 1:30) for (y in x:30) for (z in y:30) if (x^2 + y^2 == z^2) c(x, y, z))
+
+colours = c("red", "green", "yellow", "blue")
+things = c("house", "car", "tree")
+to_vec(for(x in colours) for(y in things) paste(x, y))
+
+# prime numbers
+noprimes = to_vec(for (i in 2:7) for (j in seq(i*2, 99, i)) j)
+primes = to_vec(for (x in 2:99) if(!x %in% noprimes) x)
+primes
+
+# iteration over multiple lists
+to_vec(for(`i, j` in numerate(letters)) if(i %% 2==0) paste(i, j))
+
+set.seed(123)
+rand_sequence = runif(20)
+# gives only locally increasing values
+to_vec(for(`i, j` in lag_list(rand_sequence)) if(j&gt;i) j)
+
+# to_df
+to_df(for(`name, x` in mark(mtcars)) list(mean = mean(x), sd = sd(x), var = name))
+
+# 'alter' examples
+data(iris)
+# scale numeric variables
+res = alter(for(i in iris) if(is.numeric(i)) scale(i))
+str(res)
+
+# convert factors to characters
+res = alter(for(i in iris) if(is.factor(i)) as.character(i))
+str(res)
+
+# exclude factors from data.frame
+res = alter(for(i in iris) if(is.factor(i)) exclude())
+str(res)
+
+# 'data' argument example
+# specify which columns to map with a numeric vector of positions:
+res = alter(
+    for(`i, value` in numerate(mtcars)) if(i %in% c(1, 4, 5)) as.character(value),
+    data = mtcars
+)
+str(res)
+
+# or with a vector of names:
+res = alter(
+    for(`name, value` in mark(mtcars)) if(name %in% c("cyl", "am")) as.character(value),
+    data = mtcars
+)
+str(res)
+</code></pre>
+
+
+</div>
